@@ -6,6 +6,7 @@ require_once('include/bb2diaspora.php');
 
 function p_init(&$a) {
 
+
 	if(argc() < 2)
 		http_status_exit(401);
 

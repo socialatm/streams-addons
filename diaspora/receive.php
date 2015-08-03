@@ -7,21 +7,8 @@
 require_once('include/crypto.php');
 require_once('addon/diaspora/diaspora.php');
 
-
-	
-
-
-
-
 	
 function receive_post(&$a) {
-
-
-	$enabled = intval(get_config('system','diaspora_enabled'));
-	if(! $enabled) {
-		logger('mod-diaspora: disabled');
-		http_status_exit(500);
-	}
 
 	$public = false;
 

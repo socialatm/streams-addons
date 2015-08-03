@@ -22,6 +22,9 @@ function diaspora_load() {
 	register_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
 	register_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	register_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
+	register_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
+	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
+	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 
 }
 
@@ -29,6 +32,9 @@ function diaspora_unload() {
 	unregister_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
 	unregister_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	unregister_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
+	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
+	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
+	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 }
 
 
@@ -56,12 +62,6 @@ function diaspora_permissions_update(&$a,&$b) {
 
 
 function diaspora_dispatch_public($msg) {
-
-	$enabled = intval(get_config('system','diaspora_enabled'));
-	if(! $enabled) {
-		logger('mod-diaspora: disabled');
-		return;
-	}
 
 	$sys_disabled = true;
 
@@ -104,12 +104,6 @@ function diaspora_dispatch($importer,$msg) {
 
 	if(! array_key_exists('system',$importer))
 		$importer['system'] = false;
-
-	$enabled = intval(get_config('system','diaspora_enabled'));
-	if(! $enabled) {
-		logger('mod-diaspora: disabled');
-		return;
-	}
 
 	$allowed = get_pconfig($importer['channel_id'],'system','diaspora_allowed');
 
@@ -222,8 +216,6 @@ function diaspora_process_outbound($a, $arr) {
 			);
 */
 
-	if(! get_config('system','diaspora_enabled'))
-		return;
 
 	// allow this to be set per message
 
@@ -2436,12 +2428,6 @@ function diaspora_profile($importer,$xml,$msg) {
 function diaspora_share($owner,$contact) {
 	$a = get_app();
 
-	$enabled = intval(get_config('system','diaspora_enabled'));
-	if(! $enabled) {
-		logger('diaspora_share: disabled');
-		return;
-	}
-
 	$allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
 	if($allowed === false)
 		$allowed = 1;
@@ -3023,10 +3009,6 @@ function diaspora_send_mail($item,$owner,$contact) {
 
 function diaspora_transmit($owner,$contact,$slap,$public_batch,$queue_run=false) {
 
-	$enabled = intval(get_config('system','diaspora_enabled'));
-	if(! $enabled) {
-		return 200;
-	}
 
 	$allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
 	if($allowed === false)
@@ -3072,5 +3054,264 @@ function diaspora_transmit($owner,$contact,$slap,$public_batch,$queue_run=false)
 	proc_run('php','include/deliver.php',$hash);
 	if($interval)
 		@time_sleep_until(microtime(true) + (float) $interval);
+
+}
+
+
+function diaspora_follow_allow(&$a, &$b) {
+
+	$b['allowed'] = intval(get_pconfig($b['channel_id'],'system','diaspora_allowed'));
+
+}
+
+
+function diaspora_discover(&$a,&$b) {
+
+	require_once('include/network.php');
+
+	$result = array();
+	$network = null;
+	$diaspora = false;
+
+	$diaspora_base = '';
+	$diaspora_guid = '';
+	$diaspora_key = '';
+	$dfrn = false;
+
+	$x = old_webfinger($webbie);			
+	if($x) {
+		logger('old_webfinger: ' . print_r($x,true));
+		foreach($x as $link) {
+			if($link['@attributes']['rel'] === NAMESPACE_DFRN)
+				$dfrn = unamp($link['@attributes']['href']);				
+			if($link['@attributes']['rel'] === 'salmon')
+				$notify = unamp($link['@attributes']['href']);
+ 			if($link['@attributes']['rel'] === NAMESPACE_FEED)
+				$poll = unamp($link['@attributes']['href']);
+			if($link['@attributes']['rel'] === 'http://microformats.org/profile/hcard')
+				$hcard = unamp($link['@attributes']['href']);
+			if($link['@attributes']['rel'] === 'http://webfinger.net/rel/profile-page')
+				$profile = unamp($link['@attributes']['href']);
+			if($link['@attributes']['rel'] === 'http://portablecontacts.net/spec/1.0')
+				$poco = unamp($link['@attributes']['href']);
+			if($link['@attributes']['rel'] === 'http://joindiaspora.com/seed_location') {
+				$diaspora_base = unamp($link['@attributes']['href']);
+				$diaspora = true;
+			}
+			if($link['@attributes']['rel'] === 'http://joindiaspora.com/guid') {
+				$diaspora_guid = unamp($link['@attributes']['href']);
+				$diaspora = true;
+			}
+			if($link['@attributes']['rel'] === 'diaspora-public-key') {
+				$diaspora_key = base64_decode(unamp($link['@attributes']['href']));
+				if(strstr($diaspora_key,'RSA '))
+					$pubkey = rsatopem($diaspora_key);
+				else
+					$pubkey = $diaspora_key;
+				$diaspora = true;
+			}
+		}
+
+		if($diaspora && $diaspora_base && $diaspora_guid) {
+			$guid = $diaspora_guid;
+			$diaspora_base = trim($diaspora_base,'/');
+
+			$notify = $diaspora_base . '/receive';
+
+			if(strpos($webbie,'@')) {
+				$addr = str_replace('acct:', '', $webbie);
+				$hostname = substr($webbie,strpos($webbie,'@')+1);
+			}
+			$network = 'diaspora';
+			// until we get a dfrn layer, we'll use diaspora protocols for Friendica,
+			// but give it a different network so we can go back and fix these when we get proper support. 
+			// It really should be just 'friendica' but we also want to distinguish
+			// between Friendica sites that we can use D* protocols with and those we can't.
+			// Some Friendica sites will have Diaspora disabled. 
+			if($dfrn)
+				$network = 'friendica-over-diaspora';
+			if($hcard) {
+				$vcard = scrape_vcard($hcard);
+				$vcard['nick'] = substr($webbie,0,strpos($webbie,'@'));
+			} 
+
+			$r = q("select * from xchan where xchan_hash = '%s' limit 1",
+				dbesc($addr)
+			);
+
+			/**
+			 *
+			 * Diaspora communications are notoriously unreliable and receiving profile update messages (indeed any messages) 
+			 * are pretty much random luck. We'll check the timestamp of the xchan_name_date at a higher level and refresh
+			 * this record once a month; because if you miss a profile update message and they update their profile photo or name 
+			 * you're otherwise stuck with stale info until they change their profile again - which could be years from now. 
+			 *
+			 */  			
+
+			if($r) {
+				$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s' limit 1",
+					dbesc($vcard['fn']),
+					dbesc($network),
+					dbesc(datetime_convert()),
+					dbesc($addr)
+				);
+			}
+			else {
+
+				$r = q("insert into xchan ( xchan_hash, xchan_guid, xchan_pubkey, xchan_addr, xchan_url, xchan_name, xchan_network, xchan_instance_url, xchan_name_date ) values ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') ",
+					dbesc($addr),
+					dbesc($guid),
+					dbesc($pubkey),
+					dbesc($addr),
+					dbesc($profile),
+					dbesc($vcard['fn']),
+					dbesc($network),
+					dbesc(z_root()),
+					dbescdate(datetime_convert())
+				);
+			}
+
+			$r = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+				dbesc($webbie)
+			);
+
+			if(! $r) {
+
+				$r = q("insert into hubloc ( hubloc_guid, hubloc_hash, hubloc_addr, hubloc_network, hubloc_url, hubloc_host, hubloc_callback, hubloc_updated, hubloc_primary ) values ('%s','%s','%s','%s','%s','%s','%s','%s', 1)",
+					dbesc($guid),
+					dbesc($addr),
+					dbesc($addr),
+					dbesc($network),
+					dbesc(trim($diaspora_base,'/')),
+					dbesc($hostname),
+					dbesc($notify),
+					dbescdate(datetime_convert())
+				);
+			}
+			$photos = import_profile_photo($vcard['photo'],$addr);
+			$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
+				dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
+				dbesc($photos[0]),
+				dbesc($photos[1]),
+				dbesc($photos[2]),
+				dbesc($photos[3]),
+				dbesc($addr)
+			);
+			return true;
+
+		}
+
+	return false;
+
+/*
+	$vcard['fn'] = notags($vcard['fn']);
+	$vcard['nick'] = str_replace(' ','',notags($vcard['nick']));
+
+	$result['name'] = $vcard['fn'];
+	$result['nick'] = $vcard['nick'];
+	$result['guid'] = $guid;
+	$result['url'] = $profile;
+	$result['hostname'] = $hostname;
+	$result['addr'] = $addr;
+	$result['batch'] = $batch;
+	$result['notify'] = $notify;
+	$result['poll'] = $poll;
+	$result['request'] = $request;
+	$result['confirm'] = $confirm;
+	$result['poco'] = $poco;
+	$result['photo'] = $vcard['photo'];
+	$result['priority'] = $priority;
+	$result['network'] = $network;
+	$result['alias'] = $alias;
+	$result['pubkey'] = $pubkey;
+
+	logger('probe_url: ' . print_r($result,true), LOGGER_DEBUG);
+
+	return $result;
+
+*/
+
+/* Sample Diaspora result.
+
+Array
+(
+	[name] => Mike Macgirvin
+	[nick] => macgirvin
+	[guid] => a9174a618f8d269a
+	[url] => https://joindiaspora.com/u/macgirvin
+	[hostname] => joindiaspora.com
+	[addr] => macgirvin@joindiaspora.com
+	[batch] => 
+	[notify] => https://joindiaspora.com/receive
+	[poll] => https://joindiaspora.com/public/macgirvin.atom
+	[request] => 
+	[confirm] => 
+	[poco] => 
+	[photo] => https://joindiaspora.s3.amazonaws.com/uploads/images/thumb_large_fec4e6eef13ae5e56207.jpg
+	[priority] => 
+	[network] => diaspora
+	[alias] => 
+	[pubkey] => -----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAtihtyIuRDWkDpCA+I1UaQ
+jI4S7k625+A7EEJm+pL2ZVSJxeCKiFeEgHBQENjLMNNm8l8F6blxgQqE6ZJ9Spa7f
+tlaXYTRCrfxKzh02L3hR7sNA+JS/nXJaUAIo+IwpIEspmcIRbD9GB7Wv/rr+M28uH
+31EeYyDz8QL6InU/bJmnCdFvmEMBQxJOw1ih9tQp7UNJAbUMCje0WYFzBz7sfcaHL
+OyYcCOqOCBLdGucUoJzTQ9iDBVzB8j1r1JkIHoEb2moUoKUp+tkCylNfd/3IVELF9
+7w1Qjmit3m50OrJk2DQOXvCW9KQxaQNdpRPSwhvemIt98zXSeyZ1q/YjjOwG0DWDq
+AF8aLj3/oQaZndTPy/6tMiZogKaijoxj8xFLuPYDTw5VpKquriVC0z8oxyRbv4t9v
+8JZZ9BXqzmayvY3xZGGp8NulrfjW+me2bKh0/df1aHaBwpZdDTXQ6kqAiS2FfsuPN
+vg57fhfHbL1yJ4oDbNNNeI0kJTGchXqerr8C20khU/cQ2Xt31VyEZtnTB665Ceugv
+kp3t2qd8UpAVKl430S5Quqx2ymfUIdxdW08CEjnoRNEL3aOWOXfbf4gSVaXmPCR4i
+LSIeXnd14lQYK/uxW/8cTFjcmddsKxeXysoQxbSa9VdDK+KkpZdgYXYrTTofXs6v+
+4afAEhRaaY+MCAwEAAQ==
+-----END PUBLIC KEY-----
+
+)
+*/
+
+
+
+
+	}
+}
+
+
+function diaspora_feature_settings_post(&$a,&$b) {
+
+	if($_POST['diaspora-submit']) {
+		set_pconfig(local_channel(),'system','diaspora_allowed',intval($_POST['dspr_allowed']));
+		set_pconfig(local_channel(),'system','diaspora_public_comments',intval($_POST['dspr_pubcomment']));
+		set_pconfig(local_channel(),'system','prevent_tag_hijacking',intval($_POST['dspr_hijack']));
+		info( t('Diaspora Protocol Settings updated.') . EOL);
+	}
+}
+
+
+function diaspora_feature_settings(&$a,&$s) {
+	$dspr_allowed = get_pconfig(local_channel(),'system','diaspora_allowed');
+	$pubcomments = get_pconfig(local_channel(),'system','diaspora_public_comments');
+	if($pubcomments === false)
+		$pubcomments = 1;
+	$hijacking = get_pconfig(local_channel(),'system','prevent_tag_hijacking');
+
+	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+		'$field'	=> array('dspr_allowed', t('Enable the Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
+	));
+
+	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+		'$field'	=> array('dspr_pubcomment', t('Allow any Diaspora member to comment on your public posts'), $pubcomments, '', $yes_no),
+	));
+
+	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+		'$field'	=> array('dspr_hijack', t('Prevent your hashtags from being redirected to other sites'), $hijacking, '', $yes_no),
+	));
+
+
+	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
+		'$addon' 	=> array('diaspora', '<img src="addon/diaspost/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
+		'$content'	=> $sc
+	));
+
+	return;
 
 }
