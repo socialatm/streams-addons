@@ -187,7 +187,7 @@ function diaspora_is_blacklisted($s) {
 	return false;
 }
 
-function diaspora_process_outbound($a, $arr) {
+function diaspora_process_outbound(&$a, &$arr) {
 
 /*
 
