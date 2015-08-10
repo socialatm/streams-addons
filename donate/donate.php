@@ -2,7 +2,7 @@
 
 /**
  * Name: Donate
- * Description: Support the Hubzilla
+ * Description: Support the Redmatrix/Hubzilla projects
  * Version: 1.0
  * Author: Macgirvin
  *
@@ -17,7 +17,7 @@ function donate_content(&$a) {
 /* Format - array( display name, paypal id, description of services or skills you provide to the matrix) */
 
 $contributors = array(
-array('The Hubzilla Project', 'max@macgirvin.com', t('Project Servers and Resources')),
+array('The Redmatrix/Hubzilla Projects', 'max@macgirvin.com', t('Project Servers and Resources')),
 array('Mike Macgirvin','mike@macgirvin.com',t('Project Creator and Tech Lead')),
 array('Thomas Willingham','beardyunixer@beardyunixer.com',t('Admin, developer, directorymin, support bloke')),
 /* Developers and public hubs - add your donatable resource here */
@@ -49,7 +49,7 @@ call_hooks('donate_sponsors',$sponsors);
 $sponsors[] = t('And the hundreds of other people and organisations who helped make the Hubzilla possible.');
 
 
-$text .= '<p>' . t('The Hubzilla is provided primarily by volunteers giving their time and expertise - and often paying out of pocket for services they share with others.') . '</p>';
+$text .= '<p>' . t('The Redmatrix/Hubzilla projects are provided primarily by volunteers giving their time and expertise - and often paying out of pocket for services they share with others.') . '</p>';
 $text .= '<p>' . t('There is no corporate funding and no ads, and we do not collect and sell your personal information. (We don\'t control your personal information - <strong>you do</strong>.)') . '</p>';
 $text .= '<p>' . t('Help support our ground-breaking work in decentralisation, web identity, and privacy.') . '</p>';
 

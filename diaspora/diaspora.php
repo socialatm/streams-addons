@@ -2522,14 +2522,26 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 
 	if(intval($item['item_consensus'])) {
 		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl'), array(
-			'$guid_q' => random_string(),
+			'$guid_q' => '10000000',
 			'$question' => t('Please choose'),
-			'$guid_y' => random_string(),
+			'$guid_y' => '00000001',
 			'$agree' => t('Agree'),
-			'$guid_n' => random_string(),
+			'$guid_n' => '0000000F',
 			'$disagree' => t('Disagree'),
-			'$guid_a' => random_string(),
+			'$guid_a' => '00000000',
 			'$abstain' => t('Abstain')
+		));
+	}
+	elseif($item['resource_type'] === 'event' && $item['resource_id']) {
+		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl'), array(
+			'$guid_q' => '1000000',
+			'$question' => t('Please choose'),
+			'$guid_y' => '0000001',
+			'$agree' => t('I will attend'),
+			'$guid_n' => '000000F',
+			'$disagree' => t('I will not attend'),
+			'$guid_a' => '0000000',
+			'$abstain' => t('I may attend')
 		));
 	}
 	else
