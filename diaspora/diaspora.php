@@ -3,7 +3,7 @@
 
 /**
  * Name: Diaspora Protocol
- * Description: Diaspora Protocol
+ * Description: Diaspora Protocol (Experimental, Unsupported)
  * Version: 1.0
  * Author: Mike Macgirvin
  */
@@ -3307,7 +3307,7 @@ function diaspora_feature_settings(&$a,&$s) {
 	$hijacking = get_pconfig(local_channel(),'system','prevent_tag_hijacking');
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('dspr_allowed', t('Enable the Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
+		'$field'	=> array('dspr_allowed', t('Enable the (experimental) Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
