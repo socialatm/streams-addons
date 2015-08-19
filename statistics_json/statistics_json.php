@@ -25,17 +25,17 @@ function statistics_json_init() {
 		statistics_json_cron($a,$b);
 
 	$statistics = array(
-			"name" => get_config('system','sitename'),
-			"network" => PLATFORM_NAME,
-			"version" => RED_VERSION,
-			"registrations_open" => (get_config('system','register_policy') != 0),
-			"total_users" => get_config('statistics_json','total_users'),
-			"active_users_halfyear" => get_config('statistics_json','active_users_halfyear'),
-			"active_users_monthly" => get_config('statistics_json','active_users_monthly'),
-			"local_posts" => get_config('statistics_json','local_posts'),
-			"twitter" => (bool) get_config('statistics_json','twitter'),
-			"wordpress" => (bool) get_config('statistics_json','wordpress')
-			);
+		"name" => get_config('system','sitename'),
+		"network" => PLATFORM_NAME,
+		"version" => RED_VERSION,
+		"registrations_open" => (get_config('system','register_policy') != 0),
+		"total_users" => get_config('statistics_json','total_users'),
+		"active_users_halfyear" => get_config('statistics_json','active_users_halfyear'),
+		"active_users_monthly" => get_config('statistics_json','active_users_monthly'),
+		"local_posts" => get_config('statistics_json','local_posts'),
+		"twitter" => (bool) get_config('statistics_json','twitter'),
+		"wordpress" => (bool) get_config('statistics_json','wordpress')
+	);
 
 	header("Content-Type: application/json");
 	echo json_encode($statistics);
@@ -45,7 +45,7 @@ function statistics_json_init() {
 
 function statistics_json_cron($a,$b) {
 
-    logger('statistics_json_cron: cron_start');
+	logger('statistics_json_cron: cron_start');
 
 
 	$r = q("select count(channel_id) as total_users from channel left join account on account_id = channel_account_id
@@ -64,8 +64,7 @@ function statistics_json_cron($a,$b) {
 				$s .= ',';
 			$s .= intval($rr['channel_id']);
 		}
-		$x = q("select uid from item where uid in ( $s ) and (item_flags & %d) > 0 and created > %s - INTERVAL %s group by uid",
-			intval(ITEM_WALL),
+		$x = q("select uid from item where uid in ( $s ) and item_wall !=  0 and created > %s - INTERVAL %s group by uid",
 			db_utcnow(), db_quoteinterval('6 MONTH')
 		);
 		if($x)
@@ -83,8 +82,7 @@ function statistics_json_cron($a,$b) {
 				$s .= ',';
 			$s .= intval($rr['channel_id']);
 		}
-		$x = q("select uid from item where uid in ( $s ) and ( item_flags & %d ) > 0 and created > %s - INTERVAL %s group by uid",
-			intval(ITEM_WALL),
+		$x = q("select uid from item where uid in ( $s ) and item_wall != 0 and created > %s - INTERVAL %s group by uid",
 			db_utcnow(), db_quoteinterval('1 MONTH')
 		);
 		if($x)
@@ -98,9 +96,7 @@ function statistics_json_cron($a,$b) {
 	set_config('statistics_json','active_users_monthly', $active_users_monthly);
 
 
-	$posts = q("SELECT COUNT(*) AS local_posts FROM `item` WHERE (item_flags & %d) > 0 ",
-		intval(ITEM_WALL)
-	);
+	$posts = q("SELECT COUNT(*) AS local_posts FROM `item` WHERE item_wall != 0 ");
 	if (!is_array($posts))
 		$local_posts = -1;
 	else
@@ -111,14 +107,14 @@ function statistics_json_cron($a,$b) {
 
 	$wordpress = false;
 	$r = q("select * from addon where hidden = 0 and name = 'wppost'");
- 		if($r)
+		if($r)
 		$wordpress = true;
 
 	set_config('statistics_json','wordpress', intval($wordpress));
 
 	$twitter = false;
 	$r = q("select * from addon where hidden = 0 and name = 'twitter'");
- 		if($r)
+	if($r)
 		$twitter = true;
 
 	set_config('statistics_json','twitter', intval($twitter));

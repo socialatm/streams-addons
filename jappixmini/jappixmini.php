@@ -184,9 +184,8 @@ function jappixmini_init(&$a) {
 		killme();
 
 	$r = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_channel = %d
-		and not ( abook_flags & %d ) > 0 and xchan_hash = '%s' limit 1",
+		and abook_self = 0 and xchan_hash = '%s' limit 1",
 		intval($channel['channel_id']),
-		intval(ABOOK_FLAG_SELF),
 		dbesc($requestor)
 	);
 	if(! $r)
@@ -304,7 +303,7 @@ function jappixmini_settings(&$a, &$s) {
 	}
 
 	$sc .= '<div class="section-content-info-wrapper form-group">';
-	$sc .= '<strong>' . t('Status:') . '</strong> Addon knows ' . $address_cnt . ' Jabber addresses of ' . $contact_cnt . ' RedMatrix contacts (takes some time, usually 10 minutes, to update).';
+	$sc .= '<strong>' . t('Status:') . '</strong> Addon knows ' . $address_cnt . ' Jabber addresses of ' . $contact_cnt . ' Hubzilla contacts (takes some time, usually 10 minutes, to update).';
 	$sc .= '</div>';
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
@@ -342,19 +341,19 @@ function jappixmini_settings(&$a, &$s) {
 	$onchange = "document.getElementById('id_jappixmini-friendica-password').disabled = !this.checked;jappixmini_set_password();";
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('jappixmini-encrypt', t('Encrypt Jabber password with RedMatrix password'), $encrypt_checked, t('Recommended'), array(t('No'),t('Yes')), 'onchange="' . $onchange . '"')
+		'$field'	=> array('jappixmini-encrypt', t('Encrypt Jabber password with Hubzilla password'), $encrypt_checked, t('Recommended'), array(t('No'),t('Yes')), 'onchange="' . $onchange . '"')
 	));
 
 	$sc .= replace_macros(get_markup_template('field_password.tpl'), array(
-		'$field'	=> array('jappixmini-friendica-password', t('RedMatrix password'), '', '', '', $encrypt_disabled . ' onchange="jappixmini_set_password();"')
+		'$field'	=> array('jappixmini-friendica-password', t('Hubzilla password'), '', '', '', $encrypt_disabled . ' onchange="jappixmini_set_password();"')
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('jappixmini-autoapprove', t('Approve subscription requests from RedMatrix contacts automatically'), $autoapprove, '', array(t('No'),t('Yes')))
+		'$field'	=> array('jappixmini-autoapprove', t('Approve subscription requests from Hubzilla contacts automatically'), $autoapprove, '', array(t('No'),t('Yes')))
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('jappixmini-autosubscribe', t('Approve subscription requests from RedMatrix contacts automatically'), $autosubscribe, '', array(t('No'),t('Yes')))
+		'$field'	=> array('jappixmini-autosubscribe', t('Approve subscription requests from Hubzilla contacts automatically'), $autosubscribe, '', array(t('No'),t('Yes')))
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
@@ -445,7 +444,7 @@ function jappixmini_settings_post(&$a,&$b) {
 			}
 
 			if (! $valid) {
-				info("RedMatrix password not valid.");
+				info("Hubzilla password not valid.");
 				return;
 			}
 		}
@@ -600,9 +599,8 @@ function jappixmini_cron(&$a, $d) {
 
 		// for each user, go through list of contacts
 		$rand = db_getfunc('rand');
-		$contacts = q("SELECT * FROM `abook` left join xchan on abook_xchan = xchan_hash WHERE `abook_channel`=%d AND not (abook_flags & %d) > 0 order by $rand",
-			intval($uid),
-			intval(ABOOK_FLAG_SELF)
+		$contacts = q("SELECT * FROM `abook` left join xchan on abook_xchan = xchan_hash WHERE `abook_channel`=%d AND abook_self = 0 order by $rand",
+			intval($uid)
 		);
 
 		$channel = channelx_by_n($uid);
@@ -702,5 +700,5 @@ function jappixmini_download_source(&$a,&$b) {
 
 	$b .= '<h1>Jappix Mini</h1>';
 	$b .= '<p>This site uses the jappixmini addon, which includes Jappix Mini by the <a href="'.$a->get_baseurl().'/addon/jappixmini/jappix/AUTHORS">Jappix authors</a> and is distributed under the terms of the <a href="'.$a->get_baseurl().'/addon/jappixmini/jappix/COPYING">GNU Affero General Public License</a>.</p>';
-	$b .= '<p>You can download the <a href="'.$a->get_baseurl().'/addon/jappixmini.tgz">source code of the addon</a>. The rest of Red Matrix is distributed under compatible licenses and can be retrieved from <a href="https://github.com/friendica/red">https://github.com/friendica/red</a> and <a href="https://github.com/friendica/red-addons">https://github.com/friendica/red-addons</a></p>';
+	$b .= '<p>You can download the <a href="'.$a->get_baseurl().'/addon/jappixmini.tgz">source code of the addon</a>. The rest of Hubzilla is distributed under compatible licenses and can be retrieved from <a href="https://github.com/friendica/red">https://github.com/friendica/red</a> and <a href="https://github.com/friendica/red-addons">https://github.com/friendica/red-addons</a></p>';
 }
