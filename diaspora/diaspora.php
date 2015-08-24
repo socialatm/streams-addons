@@ -1055,6 +1055,10 @@ function diaspora_post($importer,$xml,$msg) {
 		return 202;
 	}
 
+	if($importer['system']) {
+		$datarray['comment_policy'] = 'network: diaspora';
+	}
+
 	if(! post_is_importable($datarray,$contact)) {
 		logger('diaspora_post: filtering this author.');
 		return 202;
