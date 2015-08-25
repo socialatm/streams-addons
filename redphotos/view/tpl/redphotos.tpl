@@ -2,7 +2,7 @@
 
 <p class="descriptive-text">{{$desc}}</p>
 
-<form action="frphotos" method="post" autocomplete="off" >
+<form action="redphotos" method="post" autocomplete="off" >
 
 {{include file="field_input.tpl" field=$fr_server}}
 {{include file="field_input.tpl" field=$fr_username}}
