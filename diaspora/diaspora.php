@@ -2475,7 +2475,7 @@ function diaspora_unshare($owner,$contact) {
 
 	$tpl = get_markup_template('diaspora_retract.tpl');
 	$msg = replace_macros($tpl, array(
-		'$guid'   => $owner['channel_guid'],
+		'$guid'   => $owner['channel_guid'] . str_replace('.','',get_app()->get_hostname()),
 		'$type'   => 'Person',
 		'$handle' => $myaddr
 	));
