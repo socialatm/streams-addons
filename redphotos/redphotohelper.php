@@ -39,47 +39,49 @@ $photo_tmp = 'store/[data]/redphoto_data' . $channel_address;
 
 		$j = json_decode($output,true);
 
-		if(! $j['data']) {
+		if(! ($j['photo'] && $j['photo']['data'])) {
 			logger('redphotohelper: no data');
 			killme();
 		}
 
-		file_put_contents($photo_tmp,base64_decode($j['data']));
+		file_put_contents($photo_tmp,base64_decode($j['photo']['data']));
 
 		$args = array();
 
 
 		$args['src'] = $photo_tmp; 
 		
-		$args['filename'] = $j['filename'];
+		$args['filename'] = $j['photo']['filename'];
 		if(! $args['filename'])
 			$args['filename'] = t('photo');
-		$args['hash'] = $j['hash'];
-		$args['scale'] = $j['scale'];
-		$args['album'] = $j['album'];
+		$args['hash'] = $j['photo']['hash'];
+		$args['scale'] = $j['photo']['scale'];
+		$args['album'] = $j['photo']['album'];
 		$args['visible'] = 0;
-		$args['created'] = $j['created'];
-		$args['edited'] = $j['edited'];
-		$args['title'] = $j['title'];
-		$args['description'] = $j['description'];
+		$args['created'] = $j['photo']['created'];
+		$args['edited'] = $j['photo']['edited'];
+		$args['title'] = $j['photo']['title'];
+		$args['description'] = $j['photo']['description'];
 
-		$args['allow_cid'] = $j['allow_cid'];
-		$args['allow_gid'] = $j['allow_gid'];
-		$args['deny_cid']  = $j['deny_cid'];
-		$args['deny_gid']  = $j['deny_gid'];
+		$args['allow_cid'] = $j['photo']['allow_cid'];
+		$args['allow_gid'] = $j['photo']['allow_gid'];
+		$args['deny_cid']  = $j['photo']['deny_cid'];
+		$args['deny_gid']  = $j['photo']['deny_gid'];
 
 
-		if($j['photo_flags'] & 1)
+		if($j['photo']['photo_flags'] & 1)
 			$args['photo_usage'] = PHOTO_PROFILE;
-		if($j['profile'])
+		if($j['photo']['profile'])
 			$args['photo_usage'] = PHOTO_PROFILE;
 
 		if(array_key_exists('photo_usage',$args))
-			$args['photo_usage'] = $j['photo_usage'];
+			$args['photo_usage'] = $j['photo']['photo_usage'];
 
-		$args['type'] = $j['type']; 
+		$args['type'] = $j['photo']['type']; 
 
-		unset($j['data']);
+		$args['item'] = (($j['item']) ? $j['item'] : false);
+
+		unset($j['photo']['data']);
 
 //		logger('redphotohelper: ' . print_r($j,true));
 
