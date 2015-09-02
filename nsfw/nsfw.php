@@ -181,7 +181,8 @@ function nsfw_prepare_body(&$a,&$b) {
 	}
 
 	$ob_hash = get_observer_hash();
-	if((! $ob_hash) && ($b['item']['author']['xchan_flags'] & (XCHAN_FLAGS_CENSORED|XCHAN_FLAGS_SELFCENSORED))) {
+	if((! $ob_hash) 
+		&& (intval($b['item']['author']['xchan_censored']) || intval($b['item']['author']['xchan_selfcensored']))) {
 		$found = true;
 		$orig_word = t('Possible adult content');
 	}	
