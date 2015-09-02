@@ -1697,13 +1697,16 @@ function diaspora_conversation($importer,$xml,$msg) {
 	if(count($c))
 		$conversation = $c[0];
 	else {
+		if($subject)
+			$nsubject = str_rot47(base64url_encode($subject));
+
 		$r = q("insert into conv (uid,guid,creator,created,updated,subject,recips) values(%d, '%s', '%s', '%s', '%s', '%s', '%s') ",
 			intval($importer['channel_id']),
 			dbesc($guid),
 			dbesc($diaspora_handle),
 			dbesc(datetime_convert('UTC','UTC',$created_at)),
 			dbesc(datetime_convert()),
-			dbesc($subject),
+			dbesc($nsubject),
 			dbesc($participant_handles)
 		);
 		if($r)
@@ -1718,6 +1721,8 @@ function diaspora_conversation($importer,$xml,$msg) {
 		logger('diaspora_conversation: unable to create conversation.');
 		return;
 	}
+
+	$conversation['subject'] = base64url_decode(str_rot47($conversation['subject']));
 
 	foreach($messages as $mesg) {
 
@@ -2972,6 +2977,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 		return;
 	}
 	$cnv = $r[0];
+	$cnv['subject'] = base64url_decode(str_rot47($cnv['subject']));
 
 	$conv = array(
 		'guid' => xmlify($cnv['guid']),
