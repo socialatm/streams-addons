@@ -2400,7 +2400,7 @@ function diaspora_profile($importer,$xml,$msg) {
 
 	require_once('include/photo/photo_driver.php');
 
-	$images = import_profile_photo($image_url,$contact['xchan_hash']);
+	$images = import_xchan_photo($image_url,$contact['xchan_hash']);
 	
 	// Generic birthday. We don't know the timezone. The year is irrelevant. 
 
@@ -3208,7 +3208,7 @@ function diaspora_discover(&$a,&$b) {
 					dbescdate(datetime_convert())
 				);
 			}
-			$photos = import_profile_photo($vcard['photo'],$addr);
+			$photos = import_xchan_photo($vcard['photo'],$addr);
 			$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
 				dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
 				dbesc($photos[0]),
