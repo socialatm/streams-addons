@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Name: JS Uploader
+ * Name: JS Uploader [DOES NOT WORK WITH HUBZILLA CURRENTLY]
  * Description: JavaScript photo/image uploader. Uses Valum 'qq' Uploader.
  * Version: 1.0
  * Author: Chris Case <http://friendika.openmindspace.org/profile/chris_case>
