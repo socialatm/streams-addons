@@ -3159,6 +3159,8 @@ function diaspora_discover(&$a,&$b) {
 			if($hcard) {
 				$vcard = scrape_vcard($hcard);
 				$vcard['nick'] = substr($webbie,0,strpos($webbie,'@'));
+				if(! $vcard['fn'])
+					$vcard['fn'] = $webbie;
 			} 
 
 			$r = q("select * from xchan where xchan_hash = '%s' limit 1",
