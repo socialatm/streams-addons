@@ -3186,7 +3186,7 @@ function diaspora_discover(&$a,&$b) {
 			}
 			else {
 
-				$r = q("insert into xchan ( xchan_hash, xchan_guid, xchan_pubkey, xchan_addr, xchan_url, xchan_name, xchan_network, xchan_instance_url, xchan_name_date ) values ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') ",
+				$r = q("insert into xchan ( xchan_hash, xchan_guid, xchan_pubkey, xchan_addr, xchan_url, xchan_name, xchan_network, xchan_name_date ) values ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') ",
 					dbesc($addr),
 					dbesc($guid),
 					dbesc($pubkey),
@@ -3194,7 +3194,6 @@ function diaspora_discover(&$a,&$b) {
 					dbesc($profile),
 					dbesc($vcard['fn']),
 					dbesc($network),
-					dbesc(z_root()),
 					dbescdate(datetime_convert())
 				);
 			}
