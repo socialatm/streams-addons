@@ -3081,8 +3081,8 @@ function diaspora_transmit($owner,$contact,$slap,$public_batch,$message_id = '')
 	if($message_id) {
 		q("insert into dreport ( dreport_mid, dreport_site, dreport_recip, dreport_result, dreport_time, dreport_xchan, dreport_queue ) values ( '%s','%s','%s','%s','%s','%s','%s' ) ",
 			dbesc($message_id),
-			dbesc($desturl),
-			dbesc($desturl),
+			dbesc($dest_url),
+			dbesc($dest_url),
 			dbesc('queued'),
 			dbesc(datetime_convert()),
 			dbesc($owner['channel_hash']),
