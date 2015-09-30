@@ -76,6 +76,9 @@ function diaspora_dispatch_public($msg) {
 		dbesc($msg['author'])
 	);
 
+
+
+
 	// also need to look for those following public streams
 
 	if($r) {
@@ -104,6 +107,16 @@ function diaspora_dispatch($importer,$msg) {
 
 	if(! array_key_exists('system',$importer))
 		$importer['system'] = false;
+
+	$host = substr($msg['author'],strpos($msg['author'],'@')+1);
+	$ssl = ((array_key_exists('HTTPS',$_SERVER) && strtolower($_SERVER['HTTPS']) === 'on') ? true : false);
+	$url = (($ssl) ? 'https://' : 'http://') . $host;
+
+	q("update site set site_dead = 0, site_updated = '%s' where site_type = %d and site_url = '%s'",
+		dbesc(datetime_convert()),
+		intval(SITE_TYPE_NOTZOT),
+		dbesc($url)
+	);
 
 	$allowed = get_pconfig($importer['channel_id'],'system','diaspora_allowed');
 
