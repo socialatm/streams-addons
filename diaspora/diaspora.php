@@ -54,7 +54,17 @@ function diaspora_load_module(&$a, &$b) {
 function diaspora_permissions_update(&$a,&$b) {
 
 	if($b['recipient']['hubloc_network'] === 'diaspora' || $b['recipient']['hubloc_network'] === 'friendica-over-diaspora') {
-		diaspora_share($b['sender'],$b['recipient']);
+
+		$interval = ((get_config('system','delivery_interval') !== false) 
+			? intval(get_config('system','delivery_interval')) : 2 );
+
+		$h = diaspora_share($b['sender'],$b['recipient']);
+		if($h)
+			proc_run('php','include/deliver.php',$h);
+
+		if($interval)
+			@time_sleep_until(microtime(true) + (float) $interval);
+
 		$b['success'] = 1;
 	}
 }
@@ -3127,6 +3137,8 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 function diaspora_follow_allow(&$a, &$b) {
 
 	$b['allowed'] = intval(get_pconfig($b['channel_id'],'system','diaspora_allowed'));
+	if($b['allowed'] === false)
+		$b['allowed'] = 1;
 
 }
 

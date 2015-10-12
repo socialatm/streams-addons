@@ -13,7 +13,7 @@ $channel_address = $argv[2];
 $fr_server = urldecode($argv[3]);
 
 $cookies = 'store/[data]/redphoto_cookie_' . $channel_address;
-$photo_tmp = 'store/[data]/redphoto_data' . $channel_address;
+$photo_tmp = 'store/[data]/redphoto_data_' . $channel_address;
 
 	$c = q("select * from channel left join xchan on channel_hash = xchan_hash where channel_address = '%s' limit 1",
 		dbesc($channel_address)
