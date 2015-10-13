@@ -24,6 +24,9 @@ $photo_tmp = 'store/[data]/redphoto_data_' . $channel_address;
 	}
 	$channel = $c[0];	
 
+	// fake a login session 
+	$_SESSION['authenticated'] = 1;
+	$_SESSION['uid'] = $channel['channel_id'];
 
 	    $ch = curl_init($fr_server . '/api/red/photo?f=&photo_id=' . $photo_id);
 
