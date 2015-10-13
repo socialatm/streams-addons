@@ -122,7 +122,7 @@ function diaspora_dispatch($importer,$msg) {
 	$ssl = ((array_key_exists('HTTPS',$_SERVER) && strtolower($_SERVER['HTTPS']) === 'on') ? true : false);
 	$url = (($ssl) ? 'https://' : 'http://') . $host;
 
-	q("update site set site_dead = 0, site_updated = '%s' where site_type = %d and site_url = '%s'",
+	q("update site set site_dead = 0, site_update = '%s' where site_type = %d and site_url = '%s'",
 		dbesc(datetime_convert()),
 		intval(SITE_TYPE_NOTZOT),
 		dbesc($url)

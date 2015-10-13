@@ -12,6 +12,8 @@ function receive_post(&$a) {
 
 	$public = false;
 
+	logger('diaspora_receive: ' . print_r($a->argv, true), LOGGER_DEBUG);
+
 	if((argc() == 2) && (argv(1) === 'public')) {
 		$public = true;
 	}
@@ -21,12 +23,16 @@ function receive_post(&$a) {
 			http_status_exit(500);
 
 		$guid = argv(2);
+		$hn = str_replace('.','',$a->get_hostname());
+		if(($x = strpos($guid,$hn)) > 0)
+			$guid = substr($guid,0,$x);
 
 		// Diaspora sites *may* provide a truncated guid. 
 
 		$r = q("SELECT * FROM channel left join xchan on channel_hash = xchan_hash WHERE channel_guid like '%s' AND channel_removed = 0 LIMIT 1",
 			dbesc($guid . '%')
 		);
+
 		if(! $r)
 			http_status_exit(500);
 
