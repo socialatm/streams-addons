@@ -2843,8 +2843,10 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 
 	$sublike = false;
 
-	if($item['verb'] === ACTIVITY_LIKE && $item['thr_parent']) {
-		$sublike = true;
+	if($item['verb'] === ACTIVITY_LIKE) {
+		if(($item['thr_parent']) && ($item['thr_parent'] !== $item['parent_mid'])) {
+			$sublike = true;
+		}
 	}
 
 	// The first item in the `item` table with the parent id is the parent. However, MySQL doesn't always
