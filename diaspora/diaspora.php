@@ -1070,7 +1070,7 @@ function diaspora_post($importer,$xml,$msg) {
 
 	$plink = service_plink($contact,$guid);
 
-
+	$datarray['aid'] = $importer['channel_account_id'];
 	$datarray['uid'] = $importer['channel_id'];
 
 	$datarray['verb'] = ACTIVITY_POST;
@@ -1305,7 +1305,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 
 
 	$plink = service_plink($contact,$guid);
-
+	$datarray['aid'] = $importer['channel_account_id'];
 	$datarray['uid'] = $importer['channel_id'];
 	$datarray['mid'] = $datarray['parent_mid'] = $guid;
 	$datarray['changed'] = $datarray['created'] = $datarray['edited'] = datetime_convert('UTC','UTC',$created);
@@ -1626,6 +1626,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		}
 	}
 
+	$datarray['aid'] = $importer['channel_account_id'];
 	$datarray['uid'] = $importer['channel_id'];
 	$datarray['verb'] = ACTIVITY_POST;
 	$datarray['mid'] = $guid;
