@@ -52,20 +52,14 @@ function diaspora_load_module(&$a, &$b) {
 
 
 function diaspora_permissions_update(&$a,&$b) {
+	if($b['recipient']['hubloc_network'] === 'diaspora' 
+		|| $b['recipient']['hubloc_network'] === 'friendica-over-diaspora') {
 
-	if($b['recipient']['hubloc_network'] === 'diaspora' || $b['recipient']['hubloc_network'] === 'friendica-over-diaspora') {
+		// @FIXME prevent looping or resharing once we've succeeded.
 
-		$interval = ((get_config('system','delivery_interval') !== false) 
-			? intval(get_config('system','delivery_interval')) : 2 );
-
-		$h = diaspora_share($b['sender'],$b['recipient']);
-		if($h)
-			proc_run('php','include/deliver.php',$h);
-
-		if($interval)
-			@time_sleep_until(microtime(true) + (float) $interval);
-
-		$b['success'] = 1;
+		$b['deliveries'] = diaspora_share($b['sender'],$b['recipient']);
+		if($b['deliveries'])
+			$b['success'] = 1;
 	}
 }
 
@@ -1846,9 +1840,10 @@ function diaspora_conversation($importer,$xml,$msg) {
 		if($body)
 			$body  = str_rot47(base64url_encode($body));
 
-		q("insert into mail ( `channel_id`, `convid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
+		q("insert into mail ( `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
 			intval($importer['channel_id']),
 			intval($conversation['id']),
+			intval($conversation['guid']),
 			dbesc($person['xchan_hash']),
 			dbesc($importer['channel_hash']),
 			dbesc($subject),
@@ -1978,9 +1973,10 @@ function diaspora_message($importer,$xml,$msg) {
 	if($body)
 		$body  = str_rot47(base64url_encode($body));
 
-	q("insert into mail ( `channel_id`, `convid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', '%d','%s','%s','%s')",
+	q("insert into mail ( `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', '%s', '%d','%s','%s','%s')",
 		intval($importer['channel_id']),
 		intval($conversation['id']),
+		intval($conversation['guid']),
 		dbesc($person['xchan_hash']),
 		dbesc($importer['xchan_hash']),
 		dbesc($subject),
@@ -3013,8 +3009,8 @@ function diaspora_send_mail($item,$owner,$contact) {
 	$a = get_app();
 	$myaddr = $owner['channel_address'] . '@' .  get_app()->get_hostname();
 
-	$r = q("select * from conv where id = %d and uid = %d limit 1",
-		intval($item['convid']),
+	$r = q("select * from conv where guid = '%s' and uid = %d limit 1",
+		intval($item['conv_guid']),
 		intval($item['channel_id'])
 	);
 
