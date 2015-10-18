@@ -3135,9 +3135,13 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 
 function diaspora_follow_allow(&$a, &$b) {
 
-	$b['allowed'] = intval(get_pconfig($b['channel_id'],'system','diaspora_allowed'));
-	if($b['allowed'] === false)
-		$b['allowed'] = 1;
+	if($b['xchan']['xchan_network'] !== 'diaspora' && $b['xchan']['xchan_network'] !== 'friendica-over-diaspora')
+		return;
+
+	$allowed = get_pconfig($b['channel_id'],'system','diaspora_allowed');
+	if($allowed === false)
+		$allowed = 1;
+	$b['allowed'] = $allowed;
 
 }
 
