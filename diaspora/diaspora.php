@@ -20,7 +20,7 @@ require_once('include/contact_selectors.php');
 
 function diaspora_load() {
 	register_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
-	register_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
+	register_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
 	register_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
 	register_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
@@ -30,6 +30,7 @@ function diaspora_load() {
 
 function diaspora_unload() {
 	unregister_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
+	unregister_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
 	unregister_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	unregister_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
 	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
@@ -50,12 +51,8 @@ function diaspora_load_module(&$a, &$b) {
 }
 
 
-
-function diaspora_permissions_update(&$a,&$b) {
-	if($b['recipient']['hubloc_network'] === 'diaspora' 
-		|| $b['recipient']['hubloc_network'] === 'friendica-over-diaspora') {
-
-		// @FIXME prevent looping or resharing once we've succeeded.
+function diaspora_permissions_create(&$a,&$b) {
+	if($b['recipient']['hubloc_network'] === 'diaspora' || $b['recipient']['hubloc_network'] === 'friendica-over-diaspora') {
 
 		$b['deliveries'] = diaspora_share($b['sender'],$b['recipient']);
 		if($b['deliveries'])
@@ -79,8 +76,6 @@ function diaspora_dispatch_public($msg) {
 	$r = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network like '%%diaspora%%' and xchan_addr = '%s' ) and channel_removed = 0 ",
 		dbesc($msg['author'])
 	);
-
-
 
 
 	// also need to look for those following public streams
@@ -905,7 +900,9 @@ function diaspora_request($importer,$xml) {
 
 			if($default_perms) {
 				// Send back a sharing notification to them
-				diaspora_share($importer,$new_connection[0]);
+				$x = diaspora_share($importer,$new_connection[0]);
+				if($x)
+					proc_run('php','include/deliver.php',$x);
 		
 			}
 
