@@ -404,11 +404,11 @@ function statusnet_settings(&$a,&$s) {
 			}
 
 			$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-				'$field'	=> array('statusnet-enable', t('Allow posting to GNU social'), $checked, t('If enabled your public postings can be posted to the associated Twitter account'), array(t('No'),t('Yes')))
+				'$field'	=> array('statusnet-enable', t('Allow posting to GNU social'), $checked, t('If enabled your public postings can be posted to the associated GNU-social account'), array(t('No'),t('Yes')))
 			));
 
 			$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-				'$field'	=> array('statusnet-default', t('Allow posting to GNU social'), $defchecked, t('If enabled your public postings will be posted to the associated Twitter account by default'), array(t('No'),t('Yes')))
+				'$field'	=> array('statusnet-default', t('Post to GNU social by default'), $defchecked, t('If enabled your public postings will be posted to the associated GNU-social account by default'), array(t('No'),t('Yes')))
 			));
 
 			//FIXME: Doesn't seem to work. But maybe we don't want it all.
