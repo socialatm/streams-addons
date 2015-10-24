@@ -113,7 +113,6 @@ function nsfw_addon_settings_post(&$a,&$b) {
 
 function nsfw_prepare_body(&$a,&$b) {
 
-
 	$words = null;
 
 	if(get_pconfig(local_channel(),'nsfw','disable'))
@@ -188,6 +187,7 @@ function nsfw_prepare_body(&$a,&$b) {
 	}	
 	if($found) {
 		$rnd = random_string(8);
-		$b['html'] = '<div id="nsfw-wrap-' . $rnd . '" class="fakelink" onclick=openClose(\'nsfw-' . $rnd . '\'); >' . sprintf( t('%s - Click to open/close'),$orig_word ) . '</div><div id="nsfw-' . $rnd . '" style="display: none; " >' . $b['html'] . '</div>';  
+		$b['html'] = '<div id="nsfw-wrap-' . $rnd . '" class="fakelink nsfw-wrap" onclick="openClose(\'nsfw-html-' . $rnd . '\'); openClose(\'nsfw-photo-' . $rnd . '\');">' . sprintf( t('%s - click to open/close'),$orig_word ) . '</div><div id="nsfw-html-' . $rnd . '" style="display: none; " >' . $b['html'] . '</div>';
+		$b['photo'] = (($b['photo']) ? '<div id="nsfw-photo-' . $rnd . '" style="display: none; " >' . $b['photo'] . '</div>' : '');
 	}
 }
