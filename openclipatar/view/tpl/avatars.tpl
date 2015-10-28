@@ -1,3 +1,4 @@
+<div class="generic-content-wrapper-styled">
 <div class="openclipatar-header">
 
 <h4>{{$selectmsg}}</h4>
@@ -14,4 +15,4 @@
 <div class="openclipatar-end"></div>
 <script>$(document).ready(function() { loadingPage = false; window.grabProfile = function(o) { o.href = [o.href,'&profile=',$('#profile-photo-profiles').val()].join(''); }; });</script>
 <div id="page-spinner"></div>
-
+</div>
