@@ -99,6 +99,8 @@ function createUploader() {
 				uploader.setParams( {
 					album			:	document.getElementById('photos-upload-album').value,
 					visible         :   document.getElementById('id_visible').checked,
+					description          :   document.getElementById('id_description').value,
+					body          :   document.getElementById('id_body').value,
 					source          :   document.getElementById('photos-upload-source').value,
 					group_allow		:	acl.allow_gid.join(','),
 					contact_allow	:	acl.allow_cid.join(','),
@@ -109,6 +111,8 @@ function createUploader() {
 				uploader.setParams( {
 					album			:	document.getElementById('photos-upload-album').value,
 					visible         :   document.getElementById('id_visible').checked,
+					description          :   document.getElementById('id_description').value,
+					body          :   document.getElementById('id_body').value,
 					source          :   document.getElementById('photos-upload-source').value,
 					group_allow		:	getSelected(document.getElementById('group_allow')).join(','),
 					contact_allow	:	getSelected(document.getElementById('contact_allow')).join(','),
