@@ -1309,14 +1309,17 @@ function diaspora_reshare($importer,$xml,$msg) {
 	$datarray['app']  = 'Diaspora';
 
 
-
 	$tgroup = tgroup_check($importer['channel_id'],$datarray);
 
 	if((! $importer['system']) && (! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'send_stream')) && (! $tgroup)) {
-		logger('diaspora_post: Ignoring this author.');
+		logger('diaspora_reshare: Ignoring this author.');
 		return 202;
 	}
 
+	if(! post_is_importable($datarray,$contact)) {
+		logger('diaspora_reshare: filtering this author.');
+		return 202;
+	}
 
 	$result = item_store($datarray);
 
