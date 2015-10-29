@@ -196,7 +196,7 @@ function dirstats_cron(&$a, $b) {
 			$chatrooms = $r[0]['total'];
 			set_config('dirstats','chatrooms',$chatrooms);
 		}
-		$r = q("select count(distinct xtag_term) as total from `xtag`");
+		$r = q("select count(distinct xtag_term) as total from xtag where xtag_flags = 0");
 		if ($r) {
 			$tags = $r[0]['total'];
 			set_config('dirstats','tags',$tags);

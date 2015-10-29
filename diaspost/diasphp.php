@@ -20,6 +20,8 @@ class Diasphp {
 		curl_setopt ($ch, CURLOPT_COOKIEJAR, $this->cookiejar);
 		curl_setopt ($ch, CURLOPT_FOLLOWLOCATION, true);
 		curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt ($ch, CURLOPT_TIMEOUT, 60);
+
 
 		$output = curl_exec ($ch);
 		curl_close($ch);
@@ -48,6 +50,7 @@ class Diasphp {
 		curl_setopt ($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt ($ch, CURLOPT_POST, true);
 		curl_setopt ($ch, CURLOPT_POSTFIELDS, $poststr);
+		curl_setopt ($ch, CURLOPT_TIMEOUT, 60);
 
 		curl_exec ($ch);
 		$info = curl_getinfo($ch);
@@ -87,6 +90,7 @@ class Diasphp {
 		curl_setopt ($ch, CURLOPT_POST, true);
 		curl_setopt ($ch, CURLOPT_POSTFIELDS, $datatopost);
 		curl_setopt ($ch, CURLOPT_HTTPHEADER, $headers);
+		curl_setopt ($ch, CURLOPT_TIMEOUT, 60);
 
 		curl_exec ($ch);
 		$info = curl_getinfo($ch);
