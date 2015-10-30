@@ -141,6 +141,27 @@ function nsfw_prepare_body(&$a,&$b) {
 				continue;
 			}
 
+			if(strpos($word,'lang=') === 0) {
+				if(! $b['item']['lang'])
+					continue;
+				$l = substr($word,5);
+				if(strlen($l) && strcasecmp($l,$b['item']['lang']) !== 0)
+					continue;
+				$found = true;
+				$orig_word = $word;
+				break;
+			}
+			if(strpos($word,'lang!=') === 0) {
+				if(! $b['item']['lang'])
+					continue;
+				$l = substr($word,6);
+				if(strlen($l) && strcasecmp($l,$b['item']['lang']) === 0)
+					continue;
+				$found = true;
+				$orig_word = $word;
+				break;
+			}
+
 			$orig_word = $word;
 
 			if(strpos($word,'::') !== false) {
