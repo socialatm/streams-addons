@@ -33,15 +33,15 @@ function wppost_unload () {
 
 
 function wppost_jot_nets(&$a,&$b) {
+
     if((! local_channel()) || (! perm_is_allowed(local_channel(),'','view_stream')))
         return;
-
+	
     $wp_post = get_pconfig(local_channel(),'wppost','post');
     if(intval($wp_post) == 1) {
         $wp_defpost = get_pconfig(local_channel(),'wppost','post_by_default');
         $selected = ((intval($wp_defpost) == 1) ? ' checked="checked" ' : '');
         $b .= '<div class="profile-jot-net"><input type="checkbox" name="wppost_enable" ' . $selected . ' value="1" /> <img src="addon/wppost/wordpress-logo.png" /> ' . t('Post to WordPress') . '</div>';
-
     }
 }
 

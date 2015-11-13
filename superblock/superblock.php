@@ -95,6 +95,17 @@ function superblock_enotify_store(&$a,&$b) {
 				$found = true;
 				break;
 			}
+			// also block notifications from any conversations they initiated or own
+			if(is_array($b['parent_item'])) {
+				if(strpos($b['parent_item']['owner_xchan'],$word) !== false) {
+					$found = true;
+					break;
+				}
+				if(strpos($b['parent_item']['author_xchan'],$word) !== false) {
+					$found = true;
+					break;
+				}
+			}
 		}
 	}
 	if($found) {
