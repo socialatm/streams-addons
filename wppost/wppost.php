@@ -89,7 +89,8 @@ function wppost_settings(&$a,&$s) {
 	));
 
 	$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
-		'$field'	=> array('wp_blog', t('WordPress API URL'), $wp_blog, '')
+		'$field'	=> array('wp_blog', t('WordPress API URL'), $wp_blog, 
+					 t('Typically https://your-blog.tld/xmlrpc.php'))
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
