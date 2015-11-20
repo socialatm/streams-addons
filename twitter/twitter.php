@@ -224,8 +224,11 @@ function twitter_settings(&$a,&$s) {
 			require_once('library/twitteroauth.php');
 			$connection = new TwitterOAuth($ckey,$csecret,$otoken,$osecret);
 			$details = $connection->get('account/verify_credentials');
+			$twitpic = $details->profile_image_url;
+			if((strstr(z_root(),'https')) && (! strstr($twitpic,'https')))
+				$twitpic = str_replace('http:','https:',$twitpic);
 
-			$sc .= '<div id="twitter-info" ><img id="twitter-avatar" src="'.$details->profile_image_url.'" /><p id="twitter-info-block">'. t('Currently connected to: ') .'<a href="https://twitter.com/'.$details->screen_name.'" target="_twitter">'.$details->screen_name.'</a><br /><em>'.$details->description.'</em></p></div>';
+			$sc .= '<div id="twitter-info" ><img id="twitter-avatar" src="'.$twitpic.'" /><p id="twitter-info-block">'. t('Currently connected to: ') .'<a href="https://twitter.com/'.$details->screen_name.'" target="_twitter">'.$details->screen_name.'</a><br /><em>'.$details->description.'</em></p></div>';
 			$sc .= '<div class="clear"></div>';
 			//FIXME no hidewall in Red
 			if ($a->user['hidewall']) {
