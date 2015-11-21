@@ -9,6 +9,7 @@
 
 require_once('include/permissions.php');
 require_once('library/IXR_Library.php');
+require_once('include/DReport.php');
 
 
 function wppost_load () {
@@ -149,8 +150,18 @@ function wppost_post_local(&$a,&$b) {
      $b['postopts'] .= 'wppost';
 }
 
-
-
+function wppost_dreport($dr,$update) {
+	$dr->update($update);
+	$xx = $dr->get();
+	q("insert into dreport ( dreport_mid, dreport_site, dreport_recip, dreport_result, dreport_time, dreport_xchan ) values ( '%s', '%s','%s','%s','%s','%s' ) ",
+		dbesc($xx['message_id']),
+		dbesc($xx['location']),
+		dbesc($xx['recipient']),
+		dbesc($xx['status']),
+		dbesc(datetime_convert($xx['date'])),
+		dbesc($xx['sender'])
+	);
+}
 
 function wppost_send(&$a,&$b) {
 
@@ -170,13 +181,19 @@ function wppost_send(&$a,&$b) {
 
 	logger('Wordpress xpost invoked', LOGGER_DEBUG);
 
+	$wp_blog     = get_pconfig($b['uid'],'wppost','wp_blog');
+
+	$DR = new DReport(z_root(),$b['owner_xchan'],'wordpress wordpress',$b['mid']);
+
 	if($edited) {
 		$r = q("select * from item_id where service = 'wordpress' and iid = %d and uid = %d limit 1",
 			intval($b['id']),
 			intval($b['uid'])
 		);
-		if(! $r)
+		if(! $r) {
+			wppost_dreport($DR,'original post not found');
 			return;
+		}
 
 		$wp_post_id = intval(basename($r[0]['sid']));
 	}
@@ -203,7 +220,6 @@ function wppost_send(&$a,&$b) {
 
 	$wp_username = get_pconfig($b['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['uid'],'wppost','wp_password'));
-	$wp_blog     = get_pconfig($b['uid'],'wppost','wp_blog');
 
 	if($wp_username && $wp_password && $wp_blog) {
 
@@ -231,12 +247,14 @@ function wppost_send(&$a,&$b) {
 
 		if(! $res) {
 			logger('wppost: failed.');
+			wppost_dreport($DR,'connection or authentication failure');
 			return;
 		}
 
 		$post_id = $client->getResponse();
 
 		logger('wppost: returns post_id: ' . $post_id, LOGGER_DEBUG);
+		wppost_dreport($DR,(($edited) ? 'updated' : 'posted'));
 
 		if($edited)
 			return;
@@ -250,6 +268,8 @@ function wppost_send(&$a,&$b) {
 			);
 		}
 	}
+	else
+		wppost_dreport($DR,'wppost settings incomplete');
 }
 
 
