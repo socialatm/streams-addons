@@ -187,15 +187,11 @@ function diaspora_dispatch($importer,$msg) {
 
 function diaspora_is_blacklisted($s) {
 
-	$bl1 = get_config('system','blacklisted_sites');
-	if(is_array($bl1) && $bl1) {
-		foreach($bl1 as $bl) {
-			if($bl && strpos($s,$bl) !== false) {
-				logger('diaspora_is_blacklisted: blacklisted ' . $s);
-				return true;
-			}
-		}
+	if(! check_siteallowed($s)) {
+		logger('blacklisted site: ' . $s);
+		return true;
 	}
+
 	return false;
 }
 

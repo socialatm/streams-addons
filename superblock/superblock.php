@@ -72,6 +72,10 @@ function superblock_addon_settings_post(&$a,&$b) {
 		set_pconfig(local_channel(),'system','blocked',trim($_POST['superblock-words']));
 		info( t('SUPERBLOCK Settings saved.') . EOL);
 	}
+	
+	build_sync_packet();
+
+
 }
 
 function superblock_enotify_store(&$a,&$b) {
