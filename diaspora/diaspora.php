@@ -242,6 +242,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 	if($arr['location'])
 		return;
 
+		
 
 	$target_item = $arr['target_item'];
 
@@ -298,6 +299,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $contact['xchan_pubkey'])
 				continue;
 
+
 			if(intval($target_item['item_deleted']) 
 				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['followup'])) {
 				// send both top-level retractions and relayable retractions for owner to relay
@@ -335,6 +337,12 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		$contact = $arr['hub'];
 
+		if($arr['packet_type'] == 'refresh') {
+			$qi = diaspora_profile_change($arr['channel'],$contact);
+			if($qi)
+				$arr['queued'][] = $qi;
+			return;
+		}
 		if(intval($target_item['item_deleted']) 
 			&& ($target_item['mid'] === $target_item['parent_mid'])) {
 			// top-level retraction
@@ -832,7 +840,7 @@ function diaspora_request($importer,$xml) {
 		);
 
 		$conv['messages'] = array($msg);
-		$tpl = get_markup_template('diaspora_conversation.tpl');
+		$tpl = get_markup_template('diaspora_conversation.tpl','addon/diaspora');
 		$xmsg = replace_macros($tpl, array('$conv' => $conv));
 
 		$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($xmsg,$importer,$ret,$importer['channel_prvkey'],$ret['xchan_pubkey'],false)));
@@ -2421,7 +2429,7 @@ function diaspora_profile($importer,$xml,$msg) {
 		return;
 
 	if($contact['blocked']) {
-		logger('diaspora_post: Ignoring this author.');
+		logger('diaspora_profile: Ignoring this author.');
 		return 202;
 	}
 
@@ -2499,7 +2507,7 @@ function diaspora_share($owner,$contact) {
 
 	$theiraddr = $contact['xchan_addr'];
 
-	$tpl = get_markup_template('diaspora_share.tpl');
+	$tpl = get_markup_template('diaspora_share.tpl','addon/diaspora');
 	$msg = replace_macros($tpl, array(
 		'$sender' => $myaddr,
 		'$recipient' => $theiraddr
@@ -2514,7 +2522,7 @@ function diaspora_unshare($owner,$contact) {
 	$a = get_app();
 	$myaddr = $owner['channel_address'] . '@' .  substr($a->get_baseurl(), strpos($a->get_baseurl(),'://') + 3);
 
-	$tpl = get_markup_template('diaspora_retract.tpl');
+	$tpl = get_markup_template('diaspora_retract.tpl','addon/diaspora');
 	$msg = replace_macros($tpl, array(
 		'$guid'   => $owner['channel_guid'] . str_replace('.','',get_app()->get_hostname()),
 		'$type'   => 'Person',
@@ -2566,7 +2574,7 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 */
 
 	if(intval($item['item_consensus'])) {
-		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl'), array(
+		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
 			'$guid_q' => '10000000',
 			'$question' => t('Please choose'),
 			'$guid_y' => '00000001',
@@ -2578,7 +2586,7 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 		));
 	}
 	elseif($item['resource_type'] === 'event' && $item['resource_id']) {
-		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl'), array(
+		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
 			'$guid_q' => '1000000',
 			'$question' => t('Please choose'),
 			'$guid_y' => '0000001',
@@ -2600,7 +2608,7 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 	// Detect a share element and do a reshare
 	// see: https://github.com/Raven24/diaspora-federation/blob/master/lib/diaspora-federation/entities/reshare.rb
 	if (!$item['item_private'] AND ($ret = diaspora_is_reshare($item["body"]))) {
-		$tpl = get_markup_template('diaspora_reshare.tpl');
+		$tpl = get_markup_template('diaspora_reshare.tpl','addon/diaspora');
 		$msg = replace_macros($tpl, array(
 			'$root_handle' => xmlify($ret['root_handle']),
 			'$root_guid' => $ret['root_guid'],
@@ -2611,7 +2619,7 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 			'$provider' => (($item['app']) ? $item['app'] : t('$projectname'))
 		));
 	} else {
-		$tpl = get_markup_template('diaspora_post.tpl');
+		$tpl = get_markup_template('diaspora_post.tpl','addon/diaspora');
 		$msg = replace_macros($tpl, array(
 			'$body' => xmlify($body),
 			'$guid' => $item['mid'],
@@ -2693,7 +2701,7 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 		return;
 	$mysite = substr($a->get_baseurl(),strpos($a->get_baseurl(),'://') + 3) . '/photo';
 
-	$tpl = get_markup_template('diaspora_photo.tpl');
+	$tpl = get_markup_template('diaspora_photo.tpl','addon/diaspora');
 	foreach($images as $image) {
 		if(! stristr($image['path'],$mysite))
 			continue;
@@ -2756,7 +2764,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 
 
 	if(($item['verb'] === ACTIVITY_LIKE) && ($parent['mid'] === $parent['parent_mid'])) {
-		$tpl = get_markup_template('diaspora_like.tpl');
+		$tpl = get_markup_template('diaspora_like.tpl','addon/diaspora');
 		$like = true;
 		$target_type = 'Post';
 		$positive = 'true';
@@ -2765,7 +2773,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 			logger('diaspora_send_followup: received deleted "like". Those should go to diaspora_send_retraction');
 	}
 	else {
-		$tpl = get_markup_template('diaspora_comment.tpl');
+		$tpl = get_markup_template('diaspora_comment.tpl','addon/diaspora');
 		$like = false;
 	}
 
@@ -2869,7 +2877,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 		$target_type = ( ($item['verb'] === ACTIVITY_LIKE && (! $sublike)) ? 'Like' : 'Comment');
 
 		$sql_sign_id = 'retract_iid';
-		$tpl = get_markup_template('diaspora_relayable_retraction.tpl');
+		$tpl = get_markup_template('diaspora_relayable_retraction.tpl','addon/diaspora');
 	}
 	elseif(($item['verb'] === ACTIVITY_LIKE) && (! $sublike)) {
 		$like = true;
@@ -2878,10 +2886,10 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 //		$positive = (intval($item['item_deleted']) ? 'false' : 'true');
 		$positive = 'true';
 
-		$tpl = get_markup_template('diaspora_like_relay.tpl');
+		$tpl = get_markup_template('diaspora_like_relay.tpl','addon/diaspora');
 	}
 	else { // item is a comment
-		$tpl = get_markup_template('diaspora_comment_relay.tpl');
+		$tpl = get_markup_template('diaspora_comment_relay.tpl','addon/diaspora');
 	}
 
 	$diaspora_meta = (($item['diaspora_meta']) ? json_decode($item['diaspora_meta'],true) : '');
@@ -2977,12 +2985,12 @@ function diaspora_send_retraction($item,$owner,$contact,$public_batch = false) {
 	// Check whether the retraction is for a top-level post or whether it's a relayable
 	if( $item['mid'] !== $item['parent_mid'] ) {
 
-		$tpl = get_markup_template('diaspora_relay_retraction.tpl');
+		$tpl = get_markup_template('diaspora_relay_retraction.tpl','addon/diaspora');
 		$target_type = (($item['verb'] === ACTIVITY_LIKE) ? 'Like' : 'Comment');
 	}
 	else {
 		
-		$tpl = get_markup_template('diaspora_signed_retract.tpl');
+		$tpl = get_markup_template('diaspora_signed_retract.tpl','addon/diaspora');
 		$target_type = 'StatusMessage';
 	}
 
@@ -3053,12 +3061,12 @@ function diaspora_send_mail($item,$owner,$contact) {
 	);
 
 	if($item['reply']) {
-		$tpl = get_markup_template('diaspora_message.tpl');
+		$tpl = get_markup_template('diaspora_message.tpl','addon/diaspora');
 		$xmsg = replace_macros($tpl, array('$msg' => $msg));
 	}
 	else {
 		$conv['messages'] = array($msg);
-		$tpl = get_markup_template('diaspora_conversation.tpl');
+		$tpl = get_markup_template('diaspora_conversation.tpl','addon/diaspora');
 		$xmsg = replace_macros($tpl, array('$conv' => $conv));
 	}
 
@@ -3395,3 +3403,97 @@ function diaspora_feature_settings(&$a,&$s) {
 	return;
 
 }
+
+
+function diaspora_profile_change($channel,$recip) {
+
+
+	$channel_id = $channel['channel_id'];
+	
+	$r = q("SELECT profile.uid AS profile_uid, profile.* , channel.* FROM profile
+		left join channel on profile.uid = channel.channel_id
+		WHERE channel.channel_id = %d and profile.is_default = 1 ",
+		intval($channel_id)
+	);
+
+	$profile_visible = perm_is_allowed(local_channel(),'','view_profile');
+
+	if(! $r)
+		return;
+	$profile = $r[0];
+
+	$handle = xmlify($channel['channel_address'] . '@' . get_app()->get_hostname());
+	$first = xmlify(((strpos($profile['channel_name'],' '))
+		? trim(substr($profile['channel_name'],0,strpos($profile['channel_name'],' '))) : $profile['channel_name']));
+	$last = xmlify((($first === $profile['channel_name']) ? '' : trim(substr($profile['channel_name'],strlen($first)))));
+	$large = xmlify(z_root() . '/photo/profile/300/' . $profile['profile_uid'] . '.jpg');
+	$medium = xmlify(z_root() . '/photo/profile/100/' . $profile['profile_uid'] . '.jpg');
+	$small = xmlify(z_root() . '/photo/profile/50/'  . $profile['profile_uid'] . '.jpg');
+
+	$searchable = xmlify((($profile_visible) ? 'true' : 'false' ));
+
+	if($searchable === 'true') {
+		$dob = '1000-00-00';
+
+		if(($profile['dob']) && ($profile['dob'] != '0000-00-00'))
+			$dob = ((intval($profile['dob'])) ? intval($profile['dob']) : '1000') . '-' . datetime_convert('UTC','UTC',$profile['dob'],'m-d');
+		$gender = xmlify($profile['gender']);
+		$about = xmlify($profile['about']);
+		require_once('include/bbcode.php');
+		$about = xmlify(strip_tags(bbcode($about)));
+		$location = '';
+		if($profile['locality'])
+			$location .= $profile['locality'];
+		if($profile['region']) {
+			if($location)
+				$location .= ', ';
+			$location .= $profile['region'];
+		}
+		if($profile['country_name']) {
+			if($location)
+				$location .= ', ';
+			$location .= $profile['country_name'];
+		}
+		$location = xmlify($location);
+		$tags = '';
+		if($profile['pub_keywords']) {
+			$kw = str_replace(',',' ',$profile['keywords']);
+			$kw = str_replace('  ',' ',$kw);
+			$arr = explode(' ',$profile['keywords']);
+			if(count($arr)) {
+				for($x = 0; $x < 5; $x ++) {
+					if(trim($arr[$x]))
+						$tags .= '#' . trim($arr[$x]) . ' ';
+				}
+			}
+		}
+		$tags = xmlify(trim($tags));
+	}
+
+	$tpl = get_markup_template('diaspora_profile.tpl','addon/diaspora');
+
+	$msg = replace_macros($tpl,array(
+		'$handle' => $handle,
+		'$first' => $first,
+		'$last' => $last,
+		'$large' => $large,
+		'$medium' => $medium,
+		'$small' => $small,
+		'$dob' => $dob,
+		'$gender' => $gender,
+		'$about' => $about,
+		'$location' => $location,
+		'$searchable' => $searchable,
+		'$tags' => $tags
+	));
+
+	logger('profile_change: ' . $msg, LOGGER_ALL);
+
+
+	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$channel,$recip,$channel['channel_prvkey'],$recip['xchan_pubkey'],true)));
+	return(diaspora_queue($channel,$recip,$slap,true));
+
+}
+
+
+
