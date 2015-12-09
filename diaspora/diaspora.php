@@ -3416,7 +3416,7 @@ function diaspora_profile_change($channel,$recip) {
 		intval($channel_id)
 	);
 
-	$profile_visible = perm_is_allowed(local_channel(),'','view_profile');
+	$profile_visible = perm_is_allowed($channel_id,'','view_profile');
 
 	if(! $r)
 		return;
@@ -3438,7 +3438,7 @@ function diaspora_profile_change($channel,$recip) {
 		if(($profile['dob']) && ($profile['dob'] != '0000-00-00'))
 			$dob = ((intval($profile['dob'])) ? intval($profile['dob']) : '1000') . '-' . datetime_convert('UTC','UTC',$profile['dob'],'m-d');
 		$gender = xmlify($profile['gender']);
-		$about = xmlify($profile['about']);
+		$about = $profile['about'];
 		require_once('include/bbcode.php');
 		$about = xmlify(strip_tags(bbcode($about)));
 		$location = '';
@@ -3456,7 +3456,7 @@ function diaspora_profile_change($channel,$recip) {
 		}
 		$location = xmlify($location);
 		$tags = '';
-		if($profile['pub_keywords']) {
+		if($profile['keywords']) {
 			$kw = str_replace(',',' ',$profile['keywords']);
 			$kw = str_replace('  ',' ',$kw);
 			$arr = explode(' ',$profile['keywords']);
