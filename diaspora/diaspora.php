@@ -275,6 +275,9 @@ function diaspora_process_outbound(&$a, &$arr) {
 		}
 
 		foreach($r as $contact) {
+
+			if(! deliverable_singleton($contact))
+				continue;
 	
 			if($arr['mail']) {
 				$qi = diaspora_send_mail($arr['item'],$arr['channel'],$contact);
@@ -369,8 +372,6 @@ function diaspora_process_outbound(&$a, &$arr) {
 		}
 
 	}
-
-
 }
 
 
@@ -785,8 +786,15 @@ function diaspora_request($importer,$xml) {
 
 		$newperms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
 
-		$r = q("update abook set abook_their_perms = %d where abook_id = %d and abook_channel = %d",
+		$abook_instance = $contact['abook_instance'];
+		if($abook_instance) 
+			$abook_instance .= ',';
+		$abook_instance .= z_root();
+
+
+		$r = q("update abook set abook_their_perms = %d, $abook_instance = '%s' where abook_id = %d and abook_channel = %d",
 			intval($newperms),
+			dbesc($abook_instance),
 			intval($contact['abook_id']),
 			intval($importer['channel_id'])
 		);
@@ -870,7 +878,7 @@ function diaspora_request($importer,$xml) {
 		$closeness = 80;
 
 
-	$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_my_perms, abook_their_perms, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending) values ( %d, %d, '%s', %d, %d, %d, '%s', '%s', '%s', '%s', %d )",
+	$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_my_perms, abook_their_perms, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending, abook_instance ) values ( %d, %d, '%s', %d, %d, %d, '%s', '%s', '%s', '%s', %d, '%s' )",
 		intval($importer['channel_account_id']),
 		intval($importer['channel_id']),
 		dbesc($ret['xchan_hash']),
@@ -881,7 +889,8 @@ function diaspora_request($importer,$xml) {
 		dbesc(datetime_convert()),
 		dbesc(datetime_convert()),
 		dbesc(NULL_DATE),
-		intval(($default_perms) ? 0 : 1)
+		intval(($default_perms) ? 0 : 1),
+		dbesc(z_root())
 	);
 		
 
@@ -2306,7 +2315,7 @@ function diaspora_retraction($importer,$xml) {
 		require_once('include/Contact.php');
 		contact_remove($importer['channel_id'],$contact['abook_id']);
 	}
-	elseif($type === 'Post') {
+	elseif(($type === 'Post') || ($type === 'StatusMessage')) {
 		$r = q("select * from item where mid = '%s' and uid = %d limit 1",
 			dbesc('guid'),
 			intval($importer['channel_id'])
@@ -3146,7 +3155,7 @@ function diaspora_follow_allow(&$a, &$b) {
 	if($allowed === false)
 		$allowed = 1;
 	$b['allowed'] = $allowed;
-
+	$b['singleton'] = 1;  // this network does not support channel clones
 }
 
 
