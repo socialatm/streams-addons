@@ -101,7 +101,7 @@ function diaspost_queue_hook(&$a,&$b) {
 
 		if (!$success) {
 			logger('diaspost_queue: delayed');
-			update_queue_time($x['id']);
+			update_queue_item($x['id']);
 		}
 	}
 }

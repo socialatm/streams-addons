@@ -15,6 +15,7 @@ require_once('include/crypto.php');
 require_once('include/items.php');
 require_once('include/bb2diaspora.php');
 require_once('include/contact_selectors.php');
+require_once('include/queue_fn.php');
 
 
 
@@ -3116,18 +3117,15 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 
 	$hash = random_string();
 
-	q("insert into outq ( outq_hash, outq_account, outq_channel, outq_driver, outq_posturl, outq_async, outq_created, outq_updated, outq_notify, outq_msg ) values ( '%s', %d, %d, '%s', '%s', %d, '%s', '%s', '%s', '%s' )",
-		dbesc($hash),
-		intval($owner['account_id']),
-		intval($owner['channel_id']),
-		dbesc('post'),
-		dbesc($dest_url),
-		intval(1),
-		dbesc(datetime_convert()),
-		dbesc(datetime_convert()),
-		dbesc(''),
-		dbesc($slap)
-	);
+	queue_insert(array(
+		'hash'       => $hash,
+		'account_id' => $owner['channel_account_id'],
+		'channel_id' => $owner['channel_id'],
+		'driver'     => 'post',
+		'posturl'    => $dest_url,
+		'notify'     => '',
+		'msg'        => $slap
+	));
 
 	if($message_id) {
 		q("insert into dreport ( dreport_mid, dreport_site, dreport_recip, dreport_result, dreport_time, dreport_xchan, dreport_queue ) values ( '%s','%s','%s','%s','%s','%s','%s' ) ",
