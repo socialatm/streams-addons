@@ -32,7 +32,6 @@ function diaspora_load() {
 function diaspora_unload() {
 	unregister_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
 	unregister_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
-	unregister_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	unregister_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
 	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
@@ -53,7 +52,7 @@ function diaspora_load_module(&$a, &$b) {
 
 
 function diaspora_permissions_create(&$a,&$b) {
-	if($b['recipient']['hubloc_network'] === 'diaspora' || $b['recipient']['hubloc_network'] === 'friendica-over-diaspora') {
+	if($b['recipient']['xchan_network'] === 'diaspora' || $b['recipient']['xchan_network'] === 'friendica-over-diaspora') {
 
 		$b['deliveries'] = diaspora_share($b['sender'],$b['recipient']);
 		if($b['deliveries'])
