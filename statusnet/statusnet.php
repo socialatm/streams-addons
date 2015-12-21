@@ -616,23 +616,34 @@ function statusnet_post_hook(&$a,&$b) {
 	 * Post to statusnet
 	 */
 
-	if((! is_item_normal($b)) || $b['item_private'] || ($b['created'] !== $b['edited']))
+	if(! strstr($b['postopts'],'statusnet')) {
+		logger('crosspost not enabled.');
 		return;
+	}
 
-	if(! perm_is_allowed($b['uid'],'','view_stream'))
+	if((! is_item_normal($b)) || $b['item_private'] || ($b['created'] !== $b['edited'])) {
+		logger('not a usable post. ' . print_r($b,true),LOGGER_DEBUG);
 		return;
+	}
 
-	if(! strstr($b['postopts'],'statusnet'))
+	if(! perm_is_allowed($b['uid'],'','view_stream')) {
+		logger('permissions prevent crossposting.',LOGGER_DEBUG);
 		return;
+	}
 
-	if($b['parent'] != $b['id'])
+
+	if($b['parent'] != $b['id']) {
+		logger('not a top level post.', LOGGER_DEBUG);
 		return;
+	}
 
 	// if posts comes from statusnet don't send it back
-	if($b['app'] == "StatusNet")
+	if($b['app'] == "StatusNet") {
+		logger('potential recursion. Crosspost ignored.');
 		return;
+	}
 
-		logger('statusnet post invoked');
+	logger('statusnet post invoked');
 
 	load_pconfig($b['uid'], 'statusnet');
 
