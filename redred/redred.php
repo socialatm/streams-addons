@@ -4,6 +4,7 @@
  * Name: Red-to-Red Connector (redred)
  * Description: Relay public postings to another Red channel
  * Version: 1.0
+ * Maintainer: none
  */
  
 /*

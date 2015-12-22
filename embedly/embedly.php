@@ -5,6 +5,7 @@
  * Description: Use oohemebed.com to resolve oembeds that can't be discovered directly
  * Version: 1.0
  * Author: Mike Macgirvin <mike@zothub.com>
+ * Maintainer: none
  * 
  */
 

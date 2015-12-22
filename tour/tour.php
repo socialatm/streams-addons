@@ -5,7 +5,7 @@
      * Description: Show a tour for new users
      * Version: 0.0
      * Author: Stefan Parviainen <pafcu@iki.fi>
-     *
+     * Maintainer: none
      */
 
 // Make addon a proper module so that we can use tour_content, tour_post functions

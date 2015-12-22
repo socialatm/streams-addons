@@ -5,6 +5,7 @@
  * Version: 1.2
  * Author: Tobias Diekershoff <https://f.diekershoff.de/profile/tobias>
  * Author: Klaus Weidenbach
+ * Maintainer: none
  */
 
 /*   Piwik Analytics Plugin for red#

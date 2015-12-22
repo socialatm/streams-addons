@@ -4,6 +4,7 @@
  * Name: Red-to-Friendica Connector (rtof)
  * Description: Relay public postings to a connected Friendica account
  * Version: 1.0
+ * Maintainer: none
  */
  
 /*

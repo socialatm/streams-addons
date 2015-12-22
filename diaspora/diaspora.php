@@ -6,6 +6,7 @@
  * Description: Diaspora Protocol (Experimental, Unsupported)
  * Version: 1.0
  * Author: Mike Macgirvin
+ * Maintainer: none
  */
 
 

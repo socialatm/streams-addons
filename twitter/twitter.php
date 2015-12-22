@@ -6,6 +6,7 @@
  * Author: Tobias Diekershoff <https://f.diekershoff.de/profile/tobias>
  * Author: Michael Vogel <https://pirati.ca/profile/heluecht>
  * Author: Mike Macgirvin <https://zothub.com/channel/mike>
+ * Maintainer: none
  *
  * Copyright (c) 2011-2013 Tobias Diekershoff, Michael Vogel
  * All rights reserved.

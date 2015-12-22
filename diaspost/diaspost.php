@@ -5,6 +5,7 @@
  * Description: Post to Diaspora
  * Version: 0.1
  * Author: Michael Vogel <heluecht@pirati.ca>
+ * Maintainer: none
  */
 
 function diaspost_load() {

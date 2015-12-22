@@ -5,6 +5,7 @@
  * Version: 1.0.5
  * Author: Tobias Diekershoff <http://diekershoff.homeunix.net/friendika/profile/tobias>
  * Author: Michael Vogel <https://pirati.ca/profile/heluecht>
+ * Maintainer: none
  */
 
 require_once('include/permissions.php');

@@ -4,6 +4,7 @@
  * Description: Show link to Red bug site at bottom of page
  * Version: 1.0
  * Author: Mike Macgirvin <mike@macgirvin.com>
+ * Maintainer: Mike Macgirvin <mike@macgirvin.com>
  */
 
 

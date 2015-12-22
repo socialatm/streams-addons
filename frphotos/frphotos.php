@@ -5,6 +5,7 @@
  * Description: Migrate photo albums from Friendica to a Red channel
  * Version: 1.0
  * Author: Mike Macgirvin
+ * Maintainer: none
  */
 
 
