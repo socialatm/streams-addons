@@ -8,6 +8,7 @@
  */
 
 require_once('include/permissions.php');
+require_once('include/queue_fn.php');
  
 /*   GNU social Plugin for Hubzilla
  *
@@ -110,6 +111,7 @@ function statusnet_load() {
 	register_hook('post_local', 'addon/statusnet/statusnet.php', 'statusnet_post_local');
 	register_hook('jot_networks',	'addon/statusnet/statusnet.php', 'statusnet_jot_nets');
 	register_hook('cron', 'addon/statusnet/statusnet.php', 'statusnet_cron');
+	register_hook('queue_deliver', 'addon/statusnet/statusnet.php', 'statusnet_queue_deliver');
 
 	logger("loaded statusnet");
 }
@@ -122,6 +124,7 @@ function statusnet_unload() {
 	unregister_hook('post_local', 'addon/statusnet/statusnet.php', 'statusnet_post_local');
 	unregister_hook('jot_networks',	'addon/statusnet/statusnet.php', 'statusnet_jot_nets');
 	unregister_hook('cron', 'addon/statusnet/statusnet.php', 'statusnet_cron');
+	unregister_hook('queue_deliver', 'addon/statusnet/statusnet.php', 'statusnet_queue_deliver');
 
 }
 
@@ -759,19 +762,68 @@ function statusnet_post_hook(&$a,&$b) {
 
 		// and now dent it :-)
 		if(strlen($msg)) {
-					//$result = $dent->post('statuses/update', array('status' => $msg));
-					$result = $dent->post('statuses/update', $postdata);
-					logger('statusnet_post send, result: ' . print_r($result, true).
-						   "\nmessage: ".$msg, LOGGER_DEBUG);
-					logger("Original post: ".print_r($b, true)."\nPost Data: ".print_r($postdata, true), LOGGER_DEBUG);
-					if ($result->error) {
-						logger('Send to GNU social failed: "' . $result->error . '"');
-					}
+			$result = $dent->post('statuses/update', $postdata);
+			logger('statusnet_post send, result: ' . print_r($result, true).
+				   "\nmessage: ".$msg, LOGGER_DEBUG);
+			logger("Original post: ".print_r($b, true)."\nPost Data: ".print_r($postdata, true), LOGGER_DEBUG);
+			if ($result->error) {
+				logger('Send to GNU social failed: queued."' . $result->error . '"');
+				// @fixme - unable to queue media uploads
+				if(! $image) {
+					queue_insert(array(
+						'hash' => random_string(),
+						'account_id' => $b['aid'],
+						'channel_id' => $b['uid'],
+						'driver'     => 'statusnet',
+						'posturl'    => $api,
+						'msg'        => $msg
+					));
 				}
+			}
+		}
 		if ($tempfile != "")
 			unlink($tempfile);
 	}
 }
+
+
+function statusnet_queue_deliver(&$a,&$b) {
+
+	$outq = $b['outq'];
+
+	if($outq['outq_driver'] !== 'statusnet')
+		return;
+
+	$ckey	 = get_pconfig($outq['outq_channel'], 'statusnet', 'consumerkey');
+	$csecret = get_pconfig($outq['outq_channel'], 'statusnet', 'consumersecret');
+	$otoken  = get_pconfig($outq['outq_channel'], 'statusnet', 'oauthtoken');
+	$osecret = get_pconfig($outq['outq_channel'], 'statusnet', 'oauthsecret');
+
+	if($ckey && $csecret && $otoken && $osecret) {
+		$dent = new StatusNetOAuth($api,$ckey,$csecret,$otoken,$osecret);
+		if($outq['outq_msg']) {
+			$result = $dent->post('statuses/update', array('status' => $outq['outq_msg']));
+			if ($result->error) {
+				logger('Send to GNU social failed: "' . $result->error . '"');
+				update_queue_item($outq['outq_hash']);
+			}
+			else {
+				logger('statusnet_post send, result: ' . print_r($result, true) 
+					. "\nmessage: " . $outq['outq_msg'], LOGGER_DEBUG);
+				remove_queue_item($outq['outq_hash']);
+			}
+		}
+	}
+
+	$b['handled'] = true;
+}
+
+
+
+
+
+
+
 
 function statusnet_plugin_admin_post(&$a){
 	
