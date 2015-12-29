@@ -363,13 +363,14 @@ function diaspora_process_outbound(&$a, &$arr) {
 			return;
 		}
 		elseif($arr['top_level_post']) {
-			logger('delivery: diaspora status: ' . $loc);
-			$qi = diaspora_send_status($target_item,$arr['channel'],$contact,true);
-			if($qi)
-				$arr['queued'][] = $qi;
-			return;
+			if(perm_is_allowed($arr['channel'],'','view_stream')) {
+				logger('delivery: diaspora status: ' . $loc);
+				$qi = diaspora_send_status($target_item,$arr['channel'],$contact,true);
+				if($qi)
+					$arr['queued'][] = $qi;
+				return;
+			}
 		}
-
 	}
 }
 
