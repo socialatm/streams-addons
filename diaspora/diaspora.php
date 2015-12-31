@@ -205,6 +205,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			$arr = array(
 				'channel' => $channel,
 				'env_recips' => $env_recips,
+				'packet_recips' => $packet_recips,
 				'recipients' => $recipients,
 				'item' => $item,
 				'target_item' => $target_item,
@@ -253,14 +254,23 @@ function diaspora_process_outbound(&$a, &$arr) {
 			$target_item['body'] = crypto_unencapsulate(json_decode($target_item['body'],true),$key);
 	}
 
+	$prv_recips = $arr['env_recips'];
 
+	// The Diaspora profile message is unusual in that it is sent privately. 
 
-	if($arr['env_recips']) {
+	if($arr['cmd'] === 'refresh_all' && $arr['recipients']) {
+		$prv_recips = array();
+		foreach($arr['recipients'] as $r) {
+			$prv_recips[] = array('hash' => trim($r,"'"));
+		}
+	}
+			
+	if($prv_recips) {
 		$hashes = array();
 
 		// re-explode the recipients, but only for this hub/pod
 
-		foreach($arr['env_recips'] as $recip)
+		foreach($prv_recips as $recip)
 			$hashes[] = "'" . $recip['hash'] . "'";
 
 		$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_url = '%s' 
@@ -275,9 +285,17 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		foreach($r as $contact) {
 
-			if(! deliverable_singleton($contact))
+			if(! deliverable_singleton($contact)) {
+				logger('not deliverable from this hub');
 				continue;
+			}
 	
+			if($arr['packet_type'] == 'refresh') {
+				$qi = diaspora_profile_change($arr['channel'],$contact);
+				if($qi)
+					$arr['queued'][] = $qi;
+				return;
+			}
 			if($arr['mail']) {
 				$qi = diaspora_send_mail($arr['item'],$arr['channel'],$contact);
 				if($qi)
@@ -339,12 +357,6 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		$contact = $arr['hub'];
 
-		if($arr['packet_type'] == 'refresh') {
-			$qi = diaspora_profile_change($arr['channel'],$contact);
-			if($qi)
-				$arr['queued'][] = $qi;
-			return;
-		}
 		if(intval($target_item['item_deleted']) 
 			&& ($target_item['mid'] === $target_item['parent_mid'])) {
 			// top-level retraction
@@ -423,7 +435,7 @@ function find_diaspora_person_by_handle($handle) {
 	);
 	if($r) {
 		$person = $r[0];
-		logger('find_diaspora_person_by handle: in cache ' . print_r($r,true), LOGGER_DATA);
+		logger('find_diaspora_person_by handle: in cache ' . print_r($r,true), LOGGER_DATA, LOG_DEBUG);
 		if($person['xchan_name_date'] < datetime_convert('UTC','UTC', 'now - 1 month')) {
 			logger('Updating Diaspora cached record for ' . $handle);
 			$refresh = true;
@@ -442,7 +454,7 @@ function find_diaspora_person_by_handle($handle) {
 			);
 			if($r) {
 				$person = $r[0];
-				logger('find_diaspora_person_by handle: discovered ' . print_r($r,true), LOGGER_DATA);
+				logger('find_diaspora_person_by handle: discovered ' . print_r($r,true), LOGGER_DATA, LOG_DEBUG);
 			}
 		}
 	}
@@ -462,7 +474,7 @@ function diaspora_pubmsg_build($msg,$channel,$contact,$prvkey,$pubkey) {
 
 	$a = get_app();
 
-	logger('diaspora_pubmsg_build: ' . $msg, LOGGER_DATA);
+	logger('diaspora_pubmsg_build: ' . $msg, LOGGER_DATA, LOG_DEBUG);
 
     $handle = $channel['channel_address'] . '@' . get_app()->get_hostname();
 
@@ -496,7 +508,7 @@ $magic_env = <<< EOT
 </diaspora>
 EOT;
 
-	logger('diaspora_pubmsg_build: magic_env: ' . $magic_env, LOGGER_DATA);
+	logger('diaspora_pubmsg_build: magic_env: ' . $magic_env, LOGGER_DATA, LOG_DEBUG);
 	return $magic_env;
 
 }
@@ -510,12 +522,12 @@ function diaspora_msg_build($msg,$channel,$contact,$prvkey,$pubkey,$public = fal
 	if($public)
 		return diaspora_pubmsg_build($msg,$channel,$contact,$prvkey,$pubkey);
 
-	logger('diaspora_msg_build: ' . $msg, LOGGER_DATA);
+	logger('diaspora_msg_build: ' . $msg, LOGGER_DATA, LOG_DEBUG);
 
 	// without a public key nothing will work
 
 	if(! $pubkey) {
-		logger('diaspora_msg_build: pubkey missing: contact id: ' . $contact['abook_id']);
+		logger('diaspora_msg_build: pubkey missing: contact id: ' . $contact['abook_id'], LOG_ERR);
 		return '';
 	}
 
@@ -547,7 +559,7 @@ function diaspora_msg_build($msg,$channel,$contact,$prvkey,$pubkey,$public = fal
 	$signable_data = $data  . '.' . base64url_encode($type,false) . '.'
 		. base64url_encode($encoding,false) . '.' . base64url_encode($alg,false) ;
 
-	logger('diaspora_msg_build: signable_data: ' . $signable_data, LOGGER_DATA);
+	logger('diaspora_msg_build: signable_data: ' . $signable_data, LOGGER_DATA, LOG_DEBUG);
 
 	$signature = rsa_sign($signable_data,$prvkey);
 	$sig = base64url_encode($signature,false);
@@ -571,7 +583,7 @@ EOT;
 
 	$b64_encrypted_outer_key_bundle = base64_encode($encrypted_outer_key_bundle);
 
-	logger('outer_bundle: ' . $b64_encrypted_outer_key_bundle . ' key: ' . $pubkey, LOGGER_DATA);
+	logger('outer_bundle: ' . $b64_encrypted_outer_key_bundle . ' key: ' . $pubkey, LOGGER_DATA, LOG_DEBUG);
 
 	$encrypted_header_json_object = json_encode(array('aes_key' => base64_encode($encrypted_outer_key_bundle), 
 		'ciphertext' => base64_encode($ciphertext)));
@@ -592,7 +604,7 @@ $magic_env = <<< EOT
 </diaspora>
 EOT;
 
-	logger('diaspora_msg_build: magic_env: ' . $magic_env, LOGGER_DATA);
+	logger('diaspora_msg_build: magic_env: ' . $magic_env, LOGGER_DATA, LOG_DEBUG);
 	return $magic_env;
 
 }
@@ -688,7 +700,7 @@ function diaspora_decode($importer,$xml) {
 		$base = $dom;
 
 	if(! $base) {
-		logger('mod-diaspora: unable to locate salmon data in xml ');
+		logger('mod-diaspora: unable to locate salmon data in xml ', LOGGER_NORMAL, LOG_ERR);
 		http_status_exit(400);
 	}
 
@@ -741,14 +753,14 @@ function diaspora_decode($importer,$xml) {
  	$key = get_diaspora_key($author_link);
 
 	if(! $key) {
-		logger('mod-diaspora: Could not retrieve author key.');
+		logger('mod-diaspora: Could not retrieve author key.', LOGGER_NORMAL, LOG_WARNING);
 		http_status_exit(400);
 	}
 
 	$verify = rsa_verify($signed_data,$signature,$key);
 
 	if(! $verify) {
-		logger('mod-diaspora: Message did not verify. Discarding.');
+		logger('mod-diaspora: Message did not verify. Discarding.', LOGGER_NORMAL, LOG_ERR);
 		http_status_exit(400);
 	}
 
@@ -3104,17 +3116,17 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 	else
 		$dest_url = $contact['hubloc_callback'] . '/users/' . $contact['hubloc_guid'];
 
+
 	logger('diaspora_queue: URL: ' . $dest_url, LOGGER_DEBUG);	
 
 	if(intval(get_config('system','diaspora_test')))
 		return false;
 
 	$a = get_app();
-	$logid = random_string(4);
-
-	logger('diaspora_queue: ' . $logid . ' ' . $dest_url, LOGGER_DEBUG);
 
 	$hash = random_string();
+
+	logger('diaspora_queue: ' . $hash . ' ' . $dest_url, LOGGER_DEBUG);
 
 	queue_insert(array(
 		'hash'       => $hash,
@@ -3411,7 +3423,7 @@ function diaspora_feature_settings(&$a,&$s) {
 }
 
 
-function diaspora_profile_change($channel,$recip) {
+function diaspora_profile_change($channel,$recip,$public_batch = false) {
 
 
 	$channel_id = $channel['channel_id'];
@@ -3438,11 +3450,15 @@ function diaspora_profile_change($channel,$recip) {
 
 	$searchable = xmlify((($profile_visible) ? 'true' : 'false' ));
 
+	$nsfw = (($channel['channel_pageflags'] & (PAGE_ADULT|PAGE_CENSORED)) ? 'true' : 'false' );
+
 	if($searchable === 'true') {
 		$dob = '1000-00-00';
 
 		if(($profile['dob']) && ($profile['dob'] != '0000-00-00'))
 			$dob = ((intval($profile['dob'])) ? intval($profile['dob']) : '1000') . '-' . datetime_convert('UTC','UTC',$profile['dob'],'m-d');
+		if($dob === '1000-00-00')
+			$dob = '';
 		$gender = xmlify($profile['gender']);
 		$about = $profile['about'];
 		require_once('include/bbcode.php');
@@ -3490,14 +3506,14 @@ function diaspora_profile_change($channel,$recip) {
 		'$about' => $about,
 		'$location' => $location,
 		'$searchable' => $searchable,
+		'$nsfw' => $nsfw,
 		'$tags' => $tags
 	));
 
-	logger('profile_change: ' . $msg, LOGGER_ALL);
+	logger('profile_change: ' . $msg, LOGGER_ALL, LOG_DEBUG);
 
-
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$channel,$recip,$channel['channel_prvkey'],$recip['xchan_pubkey'],true)));
-	return(diaspora_queue($channel,$recip,$slap,true));
+	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$channel,$recip,$channel['channel_prvkey'],$recip['xchan_pubkey'],$public_batch)));
+	return(diaspora_queue($channel,$recip,$slap,$public_batch));
 
 }
 
