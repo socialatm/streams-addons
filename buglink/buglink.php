@@ -1,7 +1,7 @@
 <?php
 /**
  * Name: BugLink
- * Description: Show link to Red bug site at bottom of page
+ * Description: Show link to project bug site at bottom of page
  * Version: 1.0
  * Author: Mike Macgirvin <mike@macgirvin.com>
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
@@ -9,7 +9,6 @@
 
 
 function buglink_load() { register_hook('page_end', 'addon/buglink/buglink.php', 'buglink_active'); }
-
 
 function buglink_unload() { unregister_hook('page_end', 'addon/buglink/buglink.php', 'buglink_active'); }
 
