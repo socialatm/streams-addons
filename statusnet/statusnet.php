@@ -913,7 +913,7 @@ function statusnet_cron($a,$b) {
 			return;
 		}
 	}
-	logger('statusnet: cron_start');
+	logger('statusnet: cron_start', LOGGER_DEBUG);
 
 	$rand = db_getfunc('rand');
 
@@ -925,7 +925,7 @@ function statusnet_cron($a,$b) {
 		}
 	}
 
-	logger('statusnet: cron_end');
+	logger('statusnet: cron_end', LOGGER_DEBUG);
 
 	set_config('statusnet','last_poll', time());
 }

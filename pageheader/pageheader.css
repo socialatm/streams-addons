@@ -1,0 +1,23 @@
+#pageheader-label {
+	float: left;
+	width: 300px;
+	margin-top: 10px;
+}
+
+#pageheader-words {
+	float: left;
+	margin-top: 10px;
+	width: 400px;
+	height: 150px;
+}
+
+#pageheader-submit {
+	margin-top: 15px;
+}
+
+.pageheader {
+    text-align: center;
+	width 100%;
+	margin-top: 25px;
+	font-size: 20px;
+}
