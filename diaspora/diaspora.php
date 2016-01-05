@@ -23,6 +23,7 @@ require_once('include/queue_fn.php');
 function diaspora_load() {
 	register_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
 	register_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
+	register_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	register_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
 	register_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
@@ -33,6 +34,7 @@ function diaspora_load() {
 function diaspora_unload() {
 	unregister_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
 	unregister_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
+	unregister_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	unregister_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
 	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
@@ -58,6 +60,13 @@ function diaspora_permissions_create(&$a,&$b) {
 		$b['deliveries'] = diaspora_share($b['sender'],$b['recipient']);
 		if($b['deliveries'])
 			$b['success'] = 1;
+	}
+}
+
+function diaspora_permissions_update(&$a,&$b) {
+	if($b['recipient']['xchan_network'] === 'diaspora' || $b['recipient']['xchan_network'] === 'friendica-over-diaspora') {
+		discover_by_webbie($b['recipient']['xchan_hash']);
+		$b['success'] = 1;
 	}
 }
 
