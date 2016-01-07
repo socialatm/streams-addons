@@ -3147,7 +3147,7 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 		'msg'        => $slap
 	));
 
-	if($message_id) {
+	if($message_id && (! get_config('system','disable_dreport'))) {
 		q("insert into dreport ( dreport_mid, dreport_site, dreport_recip, dreport_result, dreport_time, dreport_xchan, dreport_queue ) values ( '%s','%s','%s','%s','%s','%s','%s' ) ",
 			dbesc($message_id),
 			dbesc($dest_url),
