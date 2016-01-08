@@ -49,13 +49,10 @@ function pageheader_addon_settings(&$a,&$s) {
 
 
     $sc .= '<div class="settings-block">';
-    $sc .= '<h3>' . t('"pageheader" Settings') . '</h3>';
     $sc .= '<div id="pageheader-wrapper">';
     $sc .= '<label id="pageheader-label" for="pageheader-words">' . t('Message to display on every page on this server') . ' </label>';
-    $sc .= '<textarea id="pageheader-words" type="text" name="pageheader-words">' . $words . '</textarea>';
+    $sc .= '<textarea class="form-control form-group" id="pageheader-words" type="text" name="pageheader-words">' . $words . '</textarea>';
     $sc .= '</div><div class="clear"></div>';
-
-    $sc .= '<div class="settings-submit-wrapper" ><input type="submit" id="pageheader-submit" name="pageheader-submit" class="settings-submit" value="' . t('Save Settings') . '" /></div></div>';
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
 		'$addon' 	=> array('pageheader', t('Pageheader Settings'), '', t('Submit')),
