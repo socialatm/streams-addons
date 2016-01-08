@@ -38,24 +38,15 @@ function pageheader_addon_settings(&$a,&$s) {
 	if(! is_site_admin())
 		return;
 
-    /* Add our stylesheet to the page so we can make our settings look nice */
-
-    $a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . $a->get_baseurl() . '/addon/pageheader/pageheader.css' . '" media="all" />' . "\r\n";
-
-
 	$words = get_config('pageheader','text');
 	if(! $words)
 		$words = '';
 
-
     $sc .= '<div class="settings-block">';
-    $sc .= '<h3>' . t('"pageheader" Settings') . '</h3>';
     $sc .= '<div id="pageheader-wrapper">';
     $sc .= '<label id="pageheader-label" for="pageheader-words">' . t('Message to display on every page on this server') . ' </label>';
-    $sc .= '<textarea id="pageheader-words" type="text" name="pageheader-words">' . $words . '</textarea>';
+    $sc .= '<textarea class="form-control form-group" id="pageheader-words" type="text" name="pageheader-words">' . $words . '</textarea>';
     $sc .= '</div><div class="clear"></div>';
-
-    $sc .= '<div class="settings-submit-wrapper" ><input type="submit" id="pageheader-submit" name="pageheader-submit" class="settings-submit" value="' . t('Save Settings') . '" /></div></div>';
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
 		'$addon' 	=> array('pageheader', t('Pageheader Settings'), '', t('Submit')),
@@ -84,11 +75,9 @@ function pageheader_fetch($a,&$b) {
 		$s = file_get_contents('pageheader.html');
 	} else {
 		$s = get_config('pageheader', 'text');
+		$a->page['htmlhead'] .= '<link rel="stylesheet" type="text/css" href="' . $a->get_baseurl() . '/addon/pageheader/pageheader.css' . '" media="all" />' . "\r\n";
 	}
 
-    $a->page['htmlhead'] .= '<link rel="stylesheet" type="text/css" href="'
-        . $a->get_baseurl() . '/addon/pageheader/pageheader.css' . '" media="all" />' . "\r\n";
-    
-    if($s)
-        $b .= '<div class="pageheader">' . $s . '</div>';
+	if($s)
+		$b .= '<div class="pageheader">' . $s . '</div>';
 }
