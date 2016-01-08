@@ -38,15 +38,9 @@ function pageheader_addon_settings(&$a,&$s) {
 	if(! is_site_admin())
 		return;
 
-    /* Add our stylesheet to the page so we can make our settings look nice */
-
-    $a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . $a->get_baseurl() . '/addon/pageheader/pageheader.css' . '" media="all" />' . "\r\n";
-
-
 	$words = get_config('pageheader','text');
 	if(! $words)
 		$words = '';
-
 
     $sc .= '<div class="settings-block">';
     $sc .= '<div id="pageheader-wrapper">';
@@ -81,11 +75,9 @@ function pageheader_fetch($a,&$b) {
 		$s = file_get_contents('pageheader.html');
 	} else {
 		$s = get_config('pageheader', 'text');
+		$a->page['htmlhead'] .= '<link rel="stylesheet" type="text/css" href="' . $a->get_baseurl() . '/addon/pageheader/pageheader.css' . '" media="all" />' . "\r\n";
 	}
 
-    $a->page['htmlhead'] .= '<link rel="stylesheet" type="text/css" href="'
-        . $a->get_baseurl() . '/addon/pageheader/pageheader.css' . '" media="all" />' . "\r\n";
-    
-    if($s)
-        $b .= '<div class="pageheader">' . $s . '</div>';
+	if($s)
+		$b .= '<div class="pageheader">' . $s . '</div>';
 }
