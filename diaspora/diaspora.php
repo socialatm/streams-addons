@@ -2524,9 +2524,9 @@ function diaspora_share($owner,$contact) {
 
 	$myaddr = $owner['channel_address'] . '@' . substr($a->get_baseurl(), strpos($a->get_baseurl(),'://') + 3);
 
-	if(! array_key_exists('xchan_hash',$contact)) {
+	if(! array_key_exists('hubloc_hash',$contact)) {
 		$c = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where xchan_hash = '%s' limit 1",
-			dbesc($contact['hubloc_hash'])
+			dbesc($contact['xchan_hash'])
 		);
 		if(! $c) {
 			logger('diaspora_share: ' . $contact['hubloc_hash']  . ' not found.');
