@@ -3044,7 +3044,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 	$myaddr = $owner['channel_address'] . '@' .  get_app()->get_hostname();
 
 	$r = q("select * from conv where guid = '%s' and uid = %d limit 1",
-		intval($item['conv_guid']),
+		dbesc($item['conv_guid']),
 		intval($item['channel_id'])
 	);
 
