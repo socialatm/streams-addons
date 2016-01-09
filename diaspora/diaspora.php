@@ -2010,7 +2010,7 @@ function diaspora_message($importer,$xml,$msg) {
 	q("insert into mail ( `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', '%s', '%d','%s','%s','%s')",
 		intval($importer['channel_id']),
 		intval($conversation['id']),
-		intval($conversation['guid']),
+		dbesc($conversation['guid']),
 		dbesc($person['xchan_hash']),
 		dbesc($importer['xchan_hash']),
 		dbesc($subject),
