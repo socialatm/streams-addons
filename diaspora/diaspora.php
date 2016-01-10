@@ -813,7 +813,7 @@ function diaspora_request($importer,$xml) {
 		$abook_instance .= z_root();
 
 
-		$r = q("update abook set abook_their_perms = %d, $abook_instance = '%s' where abook_id = %d and abook_channel = %d",
+		$r = q("update abook set abook_their_perms = %d, abook_instance = '%s' where abook_id = %d and abook_channel = %d",
 			intval($newperms),
 			dbesc($abook_instance),
 			intval($contact['abook_id']),
