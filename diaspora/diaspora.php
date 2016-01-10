@@ -1959,7 +1959,7 @@ function diaspora_message($importer,$xml,$msg) {
 
 	$reply = 0;
 
-	$subject = $conversation['subject']; 
+	$subject = $conversation['subject']; //this is already encoded
 	$body = diaspora2bb($msg_text);
 
 
@@ -2002,8 +2002,9 @@ function diaspora_message($importer,$xml,$msg) {
 	}
 
 	$key = get_config('system','pubkey');
-	if($subject)
-		$subject = str_rot47(base64url_encode($subject));
+	//seems doubble encoded here?
+	//if($subject)
+	//	$subject = str_rot47(base64url_encode($subject));
 	if($body)
 		$body  = str_rot47(base64url_encode($body));
 
