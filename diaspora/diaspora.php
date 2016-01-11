@@ -1739,7 +1739,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 	$participant_handles = notags(unxmlify($xml->participant_handles));
 	$created_at = datetime_convert('UTC','UTC',notags(unxmlify($xml->created_at)));
 
-	$parent_uri = $diaspora_handle . ':' . $guid;
+	$parent_uri = $guid;
  
 	$messages = $xml->message;
 
@@ -1861,6 +1861,8 @@ function diaspora_conversation($importer,$xml,$msg) {
 			}
 		}
 
+		$stored_parent_mid = (($msg_parent_guid == $msg_conversation_guid) ? $msg_guid : $msg_parent_guid);
+
 		$r = q("select id from mail where mid = '%s' limit 1",
 			dbesc($message_id)
 		);
@@ -1874,7 +1876,8 @@ function diaspora_conversation($importer,$xml,$msg) {
 		if($body)
 			$body  = str_rot47(base64url_encode($body));
 
-		q("insert into mail ( `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
+		q("insert into mail ( `account_id`, `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
+			intval($importer['channel_account_id']),
 			intval($importer['channel_id']),
 			intval($conversation['id']),
 			dbesc($conversation['guid']),
@@ -1884,7 +1887,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			dbesc($body),
 			intval(1),
 			dbesc($msg_guid),
-			dbesc($parent_uri),
+			dbesc($stored_parent_mid),
 			dbesc($msg_created_at)
 		);
 
@@ -1939,8 +1942,8 @@ function diaspora_message($importer,$xml,$msg) {
 		return;
 	}
 
-	if(($contact['rel'] == CONTACT_IS_FOLLOWER) || ($contact['blocked']) || ($contact['readonly'])) { 
-		logger('diaspora_message: Ignoring this author.');
+	if(! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'post_mail')) {
+		logger('Ignoring this author.');
 		return 202;
 	}
 
@@ -1971,8 +1974,16 @@ function diaspora_message($importer,$xml,$msg) {
 	}
 
 
+	$parent_ptr = $msg_parent_guid;
+	if($parent_ptr === $conversation['guid']) {
+		$x = q("select mid from mail where conv_guid = '%s' and channel_id = %d order by id asc limit 1",
+			dbesc($conversation['guid']),
+			intval($importer['channel_id'])
+		);
+		if($x)
+			$parent_ptr = $x[0]['mid'];
+	}
 
-	$message_id = $msg_diaspora_handle . ':' . $msg_guid;
 
 	$author_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($xml->created_at) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
 
@@ -1993,7 +2004,7 @@ function diaspora_message($importer,$xml,$msg) {
 	}
 
 	$r = q("select id from mail where mid = '%s' and channel_id = %d limit 1",
-		dbesc($message_id),
+		dbesc($msg_guid),
 		intval($importer['channel_id'])
 	);
 	if($r) {
@@ -2001,14 +2012,14 @@ function diaspora_message($importer,$xml,$msg) {
 		return;
 	}
 
+
 	$key = get_config('system','pubkey');
-	//seems doubble encoded here?
-	//if($subject)
-	//	$subject = str_rot47(base64url_encode($subject));
+	// $subject is a copy of the already obscured subject from the conversation structure
 	if($body)
 		$body  = str_rot47(base64url_encode($body));
 
-	q("insert into mail ( `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, '%s', '%s', '%s', '%s', '%s', '%d','%s','%s','%s')",
+	q("insert into mail ( `account_id`, `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`, mail_isreply) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', %d)",
+		intval($importer['channel_account_id']),
 		intval($importer['channel_id']),
 		intval($conversation['id']),
 		dbesc($conversation['guid']),
@@ -2018,8 +2029,9 @@ function diaspora_message($importer,$xml,$msg) {
 		dbesc($body),
 		intval(1),
 		dbesc($msg_guid),
-		dbesc($parent_uri),
-		dbesc($msg_created_at)
+		dbesc($parent_ptr),
+		dbesc($msg_created_at),
+		intval(1)
 	);
 
 	q("update conv set updated = '%s' where id = %d",
@@ -3056,6 +3068,8 @@ function diaspora_send_mail($item,$owner,$contact) {
 	$cnv = $r[0];
 	$cnv['subject'] = base64url_decode(str_rot47($cnv['subject']));
 
+
+
 	$conv = array(
 		'guid' => xmlify($cnv['guid']),
 		'subject' => xmlify($cnv['subject']),
@@ -3071,18 +3085,22 @@ function diaspora_send_mail($item,$owner,$contact) {
 			$item['body'] = base64url_decode(str_rot47($item['body']));
 	}
 
+	
+	// If this is the beginning of a mail thread the parent_guid needs to be the conversation guid
+
+	$parent_ptr = (($item['mail_isreply']) ? $item['parent_mid'] : $cnv['guid']);
 
 	$body = bb2diaspora($item['body']);
 	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
  
-	$signed_text =  $item['mid'] . ';' . $cnv['guid'] . ';' . $body .  ';' 
+	$signed_text =  $item['mid'] . ';' . $parent_ptr . ';' . $body .  ';' 
 		. $created . ';' . $myaddr . ';' . $cnv['guid'];
 
 	$sig = base64_encode(rsa_sign($signed_text,$owner['channel_prvkey'],'sha256'));
 
 	$msg = array(
 		'guid' => xmlify($item['mid']),
-		'parent_guid' => xmlify($cnv['guid']),
+		'parent_guid' => xmlify($parent_ptr),
 		'parent_author_signature' => (($item['reply']) ? null : xmlify($sig)),
 		'author_signature' => xmlify($sig),
 		'text' => xmlify($body),
@@ -3091,7 +3109,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 		'conversation_guid' => xmlify($cnv['guid'])
 	);
 
-	if($item['reply']) {
+	if($item['mail_isreply']) {
 		$tpl = get_markup_template('diaspora_message.tpl','addon/diaspora');
 		$xmsg = replace_macros($tpl, array('$msg' => $msg));
 	}
