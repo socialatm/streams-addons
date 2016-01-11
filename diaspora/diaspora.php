@@ -1896,26 +1896,20 @@ function diaspora_conversation($importer,$xml,$msg) {
 			intval($conversation['id'])
 		);
 
-		require_once('include/enotify.php');
-/******
-//FIXME
+		$z = q("select * from mail where mid = '%s' and channel_id = %d limit 1",
+			dbesc($msg_guid),
+			intval($importer['channel_id'])
+		);
 
+		require_once('include/enotify.php');
 		notification(array(
+			'from_xchan' => $person['xchan_hash'],
+			'to_xchan' => $importer['channel_hash'],
 			'type' => NOTIFY_MAIL,
-			'notify_flags' => $importer['notify-flags'],
-			'language' => $importer['language'],
-			'to_name' => $importer['username'],
-			'to_email' => $importer['email'],
-			'uid' =>$importer['importer_uid'],
-			'item' => array('subject' => $subject, 'body' => $body),
-			'source_name' => $person['name'],
-			'source_link' => $person['url'],
-			'source_photo' => $person['thumb'],
+			'item' => $z[0],
 			'verb' => ACTIVITY_POST,
 			'otype' => 'mail'
 		));
-*******/
-
 	}
 
 	return;
@@ -2038,6 +2032,21 @@ function diaspora_message($importer,$xml,$msg) {
 		dbesc(datetime_convert()),
 		intval($conversation['id'])
 	);
+
+	$z = q("select * from mail where mid = '%s' and channel_id = %d limit 1",
+		dbesc($msg_guid),
+		intval($importer['channel_id'])
+	);
+
+	require_once('include/enotify.php');
+	notification(array(
+		'from_xchan' => $person['xchan_hash'],
+		'to_xchan' => $importer['channel_hash'],
+		'type' => NOTIFY_MAIL,
+		'item' => $z[0],
+		'verb' => ACTIVITY_POST,
+		'otype' => 'mail'
+	));
 
 	return;
 }
