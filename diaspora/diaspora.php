@@ -287,6 +287,13 @@ function diaspora_process_outbound(&$a, &$arr) {
 			dbesc($arr['hub']['hubloc_url'])
 		);
 
+		// send to public relay server - probably needs work once the spec solidifies
+
+		if($arr['top_level_post']) {
+			$r[] = array('hubloc_callback' => 'https://relay.iliketoast.net/receive', 'xchan_pubkey' => 'bogus');
+		}
+
+
 		if(! $r) {
 			logger('diaspora_process_outbound: no recipients');
 			return; 
@@ -1970,6 +1977,7 @@ function diaspora_message($importer,$xml,$msg) {
 
 	$parent_ptr = $msg_parent_guid;
 	if($parent_ptr === $conversation['guid']) {
+		// this should always be the case
 		$x = q("select mid from mail where conv_guid = '%s' and channel_id = %d order by id asc limit 1",
 			dbesc($conversation['guid']),
 			intval($importer['channel_id'])
@@ -3074,10 +3082,16 @@ function diaspora_send_mail($item,$owner,$contact) {
 		logger('diaspora_send_mail: conversation not found.');
 		return;
 	}
+
+	$z = q("select from_xchan from mail where conv_guid = '%s' and channel_id = %d and mid = parent_mid limit 1",
+		dbesc($item['conv_guid']),
+		intval($item['channel_id'])
+	);
+
+	$conv_owner = (($z && $z[0]['from_xchan'] === $owner['channel_hash']) ? true : false);
+
 	$cnv = $r[0];
 	$cnv['subject'] = base64url_decode(str_rot47($cnv['subject']));
-
-
 
 	$conv = array(
 		'guid' => xmlify($cnv['guid']),
@@ -3087,6 +3101,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 		'participant_handles' => xmlify($cnv['recips'])
 	);
 
+
 	if(array_key_exists('mail_obscured',$item) && intval($item['mail_obscured'])) {
 		if($item['title'])
 			$item['title'] = base64url_decode(str_rot47($item['title']));
@@ -3095,9 +3110,9 @@ function diaspora_send_mail($item,$owner,$contact) {
 	}
 
 	
-	// If this is the beginning of a mail thread the parent_guid needs to be the conversation guid
+	// the parent_guid needs to be the conversation guid
 
-	$parent_ptr = (($item['mail_isreply']) ? $item['parent_mid'] : $cnv['guid']);
+	$parent_ptr = $cnv['guid'];
 
 	$body = bb2diaspora($item['body']);
 	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
@@ -3110,7 +3125,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 	$msg = array(
 		'guid' => xmlify($item['mid']),
 		'parent_guid' => xmlify($parent_ptr),
-		'parent_author_signature' => (($item['reply']) ? null : xmlify($sig)),
+		'parent_author_signature' => (($conv_owner) ? xmlify($sig) : null),
 		'author_signature' => xmlify($sig),
 		'text' => xmlify($body),
 		'created_at' => xmlify($created),
