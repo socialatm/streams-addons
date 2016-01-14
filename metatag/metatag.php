@@ -54,6 +54,13 @@ case "/";
     $a->page['htmlhead'] .= "$keywords" . "\r\n";
 break;
 
+case "/&JS=1";
+    $a->page['htmlhead'] .= "$hreflang" . "\r\n";
+    $a->page['htmlhead'] .= "$robots" . "\r\n";
+    $a->page['htmlhead'] .= "$description" . "\r\n";
+    $a->page['htmlhead'] .= "$keywords" . "\r\n";
+break;
+
 case "/register";
     $a->page['htmlhead'] .= "$hreflang" . "\r\n";
     $a->page['htmlhead'] .= "$robots" . "\r\n";
