@@ -111,6 +111,13 @@ $a->page['htmlhead'] .= "$descriptionA" . "\r\n";
     $a->page['htmlhead'] .= "$keywords" . "\r\n";
 break;
 
+case "/apps&JS=1";
+    $a->page['htmlhead'] .= "$hreflang" . "\r\n";
+    $a->page['htmlhead'] .= "$robots" . "\r\n";
+$a->page['htmlhead'] .= "$descriptionA" . "\r\n";
+    $a->page['htmlhead'] .= "$keywords" . "\r\n";
+break;
+
 case "/directory";
     $a->page['htmlhead'] .= "$hreflang" . "\r\n";
     $a->page['htmlhead'] .= "$robots" . "\r\n";
