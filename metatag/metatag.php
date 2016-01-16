@@ -68,6 +68,20 @@ $a->page['htmlhead'] .= "$descriptionR" . "\r\n";
     $a->page['htmlhead'] .= "$keywords" . "\r\n";
 break;
 
+case "/register&JS=1";
+    $a->page['htmlhead'] .= "$hreflang" . "\r\n";
+    $a->page['htmlhead'] .= "$robots" . "\r\n";
+$a->page['htmlhead'] .= "$descriptionR" . "\r\n";
+    $a->page['htmlhead'] .= "$keywords" . "\r\n";
+break;
+
+case "/login&JS=1";
+    $a->page['htmlhead'] .= "$hreflang" . "\r\n";
+    $a->page['htmlhead'] .= "$robots" . "\r\n";
+$a->page['htmlhead'] .= "$descriptionL" . "\r\n";
+    $a->page['htmlhead'] .= "$keywords" . "\r\n";
+break;
+
 case "/login";
     $a->page['htmlhead'] .= "$hreflang" . "\r\n";
     $a->page['htmlhead'] .= "$robots" . "\r\n";
@@ -81,6 +95,15 @@ case "/pubsites";
 $a->page['htmlhead'] .= "$descriptionP" . "\r\n";
     $a->page['htmlhead'] .= "$keywords" . "\r\n";
 break;
+
+case "/pubsub&JS=1";
+    $a->page['htmlhead'] .= "$hreflang" . "\r\n";
+    $a->page['htmlhead'] .= "$robots" . "\r\n";
+$a->page['htmlhead'] .= "$descriptionP" . "\r\n";
+    $a->page['htmlhead'] .= "$keywords" . "\r\n";
+break;
+
+
 case "/apps";
     $a->page['htmlhead'] .= "$hreflang" . "\r\n";
     $a->page['htmlhead'] .= "$robots" . "\r\n";
@@ -89,6 +112,13 @@ $a->page['htmlhead'] .= "$descriptionA" . "\r\n";
 break;
 
 case "/directory";
+    $a->page['htmlhead'] .= "$hreflang" . "\r\n";
+    $a->page['htmlhead'] .= "$robots" . "\r\n";
+$a->page['htmlhead'] .= "$descriptionD" . "\r\n";
+    $a->page['htmlhead'] .= "$keywords" . "\r\n";
+break;
+
+case "/directory&JS=1";
     $a->page['htmlhead'] .= "$hreflang" . "\r\n";
     $a->page['htmlhead'] .= "$robots" . "\r\n";
 $a->page['htmlhead'] .= "$descriptionD" . "\r\n";
