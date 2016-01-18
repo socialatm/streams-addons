@@ -5,6 +5,7 @@
  * Version: 1.0
  * Author: Mike Macgirvin <mike@macgirvin.com>
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
+ * MinVersion: 1.0
  */
 
 
