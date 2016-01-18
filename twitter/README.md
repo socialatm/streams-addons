@@ -35,7 +35,7 @@ message was longer than 140 characters requires it, that you have *PHP5+* and
 Where to find
 -------------
 
-In the [Red-addons git repository /twitter/](https://github.com/friendica/red-addons/tree/master/twitter). This directory 
+In the [Hubzilla-addons git repository /twitter/](https://github.com/redmatrix/hubzilla-addons/tree/master/twitter). This directory 
 contains all required PHP files (including the [Twitter OAuth library][1] by Abraham
 Williams, MIT licensed and the [Slinky library][2] by Beau Lebens, BSD license),
 a CSS file for styling of the user configuration and an image to _Sign in with
