@@ -2,7 +2,7 @@
 /**
  * Name: Twitter Connector
  * Description: Relay public postings to a connected Twitter account
- * Version: 1.1r
+ * Version: 1.2
  * Author: Tobias Diekershoff <https://f.diekershoff.de/profile/tobias>
  * Author: Michael Vogel <https://pirati.ca/profile/heluecht>
  * Author: Mike Macgirvin <https://zothub.com/channel/mike>
