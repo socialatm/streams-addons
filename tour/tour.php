@@ -101,7 +101,7 @@ function tour_addfooter($a,&$navHtml) {
 
 	// Network
 	$legs[] = array('#main-slider',t('Adjust from which channels posts should be displayed.'));
-	$legs[] = array('#group-sidebar',t('Only show posts from channels in the specified collection.'));
+	$legs[] = array('#group-sidebar',t('Only show posts from channels in the specified privacy group.'));
 
 	// Sidebar
 
