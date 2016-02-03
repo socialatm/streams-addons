@@ -17,9 +17,9 @@ function noembed_unload() {
 	unregister_hook('oembed_probe','addon/noembed/noembed.php','noembed_oembed_probe');
 }
 
-function noembed_oembed_probe($a,$b) {
+function noembed_oembed_probe(&$a,&$b) {
 	// try noembed service
-	$ourl = "https://noembed.com/embed?url=".$b['url'];  
+	$ourl = 'https://noembed.com/embed?url=' . urlencode($b['url']);  
 	$result = z_fetch_url($ourl);
 	if($result['success'])
 		$b['embed'] = $result['body'];
