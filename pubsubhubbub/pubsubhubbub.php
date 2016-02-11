@@ -1,0 +1,275 @@
+<?php
+
+/**
+ * Name: PubSubHubBub
+ * Description: Add PuSH capability to channel feeds - based loosely on Friendica PuSH module by Mats Sjöberg
+ * Version: 1.0
+ * Author: Mike Macgirvin
+ * Maintainer: none
+ * MinVersion: 1.2.2
+ */
+
+require_once('include/Contact.php');
+
+
+function pubsubhubbub_install() {
+	$r = q("CREATE TABLE IF NOT EXISTS `push_subscriber` (
+	  `id` int(11) NOT NULL AUTO_INCREMENT,
+	  `callback_url` varchar(255) NOT NULL DEFAULT '',
+	  `topic` varchar(255) NOT NULL DEFAULT '',
+	  `last_update` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+	  `secret` varchar(255) NOT NULL DEFAULT '',
+	  PRIMARY KEY (`id`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+	if($r) {
+		q("alter table push_subscriber create index callback_url on push_subscriber (callback_url) ");
+		q("alter table push_subscriber create index topic on push_subscriber (topic) ");
+	}
+
+}
+
+function pubsubhubbub_uninstall() {
+	$r = q("drop table push_subscriber");
+}
+
+
+function pubsubhubbub_load() {
+	register_hook('notifier_process','addon/pubsubhubbub.php','push_notifier_process');
+	register_hook('queue_deliver','addon/pubsubhubbub.php','push_queue_deliver');
+}
+
+function pubsubhubbub_unload() {
+	unregister_hook('notifier_process','addon/pubsubhubbub.php','push_notifier_process');
+	unregister_hook('queue_deliver','addon/pubsubhubbub.php','push_queue_deliver');
+}
+
+
+function push_notifier_process(&$a,&$b) {
+
+	if(! $b['normal_mode'])
+		return;
+
+	if($b['private'])
+		return;
+
+	// find push_subscribers following this $owner
+
+	$channel = $b['channel'];
+
+	$r = q("select * from push_subscriber where topic = '%s'",
+		dbesc(z_root() . '/feed/' . $channel['channel_address'])
+	);
+	if(! $r)
+		return;
+
+	$feed = get_feed_for($channel,'',array('begin' => $rr['last_update']));
+
+	foreach($r as $rr) {
+		$hmac_sig = hash_hmac("sha1", $feed, $rr['secret']);
+
+		$slap = array('sig' => $hmac_sig, 'topic' => $rr['topic'], 'body' => $feed);
+
+		// Check for public post and create atom wrapper and stick in queue	
+
+		// also need queue driver for 'push' since we need to set some extra headers
+
+		$hash = random_string();
+		queue_insert(array(
+			'hash'       => $hash,
+			'account_id' => $channel['channel_account_id'],
+			'channel_id' => $channel['channel_id'],
+			'driver'     => 'push',
+			'posturl'    => $rr['callback_url'],
+			'notify'     => '',
+			'msg'        => json_encode($slap)
+		));
+		$b['queued'][] = $hash;
+	}
+}
+
+function push_queue_deliver(&$a,&$b) {
+
+	$outq = $b['outq'];
+	if($outq['outq_driver'] !== 'push')
+		return;
+
+	$b['handled'] = true;
+
+	$m = json_decode($outq['outq_msg'],true);
+
+	if($m) {
+		$headers = array("Content-type: application/atom+xml",
+			sprintf("Link: <%s>;rel=hub,<%s>;rel=self",z_root() . '/pubsubhubbub',$m['topic']),
+			"X-Hub-Signature: sha1=" . $m['sig']);
+
+		$result = z_post_url($rr['callback_url'], $params, array('headers' => $headers, 'novalidate' => true));
+		if($result['success'] && $result['return_code'] < 300) {
+			logger('push_deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
+			if($b['base']) {
+				q("update site set site_update = '%s', site_dead = 0 where site_url = '%s' ",
+					dbesc(datetime_convert()),
+					dbesc($b['base'])
+				);
+			}
+			q("update dreport set dreport_result = '%s', dreport_time = '%s' where dreport_queue = '%s' limit 1",
+				dbesc('accepted for delivery'),
+				dbesc(datetime_convert()),
+				dbesc($outq['outq_hash'])
+			);
+			q("update push_subscriber set last_update = '%s' where callback_url = '%s' and topic = '%s'",
+				dbesc(datetime_convert()),
+				dbesc($outq['outq_posturl']),
+				dbesc($m['topic'])
+			);
+
+			remove_queue_item($outq['outq_hash']);
+		}
+		else {
+			logger('deliver: queue post returned ' . $result['return_code']
+				. ' from ' . $outq['outq_posturl'],LOGGER_DEBUG);
+				update_queue_item($outq['outq_posturl']);
+		}
+		return;
+	}
+}
+
+
+function pubsubhubbub_module() {};
+
+
+function push_post_var($name) {
+	return (x($_POST, $name)) ? notags(trim($_POST[$name])) : '';
+}
+
+function pubsubhubbub_init(&$a) {
+	// PuSH subscription must be considered "public" so just block it
+	// if public access isn't enabled.
+	if (get_config('system', 'block_public')) {
+		http_status_exit(403);
+	}
+
+	// Subscription request from subscriber
+	// https://pubsubhubbub.googlecode.com/git/pubsubhubbub-core-0.4.html#anchor4
+	// Example from GNU Social:
+	// [hub_mode] => subscribe
+	// [hub_callback] => http://status.local/main/push/callback/1
+	// [hub_verify] => sync
+	// [hub_verify_token] => af11...
+	// [hub_secret] => af11...
+	// [hub_topic] => http://friendica.local/dfrn_poll/sazius
+
+	if($_SERVER['REQUEST_METHOD'] === 'POST') {
+		$hub_mode = push_post_var('hub_mode');
+		$hub_callback = push_post_var('hub_callback');
+		$hub_verify = push_post_var('hub_verify');
+		$hub_verify_token = push_post_var('hub_verify_token');
+		$hub_secret = push_post_var('hub_secret');
+		$hub_topic = push_post_var('hub_topic');
+
+		// check for valid hub_mode
+		if ($hub_mode === 'subscribe') {
+			$subscribe = 1;
+		} else if ($hub_mode === 'unsubscribe') {
+			$subscribe = 0;
+		} else {
+			logger("pubsubhubbub: invalid hub_mode=$hub_mode, ignoring.");
+			http_status_exit(404);
+		}
+
+		logger("pubsubhubbub: $hub_mode request from " . $_SERVER['REMOTE_ADDR']);
+
+		// get the nick name from the topic, a bit hacky but needed
+		$nick = substr(strrchr($hub_topic, "/"), 1);
+
+		if (!$nick) {
+			logger('pubsubhubbub: bad hub_topic=$hub_topic, ignoring.');
+			http_status_exit(404);
+		}
+
+		// fetch user from database given the nickname
+		$owner = channelx_by_nick($nick);
+
+		if(! $owner) {
+			logger('pubsubhubbub: local account not found: ' . $nick);
+			http_status_exit(404);
+		}
+
+		if(! perm_is_allowed($owner['channel_id'],'','view_stream')) {
+			logger('pubsubhubbub: local channel ' . $nick .
+				   'has chosen to hide wall, ignoring.');
+			http_status_exit(403);
+		}
+
+		// sanity check that topic URLs are the same
+		if(! link_compare($hub_topic, z_root() . '/feed/' . $nick)) {
+			logger('pubsubhubbub: not a valid hub topic ' . $hub_topic );
+			http_status_exit(404);
+		}
+
+		// do subscriber verification according to the PuSH protocol
+		$hub_challenge = random_string(40);
+		$params = 'hub.mode=' .
+			($subscribe == 1 ? 'subscribe' : 'unsubscribe') .
+			'&hub.topic=' . urlencode($hub_topic) .
+			'&hub.challenge=' . $hub_challenge .
+			'&hub.lease_seconds=604800' .
+			'&hub.verify_token=' . $hub_verify_token;
+
+		// lease time is hard coded to one week (in seconds)
+		// we don't actually enforce the lease time because GNU
+		// Social/StatusNet doesn't honour it (yet)
+
+		$x = z_fetch_url($hub_callback . "?" . $params);
+		if(! $x['success']) {
+			logger("pubsubhubbub: subscriber verification at $hub_callback ".
+				   "returned $ret, ignoring.");
+			http_status_exit(404);
+		}
+
+		// check that the correct hub_challenge code was echoed back
+		if (trim($x['body']) !== $hub_challenge) {
+			logger("pubsubhubbub: subscriber did not echo back ".
+				   "hub.challenge, ignoring.");
+			logger("\"$hub_challenge\" != \"".trim($x['body'])."\"");
+			http_status_exit(404);
+		}
+
+		// fetch the old subscription if it exists
+		$orig = q("SELECT * FROM `push_subscriber` WHERE `callback_url` = '%s'",
+		  dbesc($hub_callback));
+
+		// delete old subscription if it exists
+		q("DELETE FROM push_subscriber WHERE callback_url = '%s' and topic = '%s'",
+			dbesc($hub_callback),
+			dbesc($hub_topic)
+		);
+
+		if($subscribe) {
+			$last_update = datetime_convert('UTC','UTC','now','Y-m-d H:i:s');
+
+			// if we are just updating an old subscription, keep the
+			// old values for last_update
+
+			if ($orig) {
+				$last_update = $orig[0]['last_update'];
+			}
+
+			// subscribe means adding the row to the table
+			q("INSERT INTO push_subscriber ( callback_url, topic, last_update, secret) values ('%s', '%s', '%s', '%s') ",
+				dbesc($hub_callback),
+				dbesc($hub_topic),
+				dbesc($last_update),
+				dbesc($hub_secret)
+			);
+			logger("pubsubhubbub: successfully subscribed [$hub_callback].");
+		} 
+		else {
+			logger("pubsubhubbub: successfully unsubscribed [$hub_callback].");
+			// we do nothing here, since the row was already deleted
+		}
+		http_status_exit(202);
+	}
+
+	killme();
+}
+
