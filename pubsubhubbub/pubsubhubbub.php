@@ -22,8 +22,8 @@ function pubsubhubbub_install() {
 	  PRIMARY KEY (`id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
 	if($r) {
-		q("alter table push_subscriber create index callback_url on push_subscriber (callback_url) ");
-		q("alter table push_subscriber create index topic on push_subscriber (topic) ");
+		q("alter table push_subscriber add index ( callback_url ) ");
+		q("alter table push_subscriber add index ( topic ) ");
 	}
 
 }
@@ -34,20 +34,20 @@ function pubsubhubbub_uninstall() {
 
 
 function pubsubhubbub_load() {
-	register_hook('notifier_process','addon/pubsubhubbub.php','push_notifier_process');
-	register_hook('queue_deliver','addon/pubsubhubbub.php','push_queue_deliver');
-	register_hook('atom_feed','addon/pubsubhubbub.php','push_atom_feed');
+	register_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','push_notifier_process');
+	register_hook('queue_deliver','addon/pubsubhubbub/pubsubhubbub.php','push_queue_deliver');
+	register_hook('atom_feed','addon/pubsubhubbub/pubsubhubbub.php','push_atom_feed');
 }
 
 function pubsubhubbub_unload() {
-	unregister_hook('notifier_process','addon/pubsubhubbub.php','push_notifier_process');
-	unregister_hook('queue_deliver','addon/pubsubhubbub.php','push_queue_deliver');
-	unregister_hook('atom_feed','addon/pubsubhubbub.php','push_atom_feed');
+	unregister_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','push_notifier_process');
+	unregister_hook('queue_deliver','addon/pubsubhubbub/pubsubhubbub.php','push_queue_deliver');
+	unregister_hook('atom_feed','addon/pubsubhubbub/pubsubhubbub.php','push_atom_feed');
 }
 
 
 function push_atom_feed(&$a,&$b) {
-	$b = str_replace('</generator>','</generator>' . "\r\n" . '<link href="' . z_root() . '/pubsubhubbub' . '" rel="hub" />' . "\r\n",$b);
+	$b = str_replace('</generator>','</generator>' . "\r\n" . '  <link href="' . z_root() . '/pubsubhubbub' . '" rel="hub" />',$b);
 }
 
 
@@ -146,7 +146,7 @@ function pubsubhubbub_module() {};
 
 
 function push_post_var($name) {
-	return (x($_POST, $name)) ? notags(trim($_POST[$name])) : '';
+	return (x($_REQUEST, $name)) ? notags(trim($_REQUEST[$name])) : '';
 }
 
 function pubsubhubbub_init(&$a) {
