@@ -186,7 +186,7 @@ function wppost_send(&$a,&$b) {
 
 	$wp_blog     = get_pconfig($b['uid'],'wppost','wp_blog');
 
-	$DR = new Zotlabls\Zot\DReport(z_root(),$b['owner_xchan'],'wordpress wordpress',$b['mid']);
+	$DR = new Zotlabs\Zot\DReport(z_root(),$b['owner_xchan'],'wordpress wordpress',$b['mid']);
 
 	if($edited) {
 		$r = q("select * from item_id where service = 'wordpress' and iid = %d and uid = %d limit 1",
