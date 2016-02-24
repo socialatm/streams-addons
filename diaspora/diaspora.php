@@ -2848,9 +2848,9 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 				$meta = $diaspora_meta;
 		}
 		$signed_text = $meta['signed_text'];
-		$authorsig = $meta['signature'];
-		$signer = $meta['signer'];
-		$text = $meta['body'];
+		$authorsig   = $meta['signature'];
+		$signer      = $meta['signer'];
+		$text        = $meta['body'];
 	}
 	else {
 		$text = bb2diaspora_itembody($item);
