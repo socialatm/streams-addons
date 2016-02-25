@@ -362,8 +362,10 @@ function diaspora_process_outbound(&$a, &$arr) {
 			}
 			elseif($arr['top_level_post']) {
 				$qi = diaspora_send_status($target_item,$arr['channel'],$contact);
-				if($qi)
-					$arr['queued'][] = $qi;
+				if($qi) {
+					foreach($qi as $q)
+						$arr['queued'][] = $q;
+				}
 				continue;
 			}
 		}
@@ -394,8 +396,10 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(perm_is_allowed($arr['channel'],'','view_stream')) {
 				logger('delivery: diaspora status: ' . $loc);
 				$qi = diaspora_send_status($target_item,$arr['channel'],$contact,true);
-				if($qi)
-					$arr['queued'][] = $qi;
+				if($qi) {
+					foreach($qi as $q)
+						$arr['queued'][] = $q;
+				}
 				return;
 			}
 		}
@@ -2695,12 +2699,14 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
-	$qi = diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']);
+	$qi = array(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 
 //	logger('diaspora_send_status: guid: '.$item['mid'].' result '.$return_code, LOGGER_DEBUG);
 
 	if(count($images)) {
-		diaspora_send_images($item,$owner,$contact,$images,$public_batch,$item['mid']);
+		$qim = diaspora_send_images($item,$owner,$contact,$images,$public_batch,$item['mid']);
+		if($qim)
+			$qi = array_merge($qi,$qim);
 	}
 
 	return $qi;
@@ -2761,6 +2767,8 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 		return;
 	$mysite = substr($a->get_baseurl(),strpos($a->get_baseurl(),'://') + 3) . '/photo';
 
+	$qi = array();
+
 	$tpl = get_markup_template('diaspora_photo.tpl','addon/diaspora');
 	foreach($images as $image) {
 		if(! stristr($image['path'],$mysite))
@@ -2785,12 +2793,13 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 			'$created_at' => xmlify(datetime_convert('UTC','UTC',$r[0]['created'],'Y-m-d H:i:s \U\T\C'))
 		));
 
-
 		logger('diaspora_send_photo: base message: ' . $msg, LOGGER_DATA);
 		$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
-		return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
+		$qi[] = diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']);
 	}
+
+	return $qi;
 
 }
 
