@@ -70,9 +70,10 @@ function push_notifier_process(&$a,&$b) {
 	if(! $r)
 		return;
 
-	$feed = get_feed_for($channel,'',array('begin' => $rr['last_update']));
 
 	foreach($r as $rr) {
+
+		$feed = get_feed_for($channel,'',array('begin' => $rr['last_update']));
 		$hmac_sig = hash_hmac("sha1", $feed, $rr['secret']);
 
 		$slap = array('sig' => $hmac_sig, 'topic' => $rr['topic'], 'body' => $feed);
