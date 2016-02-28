@@ -110,7 +110,8 @@ function push_queue_deliver(&$a,&$b) {
 			sprintf("Link: <%s>;rel=hub,<%s>;rel=self",z_root() . '/pubsubhubbub',$m['topic']),
 			"X-Hub-Signature: sha1=" . $m['sig']);
 
-		$result = z_post_url($outq['outq_posturl'], $params, array('headers' => $headers, 'novalidate' => true));
+		$counter = 0;
+		$result = z_post_url($outq['outq_posturl'], $params, $counter, array('headers' => $headers, 'novalidate' => true));
 		if($result['success'] && $result['return_code'] < 300) {
 			logger('push_deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
 			if($b['base']) {
