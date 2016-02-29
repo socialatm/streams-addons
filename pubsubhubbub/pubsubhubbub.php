@@ -74,6 +74,7 @@ function push_notifier_process(&$a,&$b) {
 	foreach($r as $rr) {
 
 		$feed = get_feed_for($channel,'',array('begin' => $rr['last_update']));
+
 		$hmac_sig = hash_hmac("sha1", $feed, $rr['secret']);
 
 		$slap = array('sig' => $hmac_sig, 'topic' => $rr['topic'], 'body' => $feed);
@@ -112,7 +113,7 @@ function push_queue_deliver(&$a,&$b) {
 			"X-Hub-Signature: sha1=" . $m['sig']);
 
 		$counter = 0;
-		$result = z_post_url($outq['outq_posturl'], $params, $counter, array('headers' => $headers, 'novalidate' => true));
+		$result = z_post_url($outq['outq_posturl'], $m['body'], $counter, array('headers' => $headers, 'novalidate' => true));
 		if($result['success'] && $result['return_code'] < 300) {
 			logger('push_deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
 			if($b['base']) {
@@ -135,7 +136,7 @@ function push_queue_deliver(&$a,&$b) {
 			remove_queue_item($outq['outq_hash']);
 		}
 		else {
-			logger('deliver: queue post returned ' . $result['return_code']
+			logger('push_deliver: queue post returned ' . $result['return_code']
 				. ' from ' . $outq['outq_posturl'],LOGGER_DEBUG);
 				update_queue_item($outq['outq_posturl']);
 		}
