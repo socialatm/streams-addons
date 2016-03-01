@@ -942,7 +942,6 @@ function diaspora_request($importer,$xml) {
 				'link'         => z_root() . '/connedit/' . $new_connection[0]['abook_id'],
 			));
 
-
 			if($default_perms) {
 				// Send back a sharing notification to them
 				$x = diaspora_share($importer,$new_connection[0]);
@@ -960,6 +959,11 @@ function diaspora_request($importer,$xml) {
 			unset($clone['abook_id']);
 			unset($clone['abook_account']);
 			unset($clone['abook_channel']);
+		
+			$abconfig = load_abconfig($importer['channel_hash'],$clone['abook_xchan']);
+
+			if($abconfig)
+				$clone['abconfig'] = $abconfig;
 
 			build_sync_packet($importer['channel_id'], array('abook' => array($clone)));
 
