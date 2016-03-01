@@ -88,7 +88,7 @@ function msgfooter_post_hook($a, &$item) {
 		return;
 
 
-	$item['body'] .= "\n\n" . $footer . "\n";
+	$item['body'] .= '[footer]' . $footer . '[/footer]';
 
 	return;
 }
