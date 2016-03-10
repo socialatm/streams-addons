@@ -30,7 +30,7 @@ function bookmarker_prepare_body(&$a,&$b) {
 
 	$base_theme = get_app()->theme_info['extends'];
 	
-	if($base_theme == 'redbasic')
+	if(function_exists('redbasic_init') || $base_theme == 'redbasic')
 		$bookmarkicon = '<i class="icon-bookmark"></i>';
 	else 
 		$bookmarkicon = '<img src="addon/bookmarker/bookmarker.png" width="19px" height="20px" alt="#^" />';
