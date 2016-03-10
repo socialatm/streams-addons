@@ -28,14 +28,18 @@ function bookmarker_prepare_body(&$a,&$b) {
 	if(! strpos($b['html'],'bookmark-identifier'))
 		return;
 
-	if(! function_exists('redbasic_init'))
-		return;
+	$base_theme = get_app()->theme_info['extends'];
+	
+	if($base_theme == 'redbasic')
+		$bookmarkicon = '<i class="icon-bookmark"></i>';
+	else 
+		$bookmarkicon = '<img src="addon/bookmarker/bookmarker.png" width="19px" height="20px" alt="#^" />';
 
 	$id = $b['item']['id'];
 	if(local_channel())
-		$link = '<a class="fakelink" onclick="itemBookmark(' . $id . '); return false;" title="' . t('Save Bookmarks') . '" href="#"><i class="icon-bookmark"></i></a> ';
+		$link = '<a class="fakelink" onclick="itemBookmark(' . $id . '); return false;" title="' . t('Save Bookmarks') . '" href="#">'. $bookmarkicon . '</a> ';
 	else
-		$link = '<i class="icon-bookmark"></i></a> ';
+		$link =  $bookmarkicon . '</a> ';
 
 	$b['html'] = str_replace('<span class="bookmark-identifier">#^</span>',$link,$b['html']);
 
