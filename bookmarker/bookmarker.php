@@ -3,7 +3,7 @@
 
 /**
  * Name: bookmarker
- * Description: replace #^ with bookmark icon
+ * Description: Replace #^ with a bookmark icon. Font awesome is used for Redbasic and derived themes. A neutral dark grey PNG file is used for other themes.
  * Version: 1.0
  * Author: Mike Macgirvin <mike@zothub.com>
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
