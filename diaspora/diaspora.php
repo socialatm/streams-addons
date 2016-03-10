@@ -2871,7 +2871,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 		// sign it
 
 		if($like)
-			$signed_text = $item['mid'] . ';' . $target_type . ';' . $parent['mid'] . ';' . $positive . ';' . $myaddr;
+			$signed_text = $positive . ';' . $item['mid'] . ';' . $target_type . ';' . $parent['mid'] . ';' . $myaddr;
 		else
 			$signed_text = $item['mid'] . ';' . $parent['mid'] . ';' . $text . ';' . $myaddr;
 
