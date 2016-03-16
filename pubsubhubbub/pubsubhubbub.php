@@ -37,12 +37,15 @@ function pubsubhubbub_load() {
 	register_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','push_notifier_process');
 	register_hook('queue_deliver','addon/pubsubhubbub/pubsubhubbub.php','push_queue_deliver');
 	register_hook('atom_feed','addon/pubsubhubbub/pubsubhubbub.php','push_atom_feed');
+	register_hook('module_loaded', 'addon/pubsubhubbub/pubsubhubbub.php','push_module_loaded');
+
 }
 
 function pubsubhubbub_unload() {
 	unregister_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','push_notifier_process');
 	unregister_hook('queue_deliver','addon/pubsubhubbub/pubsubhubbub.php','push_queue_deliver');
 	unregister_hook('atom_feed','addon/pubsubhubbub/pubsubhubbub.php','push_atom_feed');
+	unregister_hook('module_loaded', 'addon/pubsubhubbub/pubsubhubbub.php','push_module_loaded');
 }
 
 
@@ -50,6 +53,13 @@ function push_atom_feed(&$a,&$b) {
 	$b = str_replace('</generator>','</generator>' . "\r\n" . '  <link href="' . z_root() . '/pubsubhubbub' . '" rel="hub" />',$b);
 }
 
+
+function push_module_loaded(&$a,&$b) {
+	if($b['module'] === 'pubsub') {
+		require_once('addon/pubsubhubbub/pubsub.php');
+		$b['installed'] = true;
+	}
+}
 
 
 function push_notifier_process(&$a,&$b) {
@@ -284,3 +294,24 @@ function pubsubhubbub_init(&$a) {
 	killme();
 }
 
+
+function pubsubhubbub_subscribe($url,$channel,$xchan,$hubmode = 'subscribe') {
+
+	$push_url = z_root() . '/pubsub/' . $channel['channel_address'] . '/' . $xchan['abook_id'];
+
+	$verify = get_abconfig($channel['channel_hash'],$xchan['xchan_hash'],'pubsubhubbub','verify_token');
+	if(! $verify)
+		$verify = set_abconfig($channel['channel_hash'],$xchan['xchan_hash'],'pubsubhubbub','verify_token',random_string(16));
+
+	$params= 'hub.mode=' . $hubmode . '&hub.callback=' . urlencode($push_url) . '&hub.topic=' . urlencode($contact['poll']) . '&hub.verify=async&hub.verify_token=' . $verify;
+
+	logger('subscribe_to_hub: ' . $hubmode . ' ' . $xchan['xchan_name'] . ' to hub ' . $url . ' endpoint: '  . $push_url . ' with verifier ' . $verify);
+
+
+	$x = z_post_url($url,$params);
+
+	logger('subscribe_to_hub: returns: ' . $x['return_code'], LOGGER_DEBUG);
+
+	return;
+
+}
