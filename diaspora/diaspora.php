@@ -893,7 +893,7 @@ function diaspora_request($importer,$xml) {
 // End FIXME
 
 
-	$role = get_pconfig($channel['channel_id'],'system','permissions_role');
+	$role = get_pconfig($importer['channel_id'],'system','permissions_role');
 	if($role) {
 		$x = get_role_perms($role);
 		if($x['perms_auto'])
