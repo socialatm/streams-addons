@@ -3458,8 +3458,6 @@ function diaspora_feature_settings_post(&$a,&$b) {
 
 function diaspora_feature_settings(&$a,&$s) {
 	$dspr_allowed = get_pconfig(local_channel(),'system','diaspora_allowed');
-	if($dspr_allowed === false)
-		$dspr_allowed = get_config('diaspora','allowed');	
 	$pubcomments = get_pconfig(local_channel(),'system','diaspora_public_comments');
 	if($pubcomments === false)
 		$pubcomments = 1;

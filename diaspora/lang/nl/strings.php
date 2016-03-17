@@ -16,5 +16,5 @@ $a->strings["Diaspora Protocol Settings updated."] = "Diaspora-protocol-instelli
 $a->strings["Enable the (experimental) Diaspora protocol for this channel"] = "Het (experimentele) Diaspora-protocol voor dit kanaal inschakelen";
 $a->strings["Allow any Diaspora member to comment on your public posts"] = "Geef elk Diaspora-lid toestemming om op jouw openbare berichten te reageren";
 $a->strings["Prevent your hashtags from being redirected to other sites"] = "Voorkom dat jouw hashtags naar andere websites worden doorverwezen";
-$a->strings["Diaspora Protocol Settings"] = "Diaspora-protocol (verbinden, incl Friendica)";
+$a->strings["Diaspora Protocol Settings"] = "Diaspora-protocol (compatibiliteit, incl Friendica)";
 $a->strings["Submit"] = "Opslaan";
