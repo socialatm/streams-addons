@@ -25,6 +25,7 @@ function gnusoc_load() {
 	register_hook('follow_allow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_allow');
 	register_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	register_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
+	register_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 
 
 //	register_hook('notifier_hub', 'addon/gnusoc/gnusoc.php', 'gnusoc_process_outbound');
@@ -40,6 +41,7 @@ function gnusoc_unload() {
 	unregister_hook('follow_allow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_allow');
 	unregister_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
+	unregister_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 
 }
 
@@ -79,6 +81,19 @@ function gnusoc_follow_allow(&$a, &$b) {
 }
 
 
+function gnusoc_follow_local(&$a,&$b) {
+
+	require_once('addon/pubsubhubbub/pubsubhubbub.php');
+
+	if($b['abook']['abook_xchan'] && $b['abook']['xchan_network'] === 'gnusoc') {
+		$hubs = get_xconfig($b['abook']['abook_xchan'],'system','push_hubs');
+		if($hubs) {
+			foreach($hubs as $hub) {
+				pubsubhubbub_subscribe($hub,$b['channel'],$b['abook'],$hubmode = 'subscribe');
+			}
+		}
+	}
+}
 
 
 function gnusoc_feature_settings_post(&$a,&$b) {
