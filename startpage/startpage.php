@@ -106,7 +106,7 @@ function startpage_settings(&$a,&$s) {
 	$page = get_pconfig(local_channel(),'system','startpage');
 
 	$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
-		'$field'	=> array('startpage', t('Page to load after login'), $page, t('Examples: &quot;network&quot; or &quot;channel&quot; or &quot;notifications/system&quot; (leave blank for default apps page).'))
+		'$field'	=> array('startpage', t('Page to load after login'), $page, t('Examples: &quot;apps&quot;, &quot;network?f=&gid=37&quot; (privacy collection), &quot;channel&quot; or &quot;notifications/system&quot; (leave blank for default network page (grid).'))
 	));
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(

@@ -3,7 +3,7 @@
 /**
  *
  * Name: Hubwall
- * Description: Send admin email message to all account holders
+ * Description: Send admin email message to all account holders. <b>-><a href=/hubwall TARGET = "_blank">send now!</a><-</b>
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
