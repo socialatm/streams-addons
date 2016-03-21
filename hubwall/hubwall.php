@@ -9,9 +9,20 @@
  * Maintainer: none
  */
 
+
+
+
 require_once('include/enotify.php');
 
 function hubwall_module() {}
+
+
+
+function hubwall_plugin_admin(&$a, &$o) {
+
+	$o = '<div></div>&nbsp;&nbsp;&nbsp;&nbsp;<a href="' . z_root() . '/hubwall">' . t('Send email to all members') . '</a></br/>';
+
+}
 
 
 
@@ -44,7 +55,7 @@ function hubwall_post(&$a) {
 		notice( t('No recipients found.') . EOL);
 		return;
 	}
-	
+
 	foreach($recips as $recip) {
 
 

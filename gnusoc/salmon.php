@@ -1,6 +1,5 @@
 <?php
 
-require_once('include/salmon.php');
 require_once('include/crypto.php');
 require_once('include/items.php');
 require_once('include/follow.php');
@@ -59,8 +58,12 @@ function salmon_post(&$a) {
 
 	// Stash the signature away for now. We have to find their key or it won't be good for anything.
 
+	logger('sig: ' . $base->sig);
 
 	$signature = base64url_decode($base->sig);
+
+	logger('sig: ' . $base->sig . ' decoded length: ' . strlen($signature));
+
 
 	// unpack the  data
 
@@ -80,7 +83,7 @@ function salmon_post(&$a) {
 
 	$stnet_signed_data = $data;
 
-	$signed_data = $data  . '.' . base64url_encode($type) . '.' . base64url_encode($encoding) . '.' . base64url_encode($alg);
+	$signed_data = $data  . '.' . base64url_encode($type, false) . '.' . base64url_encode($encoding, false) . '.' . base64url_encode($alg, false);
 
 	$compliant_format = str_replace('=','',$signed_data);
 
@@ -121,30 +124,26 @@ function salmon_post(&$a) {
 
 		logger('mod-salmon: Fetching key for ' . $author_link);
 
-		$key = get_salmon_key($author_link,$keyhash);
+		$pubkey = get_salmon_key($author_link,$keyhash);
 
-		if(! $key) {
+		if(! $pubkey) {
 			logger('mod-salmon: Could not retrieve author key.');
 			http_status_exit(400);
 		}
 
-		$key_info = explode('.',$key);
+		logger('mod-salmon: key details: ' . print_r($pubkey,true), LOGGER_DEBUG);
 
-		$m = base64url_decode($key_info[1]);
-		$e = base64url_decode($key_info[2]);
-
-		logger('mod-salmon: key details: ' . print_r($key_info,true), LOGGER_DEBUG);
-
-		$pubkey = metopem($m,$e);
 	}
+
+	$pubkey = rtrim($pubkey);
 
 	// We should have everything we need now. Let's see if it verifies.
 
-	$verify = rsa_verify($compliant_format,$signature,$pubkey);
+	$verify = rsa_verify($signed_data,$signature,$pubkey);
 
 	if(! $verify) {
 		logger('mod-salmon: message did not verify using protocol. Trying padding hack.');
-		$verify = rsa_verify($signed_data,$signature,$pubkey);
+		$verify = rsa_verify($compliant_format,$signature,$pubkey);
 	}
 
 	if(! $verify) {
@@ -159,7 +158,6 @@ function salmon_post(&$a) {
 
 	logger('mod-salmon: Message verified.');
 
-
 	/* lookup the author */
 
 	if(! $datarray['author']['author_link'])
@@ -172,12 +170,13 @@ function salmon_post(&$a) {
 	);
 	if(! $r) {
 		if(discover_by_webbie($datarray['author']['author_link'])) {
-		$r = q("select xchan_hash from xchan where xchan_guid = '%s' limit 1",
-			dbesc($datarray['author']['author_link'])
-	   	);
-		if(! $r) {
-			logger('discovery failed');
-			http_status_exit(400);
+			$r = q("select xchan_hash from xchan where xchan_guid = '%s' limit 1",
+				dbesc($datarray['author']['author_link'])
+	   		);
+			if(! $r) {
+				logger('discovery failed');
+				http_status_exit(400);
+			}
 		}
 	}
 
@@ -297,10 +296,6 @@ function salmon_post(&$a) {
 		}
 	}
 
-	}
-	// 
-	// ... fixme
-
 
 	// Otherwise check general permissions
 
@@ -310,8 +305,6 @@ function salmon_post(&$a) {
 
 
 		// ... fixme
-
-
 
 		// otherwise 
 
@@ -336,13 +329,10 @@ function salmon_post(&$a) {
 	}
 	
 
-
-
 	if(! $datarray['author_xchan'])
 		$datarray['author_xchan'] = $xchan['xchan_hash'];
 
 	$datarray['owner_xchan'] = (($parent_item) ? $parent_item['owner_xchan'] : $xchan['xchan_hash']);
-
 
 
 	$r = q("SELECT edited FROM item WHERE mid = '%s' AND uid = %d LIMIT 1",
@@ -378,6 +368,7 @@ function salmon_post(&$a) {
 
 	http_status_exit(200);
 }
+
 
 
 function gnusoc_follow($importer,$xchan) {
