@@ -26,10 +26,10 @@ function gnusoc_load() {
 	register_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	register_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
 	register_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
-
+	register_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
+	register_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
 
 //	register_hook('notifier_hub', 'addon/gnusoc/gnusoc.php', 'gnusoc_process_outbound');
-//	register_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 //	register_hook('permissions_update', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_update');
 
 }
@@ -42,6 +42,8 @@ function gnusoc_unload() {
 	unregister_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
 	unregister_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
+	unregister_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
+	unregister_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
 
 }
 
@@ -201,7 +203,6 @@ function slapper($owner,$url,$slap) {
 	if(! strlen($url))
 		return;
 
-
 	if(! $owner['channel_prvkey']) {
 		logger(sprintf("channel '%s' (%d) does not have a salmon private key. Send failed.",
 		$owner['channel_address'],$owner['channel_id']));
@@ -223,11 +224,7 @@ function slapper($owner,$url,$slap) {
 
 	$precomputed = '.YXBwbGljYXRpb24vYXRvbSt4bWw=.YmFzZTY0dXJs.UlNBLVNIQTI1Ng==';
 
-	$signature   = base64url_encode(rsa_sign(str_replace('=','',$data . $precomputed),$owner['channel_prvkey']));
-
-	$signature2  = base64url_encode(rsa_sign($data . $precomputed,$owner['channel_prvkey']));
-
-	$signature3  = base64url_encode(rsa_sign($data,$owner['channel_prvkey']));
+	$signature  = base64url_encode(rsa_sign($data . $precomputed,$owner['channel_prvkey']));
 
 	$salmon_tpl = get_markup_template('magicsig.tpl','addon/gnusoc/');
 
@@ -236,82 +233,109 @@ function slapper($owner,$url,$slap) {
 		'$encoding'  => $encoding,
 		'$algorithm' => $algorithm,
 		'$keyhash'   => $keyhash,
-		'$signature' => $signature2
+		'$signature' => $signature
 	));
 
-	// slap them
 
-	$redirects = 0;
+	$hash = random_string();
 
-	$ret = z_post_url($url,$salmon, $redirects, array('headers' => array(
-		'Content-type: application/magic-envelope+xml',
-		'Content-length: ' . strlen($salmon))
+	queue_insert(array(
+   		'hash'       => $hash,
+        'account_id' => $owner['channel_account_id'],
+   		'channel_id' => $owner['channel_id'],
+        'driver'     => 'slap',
+   		'posturl'    => $url,
+   		'notify'     => '',
+   		'msg'        => $salmon,
 	));
 
-	$return_code = $ret['return_code'];
+	return $hash;
 
-	// check for success, e.g. 2xx
-
-	if($return_code > 299) {
-
-		logger('compliant salmon failed. Falling back to status.net hack2');
-
-		// Entirely likely that their salmon implementation is
-		// compliant, rather than the statusnet format. Let's try once more, 
-		// this time signing after stripping '=' chars
-
-		$salmon = replace_macros($salmon_tpl,array(
-			'$data'      => $data,
-			'$encoding'  => $encoding,
-			'$algorithm' => $algorithm,
-			'$keyhash'   => $keyhash,
-			'$signature' => $signature
-		));
-
-		$redirects = 0;
-
-		$ret = z_post_url($url,$salmon, $redirects, array('headers' => array(
-			'Content-type: application/magic-envelope+xml',
-			'Content-length: ' . strlen($salmon))
-		));
-
-
-		$return_code = $ret['return_code'];
-
-		if($return_code > 299) {
-
-			logger('compliant salmon failed. Falling back to status.net hack3');
-
-			// Entirely likely that their salmon implementation is
-			// non-compliant. Let's try once more, this time only signing
-			// the data, without the precomputed blob
-
-			$salmon = replace_macros($salmon_tpl,array(
-				'$data'      => $data,
-				'$encoding'  => $encoding,
-				'$algorithm' => $algorithm,
-				'$keyhash'   => $keyhash,
-				'$signature' => $signature3
-			));
-
-			$redirects = 0;
-	
-			$ret = z_post_url($url,$salmon, $redirects, array('headers' => array(
-				'Content-type: application/magic-envelope+xml',
-				'Content-length: ' . strlen($salmon))
-			));
-
-
-			$return_code = $ret['return_code'];
-		}
-	}
-	logger('slapper for ' . $url . ' returned ' . $return_code);
-
-	if(! $return_code)
-		return(-1);
-	if(($return_code == 503) && (stristr($ret['header'],'retry-after')))
-		return(-1);
-
-	return ((($return_code >= 200) && ($return_code < 300)) ? 0 : 1);
 }
 
+
+function gnusoc_queue_deliver(&$a,&$b) {
+   $outq = $b['outq'];
+    if($outq['outq_driver'] !== 'slap')
+        return;
+
+    $b['handled'] = true;
+
+	$headers = array(
+		'Content-type: application/magic-envelope+xml',
+		'Content-length: ' . strlen($outq['outq_msg']));
+
+    $counter = 0;
+	$result = z_post_url($outq['outq_posturl'], $outq['outq_msg'], $counter, array('headers' => $headers, 'novalidate' => true));
+    if($result['success'] && $result['return_code'] < 300) {
+        logger('slap_deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
+        if($b['base']) {
+            q("update site set site_update = '%s', site_dead = 0 where site_url = '%s' ",
+                dbesc(datetime_convert()),
+                dbesc($b['base'])
+            );
+        }
+        q("update dreport set dreport_result = '%s', dreport_time = '%s' where dreport_queue = '%s' limit 1",
+            dbesc('accepted for delivery'),
+            dbesc(datetime_convert()),
+            dbesc($outq['outq_hash'])
+        );
+
+        remove_queue_item($outq['outq_hash']);
+    }
+    else {
+        logger('slap_deliver: queue post returned ' . $result['return_code']
+            . ' from ' . $outq['outq_posturl'],LOGGER_DEBUG);
+            update_queue_item($outq['outq_posturl']);
+    }
+    return;
+
+}
+
+
+
+function gnusoc_remote_follow($channel,$xchan) {
+
+
+	$slap = replace_macros(get_markup_template('follow_slap.tpl','addon/gnusoc/'),array(
+		'$name' => xmlify($channel['channel_name']),
+		'$profile_page' => xmlify($channel['channel_url']),
+		'$thumb' => xmlify($channel['xchan_photo_l']),
+		'$item_id' => xmlify(random_string()),
+		'$title' => xmlify(t('Follow')),
+		'$published' => datetime_convert('UTC','UTC','now',ATOM_TIME),
+		'$type' => 'html',
+		'$content' => xmlify(sprintf( t('%1$s is now following %2$s'),$channel['channel_name'],$xchan['xchan_name'])),
+		'$remote_profile' => xmlify($xchan['xchan_url']),
+		'$remote_photo' => xmlify($xchan['xchan_photo_l']),
+		'$remote_thumb' => xmlify($xchan['xchan_photo_m']),
+		'$remote_nick' => xmlify(substr($xchan['xchan_addr'],0,strpos($xchan['xchan_addr'],'@'))),
+		'$remote_name' => xmlify($xchan['xchan_name']),
+		'$verb' => xmlify(ACTIVITY_FOLLOW),
+		'$ostat_follow' => ''
+	));
+
+
+	logger('follow xml: ' . $slap, LOGGER_DATA);
+
+	$deliver = '';
+
+	$y = q("select * from hubloc where hubloc_hash = '%s'",
+		dbesc($xchan['xchan_hash'])
+	);
+
+
+	if($y) {
+		$deliver = slapper($channel,$y[0]['hubloc_callback'],$slap);
+	}
+
+	return $deliver;
+}
+
+function gnusoc_permissions_create(&$a,&$b) {
+    if($b['recipient']['xchan_network'] === 'gnusoc') {
+        $b['deliveries'] = gnusoc_remote_follow($b['sender'],$b['recipient']);
+        if($b['deliveries'])
+            $b['success'] = 1;
+    }
+}
