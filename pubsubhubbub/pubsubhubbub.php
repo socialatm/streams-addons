@@ -148,7 +148,7 @@ function push_queue_deliver(&$a,&$b) {
 		else {
 			logger('push_deliver: queue post returned ' . $result['return_code']
 				. ' from ' . $outq['outq_posturl'],LOGGER_DEBUG);
-				update_queue_item($outq['outq_posturl']);
+				update_queue_item($outq['outq_hash']);
 		}
 		return;
 	}
