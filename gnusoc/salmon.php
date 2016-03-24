@@ -5,17 +5,14 @@ require_once('include/items.php');
 require_once('include/follow.php');
 require_once('include/Contact.php');
 
-function salmon_return($val) {
-
-	if($val >= 400)
-		$err = 'Error';
-	if($val >= 200 && $val < 300)
-		$err = 'OK';
-
-	logger('mod-salmon returns ' . $val);
-	header($_SERVER["SERVER_PROTOCOL"] . ' ' . $val . ' ' . $err);
-	killme();
-
+if(defined('SALMON_TEST')) {
+	function salmon_init(&$a) {
+		$testing = ((argc() > 1 && argv(1) === 'test') ? true : false);
+		if($testing) {
+			$a->data['salmon_test'] = true;
+			salmon_post($a);
+		}
+	}
 }
 
 function salmon_post(&$a) {
@@ -27,9 +24,14 @@ function salmon_post(&$a) {
     }
     $sys = (($sys_disabled) ? null : get_sys_channel());
 
-
-	$xml = file_get_contents('php://input');
-
+	if($a->data['salmon_test']) {
+		$xml = file_get_contents('test.xml');
+		$a->argv[1] = 'gnusoc';
+	}
+	else {
+		$xml = file_get_contents('php://input');
+	}
+	
 	logger('mod-salmon: new salmon ' . $xml, LOGGER_DATA);
 
 	$nick       = ((argc() > 1) ? trim(argv(1)) : '');

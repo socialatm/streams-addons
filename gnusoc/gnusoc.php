@@ -28,6 +28,9 @@ function gnusoc_load() {
 	register_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	register_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	register_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
+    register_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','gnusoc_notifier_process');
+
+
 
 //	register_hook('notifier_hub', 'addon/gnusoc/gnusoc.php', 'gnusoc_process_outbound');
 //	register_hook('permissions_update', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_update');
@@ -44,6 +47,7 @@ function gnusoc_unload() {
 	unregister_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	unregister_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	unregister_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
+    unregister_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','gnusoc_notifier_process');
 
 }
 
@@ -91,7 +95,7 @@ function gnusoc_follow_local(&$a,&$b) {
 		$hubs = get_xconfig($b['abook']['abook_xchan'],'system','push_hubs');
 		if($hubs) {
 			foreach($hubs as $hub) {
-				pubsubhubbub_subscribe($hub,$b['channel'],$b['abook'],$hubmode = 'subscribe');
+				pubsubhubbub_subscribe($hub,$b['channel'],$b['abook'],'',$hubmode = 'subscribe');
 			}
 		}
 	}
@@ -220,6 +224,8 @@ function slapper($owner,$url,$slap) {
 	$algorithm = 'RSA-SHA256';
 	$keyhash   = base64url_encode(hash('sha256',salmon_key($owner['channel_pubkey'])),true);
 
+	$data = str_replace(array(" ","\t","\r","\n"),array("","","",""),$data);
+
 	// precomputed base64url encoding of data_type, encoding, algorithm concatenated with periods
 
 	$precomputed = '.YXBwbGljYXRpb24vYXRvbSt4bWw=.YmFzZTY0dXJs.UlNBLVNIQTI1Ng==';
@@ -236,6 +242,7 @@ function slapper($owner,$url,$slap) {
 		'$signature' => $signature
 	));
 
+	logger('salmon: ' . $salmon, LOGGER_DATA);
 
 	$hash = random_string();
 
@@ -299,9 +306,10 @@ function gnusoc_remote_follow($channel,$xchan) {
 
 	$slap = replace_macros(get_markup_template('follow_slap.tpl','addon/gnusoc/'),array(
 		'$name' => xmlify($channel['channel_name']),
-		'$profile_page' => xmlify($channel['channel_url']),
+		'$nick' => xmlify($channel['channel_address']),
+		'$profile_page' => xmlify(z_root() . '/channel/' . $channel['channel_address']),
 		'$thumb' => xmlify($channel['xchan_photo_l']),
-		'$item_id' => xmlify(random_string()),
+		'$item_id' => z_root() . '/display/' . xmlify(random_string()),
 		'$title' => xmlify(t('Follow')),
 		'$published' => datetime_convert('UTC','UTC','now',ATOM_TIME),
 		'$type' => 'html',
@@ -338,4 +346,71 @@ function gnusoc_permissions_create(&$a,&$b) {
         if($b['deliveries'])
             $b['success'] = 1;
     }
+}
+
+
+
+
+function gnusoc_notifier_process(&$a,&$b) {
+
+    if(! $b['normal_mode'])
+        return;
+
+    if($b['private'] || $b['packet_type'] || $b['mail'])
+        return;
+
+	if($b['target_item']['public_policy']) {
+		logger('non-public post');
+		return;
+	}
+
+	if($b['top_level_post']) {
+		// should have been processed by pubsubhubub
+		logger('not a comment');
+		return;
+	}
+
+
+    $channel = $b['channel'];
+
+	if(! perm_is_allowed($channel['channel_id'],'','view_stream'))
+		return;
+
+    // find gnusoc subscribers following this $owner
+
+	$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d",
+		intval($channel['channel_id'])
+	);
+	if(! $r)
+		return;
+
+	$recips = array();
+	foreach($r as $rr) {
+		if(perm_is_allowed($channel['channel_id'],$rr['hubloc_hash'],'view_stream'))
+			$recips[] = $rr['hubloc_hash'];
+
+	}
+
+	if(! $recips)
+		return;
+
+	$slap = get_atom_entry($target_item,'html',null,null,false);
+
+	$slap = str_replace('<entry>','<entry xmlns="http://www.w3.org/2005/Atom"
+      xmlns:thr="http://purl.org/syndication/thread/1.0"
+      xmlns:at="http://purl.org/atompub/tombstones/1.0"
+      xmlns:media="http://purl.org/syndication/atommedia"
+      xmlns:dfrn="http://purl.org/macgirvin/dfrn/1.0" 
+      xmlns:zot="http://purl.org/zot"
+      xmlns:as="http://activitystrea.ms/spec/1.0/"
+      xmlns:georss="http://www.georss.org/georss" 
+      xmlns:poco="http://portablecontacts.net/spec/1.0" 
+      xmlns:ostatus="http://ostatus.org/schema/1.0" 
+	  xmlns:statusnet="http://status.net/schema/api/1/" >',$slap);
+
+ 
+	foreach($recips as $recip) {
+		$h = slapper($channel,$recip['hubloc_callback'],$slap);
+        $b['queued'][] = $h;
+	}
 }

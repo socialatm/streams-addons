@@ -5,22 +5,23 @@
 			<uri>{{$profile_page}}</uri>
 			<link rel="photo"  type="image/jpeg" media:width="300" media:height="300" href="{{$thumb}}" />
 			<link rel="avatar" type="image/jpeg" media:width="300" media:height="300" href="{{$thumb}}" />
+			<poco:preferredUsername>{{$nick}}</poco:preferredUsername>
+			<poco:displayName>{{$name}}</poco:displayName>
 		</author>
 
 		<id>{{$item_id}}</id>
 		<title>{{$title}}</title>
 		<published>{{$published}}</published>
 		<content type="{{$type}}" >{{$content}}</content>
+ 		<as:verb>{{$verb}}</as:verb>
 
-		<as:actor>
+		<as:object>
 		<as:object-type>http://activitystrea.ms/schema/1.0/person</as:object-type>
 		<id>{{$remote_profile}}</id>
-		<title></title>
+		<title>{{$remote_name}}</title>
  		<link rel="avatar" type="image/jpeg" media:width="175" media:height="175" href="{{$remote_photo}}"/>
 		<link rel="avatar" type="image/jpeg" media:width="80" media:height="80" href="{{$remote_thumb}}"/>
 		<poco:preferredUsername>{{$remote_nick}}</poco:preferredUsername>
 		<poco:displayName>{{$remote_name}}</poco:displayName>
-		</as:actor>
- 		<as:verb>{{$verb}}</as:verb>
-		{{$ostat_follow}}
+		</as:object>
 	</entry>
