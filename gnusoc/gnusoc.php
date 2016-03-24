@@ -28,7 +28,8 @@ function gnusoc_load() {
 	register_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	register_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	register_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
-    register_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','gnusoc_notifier_process');
+    register_hook('notifier_process','addon/gnusoc/gnusoc.php','gnusoc_notifier_process');
+	register_hook('follow_from_feed','addon/gnusoc/gnusoc.php','gnusoc_follow_from_feed');
 
 
 
@@ -47,7 +48,8 @@ function gnusoc_unload() {
 	unregister_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	unregister_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	unregister_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
-    unregister_hook('notifier_process','addon/pubsubhubbub/pubsubhubbub.php','gnusoc_notifier_process');
+    unregister_hook('notifier_process','addon/gnusoc/gnusoc.php','gnusoc_notifier_process');
+	unregister_hook('follow_from_feed','addon/gnusoc/gnusoc.php','gnusoc_follow_from_feed');
 
 }
 
@@ -353,6 +355,8 @@ function gnusoc_permissions_create(&$a,&$b) {
 
 function gnusoc_notifier_process(&$a,&$b) {
 
+	logger('notifier process gnusoc');
+
     if(! $b['normal_mode'])
         return;
 
@@ -414,3 +418,140 @@ function gnusoc_notifier_process(&$a,&$b) {
         $b['queued'][] = $h;
 	}
 }
+
+
+
+function gnusoc_follow_from_feed(&$a,&$b) {
+
+		$item = $b['item'];
+		$importer = $b['channel'];
+		$xchan = $b['xchan'];
+		$author = $b['author'];
+
+		$b['caught'] = true;
+
+		logger('follow activity received');
+
+		if(($author) && (! $xchan)) {
+
+			$r = q("select * from xchan where xchan_guid = '%s' limit 1",
+	   			dbesc($author['author_link'])
+			);
+			if(! $r) {
+				if(discover_by_webbie($author['author_link'])) {
+					$r = q("select * from xchan where xchan_guid = '%s' limit 1",
+						dbesc($author['author_link'])
+	   			);
+				if(! $r) {
+					logger('discovery failed');
+					return;
+				}
+			}
+			$xchan = $r[0];
+		}
+
+		$r = q("select * from abook where abook_channel = %d and abook_xchan = '%s' limit 1",
+			intval($importer['channel_id']),
+			dbesc($xchan['xchan_hash'])
+		);
+
+		if($r) {
+			$contact = $r[0];
+			$newperms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
+
+			$abook_instance = $contact['abook_instance'];
+			if($abook_instance)
+				$abook_instance .= ',';
+			$abook_instance .= z_root();
+
+
+			$r = q("update abook set abook_their_perms = %d, abook_instance = '%s' where abook_id = %d and abook_channel = %d",
+				intval($newperms),
+				dbesc($abook_instance),
+				intval($contact['abook_id']),
+				intval($importer['channel_id'])
+			);
+		}
+		else {
+			$role = get_pconfig($importer['channel_id'],'system','permissions_role');
+			if($role) {
+				$x = get_role_perms($role);
+				if($x['perms_auto'])
+					$default_perms = $x['perms_accept'];
+			}
+			if(! $default_perms)
+				$default_perms = intval(get_pconfig($importer['channel_id'],'system','autoperms'));
+
+			$their_perms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
+
+
+			$closeness = get_pconfig($importer['channel_id'],'system','new_abook_closeness');
+			if($closeness === false)
+				$closeness = 80;
+		
+
+			$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_my_perms, abook_their_perms, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending, abook_instance ) values ( %d, %d, '%s', %d, %d, %d, '%s', '%s', '%s', '%s', %d, '%s' )",
+				intval($importer['channel_account_id']),
+				intval($importer['channel_id']),
+				dbesc($xchan['xchan_hash']),
+				intval($default_perms),
+				intval($their_perms),
+				intval($closeness),
+				dbesc(datetime_convert()),
+				dbesc(datetime_convert()),
+				dbesc(datetime_convert()),
+				dbesc(NULL_DATE),
+				intval(($default_perms) ? 0 : 1),
+				dbesc(z_root())
+			);
+			if($r) {
+				logger("New GNU-Social follower received for {$importer['channel_name']}");
+
+				$new_connection = q("select * from abook left join xchan on abook_xchan = xchan_hash left join hubloc on hubloc_hash = xchan_hash where abook_channel = %d and abook_xchan = '%s' order by abook_created desc limit 1",
+					intval($importer['channel_id']),
+					dbesc($xchan['xchan_hash'])
+				);
+		
+				if($new_connection) {
+					require_once('include/enotify.php');
+					notification(array(
+						'type'       => NOTIFY_INTRO,
+						'from_xchan'   => $xchan['xchan_hash'],
+						'to_xchan'     => $importer['channel_hash'],
+						'link'         => z_root() . '/connedit/' . $new_connection[0]['abook_id'],
+					));
+
+					if($default_perms) {
+						// Send back a sharing notification to them
+						$deliver = gnusoc_remote_follow($importer,$new_connection[0]);
+						if($deliver)
+							proc_run('php','include/deliver.php',$deliver);
+
+					}
+
+					$clone = array();
+					foreach($new_connection[0] as $k => $v) {
+						if(strpos($k,'abook_') === 0) {
+							$clone[$k] = $v;
+						}
+					}
+					unset($clone['abook_id']);
+					unset($clone['abook_account']);
+					unset($clone['abook_channel']);
+
+					$abconfig = load_abconfig($importer['channel_hash'],$clone['abook_xchan']);
+	
+			 		if($abconfig)
+						$clone['abconfig'] = $abconfig;
+
+					build_sync_packet($importer['channel_id'], array('abook' => array($clone)));
+
+				}
+			}
+		}
+
+		return;
+	}
+
+}
+

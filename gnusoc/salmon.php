@@ -204,110 +204,13 @@ function salmon_post(&$a) {
 
 	if(activity_match($item['verb'],ACTIVITY_FOLLOW) && $item['obj_type'] === ACTIVITY_OBJ_PERSON) {
 
-		logger('follow activity received');
+		$cb = array('item' => $item,'channel' => $importer, 'xchan' => $xchan, 'author' => $datarray['author'], 'caught' => false);
+		call_hooks('follow_from_feed',$cb);
+		if($cb['caught'])
+			http_status_exit(200);
 
-		$r = q("select * from abook where abook_channel = %d and abook_xchan = '%s' limit 1",
-			intval($importer['channel_id']),
-			dbesc($xchan['xchan_hash'])
-		);
-
-		if($r) {
-			$contact = $r[0];
-			$newperms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
-
-			$abook_instance = $contact['abook_instance'];
-			if($abook_instance)
-				$abook_instance .= ',';
-			$abook_instance .= z_root();
-
-
-			$r = q("update abook set abook_their_perms = %d, abook_instance = '%s' where abook_id = %d and abook_channel = %d",
-				intval($newperms),
-				dbesc($abook_instance),
-				intval($contact['abook_id']),
-				intval($importer['channel_id'])
-			);
-		}
-		else {
-			$role = get_pconfig($importer['channel_id'],'system','permissions_role');
-			if($role) {
-				$x = get_role_perms($role);
-				if($x['perms_auto'])
-					$default_perms = $x['perms_accept'];
-			}
-			if(! $default_perms)
-				$default_perms = intval(get_pconfig($importer['channel_id'],'system','autoperms'));
-
-			$their_perms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
-
-
-			$closeness = get_pconfig($importer['channel_id'],'system','new_abook_closeness');
-			if($closeness === false)
-				$closeness = 80;
-		
-
-			$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_my_perms, abook_their_perms, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending, abook_instance ) values ( %d, %d, '%s', %d, %d, %d, '%s', '%s', '%s', '%s', %d, '%s' )",
-				intval($importer['channel_account_id']),
-				intval($importer['channel_id']),
-				dbesc($xchan['xchan_hash']),
-				intval($default_perms),
-				intval($their_perms),
-				intval($closeness),
-				dbesc(datetime_convert()),
-				dbesc(datetime_convert()),
-				dbesc(datetime_convert()),
-				dbesc(NULL_DATE),
-				intval(($default_perms) ? 0 : 1),
-				dbesc(z_root())
-			);
-			if($r) {
-				logger("New GNU-Social follower received for {$importer['channel_name']}");
-
-				$new_connection = q("select * from abook left join xchan on abook_xchan = xchan_hash left join hubloc on hubloc_hash = xchan_hash where abook_channel = %d and abook_xchan = '%s' order by abook_created desc limit 1",
-					intval($importer['channel_id']),
-					dbesc($xchan['xchan_hash'])
-				);
-		
-				if($new_connection) {
-					require_once('include/enotify.php');
-					notification(array(
-						'type'       => NOTIFY_INTRO,
-						'from_xchan'   => $xchan['xchan_hash'],
-						'to_xchan'     => $importer['channel_hash'],
-						'link'         => z_root() . '/connedit/' . $new_connection[0]['abook_id'],
-					));
-
-					if($default_perms) {
-						// Send back a sharing notification to them
-						$deliver = gnusoc_remote_follow($importer,$new_connection[0]);
-						if($deliver)
-							proc_run('php','include/deliver.php',$deliver);
-
-					}
-
-					$clone = array();
-					foreach($new_connection[0] as $k => $v) {
-						if(strpos($k,'abook_') === 0) {
-							$clone[$k] = $v;
-						}
-					}
-					unset($clone['abook_id']);
-					unset($clone['abook_account']);
-					unset($clone['abook_channel']);
-
-					$abconfig = load_abconfig($importer['channel_hash'],$clone['abook_xchan']);
-	
-			 		if($abconfig)
-						$clone['abconfig'] = $abconfig;
-
-					build_sync_packet($importer['channel_id'], array('abook' => array($clone)));
-
-				}
-			}
-		}
-
-		http_status_exit(200);
 	}
+		
 
 	$m = parse_url($xchan['xchan_url']);
 	if($m) {
@@ -430,6 +333,4 @@ function salmon_post(&$a) {
 	http_status_exit($status);
 	
 }
-
-
 
