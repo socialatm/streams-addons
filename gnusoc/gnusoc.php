@@ -67,11 +67,13 @@ function gnusoc_load_module(&$a, &$b) {
 
 function gnusoc_webfinger(&$a,&$b) {
 	$b['result']['links'][] = array('rel' => 'salmon', 'href' => z_root() . '/salmon/' . $b['channel']['channel_address']);
+	$b['result']['links'][] = array('rel' => 'http://salmon-protocol.org/ns/salmon-replies', 'href' => z_root() . '/salmon/' . $b['channel']['channel_address']);
+	$b['result']['links'][] = array('rel' => 'http://salmon-protocol.org/ns/salmon-mention', 'href' => z_root() . '/salmon/' . $b['channel']['channel_address']);
 }
 
 function gnusoc_personal_xrd(&$a,&$b) {
 	$b['xml'] = str_replace('</XRD>',
-		'<Link rel="salmon" href="' . z_root() . '/salmon/' . $b['user']['channel_address'] . '" />' . "\r\n" . '</XRD>', $b['xml']);
+		'<Link rel="salmon" href="' . z_root() . '/salmon/' . $b['user']['channel_address'] . '" />' . "\r\n" .  '<Link rel="http://salmon-protocol.org/ns/salmon-replies" href="' . z_root() . '/salmon/' . $b['user']['channel_address'] . '" />' . "\r\n" .  '<Link rel="http://salmon-protocol.org/ns/salmon-mention" href="' . z_root() . '/salmon/' . $b['user']['channel_address'] . '" />' . "\r\n" . '</XRD>', $b['xml']);
 
 }
 
@@ -357,7 +359,7 @@ function gnusoc_notifier_process(&$a,&$b) {
 
 	logger('notifier process gnusoc');
 
-    if(! $b['normal_mode'])
+    if(! ($b['normal_mode'] || $b['relay_to_owner']))
         return;
 
     if($b['private'] || $b['packet_type'] || $b['mail'])
