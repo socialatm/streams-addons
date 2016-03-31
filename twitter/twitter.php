@@ -140,7 +140,7 @@ function twitter_settings_post ($a,$post) {
 		set_pconfig(local_channel(),'twitter', 'post', 1);
 		set_pconfig(local_channel(),'twitter', 'post_taglinks', 1);
 		//  reload the Addon Settings page, if we don't do it see Friendica Bug #42
-        goaway($a->get_baseurl().'/settings/featured');
+        goaway(z_root().'/settings/featured');
 	} else {
 		//  if no PIN is supplied in the POST variables, the user has changed the setting
 		//  to post a tweet for every new __public__ posting to the wall
@@ -157,7 +157,7 @@ function twitter_settings_post ($a,$post) {
 function twitter_settings(&$a,&$s) {
         if(! local_channel())
                 return;
-        $a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . $a->get_baseurl() . '/addon/twitter/twitter.css' . '" media="all" />' . "\r\n";
+        $a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/twitter/twitter.css' . '" media="all" />' . "\r\n";
 	/***
 	 * 1) Check that we have global consumer key & secret
 	 * 2) If no OAuthtoken & stuff is present, generate button to get some
@@ -860,7 +860,7 @@ function twitter_expand_entities($a, $body, $item, $no_tags = false, $dontinclud
 		$tags_arr = array();
 
 		foreach ($item->entities->hashtags AS $hashtag) {
-			$url = "#[url=".$a->get_baseurl()."/search?tag=".rawurlencode($hashtag->text)."]".$hashtag->text."[/url]";
+			$url = "#[url=".z_root()."/search?tag=".rawurlencode($hashtag->text)."]".$hashtag->text."[/url]";
 			$tags_arr["#".$hashtag->text] = $url;
 			$body = str_replace("#".$hashtag->text, $url, $body);
 		}
@@ -891,7 +891,7 @@ function twitter_expand_entities($a, $body, $item, $no_tags = false, $dontinclud
 						continue;
 
 					$basetag = str_replace('_',' ',substr($tag,1));
-					$url = '#[url='.$a->get_baseurl().'/search?tag='.rawurlencode($basetag).']'.$basetag.'[/url]';
+					$url = '#[url='.z_root().'/search?tag='.rawurlencode($basetag).']'.$basetag.'[/url]';
 					$body = str_replace($tag,$url,$body);
 					$tags_arr["#".$basetag] = $url;
 					continue;

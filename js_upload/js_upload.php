@@ -38,8 +38,8 @@ function js_upload_form(&$a,&$b) {
 
 	$b['default_upload'] = false;
 
-	$b['addon_text'] .= '<link href="' . $a->get_baseurl() . '/addon/js_upload/file-uploader/client/fileuploader.css" rel="stylesheet" type="text/css">';
-	$b['addon_text'] .= '<script src="' . $a->get_baseurl() . '/addon/js_upload/file-uploader/client/fileuploader.js" type="text/javascript"></script>';
+	$b['addon_text'] .= '<link href="' . z_root() . '/addon/js_upload/file-uploader/client/fileuploader.css" rel="stylesheet" type="text/css">';
+	$b['addon_text'] .= '<script src="' . z_root() . '/addon/js_upload/file-uploader/client/fileuploader.js" type="text/javascript"></script>';
    
 	$upload_msg = t('Upload a file');
 	$drop_msg = t('Drop files here to upload');

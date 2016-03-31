@@ -61,8 +61,8 @@ function tour_addfooter($a,&$navHtml) {
 	if(get_pconfig(local_channel(),'tour','showtour') != 1)
 		return;
 
-	$content = '<script type="text/javascript" src="' . $a->get_baseurl() . '/addon/tour/jquery-tourbus.min.js"></script>' . "\r\n";
-	$content .= '<script type="text/javascript" src="' . $a->get_baseurl() . '/addon/tour/jquery.scrollTo.min.js"></script>' . "\r\n";
+	$content = '<script type="text/javascript" src="' . z_root() . '/addon/tour/jquery-tourbus.min.js"></script>' . "\r\n";
+	$content .= '<script type="text/javascript" src="' . z_root() . '/addon/tour/jquery.scrollTo.min.js"></script>' . "\r\n";
 
 	$seen = explode(',',get_pconfig(local_channel(),'tour','seen'));
 

@@ -196,7 +196,7 @@ function statusnet_settings_post ($a,$post) {
 					}
 				}
 			}
-			goaway($a->get_baseurl().'/settings/featured');
+			goaway(z_root().'/settings/featured');
 		} 
 		else {
 
@@ -232,7 +232,7 @@ function statusnet_settings_post ($a,$post) {
 						notice( t('We could not contact the GNU social API with the Path you entered.').EOL );
 					}
 				}
-				goaway($a->get_baseurl().'/settings/featured');
+				goaway(z_root().'/settings/featured');
 			} 
 			else {
 
@@ -253,7 +253,7 @@ function statusnet_settings_post ($a,$post) {
 										set_pconfig(local_channel(),'statusnet', 'post', 1);
 										set_pconfig(local_channel(),'statusnet', 'post_taglinks', 1);
 					//  reload the Addon Settings page, if we don't do it see Bug #42
-					goaway($a->get_baseurl().'/settings/featured');
+					goaway(z_root().'/settings/featured');
 				} 
 				else {
 					//  if no PIN is supplied in the POST variables, the user has changed the setting
@@ -274,7 +274,7 @@ function statusnet_settings(&$a,&$s) {
 	if(! local_channel())
 		return;
 
-	$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . $a->get_baseurl() . '/addon/statusnet/statusnet.css' . '" media="all" />' . "\r\n";
+	$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/statusnet/statusnet.css' . '" media="all" />' . "\r\n";
 
 	/***
 	 * 1) Check that we have a base api url and a consumer key & secret

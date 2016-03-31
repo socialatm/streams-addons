@@ -173,7 +173,7 @@ function pumpio_settings(&$a,&$s) {
 
 	/* Add our stylesheet to the page so we can make our settings look nice */
 
-	//$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . $a->get_baseurl() . '/addon/pumpio/pumpio.css' . '" media="all" />' . "\r\n";
+	//$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/pumpio/pumpio.css' . '" media="all" />' . "\r\n";
 
 	/* Get the current state of our config variables */
 
@@ -212,7 +212,7 @@ function pumpio_settings(&$a,&$s) {
 			$sc .= '<div class="section-content-danger-wrapper">';
 			$sc .= '<strong>' . t("You are not authenticated to pumpio") . '</strong>';
 			$sc .= '</div>';
-			$sc .= '<a href="'.$a->get_baseurl().'/pumpio/connect" class="btn btn-primary btn-xs">'.t("(Re-)Authenticate your pump.io connection").'</a>';
+			$sc .= '<a href="'.z_root().'/pumpio/connect" class="btn btn-primary btn-xs">'.t("(Re-)Authenticate your pump.io connection").'</a>';
 		}
 
 		$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(

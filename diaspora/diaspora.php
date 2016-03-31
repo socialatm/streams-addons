@@ -1466,7 +1466,7 @@ function diaspora_asphoto($importer,$xml,$msg) {
 
 	//if($message_id) {
 	//	q("update item set plink = '%s' where id = %d",
-	//		dbesc($a->get_baseurl() . '/display/' . $importer['nickname'] . '/' . $message_id),
+	//		dbesc(z_root() . '/display/' . $importer['nickname'] . '/' . $message_id),
 	//		intval($message_id)
 	//	);
 	//}
@@ -2560,7 +2560,7 @@ function diaspora_share($owner,$contact) {
 
 
 
-	$myaddr = $owner['channel_address'] . '@' . substr($a->get_baseurl(), strpos($a->get_baseurl(),'://') + 3);
+	$myaddr = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
 
 	if(! array_key_exists('hubloc_hash',$contact)) {
 		$c = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where xchan_hash = '%s' limit 1",
@@ -2588,7 +2588,7 @@ function diaspora_share($owner,$contact) {
 function diaspora_unshare($owner,$contact) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' .  substr($a->get_baseurl(), strpos($a->get_baseurl(),'://') + 3);
+	$myaddr = $owner['channel_address'] . '@' .  substr(z_root(), strpos(z_root(),'://') + 3);
 
 	$tpl = get_markup_template('diaspora_retract.tpl','addon/diaspora');
 	$msg = replace_macros($tpl, array(
@@ -2606,7 +2606,7 @@ function diaspora_unshare($owner,$contact) {
 function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' . substr($a->get_baseurl(), strpos($a->get_baseurl(),'://') + 3);
+	$myaddr = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
 
 	if(intval($item['id']) != intval($item['parent'])) {
 		logger('attempted to send a comment as a top-level post');
@@ -2769,7 +2769,7 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 	$a = get_app();
 	if(! count($images))
 		return;
-	$mysite = substr($a->get_baseurl(),strpos($a->get_baseurl(),'://') + 3) . '/photo';
+	$mysite = substr(z_root(),strpos(z_root(),'://') + 3) . '/photo';
 
 	$qi = array();
 
@@ -2995,7 +2995,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 // bug - nomadic identity may/will affect diaspora_handle_from_contact
 	if(! $handle) {
 		if($item['author_xchan'] === $owner['channel_hash']) 
-			$handle = $owner['channel_address'] . '@' . substr($a->get_baseurl(), strpos($a->get_baseurl(),'://') + 3);
+			$handle = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
 		else
 			$handle = diaspora_handle_from_contact($item['author_xchan']);
 	}

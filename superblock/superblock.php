@@ -45,7 +45,7 @@ function superblock_addon_settings(&$a,&$s) {
 	/* Add our stylesheet to the page so we can make our settings look nice */
 	//if(! array_key_exists('htmlhead',$a->page))
 		//$a->page['htmlhead'] = '';
-	//$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . $a->get_baseurl() . '/addon/superblock/superblock.css' . '" media="all" />' . "\r\n";
+	//$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/superblock/superblock.css' . '" media="all" />' . "\r\n";
 
 	$words = get_pconfig(local_channel(),'system','blocked');
 	if(! $words)

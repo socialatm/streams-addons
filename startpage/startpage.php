@@ -42,7 +42,7 @@ function startpage_home_init($a, $b) {
 
 		if(stristr($page,'://'))
 			goaway(z_root() . '/' . $page);
-		goaway($a->get_baseurl() . (($slash) ? '' : '/') . $page);
+		goaway(z_root() . (($slash) ? '' : '/') . $page);
 	}
 	return;
 }
