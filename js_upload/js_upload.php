@@ -143,7 +143,7 @@ function js_upload_post_init(&$a,&$b) {
 	if((! array_key_exists('source',$_REQUEST)) || ($_REQUEST['source'] != 'photos'))
 		return;
 
-//	$a->data['upload_plugin'] = $b['source'];
+//	App::$data['upload_plugin'] = $b['source'];
 
 	// list of valid extensions, ex. array("jpeg", "xml", "bmp")
 
@@ -159,7 +159,7 @@ function js_upload_post_init(&$a,&$b) {
 
 
 	// to pass data through iframe you will need to encode all html tags
-	$a->data['upload_jsonresponse'] =  htmlspecialchars(json_encode($result), ENT_NOQUOTES);
+	App::$data['upload_jsonresponse'] =  htmlspecialchars(json_encode($result), ENT_NOQUOTES);
 
 	if(isset($result['error'])) {
 		logger('mod/photos.php: photos_post(): error uploading photo: ' . $result['error'] , 'LOGGER_DEBUG');
@@ -167,7 +167,7 @@ function js_upload_post_init(&$a,&$b) {
 		killme();
 	}
 
-	$a->data['upload_result'] = $result;
+	App::$data['upload_result'] = $result;
 
 }
 
@@ -176,7 +176,7 @@ function js_upload_post_file(&$a,&$b) {
 	if((! array_key_exists('source',$_REQUEST)) || ($_REQUEST['source'] != 'photos'))
 		return;
 
-	$result = $a->data['upload_result'];
+	$result = App::$data['upload_result'];
 
 	$b['src']		= $result['path'];
 	$b['filename']	= $result['filename'];
@@ -190,8 +190,8 @@ function js_upload_post_end(&$a,&$b) {
 	if((! array_key_exists('source',$_REQUEST)) || ($_REQUEST['source'] != 'photos'))
 		return;
 
-	if(x($a->data,'upload_jsonresponse')) {
-		echo $a->data['upload_jsonresponse'];
+	if(x(App::$data,'upload_jsonresponse')) {
+		echo App::$data['upload_jsonresponse'];
 		killme();
 	}
 

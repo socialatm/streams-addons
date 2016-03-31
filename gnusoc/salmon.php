@@ -9,7 +9,7 @@ if(defined('SALMON_TEST')) {
 	function salmon_init(&$a) {
 		$testing = ((argc() > 1 && argv(1) === 'test') ? true : false);
 		if($testing) {
-			$a->data['salmon_test'] = true;
+			App::$data['salmon_test'] = true;
 			salmon_post($a);
 		}
 	}
@@ -24,9 +24,9 @@ function salmon_post(&$a) {
     }
     $sys = (($sys_disabled) ? null : get_sys_channel());
 
-	if($a->data['salmon_test']) {
+	if(App::$data['salmon_test']) {
 		$xml = file_get_contents('test.xml');
-		$a->argv[1] = 'gnusoc';
+		App::$argv[1] = 'gnusoc';
 	}
 	else {
 		$xml = file_get_contents('php://input');
@@ -35,7 +35,7 @@ function salmon_post(&$a) {
 	logger('mod-salmon: new salmon ' . $xml, LOGGER_DATA);
 
 	$nick       = ((argc() > 1) ? trim(argv(1)) : '');
-//	$mentions   = (($a->argc > 2 && $a->argv[2] === 'mention') ? true : false);
+//	$mentions   = ((App::$argc > 2 && App::$argv[2] === 'mention') ? true : false);
 
 	
 	$importer = channelx_by_nick($nick);

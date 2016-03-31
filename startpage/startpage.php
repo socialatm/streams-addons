@@ -29,7 +29,7 @@ function startpage_home_init($a, $b) {
 	if(! local_channel())
 		return;
 
-	$channel = $a->get_channel();
+	$channel = App::get_channel();
 	$page = $channel['channel_startpage'];
 	if(! $page)
 		$page = get_pconfig(local_channel(),'system','startpage');
@@ -59,7 +59,7 @@ function startpage_home_init($a, $b) {
 function startpage_settings_post($a,$post) {
 	if(! local_channel())
 		return;
-	$channel = $a->get_channel();
+	$channel = App::get_channel();
 
 	if($_POST['startpage-submit']) {
 		$page = strip_tags(trim($_POST['startpage']));

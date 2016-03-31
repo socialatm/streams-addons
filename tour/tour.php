@@ -25,7 +25,7 @@ function tour_unload() {
 
 function tour_alterheader($a, &$navHtml) {
 	// Add tourbus CSS
-	$a->page['htmlhead'] .= '<link href="addon/tour/jquery-tourbus.min.css" rel="stylesheet">';
+	App::$page['htmlhead'] .= '<link href="addon/tour/jquery-tourbus.min.css" rel="stylesheet">';
 }
 
 function tour_content(&$a) {

@@ -496,7 +496,7 @@ function diaspora_pubmsg_build($msg,$channel,$contact,$prvkey,$pubkey) {
 
 	logger('diaspora_pubmsg_build: ' . $msg, LOGGER_DATA, LOG_DEBUG);
 
-    $handle = $channel['channel_address'] . '@' . get_app()->get_hostname();
+    $handle = $channel['channel_address'] . '@' . App::get_hostname();
 
 
 	$b64url_data = base64url_encode($msg,false);
@@ -561,7 +561,7 @@ function diaspora_msg_build($msg,$channel,$contact,$prvkey,$pubkey,$public = fal
 	$outer_iv = random_string(16);
 	$b_outer_iv = base64_encode($outer_iv);
 
-    $handle = $channel['channel_address'] . '@' . get_app()->get_hostname();
+    $handle = $channel['channel_address'] . '@' . App::get_hostname();
 
 	$padded_data = pkcs5_pad($msg,16);
 	$inner_encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $inner_aes_key, $padded_data, MCRYPT_MODE_CBC, $inner_iv);
@@ -845,7 +845,7 @@ function diaspora_request($importer,$xml) {
 //FIXME
 /*
 	if(feature_enabled($channel['channel_id'],'premium_channel')) {
-		$myaddr = $importer['channel_address'] . '@' .  get_app()->get_hostname();
+		$myaddr = $importer['channel_address'] . '@' .  App::get_hostname();
 		$cnv = random_string();
 		$mid = random_string();
 
@@ -2592,7 +2592,7 @@ function diaspora_unshare($owner,$contact) {
 
 	$tpl = get_markup_template('diaspora_retract.tpl','addon/diaspora');
 	$msg = replace_macros($tpl, array(
-		'$guid'   => $owner['channel_guid'] . str_replace('.','',get_app()->get_hostname()),
+		'$guid'   => $owner['channel_guid'] . str_replace('.','',App::get_hostname()),
 		'$type'   => 'Person',
 		'$handle' => $myaddr
 	));
@@ -2810,7 +2810,7 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' . get_app()->get_hostname();
+	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
 	$theiraddr = $contact['xchan_addr'];
 
 	// Diaspora doesn't support threaded comments, but some
@@ -2902,7 +2902,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' . get_app()->get_hostname();
+	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
 
 	$text = bb2diaspora_itembody($item);
 
@@ -3053,7 +3053,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 function diaspora_send_retraction($item,$owner,$contact,$public_batch = false) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' .  get_app()->get_hostname();
+	$myaddr = $owner['channel_address'] . '@' .  App::get_hostname();
 
 	// Check whether the retraction is for a top-level post or whether it's a relayable
 	if( $item['mid'] !== $item['parent_mid'] ) {
@@ -3084,7 +3084,7 @@ function diaspora_send_retraction($item,$owner,$contact,$public_batch = false) {
 function diaspora_send_mail($item,$owner,$contact) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' .  get_app()->get_hostname();
+	$myaddr = $owner['channel_address'] . '@' .  App::get_hostname();
 
 	$r = q("select * from conv where guid = '%s' and uid = %d limit 1",
 		dbesc($item['conv_guid']),
@@ -3503,7 +3503,7 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 		return;
 	$profile = $r[0];
 
-	$handle = xmlify($channel['channel_address'] . '@' . get_app()->get_hostname());
+	$handle = xmlify($channel['channel_address'] . '@' . App::get_hostname());
 	$first = xmlify(((strpos($profile['channel_name'],' '))
 		? trim(substr($profile['channel_name'],0,strpos($profile['channel_name'],' '))) : $profile['channel_name']));
 	$last = xmlify((($first === $profile['channel_name']) ? '' : trim(substr($profile['channel_name'],strlen($first)))));

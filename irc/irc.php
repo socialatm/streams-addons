@@ -35,7 +35,7 @@ function irc_addon_settings(&$a,&$s) {
 
 	/* Add our stylesheet to the page so we can make our settings look nice */
 
-	//$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/irc/irc.css' . '" media="all" />' . "\r\n";
+	//App::$page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/irc/irc.css' . '" media="all" />' . "\r\n";
 
 	/* setting popular channels, auto connect channels */
 	$sitechats = get_config('irc','sitechats'); /* popular channels */
@@ -93,11 +93,11 @@ function irc_content(&$a) {
 		$chats = array('hubzilla','friendica','chat','chatback','hottub','ircbar','dateroom','debian');
 
 
-	$a->page['aside'] .= '<div class="widget"><h3>' . t('Popular Channels') . '</h3><ul>';
+	App::$page['aside'] .= '<div class="widget"><h3>' . t('Popular Channels') . '</h3><ul>';
 	foreach($chats as $chat) {
-		$a->page['aside'] .= '<li><a href="' . z_root() . '/irc?channels=' . $chat . '" >' . '#' . $chat . '</a></li>';
+		App::$page['aside'] .= '<li><a href="' . z_root() . '/irc?channels=' . $chat . '" >' . '#' . $chat . '</a></li>';
 	}
-	$a->page['aside'] .= '</ul></div>';
+	App::$page['aside'] .= '</ul></div>';
 
         /* setting the channel(s) to auto connect */
 	$autochans = get_config('irc','autochans');

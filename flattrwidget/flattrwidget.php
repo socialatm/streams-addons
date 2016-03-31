@@ -25,11 +25,11 @@ function flattrwidget_unload() {
 function flattrwidget_construct_page(&$a,&$b) {
     if (! $b['module']=='channel')
 	return;
-    $id = $a->profile['profile_uid'];
+    $id = App::$profile['profile_uid'];
     $enable = intval(get_pconfig($id,'flattrwidget','enable'));
     if (! $enable)
 	return;
-    $a->page['htmlhead'] .= '<link rel="stylesheet" href="'.z_root().'/addon/flattrwidget/style.css'.'" media="all" />';
+    App::$page['htmlhead'] .= '<link rel="stylesheet" href="'.z_root().'/addon/flattrwidget/style.css'.'" media="all" />';
     //  get alignment and static/dynamic from the settings
     //  align is either "aside" or "right_aside"
     //  sd is either static or dynamic
@@ -65,7 +65,7 @@ function flattrwidget_construct_page(&$a,&$b) {
 function flattrwidget_settings_post($a,$s) {
     if(! local_channel() || (! x($_POST,'flattrwidget-submit')))
 	return;
-    $c = $a->get_channel();
+    $c = App::get_channel();
     set_pconfig( local_channel(), 'flattrwidget', 'align', $_POST['flattrwidget-align'] );
     set_pconfig( local_channel(), 'flattrwidget', 'sd', $_POST['flattrwidget-static'] );
     $thing = $_POST['flattrwidget-thing'];
@@ -87,7 +87,7 @@ function flattrwidget_settings(&$a,&$s) {
 	if (! $id)
 		return;
 
-	//$a->page['htmlhead'] .= '<link rel="stylesheet" href="'.z_root().'/addon/flattrwidget/style.css'.'" media="all" />';
+	//App::$page['htmlhead'] .= '<link rel="stylesheet" href="'.z_root().'/addon/flattrwidget/style.css'.'" media="all" />';
 	$lr = get_pconfig( $id, 'flattrwidget', 'align');
 	$sd = get_pconfig( $id, 'flattrwidget', 'sd');
 	$thing = get_pconfig( $id, 'flattrwidget', 'thing');

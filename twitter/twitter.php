@@ -58,8 +58,8 @@
  *   Alternatively: (old way - may not work any more)
  *     Add this key pair to your global .htconfig.php or use the admin panel.
  *
- *     $a->config['twitter']['consumerkey'] = 'your consumer_key here';
- *     $a->config['twitter']['consumersecret'] = 'your consumer_secret here';
+ *     App::$config['twitter']['consumerkey'] = 'your consumer_key here';
+ *     App::$config['twitter']['consumersecret'] = 'your consumer_secret here';
  *
  *     Requirements: PHP5, curl [Slinky library]
  */
@@ -157,7 +157,7 @@ function twitter_settings_post ($a,$post) {
 function twitter_settings(&$a,&$s) {
         if(! local_channel())
                 return;
-        $a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/twitter/twitter.css' . '" media="all" />' . "\r\n";
+        App::$page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/twitter/twitter.css' . '" media="all" />' . "\r\n";
 	/***
 	 * 1) Check that we have global consumer key & secret
 	 * 2) If no OAuthtoken & stuff is present, generate button to get some
@@ -232,7 +232,7 @@ function twitter_settings(&$a,&$s) {
 			$sc .= '<div id="twitter-info" ><img id="twitter-avatar" src="'.$twitpic.'" /><p id="twitter-info-block">'. t('Currently connected to: ') .'<a href="https://twitter.com/'.$details->screen_name.'" target="_twitter">'.$details->screen_name.'</a><br /><em>'.$details->description.'</em></p></div>';
 			$sc .= '<div class="clear"></div>';
 			//FIXME no hidewall in Red
-			if ($a->user['hidewall']) {
+			if (App::$user['hidewall']) {
 				$sc .= '<div class="section-content-info-wrapper">';
 				$sc .= t('<strong>Note:</strong> Due your privacy settings (<em>Hide your profile details from unknown viewers?</em>) the link potentially included in public postings relayed to Twitter will lead the visitor to a blank page informing the visitor that the access to your profile has been restricted.');
 				$sc .= '</div>';

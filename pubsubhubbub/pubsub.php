@@ -91,7 +91,7 @@ function pubsub_post(&$a) {
 
 	$xml = file_get_contents('php://input');
 
-	logger('pubsub: feed arrived from ' . $_SERVER['REMOTE_ADDR'] . ' for ' .  $a->cmd );
+	logger('pubsub: feed arrived from ' . $_SERVER['REMOTE_ADDR'] . ' for ' .  App::$cmd );
 	logger('pubsub: user-agent: ' . $_SERVER['HTTP_USER_AGENT'] );
 	logger('pubsub: data: ' . $xml, LOGGER_DATA);
 

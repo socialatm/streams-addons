@@ -35,7 +35,7 @@ function hubwall_post(&$a) {
 		return;
 
 	$sender_name = t('Hub Administrator');
-	$sender_email = 'sys@' . $a->get_hostname();
+	$sender_email = 'sys@' . App::get_hostname();
 
 	$subject = $_REQUEST['subject'];
 

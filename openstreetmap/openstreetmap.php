@@ -28,7 +28,7 @@ function openstreetmap_unload() {
 
 function openstreetmap_alterheader($a, &$navHtml) {
 	$addScriptTag = '<script type="text/javascript" src="' . z_root() . '/addon/openstreetmap/openstreetmap.js"></script>' . "\r\n";
-	$a->page['htmlhead'] .= $addScriptTag;
+	App::$page['htmlhead'] .= $addScriptTag;
 }
 
 /**

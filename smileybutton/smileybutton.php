@@ -152,7 +152,7 @@ function show_button($a, &$b) {
 	 *
 	 */	
 
-	$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/smileybutton/smileybutton.css' . '" media="all" />' . "\r\n";
+	App::$page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/smileybutton/smileybutton.css' . '" media="all" />' . "\r\n";
 
 	/**
 	 *
@@ -262,7 +262,7 @@ function smileybutton_settings(&$a,&$s) {
 
 	/* Add our stylesheet to the page so we can make our settings look nice */
 
-	//$a->page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/smileybutton/smileybutton.css' . '" media="all" />' . "\r\n";
+	//App::$page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/smileybutton/smileybutton.css' . '" media="all" />' . "\r\n";
 
 	/* Get the current state of our config variable */
 
