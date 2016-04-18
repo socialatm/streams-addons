@@ -146,7 +146,7 @@ function diaspora_dispatch($importer,$msg) {
 
 	$parsed_xml = xml2array($msg['message'],false,0,'tag');
 
-	$xmlbase = $parsed_xml['post'];
+	$xmlbase = $parsed_xml['xml']['post'];
 
 //	logger('diaspora_dispatch: ' . print_r($xmlbase,true), LOGGER_DATA);
 
