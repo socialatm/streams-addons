@@ -2821,8 +2821,9 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 	// versions of Diaspora (i.e. Diaspora-pistos) support
 	// likes on comments
 	if(($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) && $item['thr_parent']) {
-		$p = q("select mid, parent_mid from item where mid = '%s' limit 1",
-			dbesc($item['thr_parent'])
+		$p = q("select mid, parent_mid from item where mid = '%s' and uid = %d limit 1",
+			dbesc($item['thr_parent']),
+			intval($item['uid'])
 		);
 	}
 	else {
