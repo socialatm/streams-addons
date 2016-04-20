@@ -28,7 +28,7 @@ function diaspora_load() {
 	register_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
 	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
-
+	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 }
 
 function diaspora_unload() {
@@ -39,6 +39,7 @@ function diaspora_unload() {
 	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
+	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 }
 
 
@@ -3586,3 +3587,22 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 
 
 
+function diaspora_post_local(&$a,&$item) {
+
+	if($item['mid'] != $item['parent_mid'])
+		return;
+	if($item['created'] != $item['edited'])
+		return;
+	$author = channelx_by_hash($item['author_xchan']);
+	if(! $author)
+		return;
+	$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
+	if(! $dspr_allowed)
+		return;
+
+
+	$meta = array();
+
+
+
+}
