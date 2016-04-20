@@ -304,10 +304,10 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		foreach($r as $contact) {
 
-			if(! deliverable_singleton($contact)) {
-				logger('not deliverable from this hub');
-				continue;
-			}
+//			if(! deliverable_singleton($contact)) {
+//				logger('not deliverable from this hub');
+//				continue;
+//			}
 	
 			if($arr['packet_type'] == 'refresh') {
 				$qi = diaspora_profile_change($arr['channel'],$contact);
@@ -1733,7 +1733,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		return 202;
 	}
 
-	iconfig_set($datarray,'diaspora','fields',$xml,true)
+	iconfig_set($datarray,'diaspora','fields',$xml,true);
 
 	$result = item_store($datarray);
 
@@ -2890,7 +2890,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 		$like = false;
 	}
 
-	$xmlout = get_iconfig($item,'diaspora','fields');
+	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
 	
 
 	if($item['diaspora_meta'] && ! $like) {
@@ -3053,7 +3053,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 	}
 
 
-	$xmlout = get_iconfig($item,'diaspora','fields');
+	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
 
 	// The relayable may have arrived from somebody who provided no Diaspora Comment Virus. 
 	// We check for this above in bb2diaspora_itembody. In that case we will have generated 
@@ -3661,7 +3661,7 @@ function diaspora_post_local(&$a,&$item) {
 	$handle = $author['channel_address'] . '@' . App::get_hostname();
 
 	require_once('include/bb2diaspora.php');
-	$body = bb2diaspora_itembody($item,true);
+	$body = bb2diaspora_itembody($item,true,true);
 
 	$meta = array(
 		'guid' => $item['mid'],
