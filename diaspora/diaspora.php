@@ -3022,8 +3022,9 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 		$handle = $meta['signer'];
 		$text = $meta['body'];
 	}
-	else
+	else {
 		logger('diaspora_send_relay: original author signature not found');
+	}
 
 	/* Since the author signature is only checked by the parent, not by the relay recipients,
 	 * I think it may not be necessary for us to do so much work to preserve all the original
@@ -3036,17 +3037,11 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 	 *
 	 *
 	 */
-// bug - nomadic identity may/will affect diaspora_handle_from_contact
-	if(! $handle) {
-		if($item['author_xchan'] === $owner['channel_hash']) 
-			$handle = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
-		else
-			$handle = diaspora_handle_from_contact($item['author_xchan']);
-	}
-	if(! $handle) {
-		logger('diaspora_send_relay: no handle');
-		return;
-	}
+	
+	// bug - nomadic identity may/will affect diaspora_handle_from_contact
+
+	if(! $handle)
+		$handle = $owner['channel_address'] . '@' . App::get_hostname();
 
 	if(! $sender_signed_text) {
 		if($relay_retract)
@@ -3060,17 +3055,14 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 
 	$xmlout = get_iconfig($item,'diaspora','fields');
 
+	// The relayable may have arrived from somebody who provided no Diaspora Comment Virus. 
+	// We check for this above in bb2diaspora_itembody. In that case we will have generated 
+	// the body as a "wall-to-wall" post, and the author_signature will now be our own.  
 
+	if((! $xmlout) && (! $authorsig))
+		$authorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
+		
 	// Sign the relayable with the top-level owner's signature
-	//
-	// We'll use the $sender_signed_text that we just created, instead of the $signed_text
-	// stored in the database, because that provides the best chance that Diaspora will
-	// be able to reconstruct the signed text the same way we did. This is particularly a
-	// concern for the comment, whose signed text includes the text of the comment. The
-	// smallest change in the text of the comment, including removing whitespace, will
-	// make the signature verification fail. Since we translate from BB code to Diaspora's
-	// markup at the top of this function, which is AFTER we placed the original $signed_text
-	// in the database, it's hazardous to trust the original $signed_text.
 
 	$parentauthorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
 
