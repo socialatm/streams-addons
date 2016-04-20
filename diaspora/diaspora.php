@@ -1551,17 +1551,19 @@ function diaspora_comment($importer,$xml,$msg) {
 	     check only the parent_author_signature. Basically, they trust that the top-level post
 	     owner has already verified the authenticity of anything he/she sends out
 	   - In either case, the signature that get checked is the signature created by the person
-	     who sent the psuedo-salmon
+	     who sent the pseudo-salmon
 	*/
 
 	$signed_data = $guid . ';' . $parent_guid . ';' . $text . ';' . $diaspora_handle;
 	$key = $msg['key'];
 
+	$unxml = array_map('unxmlify',$xml);
+
 	if($parent_author_signature) {
 		// If a parent_author_signature exists, then we've received the comment
 		// relayed from the top-level post owner. 
 
-		$x = disapora_verify_fields($xml,$parent_author_signature,$key);
+		$x = diaspora_verify_fields($unxml,$parent_author_signature,$key);
 		if(! $x) {
 			logger('diaspora_comment: top-level owner verification failed.');
 			return;
@@ -1593,7 +1595,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		// should be in $msg['key']
 
 
-		$x = disapora_verify_fields($xml,$author_signature,$key);
+		$x = disapora_verify_fields($unxml,$author_signature,$key);
 		if(! $x) {
 			logger('diaspora_comment: comment author verification failed.');
 			return;
@@ -1608,7 +1610,7 @@ function diaspora_comment($importer,$xml,$msg) {
 
 		// No parent_author_signature, so let's assume we're relaying the post. Create one. 
 	
-		$xml['parent_author_signature'] = diaspora_sign_fields($xml,$importer['channel_prvkey']);
+		$unxml['parent_author_signature'] = diaspora_sign_fields($unxml,$importer['channel_prvkey']);
 
 	}
 
@@ -1733,7 +1735,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		return 202;
 	}
 
-	iconfig_set($datarray,'diaspora','fields',$xml,true);
+	set_iconfig($datarray,'diaspora','fields',$unxml,true);
 
 	$result = item_store($datarray);
 
@@ -2381,7 +2383,7 @@ function diaspora_like($importer,$xml,$msg) {
 		$arr['diaspora_meta'] = json_encode($x);
 	}
 
-	set_iconfig($arr,'diaspora','fields',$arr,true);
+	set_iconfig($arr,'diaspora','fields',array_map('unxmlify',$xml),true);
 
 	$x = item_store($arr);
 
