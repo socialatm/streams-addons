@@ -3589,7 +3589,7 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 
 function diaspora_post_local(&$a,&$item) {
 
-	if($item['mid'] != $item['parent_mid'])
+	if($item['mid'] === $item['parent_mid'])
 		return;
 	if($item['created'] != $item['edited'])
 		return;
@@ -3600,9 +3600,71 @@ function diaspora_post_local(&$a,&$item) {
 	if(! $dspr_allowed)
 		return;
 
+	$handle = $author['channel_address'] . '@' . App::get_hostname();
 
-	$meta = array();
+	require_once('include/bb2diaspora.php');
+	$body = bb2diaspora_itembody($item,true);
+
+	$meta = array(
+		'guid' => $item['mid'],
+		'parent_guid' => $item['parent_mid'],
+		'text' => $body,
+		'diaspora_handle' => $handle
+	);
+
+	$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
+	if($item['author_xchan'] === $item['owner_xchan'])
+		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$author['channel_prvkey']);
+
+	set_iconfig($item,'diaspora','fields', $meta, true);
+// 	logger('ditem: ' . print_r($item,true));
+
+}
 
 
 
+function diaspora_sign_fields($fields,$prvkey) {
+
+	if(! $fields)
+		return '';
+
+	$n = array();
+	foreach($fields as $k => $v) {
+		if($k !== 'author_signature' && $k != 'parent_author_signature')
+			$n[$k] = $v;
+	}
+
+	$s = implode($n,';');
+
+	return base64url_encode(rsa_sign($s,$prvkey),false);
+
+}
+
+
+function diaspora_verify_fields($fields,$sig,$pubkey) {
+
+	if(! $fields)
+		return false;
+
+	$n = array();
+	foreach($fields as $k => $v) {
+		if($k !== 'author_signature' && $k != 'parent_author_signature')
+			$n[$k] = $v;
+	}
+
+	$s = implode($n,';');
+	return rsa_verify($s,base64url_decode($sig),$pubkey);
+
+}
+
+function diaspora_fields_to_xml($fields) {
+
+	if(! $fields)
+		return '';
+	$s = '';
+	foreach($fields as $k => $v) {
+		$s .= '<' . $k . '>' . xmlify($v) . '</' . $k . '>' . "\n";
+	}
+
+	return $s;
 }
