@@ -224,7 +224,6 @@ function diaspora_process_outbound(&$a, &$arr) {
 				'hub' => $hub,
 				'top_level_post' => $top_level_post,
 				'private' => $private,
-				'followup' => $followup,
 				'relay_to_owner' => $relay_to_owner,
 				'uplink' => $uplink,
 				'cmd' => $cmd,
@@ -237,7 +236,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			);
 */
 
-	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
+//	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
 
 	// allow this to be set per message
 
@@ -325,11 +324,11 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $arr['normal_mode'])
 				continue;
 
-			// special handling for followup to public post
+			// special handling for send_upstream to public post
 			// all other public posts processed as public batches further below
 
-			if((! $arr['private']) && ($arr['followup'])) {
-				$qi = diaspora_send_followup($target_item,$arr['channel'],$contact, true);
+			if((! $arr['private']) && ($arr['relay_to_owner'])) {
+				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact, true);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -340,16 +339,16 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 
 			if(intval($target_item['item_deleted']) 
-				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['followup'])) {
+				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['relay_to_owner'])) {
 				// send both top-level retractions and relayable retractions for owner to relay
 				$qi = diaspora_send_retraction($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
 			}
-			elseif($arr['followup']) {
+			elseif($arr['relay_to_owner']) {
 				// send comments and likes to owner to relay
-				$qi = diaspora_send_followup($target_item,$arr['channel'],$contact);
+				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -358,7 +357,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			elseif($target_item['mid'] !== $target_item['parent_mid']) {
 				// we are the relay - send comments, likes and relayable_retractions
 				// (of comments and likes) to our conversants
-				$qi = diaspora_send_relay($target_item,$arr['channel'],$contact);
+				$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -390,7 +389,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 		elseif($target_item['mid'] !== $target_item['parent_mid']) {
 			// we are the relay - send comments, likes and relayable_retractions to our conversants
 			logger('delivery: diaspora relay: ' . $loc);
-			$qi = diaspora_send_relay($target_item,$arr['channel'],$contact,true);
+			$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact,true);
 			if($qi)
 				$arr['queued'][] = $qi;
 			return;
@@ -2849,9 +2848,9 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 
 }
 
-function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 
-	logger('diaspora_send_followup');
+	logger('diaspora_send_upstream');
 
 	$a = get_app();
 	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
@@ -2887,7 +2886,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 		$positive = 'true';
 
 		if(intval($item['item_deleted']))
-			logger('diaspora_send_followup: received deleted "like". Those should go to diaspora_send_retraction');
+			logger('diaspora_send_upstream: received deleted "like". Those should go to diaspora_send_retraction');
 	}
 	else {
 		$tpl = get_markup_template('diaspora_comment.tpl','addon/diaspora');
@@ -2896,7 +2895,6 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 
 	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
 	
-
 	if($item['diaspora_meta'] && ! $like) {
 		$diaspora_meta = json_decode($item['diaspora_meta'],true);
 		if($diaspora_meta) {
@@ -2937,7 +2935,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 		'$handle' => xmlify($myaddr)
 	));
 
-	logger('diaspora_followup: base message: ' . $msg, LOGGER_DATA);
+	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
@@ -2946,7 +2944,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 }
 
 
-function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 
 	$a = get_app();
@@ -2984,7 +2982,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 	if($p)
 		$parent = $p[0];
 	else {
-		logger('diaspora_send_relay: no parent');
+		logger('diaspora_send_downstream: no parent');
 		return;
 	}
 
@@ -3027,7 +3025,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 		$text = $meta['body'];
 	}
 	else {
-		logger('diaspora_send_relay: original author signature not found');
+		logger('diaspora_send_downstream: original author signature not found');
 	}
 
 	/* Since the author signature is only checked by the parent, not by the relay recipients,
@@ -3071,7 +3069,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 	$parentauthorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
 
 	if(! $text)
-		logger('diaspora_send_relay: no text');
+		logger('diaspora_send_downstream: no text');
 
 	$msg = replace_macros($tpl,array(
 		'$xml' => $xmlout,
@@ -3085,7 +3083,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 		'$handle' => xmlify($handle)
 	));
 
-	logger('diaspora_send_relay: base message: ' . $msg, LOGGER_DATA);
+	logger('diaspora_send_downstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
@@ -3704,7 +3702,7 @@ function diaspora_sign_fields($fields,$prvkey) {
 
 	$s = implode($n,';');
 	logger('signing_string: ' . $s);
-	return base64url_encode(rsa_sign($s,$prvkey),false);
+	return base64_encode(rsa_sign($s,$prvkey));
 
 }
 
@@ -3722,7 +3720,7 @@ function diaspora_verify_fields($fields,$sig,$pubkey) {
 
 	$s = implode($n,';');
 	logger('signing_string: ' . $s);
-	return rsa_verify($s,base64url_decode($sig),$pubkey);
+	return rsa_verify($s,base64_decode($sig),$pubkey);
 
 }
 
@@ -3734,6 +3732,5 @@ function diaspora_fields_to_xml($fields) {
 	foreach($fields as $k => $v) {
 		$s .= '<' . $k . '>' . xmlify($v) . '</' . $k . '>' . "\n";
 	}
-
-	return $s;
+	return rtrim($s);
 }
