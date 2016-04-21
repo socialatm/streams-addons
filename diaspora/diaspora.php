@@ -237,6 +237,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			);
 */
 
+	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
 
 	// allow this to be set per message
 
@@ -254,7 +255,12 @@ function diaspora_process_outbound(&$a, &$arr) {
 	if($arr['location'])
 		return;
 
-		
+	// send to public relay server - not ready for prime time
+
+	if(($arr['top_level_post']) && (! $arr['env_recips'])) {
+		// Add the relay server to the list of hubs.	
+		// = array('hubloc_callback' => 'https://relay.iliketoast.net/receive', 'xchan_pubkey' => 'bogus');
+	}
 
 	$target_item = $arr['target_item'];
 
@@ -289,12 +295,6 @@ function diaspora_process_outbound(&$a, &$arr) {
 			and xchan_hash in (" . implode(',', $hashes) . ") and xchan_network in ('diaspora', 'friendica-over-diaspora') ",
 			dbesc($arr['hub']['hubloc_url'])
 		);
-
-		// send to public relay server - probably needs work once the spec solidifies
-
-		if($arr['top_level_post']) {
-			$r[] = array('hubloc_callback' => 'https://relay.iliketoast.net/receive', 'xchan_pubkey' => 'bogus');
-		}
 
 
 		if(! $r) {
@@ -1595,7 +1595,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		// should be in $msg['key']
 
 
-		$x = disapora_verify_fields($unxml,$author_signature,$key);
+		$x = diaspora_verify_fields($unxml,$author_signature,$key);
 		if(! $x) {
 			logger('diaspora_comment: comment author verification failed.');
 			return;
@@ -2277,7 +2277,7 @@ function diaspora_like($importer,$xml,$msg) {
 		// our post, so he/she must be a contact of ours and his/her public key
 		// should be in $msg['key']
 
-		$x = disapora_verify_fields($xml,$author_signature,$key);
+		$x = diaspora_verify_fields($xml,$author_signature,$key);
 		if(! $x) {
 			logger('diaspora_like: author verification failed.');
 			return;
@@ -2850,6 +2850,8 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 }
 
 function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
+
+	logger('diaspora_send_followup');
 
 	$a = get_app();
 	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
@@ -3696,12 +3698,12 @@ function diaspora_sign_fields($fields,$prvkey) {
 
 	$n = array();
 	foreach($fields as $k => $v) {
-		if($k !== 'author_signature' && $k != 'parent_author_signature')
+		if($k !== 'author_signature' && $k !== 'parent_author_signature')
 			$n[$k] = $v;
 	}
 
 	$s = implode($n,';');
-
+	logger('signing_string: ' . $s);
 	return base64url_encode(rsa_sign($s,$prvkey),false);
 
 }
@@ -3714,11 +3716,12 @@ function diaspora_verify_fields($fields,$sig,$pubkey) {
 
 	$n = array();
 	foreach($fields as $k => $v) {
-		if($k !== 'author_signature' && $k != 'parent_author_signature')
+		if($k !== 'author_signature' && $k !== 'parent_author_signature')
 			$n[$k] = $v;
 	}
 
 	$s = implode($n,';');
+	logger('signing_string: ' . $s);
 	return rsa_verify($s,base64url_decode($sig),$pubkey);
 
 }
