@@ -3642,42 +3642,86 @@ function diaspora_post_local(&$a,&$item) {
 	 * the virus not just to provide a stored signature and Diaspora formatted text body, but must also 
 	 * include all XML fields presented by the Diaspora protocol when transmitting the comment, while
 	 * maintaining their source order. This is fine for federated communities using UNO, but it makes 
-	 * no sense to require this low-level baggage in channels and communities that have chosen nomadic
-	 * identity and other identity-aware (built-in and supported) features over federation with singleton
-	 * networks using unsupported plugins.
+	 * no sense to require this low-level baggage in channels and communities that have chosen not to use
+	 * the Diaspora protocol and services.
 	 *   
 	 */
 
+	require_once('include/bb2diaspora.php');
 
 
 	if($item['mid'] === $item['parent_mid'])
 		return;
 	if($item['created'] != $item['edited'])
 		return;
+
+	$meta = null;
+
 	$author = channelx_by_hash($item['author_xchan']);
-	if(! $author)
-		return;
-	$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
-	if(! $dspr_allowed)
-		return;
+	if($author) {
 
-	$handle = $author['channel_address'] . '@' . App::get_hostname();
+		// The author has a local channel, If they have this connector installed,
+		// sign the comment and create a Diaspora Comment Virus. 
 
-	require_once('include/bb2diaspora.php');
-	$body = bb2diaspora_itembody($item,true,true);
+		$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
+		if(! $dspr_allowed)
+			return;
 
-	$meta = array(
-		'guid' => $item['mid'],
-		'parent_guid' => $item['parent_mid'],
-		'text' => $body,
-		'diaspora_handle' => $handle
-	);
+		$handle = $author['channel_address'] . '@' . App::get_hostname();
 
-	$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
-	if($item['author_xchan'] === $item['owner_xchan'])
-		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$author['channel_prvkey']);
+		$body = bb2diaspora_itembody($item,true,true);
 
-	set_iconfig($item,'diaspora','fields', $meta, true);
+		$meta = array(
+			'guid' => $item['mid'],
+			'parent_guid' => $item['parent_mid'],
+			'text' => $body,
+			'diaspora_handle' => $handle
+		);
+
+		$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
+		if($item['author_xchan'] === $item['owner_xchan'])
+			$meta['parent_author_signature'] = diaspora_sign_fields($meta,$author['channel_prvkey']);
+	}
+
+	if((! $meta) && ($item['author_xchan'] !== $item['owner_xchan'])) {
+
+		// A local comment arrived but the commenter does not have a local channel
+		// or the commenter doesn't have the Diaspora plugin enabled.
+		// The owner *should* have a local channel
+		// Find the owner and if the owner has this addon installed, turn the comment into
+		// a 'wall-to-wall' message containing the author attribution,
+		// with the comment signed by the owner.
+
+		$owner = channelx_by_hash($item['owner_xchan']);
+		if(! $owner)
+			return;
+
+		$dspr_allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
+		if(! $dspr_allowed)
+			return;
+
+		$handle = $owner['channel_address'] . '@' . App::get_hostname();
+
+		$body = bb2diaspora_itembody($item,true,false);
+
+		$meta = array(
+			'guid' => $item['mid'],
+			'parent_guid' => $item['parent_mid'],
+			'text' => $body,
+			'diaspora_handle' => $handle
+		);
+
+		$meta['author_signature'] = diaspora_sign_fields($meta, $owner['channel_prvkey']);
+		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$owner['channel_prvkey']);
+	}
+
+
+	if($meta)
+		set_iconfig($item,'diaspora','fields', $meta, true);
+
+	// otherwise, neither the author or owner have this plugin installed. Do nothing. 
+
+
 // 	logger('ditem: ' . print_r($item,true));
 
 }
