@@ -28,7 +28,7 @@ function diaspora_load() {
 	register_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
 	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
-
+	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 }
 
 function diaspora_unload() {
@@ -39,6 +39,7 @@ function diaspora_unload() {
 	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
 	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
+	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 }
 
 
@@ -223,7 +224,6 @@ function diaspora_process_outbound(&$a, &$arr) {
 				'hub' => $hub,
 				'top_level_post' => $top_level_post,
 				'private' => $private,
-				'followup' => $followup,
 				'relay_to_owner' => $relay_to_owner,
 				'uplink' => $uplink,
 				'cmd' => $cmd,
@@ -236,6 +236,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			);
 */
 
+//	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
 
 	// allow this to be set per message
 
@@ -253,7 +254,12 @@ function diaspora_process_outbound(&$a, &$arr) {
 	if($arr['location'])
 		return;
 
-		
+	// send to public relay server - not ready for prime time
+
+	if(($arr['top_level_post']) && (! $arr['env_recips'])) {
+		// Add the relay server to the list of hubs.	
+		// = array('hubloc_callback' => 'https://relay.iliketoast.net/receive', 'xchan_pubkey' => 'bogus');
+	}
 
 	$target_item = $arr['target_item'];
 
@@ -289,12 +295,6 @@ function diaspora_process_outbound(&$a, &$arr) {
 			dbesc($arr['hub']['hubloc_url'])
 		);
 
-		// send to public relay server - probably needs work once the spec solidifies
-
-		if($arr['top_level_post']) {
-			$r[] = array('hubloc_callback' => 'https://relay.iliketoast.net/receive', 'xchan_pubkey' => 'bogus');
-		}
-
 
 		if(! $r) {
 			logger('diaspora_process_outbound: no recipients');
@@ -324,11 +324,11 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $arr['normal_mode'])
 				continue;
 
-			// special handling for followup to public post
+			// special handling for send_upstream to public post
 			// all other public posts processed as public batches further below
 
-			if((! $arr['private']) && ($arr['followup'])) {
-				$qi = diaspora_send_followup($target_item,$arr['channel'],$contact, true);
+			if((! $arr['private']) && ($arr['relay_to_owner'])) {
+				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact, true);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -339,16 +339,16 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 
 			if(intval($target_item['item_deleted']) 
-				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['followup'])) {
+				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['relay_to_owner'])) {
 				// send both top-level retractions and relayable retractions for owner to relay
 				$qi = diaspora_send_retraction($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
 			}
-			elseif($arr['followup']) {
+			elseif($arr['relay_to_owner']) {
 				// send comments and likes to owner to relay
-				$qi = diaspora_send_followup($target_item,$arr['channel'],$contact);
+				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -357,7 +357,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			elseif($target_item['mid'] !== $target_item['parent_mid']) {
 				// we are the relay - send comments, likes and relayable_retractions
 				// (of comments and likes) to our conversants
-				$qi = diaspora_send_relay($target_item,$arr['channel'],$contact);
+				$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -389,7 +389,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 		elseif($target_item['mid'] !== $target_item['parent_mid']) {
 			// we are the relay - send comments, likes and relayable_retractions to our conversants
 			logger('delivery: diaspora relay: ' . $loc);
-			$qi = diaspora_send_relay($target_item,$arr['channel'],$contact,true);
+			$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact,true);
 			if($qi)
 				$arr['queued'][] = $qi;
 			return;
@@ -1490,10 +1490,8 @@ function diaspora_comment($importer,$xml,$msg) {
 	$guid = notags(unxmlify($xml['guid']));
 	$parent_guid = notags(unxmlify($xml['parent_guid']));
 	$diaspora_handle = notags(unxmlify($xml['diaspora_handle']));
-	$target_type = notags(unxmlify($xml['target_type']));
 	$text = unxmlify($xml['text']);
 	$author_signature = notags(unxmlify($xml['author_signature']));
-
 	$parent_author_signature = (($xml['parent_author_signature']) ? notags(unxmlify($xml['parent_author_signature'])) : '');
 
 	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$msg['author']);
@@ -1501,8 +1499,6 @@ function diaspora_comment($importer,$xml,$msg) {
 		logger('diaspora_comment: cannot find contact: ' . $msg['author']);
 		return;
 	}
-
-
 	
 	$pubcomment = get_pconfig($importer['channel_id'],'system','diaspora_public_comments');
 
@@ -1545,8 +1541,6 @@ function diaspora_comment($importer,$xml,$msg) {
 		return;
 	}
 
-
-
 	/* How Diaspora performs comment signature checking:
 
 	   - If an item has been sent by the comment author to the top-level post owner to relay on
@@ -1556,29 +1550,34 @@ function diaspora_comment($importer,$xml,$msg) {
 	     check only the parent_author_signature. Basically, they trust that the top-level post
 	     owner has already verified the authenticity of anything he/she sends out
 	   - In either case, the signature that get checked is the signature created by the person
-	     who sent the psuedo-salmon
+	     who sent the pseudo-salmon
 	*/
 
 	$signed_data = $guid . ';' . $parent_guid . ';' . $text . ';' . $diaspora_handle;
 	$key = $msg['key'];
 
+	$unxml = array_map('unxmlify',$xml);
+
 	if($parent_author_signature) {
 		// If a parent_author_signature exists, then we've received the comment
-		// relayed from the top-level post owner. There's no need to check the
-		// author_signature if the parent_author_signature is valid
+		// relayed from the top-level post owner. 
 
-		$parent_author_signature = base64_decode($parent_author_signature);
-
-		if(! rsa_verify($signed_data,$parent_author_signature,$key,'sha256')) {
+		$x = diaspora_verify_fields($unxml,$parent_author_signature,$key);
+		if(! $x) {
 			logger('diaspora_comment: top-level owner verification failed.');
 			return;
 		}
+
+		//$parent_author_signature = base64_decode($parent_author_signature);
+
+		//if(! rsa_verify($signed_data,$parent_author_signature,$key,'sha256')) {
+		//	logger('diaspora_comment: top-level owner verification failed.');
+		//	return;
+		//}
 	}
 	else {
-		// If there's no parent_author_signature, then we've received the comment
-		// from the comment creator. In that case, the person is commenting on
-		// our post, so he/she must be a contact of ours and his/her public key
-		// should be in $msg['key']
+
+		// the comment is being sent to the owner to relay
 
 		if($importer['system']) {
 			// don't relay to the sys channel
@@ -1586,12 +1585,32 @@ function diaspora_comment($importer,$xml,$msg) {
 			return;
 		}
 
-		$author_signature = base64_decode($author_signature);
+		// Note: Diaspora verifies both signatures. We only verify the 
+		// author_signature when relaying.
+		// 
+		// If there's no parent_author_signature, then we've received the comment
+		// from the comment creator. In that case, the person is commenting on
+		// our post, so he/she must be a contact of ours and his/her public key
+		// should be in $msg['key']
 
-		if(! rsa_verify($signed_data,$author_signature,$key,'sha256')) {
+
+		$x = diaspora_verify_fields($unxml,$author_signature,$key);
+		if(! $x) {
 			logger('diaspora_comment: comment author verification failed.');
 			return;
 		}
+
+		//$author_signature = base64_decode($author_signature);
+
+		//if(! rsa_verify($signed_data,$author_signature,$key,'sha256')) {
+		//	logger('diaspora_comment: comment author verification failed.');
+		//	return;
+		//}
+
+		// No parent_author_signature, so let's assume we're relaying the post. Create one. 
+	
+		$unxml['parent_author_signature'] = diaspora_sign_fields($unxml,$importer['channel_prvkey']);
+
 	}
 
 	// Phew! Everything checks out. Now create an item.
@@ -1614,14 +1633,12 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$body = diaspora2bb($text);
 
-
 	$maxlen = get_max_import_size();
 
 	if($maxlen && mb_strlen($body) > $maxlen) {
 		$body = mb_substr($body,0,$maxlen,'UTF-8');
 		logger('message length exceeds max_import_size: truncated');
 	}
-
 
 	$datarray = array();
 
@@ -1706,7 +1723,6 @@ function diaspora_comment($importer,$xml,$msg) {
 	}
 
 
-
 	// So basically if something arrives at the sys channel it's by definition public and we allow it.
 	// If $pubcomment and the parent was public, we allow it.
 	// In all other cases, honour the permissions for this Diaspora connection
@@ -1718,8 +1734,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		return 202;
 	}
 
-
-
+	set_iconfig($datarray,'diaspora','fields',$unxml,true);
 
 	$result = item_store($datarray);
 
@@ -2184,8 +2199,10 @@ function diaspora_like($importer,$xml,$msg) {
 			logger('diaspora_like: duplicate like: ' . $guid);
 			return;
 		}
+
 		// Note: I don't think "Like" objects with positive = "false" are ever actually used
 		// It looks like "RelayableRetractions" are used for "unlike" instead
+
 		if($positive === 'false') {
 			logger('diaspora_like: received a like with positive set to "false"...ignoring');
 			// perhaps call drop_item()
@@ -2203,6 +2220,7 @@ function diaspora_like($importer,$xml,$msg) {
 
 	// Note: I don't think "Like" objects with positive = "false" are ever actually used
 	// It looks like "RelayableRetractions" are used for "unlike" instead
+
 	if($positive === 'false') {
 		logger('diaspora_like: received a like with positive set to "false"');
 		logger('diaspora_like: unlike received with no corresponding like...ignoring');
@@ -2235,16 +2253,22 @@ function diaspora_like($importer,$xml,$msg) {
 		// relayed from the top-level post owner. There's no need to check the
 		// author_signature if the parent_author_signature is valid
 
-		$parent_author_signature = base64_decode($parent_author_signature);
-
-		if(! rsa_verify($signed_data,$parent_author_signature,$key,'sha256')) {
-			if (intval(get_config('system','ignore_diaspora_like_signature')))
-				logger('diaspora_like: top-level owner verification failed. Proceeding anyway.');
-			else {
-				logger('diaspora_like: top-level owner verification failed.');
-				return;
-			}
+		$x = disapora_verify_fields($xml,$parent_author_signature,$key);
+		if(! $x) {
+			logger('diaspora_like: top-level owner verification failed.');
+			return;
 		}
+
+		//$parent_author_signature = base64_decode($parent_author_signature);
+
+		//if(! rsa_verify($signed_data,$parent_author_signature,$key,'sha256')) {
+		//	if (intval(get_config('system','ignore_diaspora_like_signature')))
+		//		logger('diaspora_like: top-level owner verification failed. Proceeding anyway.');
+		//	else {
+		//		logger('diaspora_like: top-level owner verification failed.');
+		//		return;
+		//	}
+		//}
 	}
 	else {
 		// If there's no parent_author_signature, then we've received the like
@@ -2252,16 +2276,26 @@ function diaspora_like($importer,$xml,$msg) {
 		// our post, so he/she must be a contact of ours and his/her public key
 		// should be in $msg['key']
 
-		$author_signature = base64_decode($author_signature);
-
-		if(! rsa_verify($signed_data,$author_signature,$key,'sha256')) {
-			if (intval(get_config('system','ignore_diaspora_like_signature')))
-				logger('diaspora_like: like creator verification failed. Proceeding anyway');
-			else {
-				logger('diaspora_like: like creator verification failed.');
-				return;
-			}
+		$x = diaspora_verify_fields($xml,$author_signature,$key);
+		if(! $x) {
+			logger('diaspora_like: author verification failed.');
+			return;
 		}
+
+
+		//$author_signature = base64_decode($author_signature);
+
+		//if(! rsa_verify($signed_data,$author_signature,$key,'sha256')) {
+		//	if (intval(get_config('system','ignore_diaspora_like_signature')))
+		//		logger('diaspora_like: like creator verification failed. Proceeding anyway');
+		//	else {
+		//		logger('diaspora_like: like creator verification failed.');
+		//		return;
+		//	}
+		//}
+
+		$xml['parent_author_signature'] = diaspora_sign_fields($xml,$importer['channel_prvkey']);
+
 	}
 	
 	logger('diaspora_like: signature check complete.',LOGGER_DEBUG);
@@ -2348,6 +2382,8 @@ function diaspora_like($importer,$xml,$msg) {
 		$arr['diaspora_meta'] = json_encode($x);
 	}
 
+	set_iconfig($arr,'diaspora','fields',array_map('unxmlify',$xml),true);
+
 	$x = item_store($arr);
 
 	if($x)
@@ -2374,7 +2410,7 @@ function diaspora_retraction($importer,$xml) {
 	if(! $contact)
 		return;
 
-	if($type === 'Person') {
+	if($type === 'Person' || $type === 'Contact') {
 		require_once('include/Contact.php');
 		contact_remove($importer['channel_id'],$contact['abook_id']);
 	}
@@ -2645,31 +2681,32 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 	}
 */
 
-	if(intval($item['item_consensus'])) {
-		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
-			'$guid_q' => '10000000',
-			'$question' => t('Please choose'),
-			'$guid_y' => '00000001',
-			'$agree' => t('Agree'),
-			'$guid_n' => '0000000F',
-			'$disagree' => t('Disagree'),
-			'$guid_a' => '00000000',
-			'$abstain' => t('Abstain')
-		));
-	}
-	elseif($item['resource_type'] === 'event' && $item['resource_id']) {
-		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
-			'$guid_q' => '1000000',
-			'$question' => t('Please choose'),
-			'$guid_y' => '0000001',
-			'$agree' => t('I will attend'),
-			'$guid_n' => '000000F',
-			'$disagree' => t('I will not attend'),
-			'$guid_a' => '0000000',
-			'$abstain' => t('I may attend')
-		));
-	}
-	else
+// @TODO We need a bit more infrastructure before we can process Diaspora polls
+//	if(intval($item['item_consensus'])) {
+//		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
+//			'$guid_q' => '10000000',
+//			'$question' => t('Please choose'),
+//			'$guid_y' => '00000001',
+//			'$agree' => t('Agree'),
+//			'$guid_n' => '0000000F',
+//			'$disagree' => t('Disagree'),
+//			'$guid_a' => '00000000',
+//			'$abstain' => t('Abstain')
+//		));
+//	}
+//	elseif($item['resource_type'] === 'event' && $item['resource_id']) {
+//		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
+//			'$guid_q' => '1000000',
+//			'$question' => t('Please choose'),
+//			'$guid_y' => '0000001',
+//			'$agree' => t('I will attend'),
+///			'$guid_n' => '000000F',
+//			'$disagree' => t('I will not attend'),
+//			'$guid_a' => '0000000',
+//			'$abstain' => t('I may attend')
+//		));
+//	}
+//	else
 		$poll = '';
 
 	$public = (($item['item_private']) ? 'false' : 'true');
@@ -2811,7 +2848,9 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 
 }
 
-function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
+
+	logger('diaspora_send_upstream');
 
 	$a = get_app();
 	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
@@ -2848,13 +2887,15 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 		$positive = 'true';
 
 		if(intval($item['item_deleted']))
-			logger('diaspora_send_followup: received deleted "like". Those should go to diaspora_send_retraction');
+			logger('diaspora_send_upstream: received deleted "like". Those should go to diaspora_send_retraction');
 	}
 	else {
 		$tpl = get_markup_template('diaspora_comment.tpl','addon/diaspora');
 		$like = false;
 	}
 
+	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
+	
 	if($item['diaspora_meta'] && ! $like) {
 		$diaspora_meta = json_decode($item['diaspora_meta'],true);
 		if($diaspora_meta) {
@@ -2885,6 +2926,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 	}
 
 	$msg = replace_macros($tpl,array(
+		'$xml' => $xmlout,
 		'$guid' => xmlify($item['mid']),
 		'$parent_guid' => xmlify($parent['mid']),
 		'$target_type' =>xmlify($target_type),
@@ -2894,7 +2936,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 		'$handle' => xmlify($myaddr)
 	));
 
-	logger('diaspora_followup: base message: ' . $msg, LOGGER_DATA);
+	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
@@ -2903,7 +2945,7 @@ function diaspora_send_followup($item,$owner,$contact,$public_batch = false) {
 }
 
 
-function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 
 	$a = get_app();
@@ -2941,7 +2983,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 	if($p)
 		$parent = $p[0];
 	else {
-		logger('diaspora_send_relay: no parent');
+		logger('diaspora_send_downstream: no parent');
 		return;
 	}
 
@@ -2983,8 +3025,9 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 		$handle = $meta['signer'];
 		$text = $meta['body'];
 	}
-	else
-		logger('diaspora_send_relay: original author signature not found');
+	else {
+		logger('diaspora_send_downstream: original author signature not found');
+	}
 
 	/* Since the author signature is only checked by the parent, not by the relay recipients,
 	 * I think it may not be necessary for us to do so much work to preserve all the original
@@ -2997,17 +3040,11 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 	 *
 	 *
 	 */
-// bug - nomadic identity may/will affect diaspora_handle_from_contact
-	if(! $handle) {
-		if($item['author_xchan'] === $owner['channel_hash']) 
-			$handle = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
-		else
-			$handle = diaspora_handle_from_contact($item['author_xchan']);
-	}
-	if(! $handle) {
-		logger('diaspora_send_relay: no handle');
-		return;
-	}
+	
+	// bug - nomadic identity may/will affect diaspora_handle_from_contact
+
+	if(! $handle)
+		$handle = $owner['channel_address'] . '@' . App::get_hostname();
 
 	if(! $sender_signed_text) {
 		if($relay_retract)
@@ -3018,23 +3055,25 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 			$sender_signed_text = $item['mid'] . ';' . $parent['mid'] . ';' . $text . ';' . $handle;
 	}
 
+
+	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
+
+	// The relayable may have arrived from somebody who provided no Diaspora Comment Virus. 
+	// We check for this above in bb2diaspora_itembody. In that case we will have generated 
+	// the body as a "wall-to-wall" post, and the author_signature will now be our own.  
+
+	if((! $xmlout) && (! $authorsig))
+		$authorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
+		
 	// Sign the relayable with the top-level owner's signature
-	//
-	// We'll use the $sender_signed_text that we just created, instead of the $signed_text
-	// stored in the database, because that provides the best chance that Diaspora will
-	// be able to reconstruct the signed text the same way we did. This is particularly a
-	// concern for the comment, whose signed text includes the text of the comment. The
-	// smallest change in the text of the comment, including removing whitespace, will
-	// make the signature verification fail. Since we translate from BB code to Diaspora's
-	// markup at the top of this function, which is AFTER we placed the original $signed_text
-	// in the database, it's hazardous to trust the original $signed_text.
 
 	$parentauthorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
 
 	if(! $text)
-		logger('diaspora_send_relay: no text');
+		logger('diaspora_send_downstream: no text');
 
 	$msg = replace_macros($tpl,array(
+		'$xml' => $xmlout,
 		'$guid' => xmlify($item['mid']),
 		'$parent_guid' => xmlify($parent['mid']),
 		'$target_type' =>xmlify($target_type),
@@ -3045,7 +3084,7 @@ function diaspora_send_relay($item,$owner,$contact,$public_batch = false) {
 		'$handle' => xmlify($handle)
 	));
 
-	logger('diaspora_send_relay: base message: ' . $msg, LOGGER_DATA);
+	logger('diaspora_send_downstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
@@ -3587,3 +3626,112 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 
 
 
+function diaspora_post_local(&$a,&$item) {
+
+	/**
+	 * If all the conditions are met, generate an instance of the Diaspora Comment Virus
+	 *
+	 * Previously all comments from any Hubzilla source (including those who have not opted in to
+	 * Diaspora federation), were required to locally generate a Diaspora comment signature.
+	 * The only exception was wall-to-wall posts which have no local signing authority.
+	 *
+	 * Going forward, if we are asked to propagate the virus and it is not present (due to the post author
+	 * not opting in to Diaspora federation); we will generate a "wall-to-wall" comment and not require 
+	 * a source signature. This allows hubs and communities to opt-out of Diaspora federation and not be
+	 * forced to generate the comment virus regardless. This is necessary because Diaspora now requires
+	 * the virus not just to provide a stored signature and Diaspora formatted text body, but must also 
+	 * include all XML fields presented by the Diaspora protocol when transmitting the comment, while
+	 * maintaining their source order. This is fine for federated communities using UNO, but it makes 
+	 * no sense to require this low-level baggage in channels and communities that have chosen nomadic
+	 * identity and other identity-aware (built-in and supported) features over federation with singleton
+	 * networks using unsupported plugins.
+	 *   
+	 */
+
+
+
+	if($item['mid'] === $item['parent_mid'])
+		return;
+	if($item['created'] != $item['edited'])
+		return;
+	$author = channelx_by_hash($item['author_xchan']);
+	if(! $author)
+		return;
+	$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
+	if(! $dspr_allowed)
+		return;
+
+	$handle = $author['channel_address'] . '@' . App::get_hostname();
+
+	require_once('include/bb2diaspora.php');
+	$body = bb2diaspora_itembody($item,true,true);
+
+	$meta = array(
+		'guid' => $item['mid'],
+		'parent_guid' => $item['parent_mid'],
+		'text' => $body,
+		'diaspora_handle' => $handle
+	);
+
+	$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
+	if($item['author_xchan'] === $item['owner_xchan'])
+		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$author['channel_prvkey']);
+
+	set_iconfig($item,'diaspora','fields', $meta, true);
+// 	logger('ditem: ' . print_r($item,true));
+
+}
+
+/**
+ * Some utility functions for processing the Diaspora comment virus.
+ *
+ */  
+
+
+
+
+function diaspora_sign_fields($fields,$prvkey) {
+
+	if(! $fields)
+		return '';
+
+	$n = array();
+	foreach($fields as $k => $v) {
+		if($k !== 'author_signature' && $k !== 'parent_author_signature')
+			$n[$k] = $v;
+	}
+
+	$s = implode($n,';');
+	logger('signing_string: ' . $s);
+	return base64_encode(rsa_sign($s,$prvkey));
+
+}
+
+
+function diaspora_verify_fields($fields,$sig,$pubkey) {
+
+	if(! $fields)
+		return false;
+
+	$n = array();
+	foreach($fields as $k => $v) {
+		if($k !== 'author_signature' && $k !== 'parent_author_signature')
+			$n[$k] = $v;
+	}
+
+	$s = implode($n,';');
+	logger('signing_string: ' . $s);
+	return rsa_verify($s,base64_decode($sig),$pubkey);
+
+}
+
+function diaspora_fields_to_xml($fields) {
+
+	if(! $fields)
+		return '';
+	$s = '';
+	foreach($fields as $k => $v) {
+		$s .= '<' . $k . '>' . xmlify($v) . '</' . $k . '>' . "\n";
+	}
+	return rtrim($s);
+}
