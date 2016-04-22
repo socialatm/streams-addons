@@ -3660,15 +3660,12 @@ function diaspora_post_local(&$a,&$item) {
 	$author = channelx_by_hash($item['author_xchan']);
 	if($author) {
 
-		logger('local author channel found.', LOGGER_DEBUG, LOG_INFO);
-
 		// The author has a local channel, If they have this connector installed,
 		// sign the comment and create a Diaspora Comment Virus. 
 
 		$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
 		if(! $dspr_allowed)
 			return;
-
 
 		$handle = $author['channel_address'] . '@' . App::get_hostname();
 
@@ -3687,8 +3684,6 @@ function diaspora_post_local(&$a,&$item) {
 	}
 
 	if((! $meta) && ($item['author_xchan'] !== $item['owner_xchan'])) {
-
-		logger('attempting diaspora meta forgery since local author has no local channel or has diaspora disabled.', LOGGER_DEBUG, LOG_INFO);
 
 		// A local comment arrived but the commenter does not have a local channel
 		// or the commenter doesn't have the Diaspora plugin enabled.
