@@ -3,23 +3,30 @@
 
 /**
  * Name: bookmarker
- * Description: Replace #^ with a bookmark icon. Font awesome is used for Redbasic and derived themes. A neutral dark grey PNG file is used for other themes.
+ * Description: Replace #^ with a bookmark icon which doubles as a 'save bookmarks' link. Font awesome is used for Redbasic and derived themes. A neutral dark grey PNG file is used for other themes.
  * Version: 1.1
+ * MinVersion: 1.4.2
  * Author: Mike Macgirvin <mike@zothub.com>
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
  * 
  */
 
+/**
+ * TODO: Currently when a bookmark is saved, all bookmark links in the post are saved.
+ * It is possible to select a specific bookmark for saving, but requires modification to
+ * the JS handler itemBookmark() which only takes an item id currently. 
+ */
+
 function bookmarker_install() {
-	register_hook('prepare_body', 'addon/bookmarker/bookmarker.php', 'bookmarker_prepare_body', 10);
+	Zotlabs\Extend\Hook::register('prepare_body', 'addon/bookmarker/bookmarker.php', 'bookmarker_prepare_body');
 }
 
 
 function bookmarker_uninstall() {
-	unregister_hook('prepare_body', 'addon/bookmarker/bookmarker.php', 'bookmarker_prepare_body');
+	Zotlabs\Extend\Hook::unregister('prepare_body', 'addon/bookmarker/bookmarker.php', 'bookmarker_prepare_body');
 }
 
-function bookmarker_prepare_body(&$a,&$b) {
+function bookmarker_prepare_body(&$b) {
 
 
 	if(get_pconfig(local_channel(),'bookmarker','disable'))
