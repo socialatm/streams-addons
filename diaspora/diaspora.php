@@ -172,10 +172,10 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		foreach($r as $contact) {
 
-//			if(! deliverable_singleton($contact)) {
-//				logger('not deliverable from this hub');
-//				continue;
-//			}
+			if(! deliverable_singleton($arr['channel']['channel_id'],$contact)) {
+				logger('not deliverable from this hub');
+				continue;
+			}
 	
 			if($arr['packet_type'] == 'refresh') {
 				$qi = diaspora_profile_change($arr['channel'],$contact);
