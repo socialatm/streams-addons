@@ -654,6 +654,23 @@ function diaspora_post($importer,$xml,$msg) {
 	}
 
 	$result = item_store($datarray);
+
+	if($result['success']) {
+		$r = q("select * from item where id = %d",
+			intval($result['item_id'])
+		);
+		if($r) {
+			xchan_query($r);
+			$sync_item = fetch_post_tags($r);
+			$rid = q("select * from item_id where iid = %d",
+				intval($post_id)
+			);
+			build_sync_packet($importer['channel_id'],array('item' => array(encode_item($sync_item[0],true)),'item_id' => $rid));
+		}
+	}
+
+
+
 	return;
 
 }
@@ -879,6 +896,23 @@ function diaspora_reshare($importer,$xml,$msg) {
 	}
 
 	$result = item_store($datarray);
+
+	if($result['success']) {
+		$r = q("select * from item where id = %d",
+			intval($result['item_id'])
+		);
+		if($r) {
+			xchan_query($r);
+			$sync_item = fetch_post_tags($r);
+			$rid = q("select * from item_id where iid = %d",
+				intval($post_id)
+			);
+			build_sync_packet($importer['channel_id'],array('item' => array(encode_item($sync_item[0],true)),'item_id' => $rid));
+		}
+	}
+
+
+
 
 	return;
 
@@ -1245,11 +1279,13 @@ function diaspora_comment($importer,$xml,$msg) {
 	if($result && $result['success'])
 		$message_id = $result['item_id'];
 
+
+	$upstream_leg = false;
 	if(intval($parent_item['item_origin']) && (! $parent_author_signature)) {
 		// if the message isn't already being relayed, notify others
 		// the existence of parent_author_signature means the parent_author or owner
 		// is already relaying.
-
+		$upstream_leg = true;
 		proc_run('php','include/notifier.php','comment-import',$message_id);
 	}
 
@@ -1257,8 +1293,16 @@ function diaspora_comment($importer,$xml,$msg) {
 		$r = q("select * from item where id = %d limit 1",
 			intval($result['item_id'])
 		);
-		if($r)
+		if($r) {
 			send_status_notifications($result['item_id'],$r[0]);
+			xchan_query($r);
+			$sync_item = fetch_post_tags($r);
+			$rid = q("select * from item_id where iid = %d",
+				intval($post_id)
+			);
+			if(! $upstream_leg)
+				build_sync_packet($importer['channel_id'],array('item' => array(encode_item($sync_item[0],true)),'item_id' => $rid));
+		}
 	}
 
 	return;
