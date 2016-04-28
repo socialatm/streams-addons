@@ -157,9 +157,10 @@ function diaspora_is_blacklisted($s) {
 
 /**
  *
- * diaspora_decode($importer,$xml)
+ * diaspora_decode($importer,$xml,$format)
  *   array $importer -> from user table
- *   string $xml -> urldecoded Diaspora salmon 
+ *   string $xml -> urldecoded Diaspora salmon
+ *   string $format 'legacy', 'xml', or 'json' 
  *
  * Returns array
  * 'message' -> decoded Diaspora XML message
@@ -170,112 +171,136 @@ function diaspora_is_blacklisted($s) {
  */
 
 
-function diaspora_decode($importer,$xml) {
+function diaspora_decode($importer,$xml,$format) {
 
 	$public = false;
-	$basedom = parse_xml_string($xml);
 
-	$children = $basedom->children('https://joindiaspora.com/protocol');
+	if($format === 'json') {
+		$json = json_decode($xml,true);
+	}
 
-	if($children->header) {
+	if($format === 'xml') {
 		$public = true;
-		$author_link = str_replace('acct:','',$children->header->author_id);
-	}
-	else {
-
-		$encrypted_header = json_decode(base64_decode($children->encrypted_header));
-
-		$encrypted_aes_key_bundle = base64_decode($encrypted_header->aes_key);
-		$ciphertext = base64_decode($encrypted_header->ciphertext);
-
-		$outer_key_bundle = '';
-		openssl_private_decrypt($encrypted_aes_key_bundle,$outer_key_bundle,$importer['channel_prvkey']);
-
-		$j_outer_key_bundle = json_decode($outer_key_bundle);
-
-		$outer_iv = base64_decode($j_outer_key_bundle->iv);
-		$outer_key = base64_decode($j_outer_key_bundle->key);
-
-		$decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $outer_key, $ciphertext, MCRYPT_MODE_CBC, $outer_iv);
-
-
-		$decrypted = pkcs5_unpad($decrypted);
-
-		/**
-		 * $decrypted now contains something like
-		 *
-		 *  <decrypted_header>
-		 *	 <iv>8e+G2+ET8l5BPuW0sVTnQw==</iv>
-		 *	 <aes_key>UvSMb4puPeB14STkcDWq+4QE302Edu15oaprAQSkLKU=</aes_key>
-
-***** OBSOLETE
-
-		 *	 <author>
-		 *	   <name>Ryan Hughes</name>
-		 *	   <uri>acct:galaxor@diaspora.pirateship.org</uri>
-		 *	 </author>
-
-***** CURRENT
-
-		 *	 <author_id>galaxor@diaspora.priateship.org</author_id>
-
-***** END DIFFS
-
-		 *  </decrypted_header>
-		 */
-
-		logger('decrypted: ' . $decrypted, LOGGER_DATA);
-		$idom = parse_xml_string($decrypted,false);
-
-		$inner_iv = base64_decode($idom->iv);
-		$inner_aes_key = base64_decode($idom->aes_key);
-
-		$author_link = str_replace('acct:','',$idom->author_id);
-
 	}
 
-	$dom = $basedom->children(NAMESPACE_SALMON_ME);
+	if($format !== 'json') {
 
-	// figure out where in the DOM tree our data is hiding
+		$basedom = parse_xml_string($xml);
 
-	if($dom->provenance->data)
-		$base = $dom->provenance;
-	elseif($dom->env->data)
-		$base = $dom->env;
-	elseif($dom->data)
-		$base = $dom;
 
-	if(! $base) {
-		logger('mod-diaspora: unable to locate salmon data in xml ', LOGGER_NORMAL, LOG_ERR);
-		http_status_exit(400);
+		if($format === 'xml') {
+			$children = $basedom->children('http://salmon-protocol.org/ns/magic-env');
+			$public = true;
+			$author_link = str_replace('acct:','',base64url_decode($children->key_id));
+
+			/**
+				SimpleXMLElement Object
+				(
+				    [encoding] => base64url
+				    [alg] => RSA-SHA256
+				    [data] => ((base64url-encoded payload message))
+				    [sig] => ((the RSA-SHA256 signature of the above data))
+				    [key_id] => ((base64url-encoded Alice's diaspora ID))
+				)
+			**/
+		} 
+		else {
+
+			$children = $basedom->children('https://joindiaspora.com/protocol');
+
+			if($children->header) {
+				$public = true;
+				$author_link = str_replace('acct:','',$children->header->author_id);
+			}
+			else {
+
+				$encrypted_header = json_decode(base64_decode($children->encrypted_header));
+
+				$encrypted_aes_key_bundle = base64_decode($encrypted_header->aes_key);
+				$ciphertext = base64_decode($encrypted_header->ciphertext);
+
+				$outer_key_bundle = '';
+				openssl_private_decrypt($encrypted_aes_key_bundle,$outer_key_bundle,$importer['channel_prvkey']);
+
+				$j_outer_key_bundle = json_decode($outer_key_bundle);
+
+				$outer_iv = base64_decode($j_outer_key_bundle->iv);
+				$outer_key = base64_decode($j_outer_key_bundle->key);
+
+				$decrypted = mcrypt_decrypt(MCRYPT_RIJNDAEL_128, $outer_key, $ciphertext, MCRYPT_MODE_CBC, $outer_iv);
+
+
+				$decrypted = pkcs5_unpad($decrypted);
+
+				/**
+				 * $decrypted now contains something like
+				 *
+				 *  <decrypted_header>
+				 *	 <iv>8e+G2+ET8l5BPuW0sVTnQw==</iv>
+				 *	 <aes_key>UvSMb4puPeB14STkcDWq+4QE302Edu15oaprAQSkLKU=</aes_key>
+				 ***** OBSOLETE
+				 *	 <author>
+				 *	   <name>Ryan Hughes</name>
+				 *	   <uri>acct:galaxor@diaspora.pirateship.org</uri>
+				 *	 </author>
+				 ***** CURRENT/LEGACY
+				 *	 <author_id>galaxor@diaspora.pirateship.org</author_id>
+				 ***** END DIFFS
+				 *  </decrypted_header>
+				 */
+
+				logger('decrypted: ' . $decrypted, LOGGER_DATA);
+				$idom = parse_xml_string($decrypted,false);
+
+				$inner_iv = base64_decode($idom->iv);
+				$inner_aes_key = base64_decode($idom->aes_key);
+
+				$author_link = str_replace('acct:','',$idom->author_id);
+
+			}
+		}
+	
+		$dom = $basedom->children(NAMESPACE_SALMON_ME);
+
+		// figure out where in the DOM tree our data is hiding
+
+		if($dom->provenance->data)
+			$base = $dom->provenance;
+		elseif($dom->env->data)
+			$base = $dom->env;
+		elseif($dom->data)
+			$base = $dom;
+
+		if(! $base) {
+			logger('mod-diaspora: unable to locate salmon data in xml ', LOGGER_NORMAL, LOG_ERR);
+			http_status_exit(400);
+		}
+
+
+		// Stash the signature away for now. We have to find their key or it won't be good for anything.
+		$signature = base64url_decode($base->sig);
+
+		// unpack the  data
+
+		// strip whitespace so our data element will return to one big base64 blob
+		$data = str_replace(array(" ","\t","\r","\n"),array("","","",""),$base->data);
+
+		// stash away some other stuff for later
+
+		$type     = $base->data[0]->attributes()->type[0];
+		$keyhash  = $base->sig[0]->attributes()->keyhash[0];
+		$encoding = $base->encoding;
+		$alg      = $base->alg;
+
+		$signed_data = $data  . '.' . base64url_encode($type,false) . '.' . base64url_encode($encoding,false) . '.' . base64url_encode($alg,false);
+
+
+		// decode the data
+		$data = base64url_decode($data);
 	}
-
-
-	// Stash the signature away for now. We have to find their key or it won't be good for anything.
-	$signature = base64url_decode($base->sig);
-
-	// unpack the  data
-
-	// strip whitespace so our data element will return to one big base64 blob
-	$data = str_replace(array(" ","\t","\r","\n"),array("","","",""),$base->data);
-
-
-	// stash away some other stuff for later
-
-	$type = $base->data[0]->attributes()->type[0];
-	$keyhash = $base->sig[0]->attributes()->keyhash[0];
-	$encoding = $base->encoding;
-	$alg = $base->alg;
-
-	$signed_data = $data  . '.' . base64url_encode($type,false) . '.' . base64url_encode($encoding,false) . '.' . base64url_encode($alg,false);
-
-
-	// decode the data
-	$data = base64url_decode($data);
-
 
 	if($public) {
-		$inner_decrypted = $data;
+			$inner_decrypted = $data;
 	}
 	else {
 

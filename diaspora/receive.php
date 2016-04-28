@@ -55,22 +55,48 @@ function receive_post(&$a) {
 
 	logger('mod-diaspora: receiving post', LOGGER_DEBUG, LOG_INFO);
 
-	$xml = ltrim($_POST['xml']);
+	if($_POST['xml']) {
+		$xml = ltrim($_POST['xml']);
+		$format = 'legacy';
+		if(substr($xml,0,1) !== '<')
+			$xml = urldecode($xml);
+	}
+	else {
+		$xml = ltrim(file_get_contents('php://input');
+		$format = 'bis';
+		$decode_counter = 0;
+		while($decode_counter < 3) {
+			if((substr($xml,0,1) === '{') || (substr($xml,0,1) === '<')))
+				break;
+			$decode_counter ++;
+			$xml = urldecode($xml);
+		}
+		logger('decode_counter: ' . $decode_counter, LOGGER_DEBUG, LOG_INFO);
+	}
 
-	// It is an application/x-www-form-urlencoded XML document that may have been urlencoded twice.
-	// Check for this. urldecode again if the first non-whitespace char isn't '<'.
+	if($format === 'bis')
+		switch(substr($xml,0,1)) {
+			case '{':
+				$format = 'json';
+				break;
+			case '<':
+				$format = 'salmon';
+				break;
+			default:
+				break;
+		}
+	}
 
-	if(strpos($xml,'<') !== 0)
-		$xml = urldecode($xml);
+	logger('diaspora salmon format: ' . $format, LOGGER_DEBUG, LOG_INFO);
 
 	logger('mod-diaspora: new salmon ' . $xml, LOGGER_DATA);
 
-	if(! $xml)
+	if((! $xml) || ($format === 'bis'))
 		http_status_exit(500);
 
 	logger('mod-diaspora: message is okay', LOGGER_DEBUG);
 
-	$msg = diaspora_decode($importer,$xml);
+	$msg = diaspora_decode($importer,$xml,$format);
 
 	logger('mod-diaspora: decoded', LOGGER_DEBUG);
 
