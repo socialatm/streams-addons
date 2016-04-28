@@ -160,7 +160,7 @@ function diaspora_is_blacklisted($s) {
  * diaspora_decode($importer,$xml,$format)
  *   array $importer -> from user table
  *   string $xml -> urldecoded Diaspora salmon
- *   string $format 'legacy', 'xml', or 'json' 
+ *   string $format 'legacy', 'salmon', or 'json' 
  *
  * Returns array
  * 'message' -> decoded Diaspora XML message
@@ -179,7 +179,7 @@ function diaspora_decode($importer,$xml,$format) {
 		$json = json_decode($xml,true);
 	}
 
-	if($format === 'xml') {
+	if($format === 'salmon') {
 		$public = true;
 	}
 
@@ -188,7 +188,7 @@ function diaspora_decode($importer,$xml,$format) {
 		$basedom = parse_xml_string($xml);
 
 
-		if($format === 'xml') {
+		if($format === 'salmon') {
 			$children = $basedom->children('http://salmon-protocol.org/ns/magic-env');
 			$public = true;
 			$author_link = str_replace('acct:','',base64url_decode($children->key_id));
