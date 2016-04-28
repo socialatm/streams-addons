@@ -62,11 +62,11 @@ function receive_post(&$a) {
 			$xml = urldecode($xml);
 	}
 	else {
-		$xml = ltrim(file_get_contents('php://input');
+		$xml = ltrim(file_get_contents('php://input'));
 		$format = 'bis';
 		$decode_counter = 0;
 		while($decode_counter < 3) {
-			if((substr($xml,0,1) === '{') || (substr($xml,0,1) === '<')))
+			if((substr($xml,0,1) === '{') || (substr($xml,0,1) === '<'))
 				break;
 			$decode_counter ++;
 			$xml = urldecode($xml);
@@ -74,7 +74,7 @@ function receive_post(&$a) {
 		logger('decode_counter: ' . $decode_counter, LOGGER_DEBUG, LOG_INFO);
 	}
 
-	if($format === 'bis')
+	if($format === 'bis') {
 		switch(substr($xml,0,1)) {
 			case '{':
 				$format = 'json';
