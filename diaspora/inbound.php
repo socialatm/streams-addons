@@ -950,6 +950,12 @@ function diaspora_reshare($importer,$xml,$msg) {
 
 
 function diaspora_asphoto($importer,$xml,$msg) {
+
+	// This call is believed to be obsolete since 2011-2012 and has not been ported 
+	// from the original Friendica implementation. The code remains in case it is 
+	// ever reimplemented in Diaspora, though it is unlikely that will occur in the
+	// same context. 
+
 	logger('diaspora_asphoto called');
 
 	$a = get_app();
@@ -1034,14 +1040,12 @@ function diaspora_asphoto($importer,$xml,$msg) {
 
 	$datarray['app']  = 'Diaspora/Cubbi.es';
 
-	$message_id = item_store($datarray);
+	$result = item_store($datarray);
 
-	//if($message_id) {
-	//	q("update item set plink = '%s' where id = %d",
-	//		dbesc(z_root() . '/display/' . $importer['nickname'] . '/' . $message_id),
-	//		intval($message_id)
-	//	);
-	//}
+	if($result['success']) {
+		sync_an_item($importer['channel_id'],$result['item_id']);
+	}
+
 
 	return;
 
@@ -1957,17 +1961,17 @@ function diaspora_like($importer,$xml,$msg) {
 
 	set_iconfig($arr,'diaspora','fields',array_map('unxmlify',$xml),true);
 
-	$x = item_store($arr);
+	$result = item_store($arr);
 
-	if($x)
-		$message_id = $x['item_id'];
+	if($result['success']) {
+		// if the message isn't already being relayed, notify others
+		// the existence of parent_author_signature means the parent_author or owner
+		// is already relaying. The parent_item['origin'] indicates the message was created on our system
 
-	// if the message isn't already being relayed, notify others
-	// the existence of parent_author_signature means the parent_author or owner
-	// is already relaying. The parent_item['origin'] indicates the message was created on our system
-
-	if(intval($parent_item['item_origin']) && (! $parent_author_signature))
-		proc_run('php','include/notifier.php','comment-import',$message_id);
+		if(intval($parent_item['item_origin']) && (! $parent_author_signature))
+			proc_run('php','include/notifier.php','comment-import',$result['item_id']);
+		sync_an_item($importer['channel_id'],$result['item_id']);
+	}
 
 	return;
 }

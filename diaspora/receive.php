@@ -55,11 +55,19 @@ function receive_post(&$a) {
 
 	logger('mod-diaspora: receiving post', LOGGER_DEBUG, LOG_INFO);
 
+	// Diaspora traditionally urlencodes or base64 encodes things a superfluous number of times.
+	// The legacy format is double url-encoded for an unknown reason. At the time of this writing
+	// the new formats have not yet been seen crossing the wire, so we're being proactive and decoding
+	// until we see something reasonable. Once we know how many times we are expected to decode we can 
+	// refine this.   
+
 	if($_POST['xml']) {
 		$xml = ltrim($_POST['xml']);
 		$format = 'legacy';
+		// PHP performed the first decode when populating the $_POST variable.
+		// Here we do the second - which has been required since 2010-2011.
 		if(substr($xml,0,1) !== '<')
-			$xml = urldecode($xml);
+			$xml = ltrim(urldecode($xml));
 	}
 	else {
 		$xml = ltrim(file_get_contents('php://input'));
@@ -69,7 +77,7 @@ function receive_post(&$a) {
 			if((substr($xml,0,1) === '{') || (substr($xml,0,1) === '<'))
 				break;
 			$decode_counter ++;
-			$xml = urldecode($xml);
+			$xml = ltrim(urldecode($xml));
 		}
 		logger('decode_counter: ' . $decode_counter, LOGGER_DEBUG, LOG_INFO);
 	}
