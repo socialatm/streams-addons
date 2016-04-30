@@ -1830,7 +1830,7 @@ function diaspora_like($importer,$xml,$msg) {
 		// relayed from the top-level post owner. There's no need to check the
 		// author_signature if the parent_author_signature is valid
 
-		$x = disapora_verify_fields($xml,$parent_author_signature,$key);
+		$x = diaspora_verify_fields($xml,$parent_author_signature,$key);
 		if(! $x) {
 			logger('diaspora_like: top-level owner verification failed.');
 			return;
