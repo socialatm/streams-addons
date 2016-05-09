@@ -11,6 +11,8 @@
 
 function std_embeds_load() {
 	Zotlabs\Extend\Hook::register('oembed_action','addon/std_embeds/std_embeds.php','std_embeds_action');
+	Zotlabs\Extend\Hook::register('html2bb_video','addon/std_embeds/std_embeds.php','std_embeds_html2bb_video');
+	Zotlabs\Extend\Hook::register('bb_translate_video','addon/std_embeds/std_embeds.php','std_embeds_bb_translate_video');
 }
 
 function std_embeds_unload() {
@@ -51,5 +53,42 @@ function std_embeds_action(&$arr) {
 		$arr['action'] = 'allow';
 		logger('allowed');
 	}
+
+}
+
+
+function std_embeds_html2bb_video(&$x) {
+	$s = $x['string'];
+
+	$s = preg_replace('#<object[^>]+>(.*?)https?://www.youtube.com/((?:v|cp)/[A-Za-z0-9\-_=]+)(.*?)</object>#ism',
+			'[embed]https://www.youtube.com/watch?v=$2[/embed]', $s);
+
+	$s = preg_replace('#<iframe[^>](.*?)https?://www.youtube.com/embed/([A-Za-z0-9\-_=]+)(.*?)</iframe>#ism',
+			'[embed]https://www.youtube.com/watch?v=$2[/embed]', $s);
+
+	$s = preg_replace('#<iframe[^>](.*?)https?://player.vimeo.com/video/([0-9]+)(.*?)</iframe>#ism',
+			'[embed]https://player.vimeo.com/video/$2[/embed]', $s);
+
+	$x['string'] = $s;
+
+}
+
+
+function std_embeds_bb_translate_video(&$x) {
+
+	$s = $x['string'];
+
+	$matches = null;
+	$r = preg_match_all("/\[video\](.*?)\[\/video\]/ism",$s,$matches,PREG_SET_ORDER);
+	if($r) {
+		foreach($matches as $mtch) {
+			if((stristr($mtch[1],'youtube')) || (stristr($mtch[1],'youtu.be')))
+				$s = str_replace($mtch[0],'[embed]' . $mtch[1] . '[/embed]',$s);
+			elseif(stristr($mtch[1],'vimeo'))
+				$s = str_replace($mtch[0],'[embed]' . $mtch[1] . '[/embed]',$s);
+		}
+	}
+
+	$x['string'] = $s;
 
 }
