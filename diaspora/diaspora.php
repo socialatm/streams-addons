@@ -32,6 +32,7 @@ function diaspora_load() {
 	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
 	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
+	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 }
 
 function diaspora_unload() {
@@ -43,6 +44,7 @@ function diaspora_unload() {
 	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
+	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 }
 
 
@@ -54,6 +56,31 @@ function diaspora_load_module(&$a, &$b) {
 	if($b['module'] === 'p') {
 		require_once('addon/diaspora/p.php');
 		$b['installed'] = true;
+	}
+}
+
+
+function diaspora_well_known(&$a,&$b) {
+	if(argc() > 1 && argv(1) === 'x-social-relay') {
+		$disabled = (get_config('system','disable_discover_tab') || get_config('system','disable_diaspora_discover_tab'));
+		$scope = 'all';
+		$tags = get_config('diaspora','relay_tags');
+		if($tags) {
+			$disabled = false;
+			$scope = 'tags';
+		}
+
+		$arr = array(
+			'subscribe' => (($disabled) ? false : true),
+			'scope' => $scope
+		);
+		if($tags)
+			$arr['tags'] = $tags;
+
+		header('Content-type: application/json');
+		echo json_encode($arr);
+		killme();			
+
 	}
 }
 
