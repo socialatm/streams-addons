@@ -39,6 +39,9 @@ function diaspora_load() {
 		$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
 		if($x) {
 			set_config('diaspora','relay_handle',$x);
+			// Now register
+			$url = "http://the-federation.info/register/" . App::get_hostname();
+			$ret = z_fetch_url($url);
 		}
 	}
 
