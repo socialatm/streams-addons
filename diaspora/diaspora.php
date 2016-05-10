@@ -121,7 +121,6 @@ function diaspora_notifier_process(&$a,&$arr) {
 			$arr['recipients'][] = "'" . $relay . "'";
 		}
 	}
-
 }
 
 
@@ -348,7 +347,7 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 
 	logger('diaspora_queue: URL: ' . $dest_url, LOGGER_DEBUG);	
 
-	if(intval(get_config('system','diaspora_test')))
+	if(intval(get_config('system','diaspora_test')) || intval(get_pconfig($owner['channel_id'],'system','diaspora_test')))
 		return false;
 
 	$a = get_app();
