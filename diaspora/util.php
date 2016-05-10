@@ -138,3 +138,23 @@ function diaspora_fields_to_xml($fields) {
 	}
 	return rtrim($s);
 }
+
+
+function diaspora_build_relay_tags() {
+
+	$alltags = array();
+
+	$r = q("select * from pconfig where cat = 'diaspora' and k = 'followed_tags'");
+	if($r) {
+		foreach($r as $rr) {
+			if(preg_match('|^a:[0-9]+:{.*}$|s',$rr['v'])) {
+				$x = unserialize($rr['v']);
+				if($x && is_array($x))
+					$alltags = array_unique(array_merge($alltags,$x));
+			}
+		}
+	}
+	set_config('diaspora','relay_tags',$alltags);
+}
+	
+						

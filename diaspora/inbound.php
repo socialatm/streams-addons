@@ -553,7 +553,6 @@ function diaspora_request($importer,$xml) {
 
 function diaspora_post($importer,$xml,$msg) {
 
-	$a = get_app();
 	$guid = notags(unxmlify($xml['guid']));
 	$diaspora_handle = notags(diaspora_get_author($xml));
 	$app = notags(xmlify($xml['provider_display_name']));
@@ -564,14 +563,17 @@ function diaspora_post($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$diaspora_handle);
-	if(! $contact)
+	$xchan = find_diaspora_person_by_handle($diaspora_handle);
+
+	if((! $xchan) || (! strstr($xchan['xchan_network'],'diaspora'))) {
+		logger('Cannot resolve diaspora handle ' . $diaspora_handle);
 		return;
+	}
 
-
+	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$diaspora_handle);
 
 	if(! $app) {
-		if(strstr($contact['xchan_network'],'friendica'))
+		if(strstr($xchan['xchan_network'],'friendica'))
 			$app = 'Friendica';
 		else
 			$app = 'Diaspora';
@@ -608,13 +610,8 @@ function diaspora_post($importer,$xml,$msg) {
 		logger('message length exceeds max_import_size: truncated');
 	}
 
-//WTF? FIXME
-	// Add OEmbed and other information to the body
-//	$body = add_page_info_to_body($body, false, true);
-
 	$datarray = array();
 
-	
 	// Look for tags and linkify them
 	$results = linkify_tags(get_app(), $body, $importer['channel_id'], true);
 
@@ -633,6 +630,22 @@ function diaspora_post($importer,$xml,$msg) {
 				);
 			}
 		}
+	}
+
+	$found_tags = false;
+	$followed_tags = get_pconfig($importer['channel_id'],'diaspora','followed_tags');
+	if($followed_tags && $datarray['term']) {
+		foreach($datarray['term'] as $t) {
+			if(in_array($t['term'],$followed_tags)) {
+				$found_tags = true;
+				break;
+			}
+		}
+	}
+
+	if((! $found_tags) && (! $contact)) {
+		logger('Author is not a connection and no followed tags.');
+		return;
 	}
 
 	$cnt = preg_match_all('/@\[url=(.*?)\](.*?)\[\/url\]/ism',$body,$matches,PREG_SET_ORDER);
@@ -663,10 +676,7 @@ function diaspora_post($importer,$xml,$msg) {
 		}
 	}
 
-
-
-
-	$plink = service_plink($contact,$guid);
+	$plink = service_plink($xchan,$guid);
 
 	$datarray['aid'] = $importer['channel_account_id'];
 	$datarray['uid'] = $importer['channel_id'];
@@ -679,8 +689,8 @@ function diaspora_post($importer,$xml,$msg) {
 
 	$datarray['plink'] = $plink;
 
-	$datarray['author_xchan'] = $contact['xchan_hash'];
-	$datarray['owner_xchan']  = $contact['xchan_hash'];
+	$datarray['author_xchan'] = $xchan['xchan_hash'];
+	$datarray['owner_xchan']  = $xchan['xchan_hash'];
 
 	$datarray['body'] = $body;
 
@@ -691,7 +701,7 @@ function diaspora_post($importer,$xml,$msg) {
 
 	$tgroup = tgroup_check($importer['channel_id'],$datarray);
 
-	if((! $importer['system']) && (! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'send_stream')) && (! $tgroup)) {
+	if((! $importer['system']) && (! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'send_stream')) && (! $tgroup) && (! $found_tags)) {
 		logger('diaspora_post: Ignoring this author.');
 		return 202;
 	}
@@ -700,7 +710,7 @@ function diaspora_post($importer,$xml,$msg) {
 		$datarray['comment_policy'] = 'network: diaspora';
 	}
 
-	if(! post_is_importable($datarray,$contact)) {
+	if(($contact) && (! post_is_importable($datarray,$contact))) {
 		logger('diaspora_post: filtering this author.');
 		return 202;
 	}
@@ -710,8 +720,6 @@ function diaspora_post($importer,$xml,$msg) {
 	if($result['success']) {
 		sync_an_item($importer['channel_id'],$result['item_id']);
 	}
-
-
 
 	return;
 

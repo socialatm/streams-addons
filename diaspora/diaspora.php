@@ -95,6 +95,11 @@ function diaspora_well_known(&$a,&$b) {
 }
 
 
+
+
+
+
+
 function diaspora_permissions_create(&$a,&$b) {
 	if($b['recipient']['xchan_network'] === 'diaspora' || $b['recipient']['xchan_network'] === 'friendica-over-diaspora') {
 
@@ -614,6 +619,20 @@ function diaspora_feature_settings_post(&$a,&$b) {
 		set_pconfig(local_channel(),'system','diaspora_allowed',intval($_POST['dspr_allowed']));
 		set_pconfig(local_channel(),'system','diaspora_public_comments',intval($_POST['dspr_pubcomment']));
 		set_pconfig(local_channel(),'system','prevent_tag_hijacking',intval($_POST['dspr_hijack']));
+
+		$followed = $_POST['dspr_followed'];
+		$ntags = array();
+		if($followed) {
+			$tags = explode(',', $followed);
+			foreach($tags as $t) {
+				$t = trim($t);
+				if($t)
+					$ntags[] = $t;
+			}
+		}
+		set_pconfig(local_channel(),'diaspora','followed_tags',$ntags);
+		diaspora_build_relay_tags();
+		
 		info( t('Diaspora Protocol Settings updated.') . EOL);
 	}
 }
@@ -625,6 +644,11 @@ function diaspora_feature_settings(&$a,&$s) {
 	if($pubcomments === false)
 		$pubcomments = 1;
 	$hijacking = get_pconfig(local_channel(),'system','prevent_tag_hijacking');
+	$followed = get_pconfig(local_channel(),'diaspora','followed_tags');
+	if(is_array($followed))
+		$hashtags = implode(',',$followed);
+	else
+		$hashtags = '';
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'	=> array('dspr_allowed', t('Enable the (experimental) Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
@@ -636,6 +660,10 @@ function diaspora_feature_settings(&$a,&$s) {
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'	=> array('dspr_hijack', t('Prevent your hashtags from being redirected to other sites'), $hijacking, '', $yes_no),
+	));
+
+	$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
+		'$field'	=> array('dspr_followed', t('Followed hashtags (comma separated, do not include the #)'), $hashtags, '')
 	));
 
 
