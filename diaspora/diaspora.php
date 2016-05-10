@@ -25,6 +25,7 @@ require_once('addon/diaspora/util.php');
 
 function diaspora_load() {
 	register_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
+	register_hook('notifier_process', 'addon/diaspora/diaspora.php', 'diaspora_notifier_process');
 	register_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
 	register_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	register_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
@@ -33,10 +34,19 @@ function diaspora_load() {
 	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
+
+	if(! get_config('diaspora','relay_handle')) {
+		$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
+		if($x) {
+			set_config('diaspora','relay_handle',$x);
+		}
+	}
+
 }
 
 function diaspora_unload() {
 	unregister_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
+	unregister_hook('notifier_process', 'addon/diaspora/diaspora.php', 'diaspora_notifier_process');
 	unregister_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
 	unregister_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
 	unregister_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
@@ -101,7 +111,18 @@ function diaspora_permissions_update(&$a,&$b) {
 	}
 }
 
+function diaspora_notifier_process(&$a,&$arr) {
 
+	// if it is a public post (reply, etc.), add the chosen relay channel to the recipients
+
+	if(($arr['normal_mode']) && (! $arr['env_recips']) && (! $arr['private']) && (! $arr['relay_to_owner'])) {
+		$relay = get_config('diaspora','relay_handle');
+		if($relay) {
+			$arr['recipients'][] = "'" . $relay . "'";
+		}
+	}
+
+}
 
 
 function diaspora_process_outbound(&$a, &$arr) {
