@@ -159,7 +159,7 @@ $server->addPlugin(new \Sabre\DAV\Sync\Plugin());
 $server->exec();
 
 
-
+killme();
 
 
 
