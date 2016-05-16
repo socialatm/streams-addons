@@ -20,7 +20,7 @@ function cdav_install() {
     $arr = explode(';',$str);
     foreach($arr as $a) {
         if(strlen(trim($a))) {
-            $r = @$db->q(trim($a));
+            $r = q(trim($a));
             if(! $r) {
                 $errors .=  t('Errors encountered creating database tables.') . $a . EOL;
             }
@@ -33,6 +33,74 @@ function cdav_uninstall() {
 
 }
 
+function cdav_load() {
+	Zotlabs\Extend\Hook::register('feature_settings', 'addon/cdav/cdav.php', 'cdav_feature_settings');
+	Zotlabs\Extend\Hook::register('feature_settings_post', 'addon/cdav/cdav.php','cdav_feature_settings_post');
+
+}
+
+
+function cdav_unload() {
+	Zotlabs\Extend\Hook::unregister_by_file('addon/cdav/cdav.php');
+}
+
+
+
+
+
+function cdav_feature_settings_post(&$b) {
+
+ 	if($_POST['cdav-submit']) {
+
+		$channel = \App::get_channel();
+		$account = \App::get_account();
+
+		set_pconfig(local_channel(),'cdav','enabled',intval($_POST['cdav_enabled']));
+		if(intval($_POST['cdav_enabled'])) {
+			$r = q("select * from principals where uri = '%s' limit 1",
+				dbesc('principals/' . $channel['channel_address'])
+			);
+			if($r) {
+				$r = q("update principals set email = '%s', displayname = '%s' where uri = '%s' ",
+					dbesc($account['account_email']),
+					dbesc($channel['channel_name']),
+					dbesc('principals/' . $channel['channel_address'])
+				);
+			}
+			else {
+				$r = q("insert into principals ( uri, email, displayname ) values('%s','%s','%s') ",
+					dbesc('principals/' . $channel['channel_address']),
+					dbesc($account['account_email']),
+					dbesc($channel['channel_name'])
+				);
+			}
+		}
+		else {
+			// figure out how to safely disable
+		}
+
+		info( t('CalDAV/CardDAV Settings saved.') . EOL);
+	}
+}
+
+
+function cdav_feature_settings(&$b) {
+
+		$enabled = get_pconfig(local_channel(),'cdav','enabled');
+		
+        $sc .= '<div class="settings-block">';
+        $sc .= '<div id="pageheader-wrapper">';
+
+
+	    $sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+    	    '$field'    => array('cdav_enabled', t('Enable CalDAV/CardDAV Plugin'), $enabled, '', array(t('No'),t('Yes'))),
+    	));
+
+        $b .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
+            '$addon'    => array('cdav', t('CalDAV/CardDAV Settings'), '', t('Submit')),
+            '$content'  => $sc
+        ));
+}
 
 function cdav_module() {}
 
