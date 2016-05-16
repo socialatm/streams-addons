@@ -15,8 +15,14 @@ function diaspora_dispatch_public($msg) {
 		dbesc($msg['author'])
 	);
 
+	// look for those following tags - we'll check tag validity for each specific channel later 
 
-	// also need to look for those following public streams
+	$y = q("select * from channel where channel_id in ( SELECT uid from pconfig where cat = 'diaspora' and k = 'followed_tags' and v != '') and channel_removed = 0 ");
+
+	if(is_array($y) && is_array($r))
+		$r = array_merge($r,$y);
+		
+	// @FIXME we should also enumerate channels that allow postings by anybody
 
 	if($r) {
 		foreach($r as $rr) {
@@ -1075,12 +1081,17 @@ function diaspora_comment($importer,$xml,$msg) {
 	$author_signature = notags(unxmlify($xml['author_signature']));
 	$parent_author_signature = (($xml['parent_author_signature']) ? notags(unxmlify($xml['parent_author_signature'])) : '');
 
-	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$msg['author']);
-	if(! $contact) {
-		logger('diaspora_comment: cannot find contact: ' . $msg['author']);
+
+	$xchan = find_diaspora_person_by_handle($diaspora_handle);
+
+	if((! $xchan) || (! strstr($xchan['xchan_network'],'diaspora'))) {
+		logger('Cannot resolve diaspora handle ' . $diaspora_handle);
 		return;
 	}
-	
+
+	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$msg['author']);
+
+
 	$pubcomment = get_pconfig($importer['channel_id'],'system','diaspora_public_comments');
 
 	// by default comments on public posts are allowed from anybody on Diaspora. That is their policy.
@@ -1203,7 +1214,7 @@ function diaspora_comment($importer,$xml,$msg) {
 	if(strcasecmp($diaspora_handle,$msg['author']) == 0)
 		$person = $contact;
 	else {
-		$person = find_diaspora_person_by_handle($diaspora_handle);
+		$person = $xchan;
 
 		if(! is_array($person)) {
 			logger('diaspora_comment: unable to find author details');
@@ -1310,7 +1321,7 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$tgroup = tgroup_check($importer['channel_id'],$datarray);
 
-	if((! $importer['system']) && (! $pubcomment) && (! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'post_comments')) && (! $tgroup)) {
+	if((! $importer['system']) && (! $pubcomment) && (! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments')) && (! $tgroup)) {
 		logger('diaspora_comment: Ignoring this author.');
 		return 202;
 	}
