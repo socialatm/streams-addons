@@ -123,7 +123,7 @@ function diaspora_notifier_process(&$a,&$arr) {
 
 	// if it is a public post (reply, etc.), add the chosen relay channel to the recipients
 
-	if(! array_key_exists('item_wall',$arr['item']))
+	if(! array_key_exists('item_wall',$arr['target_item']))
 		return;
 
 	if(($arr['normal_mode']) && (! $arr['env_recips']) && (! $arr['private']) && (! $arr['relay_to_owner'])) {
