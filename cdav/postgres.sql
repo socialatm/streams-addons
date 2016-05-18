@@ -195,11 +195,6 @@ ALTER TABLE ONLY groupmembers
     ADD CONSTRAINT groupmembers_member_id_id_fkey FOREIGN KEY (member_id) REFERENCES principals(id)
         ON DELETE CASCADE;
 
-INSERT INTO principals (uri,email,displayname) VALUES
-('principals/admin', 'admin@example.org','Administrator'),
-('principals/admin/calendar-proxy-read', null, null),
-('principals/admin/calendar-proxy-write', null, null);
-
 CREATE TABLE propertystorage (
     id SERIAL NOT NULL,
     path VARCHAR(1024) NOT NULL,
@@ -224,6 +219,3 @@ ALTER TABLE ONLY users
 
 CREATE UNIQUE INDEX users_ukey
     ON users USING btree (username);
-
-INSERT INTO users (username,digesta1) VALUES
-('admin',  '87fd274b7b6c01e48d7c2f965da8ddf7');
