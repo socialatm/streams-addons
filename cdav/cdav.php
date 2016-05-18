@@ -235,7 +235,16 @@ function cdav_init(&$a) {
 
 	// Plugins
 	$server->addPlugin(new \Sabre\DAV\Auth\Plugin($auth));
+
+//		$browser = new \Zotlabs\Storage\Browser($auth);
+//		$auth->setBrowserPlugin($browser);
+	
+//		$server->addPlugin($browser);
+
+
 	$server->addPlugin(new \Sabre\DAV\Browser\Plugin());
+
+
 	$server->addPlugin(new \Sabre\CalDAV\Plugin());
 	$server->addPlugin(new \Sabre\CardDAV\Plugin());
 	$server->addPlugin(new \Sabre\DAVACL\Plugin());
