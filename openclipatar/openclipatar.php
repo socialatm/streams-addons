@@ -290,7 +290,7 @@ function openclipatar_content(&$a) {
 			dbesc($chan['xchan_hash'])
 		);
 		// tell everybody
-		proc_run('php','include/directory.php',local_channel());
+		Zotlabs\Daemon\Master::Summon(array('Directory',local_channel()));
 		
 		$returnafter = get_config('openclipatar', 'returnafter');
 		$returnafter_urls = array(

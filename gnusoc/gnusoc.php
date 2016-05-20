@@ -527,7 +527,7 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 						// Send back a sharing notification to them
 						$deliver = gnusoc_remote_follow($importer,$new_connection[0]);
 						if($deliver)
-							proc_run('php','include/deliver.php',$deliver);
+							Zotlabs\Daemon\Master::Summon(array('Deliver',$deliver));
 
 					}
 

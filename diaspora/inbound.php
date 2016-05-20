@@ -510,7 +510,7 @@ function diaspora_request($importer,$xml) {
 				// Send back a sharing notification to them
 				$x = diaspora_share($importer,$new_connection[0]);
 				if($x)
-					proc_run('php','include/deliver.php',$x);
+					Zotlabs\Daemon\Master::Summon(array('Deliver',$x));
 		
 			}
 
@@ -1340,7 +1340,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		// the existence of parent_author_signature means the parent_author or owner
 		// is already relaying.
 		$upstream_leg = true;
-		proc_run('php','include/notifier.php','comment-import',$message_id);
+		Zotlabs\Daemon\Master::Summon(array('Notifier','comment-import',$message_id));
 	}
 
 	if($result['success']) {
@@ -1988,7 +1988,7 @@ function diaspora_like($importer,$xml,$msg) {
 		// is already relaying. The parent_item['origin'] indicates the message was created on our system
 
 		if(intval($parent_item['item_origin']) && (! $parent_author_signature))
-			proc_run('php','include/notifier.php','comment-import',$result['item_id']);
+			Zotlabs\Daemon\Master::Summon(array('Notifier','comment-import',$result['item_id']));
 		sync_an_item($importer['channel_id'],$result['item_id']);
 	}
 
@@ -2110,7 +2110,7 @@ function diaspora_signed_retraction($importer,$xml,$msg) {
 						// is already relaying.
 
 						logger('diaspora_signed_retraction: relaying relayable_retraction');
-						proc_run('php','include/notifier.php','drop',$r[0]['id']);
+						Zotlabs\Daemon\Master::Summon(array('Notifier','drop',$r[0]['id']));
 					}
 				}
 			}

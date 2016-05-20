@@ -204,6 +204,7 @@ function cdav_init(&$a) {
 	 */
 
 	$auth = new \Zotlabs\Storage\BasicAuth();
+	$auth->setRealm(ucfirst(\Zotlabs\Project\System::get_platform_name()) . 'CalDAV/CardDAV');
 
 	//$authBackend      = new \Sabre\DAV\Auth\Backend\PDO($pdo);
 	$principalBackend = new \Sabre\DAVACL\PrincipalBackend\PDO($pdo);
