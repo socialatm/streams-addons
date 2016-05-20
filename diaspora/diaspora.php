@@ -123,6 +123,14 @@ function diaspora_notifier_process(&$a,&$arr) {
 
 	// if it is a public post (reply, etc.), add the chosen relay channel to the recipients
 
+	// If target_item isn't set it's likely to be refresh packet.
+
+	if(! array_key_exists('target_item',$arr)) {
+		return;
+	} 
+
+	// If item_wall doesn't exist, it's not a post - perhaps an email or other DB object
+
 	if(! array_key_exists('item_wall',$arr['target_item']))
 		return;
 
