@@ -92,7 +92,6 @@ function testdrive_cron($a,$b) {
 	);
 
 	if($r) {
-		require_once('include/Contact.php');
 		foreach($r as $rr)
 			account_remove($rr['account_id']);
 	}

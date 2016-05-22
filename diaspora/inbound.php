@@ -2007,7 +2007,6 @@ function diaspora_retraction($importer,$xml,$msg = null) {
 		return;
 
 	if($type === 'Person' || $type === 'Contact') {
-		require_once('include/Contact.php');
 		contact_remove($importer['channel_id'],$contact['abook_id']);
 	}
 	elseif(($type === 'Post') || ($type === 'StatusMessage') || ($type === 'Comment') || ($type === 'Like')) {
