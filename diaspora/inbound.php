@@ -498,8 +498,7 @@ function diaspora_request($importer,$xml) {
 			dbesc($ret['xchan_hash'])
 		);
 		if($new_connection) {
-			require_once('include/enotify.php');
-			notification(array(
+			\Zotlabs\Lib\Enotify::submit(array(
 				'type'	     => NOTIFY_INTRO,
 				'from_xchan'   => $ret['xchan_hash'],
 				'to_xchan'     => $importer['channel_hash'],
@@ -1531,8 +1530,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			intval($importer['channel_id'])
 		);
 
-		require_once('include/enotify.php');
-		notification(array(
+		\Zotlabs\Lib\Enotify::submit(array(
 			'from_xchan' => $person['xchan_hash'],
 			'to_xchan' => $importer['channel_hash'],
 			'type' => NOTIFY_MAIL,
@@ -1669,8 +1667,7 @@ function diaspora_message($importer,$xml,$msg) {
 		intval($importer['channel_id'])
 	);
 
-	require_once('include/enotify.php');
-	notification(array(
+	\Zotlabs\Lib\Enotify::submit(array(
 		'from_xchan' => $person['xchan_hash'],
 		'to_xchan' => $importer['channel_hash'],
 		'type' => NOTIFY_MAIL,

@@ -514,8 +514,7 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 				);
 		
 				if($new_connection) {
-					require_once('include/enotify.php');
-					notification(array(
+					\Zotlabs\Lib\Enotify::submit(array(
 						'type'       => NOTIFY_INTRO,
 						'from_xchan'   => $xchan['xchan_hash'],
 						'to_xchan'     => $importer['channel_hash'],
