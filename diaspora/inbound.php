@@ -735,6 +735,7 @@ function get_diaspora_reshare_xml($url,$recurse = 0) {
 		logger('get_diaspora_reshare_xml: unable to fetch source url ' . $url);
 		return;
 	}
+
 	logger('get_diaspora_reshare_xml: source: ' . $x['body'], LOGGER_DEBUG);
 
 //	$source_xml = parse_xml_string($x['body'],false);
@@ -747,19 +748,18 @@ function get_diaspora_reshare_xml($url,$recurse = 0) {
 	}
 
 	if($source_xml) {
-        if(array_key_exists('xml',$source_xml))
-            $source_xml = $source_xml['xml'];
-    }
+		if(array_key_exists('xml',$source_xml) && array_key_exists('post',$source_xml['xml'])) 
+			$source_xml = $source_xml['xml']['post'];
+	}
 
-
-	if($source_xml['post']['status_message']) {
+	if($source_xml['status_message']) {
 		return $source_xml;
 	}
 
 	// see if it's a reshare of a reshare
 
-	if($source_xml['post']['reshare'])
-		$xml = $source_xml['post']['reshare'];
+	if($source_xml['reshare'])
+		$xml = $source_xml['reshare'];
 	else 
 		return false;
 
@@ -812,20 +812,20 @@ function diaspora_reshare($importer,$xml,$msg) {
 
 	$source_xml = get_diaspora_reshare_xml($source_url);
 
-	if($source_xml['post']['status_message']) {
-		$body = diaspora2bb($source_xml['post']['status_message']['raw_message']);
+	if($source_xml['status_message']) {
+		$body = diaspora2bb($source_xml['status_message']['raw_message']);
 
 		
-		$orig_author = diaspora_get_author($source_xml['post']['status_message']);
-		$orig_guid = notags(unxmlify($source_xml['post']['status_message']['guid']));
+		$orig_author = diaspora_get_author($source_xml['status_message']);
+		$orig_guid = notags(unxmlify($source_xml['status_message']['guid']));
 
 
 		// Checking for embedded pictures
-		if($source_xml['post']['status_message']['photo']['remote_photo_path'] &&
-			$source_xml['post']['status_message']['photo']['remote_photo_name']) {
+		if($source_xml['status_message']['photo']['remote_photo_path'] &&
+			$source_xml['status_message']['photo']['remote_photo_name']) {
 
-			$remote_photo_path = notags(unxmlify($source_xml['post']['status_message']['photo']['remote_photo_path']));
-			$remote_photo_name = notags(unxmlify($source_xml['post']['status_message']['photo']['remote_photo_name']));
+			$remote_photo_path = notags(unxmlify($source_xml['status_message']['photo']['remote_photo_path']));
+			$remote_photo_name = notags(unxmlify($source_xml['status_message']['photo']['remote_photo_name']));
 
 			$body = '[img]'.$remote_photo_path.$remote_photo_name.'[/img]'."\n".$body;
 
@@ -921,8 +921,8 @@ function diaspora_reshare($importer,$xml,$msg) {
 		. "' profile='" . $orig_author_link 
 		. "' avatar='" . $orig_author_photo 
 		. "' link='" . $orig_url
-		. "' posted='" . datetime_convert('UTC','UTC',unxmlify($source_xml['post']['status_message']['created_at']))
-		. "' message_id='" . unxmlify($source_xml['post']['status_message']['guid'])
+		. "' posted='" . datetime_convert('UTC','UTC',unxmlify($source_xml['status_message']['created_at']))
+		. "' message_id='" . unxmlify($source_xml['status_message']['guid'])
  		. "']" . $body . "[/share]";
 
 
