@@ -746,6 +746,12 @@ function get_diaspora_reshare_xml($url,$recurse = 0) {
 		return '';
 	}
 
+	if($source_xml) {
+        if(array_key_exists('xml',$source_xml))
+            $source_xml = $source_xml['xml'];
+    }
+
+
 	if($source_xml['post']['status_message']) {
 		return $source_xml;
 	}
