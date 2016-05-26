@@ -118,10 +118,8 @@ function cdav_module() {}
 
 function cdav_init(&$a) {
 
-	global $db;
-
-	if($db && $db->connected)
-		$pdovars = $db->pdo_get();
+	if(\DBA::$dba && \DBA::$dba->connected)
+		$pdovars = \DBA::$dba->pdo_get();
 	else
 		killme();
 
