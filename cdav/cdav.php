@@ -18,15 +18,21 @@ function cdav_install() {
 	}
 
 	$str = file_get_contents('addon/cdav/' . $type . '.sql');
-    $arr = explode(';',$str);
-    foreach($arr as $a) {
-        if(strlen(trim($a))) {
-            $r = q(trim($a));
-            if(! $r) {
-                $errors .=  t('Errors encountered creating database tables.') . $a . EOL;
-            }
-        }
-    }
+	$arr = explode(';',$str);
+
+	$errors = '';
+
+	foreach($arr as $a) {
+		if(strlen(trim($a))) {
+			$r = q(trim($a));
+			if(! $r) {
+				$errors .=  t('Errors encountered creating database table: ') . $a . EOL;
+			}
+		}
+	}
+	if($errors) {
+		notice(t('Errors encountered creating database tables.') . EOL);
+	}
 }
 
 
@@ -118,8 +124,8 @@ function cdav_module() {}
 
 function cdav_init(&$a) {
 
-	if(\DBA::$dba && \DBA::$dba->connected)
-		$pdovars = \DBA::$dba->pdo_get();
+	if(DBA::$dba && DBA::$dba->connected)
+		$pdovars = DBA::$dba->pdo_get();
 	else
 		killme();
 
