@@ -124,7 +124,7 @@ function diaspora_notifier_process(&$a,&$arr) {
 
 	// If target_item isn't set it's likely to be refresh packet.
 
-	if(! array_key_exists('target_item',$arr)) {
+	if(! ((array_key_exists('target_item',$arr)) && (is_array($arr['target_item'])))) {
 		return;
 	} 
 
