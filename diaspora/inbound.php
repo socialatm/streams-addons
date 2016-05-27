@@ -791,7 +791,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 
 
 	if($diaspora_handle != $msg['author']) {
-		logger('diaspora_post: Potential forgery. Message handle is not the same as envelope sender.');
+		logger('Potential forgery. Message handle is not the same as envelope sender.');
 		return 202;
 	}
 
@@ -2238,7 +2238,7 @@ function diaspora_get_author($xml) {
 
 function diaspora_get_root_author($xml) {
 	if(array_key_exists('root_diaspora_id',$xml))
-		return unxmlify($xml['diaspora_diaspora_id']);
+		return unxmlify($xml['root_diaspora_id']);
 	elseif(array_key_exists('root_author',$xml))
 		return unxmlify($xml['root_author']);
 	else
