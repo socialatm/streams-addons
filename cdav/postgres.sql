@@ -13,7 +13,7 @@ ALTER TABLE ONLY addressbooks
 CREATE UNIQUE INDEX if not exists addressbooks_ukey
     ON addressbooks USING btree (principaluri, uri);
 
-CREATE TABLE  if not exists cards (
+CREATE TABLE if not exists cards (
     id SERIAL NOT NULL,
     addressbookid INTEGER NOT NULL,
     carddata BYTEA,
@@ -43,9 +43,30 @@ ALTER TABLE ONLY addressbookchanges
 CREATE INDEX if not exists addressbookchanges_addressbookid_synctoken_ix
     ON addressbookchanges USING btree (addressbookid, synctoken);
 
-CREATE TABLE calendarobjects (
+CREATE TABLE if not exists calendars (
     id SERIAL NOT NULL,
-    calendardata BYTEA,
+    principaluri VARCHAR(100),
+    displayname VARCHAR(100),
+    uri VARCHAR(200),
+    synctoken INTEGER NOT NULL DEFAULT 1,
+    description TEXT,
+    calendarorder INTEGER NOT NULL DEFAULT 0,
+    calendarcolor VARCHAR(10),
+    timezone TEXT,
+    components VARCHAR(20),
+    uid VARCHAR(200),
+    transparent SMALLINT NOT NULL DEFAULT '0'
+);
+
+ALTER TABLE ONLY calendars
+    ADD CONSTRAINT calendars_pkey PRIMARY KEY (id);
+
+CREATE UNIQUE INDEX if not exists calendars_ukey
+    ON calendars USING btree (principaluri, uri);
+
+CREATE TABLE if not exists calendarobjects (
+    id SERIAL NOT NULL,
+    calendardata TEXT,
     uri VARCHAR(200),
     calendarid INTEGER NOT NULL,
     lastmodified INTEGER,
@@ -63,45 +84,9 @@ ALTER TABLE ONLY calendarobjects
 CREATE UNIQUE INDEX if not exists calendarobjects_ukey
     ON calendarobjects USING btree (calendarid, uri);
 
-
-CREATE TABLE if not exists calendars (
-    id SERIAL NOT NULL,
-    synctoken INTEGER NOT NULL DEFAULT 1,
-    components VARCHAR(21)
-);
-
-ALTER TABLE ONLY calendars
-    ADD CONSTRAINT calendars_pkey PRIMARY KEY (id);
-
-
-CREATE TABLE if not exists calendarinstances (
-    id SERIAL NOT NULL,
-    calendarid INTEGER NOT NULL,
-    principaluri VARCHAR(100),
-    access SMALLINT NOT NULL DEFAULT '1', -- '1 = owner, 2 = read, 3 = readwrite'
-    displayname VARCHAR(100),
-    uri VARCHAR(200),
-    description TEXT,
-    calendarorder INTEGER NOT NULL DEFAULT 0,
-    calendarcolor VARCHAR(10),
-    timezone TEXT,
-    transparent SMALLINT NOT NULL DEFAULT '0',
-    share_href VARCHAR(100),
-    share_displayname VARCHAR(100),
-    share_invitestatus SMALLINT NOT NULL DEFAULT '2' --  '1 = noresponse, 2 = accepted, 3 = declined, 4 = invalid'
-);
-
-ALTER TABLE ONLY calendarinstances
-    ADD CONSTRAINT calendarinstances_pkey PRIMARY KEY (id);
-
-CREATE UNIQUE INDEX if not exists calendarinstances_principaluri_uri
-    ON calendarinstances USING btree (principaluri, uri);
-
-CREATE UNIQUE INDEX if not exists calendarinstances_principaluri_calendarid
-    ON calendarinstances USING btree (principaluri, calendarid);
-
-CREATE UNIQUE INDEX if not exists calendarinstances_principaluri_share_href
-    ON calendarinstances USING btree (principaluri, share_href);
+ALTER TABLE ONLY calendarobjects
+    ADD CONSTRAINT calendarobjects_calendarid_fkey FOREIGN KEY (calendarid) REFERENCES calendars(id)
+        ON DELETE CASCADE;
 
 CREATE TABLE if not exists calendarsubscriptions (
     id SERIAL NOT NULL,
@@ -135,8 +120,12 @@ CREATE TABLE if not exists calendarchanges (
 ALTER TABLE ONLY calendarchanges
     ADD CONSTRAINT calendarchanges_pkey PRIMARY KEY (id);
 
-CREATE INDEX calendarchanges_calendarid_synctoken_ix
+CREATE INDEX if not exists calendarchanges_calendarid_synctoken_ix
     ON calendarchanges USING btree (calendarid, synctoken);
+
+ALTER TABLE ONLY calendarchanges
+    ADD CONSTRAINT calendarchanges_calendar_fk FOREIGN KEY (calendarid) REFERENCES calendars(id)
+        ON DELETE CASCADE;
 
 CREATE TABLE if not exists schedulingobjects (
     id SERIAL NOT NULL,
@@ -192,6 +181,14 @@ ALTER TABLE ONLY groupmembers
 
 CREATE UNIQUE INDEX if not exists groupmembers_ukey
     ON groupmembers USING btree (principal_id, member_id);
+
+ALTER TABLE ONLY groupmembers
+    ADD CONSTRAINT groupmembers_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES principals(id)
+        ON DELETE CASCADE;
+
+ALTER TABLE ONLY groupmembers
+    ADD CONSTRAINT groupmembers_member_id_id_fkey FOREIGN KEY (member_id) REFERENCES principals(id)
+        ON DELETE CASCADE;
 
 CREATE TABLE if not exists propertystorage (
     id SERIAL NOT NULL,
