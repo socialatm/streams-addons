@@ -1,4 +1,4 @@
-CREATE TABLE addressbooks (
+CREATE TABLE if not exists addressbooks (
     id SERIAL NOT NULL,
     principaluri VARCHAR(255),
     displayname VARCHAR(255),
@@ -10,13 +10,13 @@ CREATE TABLE addressbooks (
 ALTER TABLE ONLY addressbooks
     ADD CONSTRAINT addressbooks_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX addressbooks_ukey
+CREATE UNIQUE INDEX if not exists addressbooks_ukey
     ON addressbooks USING btree (principaluri, uri);
 
-CREATE TABLE cards (
+CREATE TABLE  if not exists cards (
     id SERIAL NOT NULL,
     addressbookid INTEGER NOT NULL,
-    carddata TEXT,
+    carddata BYTEA,
     uri VARCHAR(200),
     lastmodified INTEGER,
     etag VARCHAR(32),
@@ -26,14 +26,10 @@ CREATE TABLE cards (
 ALTER TABLE ONLY cards
     ADD CONSTRAINT cards_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX cards_ukey
+CREATE UNIQUE INDEX if not exists cards_ukey
     ON cards USING btree (addressbookid, uri);
 
-ALTER TABLE ONLY cards
-    ADD CONSTRAINT cards_addressbookid_fkey FOREIGN KEY (addressbookid) REFERENCES addressbooks(id)
-        ON DELETE CASCADE;
-
-CREATE TABLE addressbookchanges (
+CREATE TABLE if not exists addressbookchanges (
     id SERIAL NOT NULL,
     uri VARCHAR(200) NOT NULL,
     synctoken INTEGER NOT NULL,
@@ -44,36 +40,12 @@ CREATE TABLE addressbookchanges (
 ALTER TABLE ONLY addressbookchanges
     ADD CONSTRAINT addressbookchanges_pkey PRIMARY KEY (id);
 
-CREATE INDEX addressbookchanges_addressbookid_synctoken_ix
+CREATE INDEX if not exists addressbookchanges_addressbookid_synctoken_ix
     ON addressbookchanges USING btree (addressbookid, synctoken);
-
-ALTER TABLE ONLY addressbookchanges
-    ADD CONSTRAINT addressbookchanges_addressbookid_fkey FOREIGN KEY (addressbookid) REFERENCES addressbooks(id)
-        ON DELETE CASCADE;
-CREATE TABLE calendars (
-    id SERIAL NOT NULL,
-    principaluri VARCHAR(100),
-    displayname VARCHAR(100),
-    uri VARCHAR(200),
-    synctoken INTEGER NOT NULL DEFAULT 1,
-    description TEXT,
-    calendarorder INTEGER NOT NULL DEFAULT 0,
-    calendarcolor VARCHAR(10),
-    timezone TEXT,
-    components VARCHAR(20),
-    uid VARCHAR(200),
-    transparent SMALLINT NOT NULL DEFAULT '0'
-);
-
-ALTER TABLE ONLY calendars
-    ADD CONSTRAINT calendars_pkey PRIMARY KEY (id);
-
-CREATE UNIQUE INDEX calendars_ukey
-    ON calendars USING btree (principaluri, uri);
 
 CREATE TABLE calendarobjects (
     id SERIAL NOT NULL,
-    calendardata TEXT,
+    calendardata BYTEA,
     uri VARCHAR(200),
     calendarid INTEGER NOT NULL,
     lastmodified INTEGER,
@@ -88,14 +60,50 @@ CREATE TABLE calendarobjects (
 ALTER TABLE ONLY calendarobjects
     ADD CONSTRAINT calendarobjects_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX calendarobjects_ukey
+CREATE UNIQUE INDEX if not exists calendarobjects_ukey
     ON calendarobjects USING btree (calendarid, uri);
 
-ALTER TABLE ONLY calendarobjects
-    ADD CONSTRAINT calendarobjects_calendarid_fkey FOREIGN KEY (calendarid) REFERENCES calendars(id)
-        ON DELETE CASCADE;
 
-CREATE TABLE calendarsubscriptions (
+CREATE TABLE if not exists calendars (
+    id SERIAL NOT NULL,
+    synctoken INTEGER NOT NULL DEFAULT 1,
+    components VARCHAR(21)
+);
+
+ALTER TABLE ONLY calendars
+    ADD CONSTRAINT calendars_pkey PRIMARY KEY (id);
+
+
+CREATE TABLE if not exists calendarinstances (
+    id SERIAL NOT NULL,
+    calendarid INTEGER NOT NULL,
+    principaluri VARCHAR(100),
+    access SMALLINT NOT NULL DEFAULT '1', -- '1 = owner, 2 = read, 3 = readwrite'
+    displayname VARCHAR(100),
+    uri VARCHAR(200),
+    description TEXT,
+    calendarorder INTEGER NOT NULL DEFAULT 0,
+    calendarcolor VARCHAR(10),
+    timezone TEXT,
+    transparent SMALLINT NOT NULL DEFAULT '0',
+    share_href VARCHAR(100),
+    share_displayname VARCHAR(100),
+    share_invitestatus SMALLINT NOT NULL DEFAULT '2' --  '1 = noresponse, 2 = accepted, 3 = declined, 4 = invalid'
+);
+
+ALTER TABLE ONLY calendarinstances
+    ADD CONSTRAINT calendarinstances_pkey PRIMARY KEY (id);
+
+CREATE UNIQUE INDEX if not exists calendarinstances_principaluri_uri
+    ON calendarinstances USING btree (principaluri, uri);
+
+CREATE UNIQUE INDEX if not exists calendarinstances_principaluri_calendarid
+    ON calendarinstances USING btree (principaluri, calendarid);
+
+CREATE UNIQUE INDEX if not exists calendarinstances_principaluri_share_href
+    ON calendarinstances USING btree (principaluri, share_href);
+
+CREATE TABLE if not exists calendarsubscriptions (
     id SERIAL NOT NULL,
     uri VARCHAR(200) NOT NULL,
     principaluri VARCHAR(100) NOT NULL,
@@ -113,10 +121,10 @@ CREATE TABLE calendarsubscriptions (
 ALTER TABLE ONLY calendarsubscriptions
     ADD CONSTRAINT calendarsubscriptions_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX calendarsubscriptions_ukey
+CREATE UNIQUE INDEX if not exists calendarsubscriptions_ukey
     ON calendarsubscriptions USING btree (principaluri, uri);
 
-CREATE TABLE calendarchanges (
+CREATE TABLE if not exists calendarchanges (
     id SERIAL NOT NULL,
     uri VARCHAR(200) NOT NULL,
     synctoken INTEGER NOT NULL,
@@ -130,11 +138,7 @@ ALTER TABLE ONLY calendarchanges
 CREATE INDEX calendarchanges_calendarid_synctoken_ix
     ON calendarchanges USING btree (calendarid, synctoken);
 
-ALTER TABLE ONLY calendarchanges
-    ADD CONSTRAINT calendarchanges_calendar_fk FOREIGN KEY (calendarid) REFERENCES calendars(id)
-        ON DELETE CASCADE;
-
-CREATE TABLE schedulingobjects (
+CREATE TABLE if not exists schedulingobjects (
     id SERIAL NOT NULL,
     principaluri VARCHAR(255),
     calendardata BYTEA,
@@ -143,7 +147,8 @@ CREATE TABLE schedulingobjects (
     etag VARCHAR(32),
     size INTEGER NOT NULL
 );
-CREATE TABLE locks (
+
+CREATE TABLE if not exists locks (
     id SERIAL NOT NULL,
     owner VARCHAR(100),
     timeout INTEGER,
@@ -157,12 +162,13 @@ CREATE TABLE locks (
 ALTER TABLE ONLY locks
     ADD CONSTRAINT locks_pkey PRIMARY KEY (id);
 
-CREATE INDEX locks_token_ix
+CREATE INDEX if not exists locks_token_ix
     ON locks USING btree (token);
 
-CREATE INDEX locks_uri_ix
+CREATE INDEX if not exists locks_uri_ix
     ON locks USING btree (uri);
-CREATE TABLE principals (
+
+CREATE TABLE if not exists principals (
     id SERIAL NOT NULL,
     uri VARCHAR(200) NOT NULL,
     email VARCHAR(80),
@@ -172,10 +178,10 @@ CREATE TABLE principals (
 ALTER TABLE ONLY principals
     ADD CONSTRAINT principals_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX principals_ukey
+CREATE UNIQUE INDEX if not exists principals_ukey
     ON principals USING btree (uri);
 
-CREATE TABLE groupmembers (
+CREATE TABLE if not exists groupmembers (
     id SERIAL NOT NULL,
     principal_id INTEGER NOT NULL,
     member_id INTEGER NOT NULL
@@ -184,31 +190,24 @@ CREATE TABLE groupmembers (
 ALTER TABLE ONLY groupmembers
     ADD CONSTRAINT groupmembers_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX groupmembers_ukey
+CREATE UNIQUE INDEX if not exists groupmembers_ukey
     ON groupmembers USING btree (principal_id, member_id);
 
-ALTER TABLE ONLY groupmembers
-    ADD CONSTRAINT groupmembers_principal_id_fkey FOREIGN KEY (principal_id) REFERENCES principals(id)
-        ON DELETE CASCADE;
-
-ALTER TABLE ONLY groupmembers
-    ADD CONSTRAINT groupmembers_member_id_id_fkey FOREIGN KEY (member_id) REFERENCES principals(id)
-        ON DELETE CASCADE;
-
-CREATE TABLE propertystorage (
+CREATE TABLE if not exists propertystorage (
     id SERIAL NOT NULL,
     path VARCHAR(1024) NOT NULL,
     name VARCHAR(100) NOT NULL,
     valuetype INT,
-    value TEXT
+    value BYTEA
 );
 
 ALTER TABLE ONLY propertystorage
     ADD CONSTRAINT propertystorage_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX propertystorage_ukey
+CREATE UNIQUE INDEX if not exists propertystorage_ukey
     ON propertystorage (path, name);
-CREATE TABLE users (
+
+CREATE TABLE if not exists users (
     id SERIAL NOT NULL,
     username VARCHAR(50),
     digesta1 VARCHAR(32)
@@ -217,5 +216,5 @@ CREATE TABLE users (
 ALTER TABLE ONLY users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
 
-CREATE UNIQUE INDEX users_ukey
+CREATE UNIQUE INDEX if not exists users_ukey
     ON users USING btree (username);
