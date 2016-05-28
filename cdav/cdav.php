@@ -243,20 +243,24 @@ function cdav_init(&$a) {
 	// Plugins
 	$server->addPlugin(new \Sabre\DAV\Auth\Plugin($auth));
 
-//		$browser = new \Zotlabs\Storage\Browser($auth);
-//		$auth->setBrowserPlugin($browser);
+//	$browser = new \Zotlabs\Storage\Browser($auth);
+//	$auth->setBrowserPlugin($browser);
 	
-//		$server->addPlugin($browser);
-
+//	$server->addPlugin($browser);
 
 	$server->addPlugin(new \Sabre\DAV\Browser\Plugin());
-
-
-	$server->addPlugin(new \Sabre\CalDAV\Plugin());
-	$server->addPlugin(new \Sabre\CardDAV\Plugin());
-	$server->addPlugin(new \Sabre\DAVACL\Plugin());
 	$server->addPlugin(new \Sabre\DAV\Sync\Plugin());
 	$server->addPlugin(new \Sabre\DAV\Sharing\Plugin());
+	$server->addPlugin(new \Sabre\DAVACL\Plugin());
+
+	// CalDAV plugins
+	$server->addPlugin(new \Sabre\CalDAV\Plugin());
+	//$server->addPlugin(new \Sabre\CalDAV\Schedule\Plugin());
+	$server->addPlugin(new \Sabre\CalDAV\ICSExportPlugin());
+
+	// CardDAV plugins
+	$server->addPlugin(new \Sabre\CardDAV\Plugin());
+	$server->addPlugin(new \Sabre\CardDAV\VCFExportPlugin());
 
 	// And off we go!
 	$server->exec();
