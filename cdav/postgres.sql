@@ -162,7 +162,7 @@ ALTER TABLE ONLY locks
 CREATE INDEX if not exists locks_token_ix
     ON locks USING btree (token);
 
-CREATE INDE if not existsX locks_uri_ix
+CREATE INDEX if not exists locks_uri_ix
     ON locks USING btree (uri);
 
 CREATE TABLE if not exists principals (
