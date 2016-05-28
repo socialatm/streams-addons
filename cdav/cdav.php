@@ -63,7 +63,6 @@ function cdav_feature_settings_post(&$b) {
  	if($_POST['cdav-submit']) {
 
 		$channel = \App::get_channel();
-		$account = \App::get_account();
 
 		set_pconfig(local_channel(),'cdav','enabled',intval($_POST['cdav_enabled']));
 		if(intval($_POST['cdav_enabled'])) {
@@ -72,7 +71,7 @@ function cdav_feature_settings_post(&$b) {
 			);
 			if($r) {
 				$r = q("update principals set email = '%s', displayname = '%s' where uri = '%s' ",
-					dbesc($account['account_email']),
+					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name']),
 					dbesc('principals/' . $channel['channel_address'])
 				);
@@ -80,7 +79,7 @@ function cdav_feature_settings_post(&$b) {
 			else {
 				$r = q("insert into principals ( uri, email, displayname ) values('%s','%s','%s') ",
 					dbesc('principals/' . $channel['channel_address']),
-					dbesc($account['account_email']),
+					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name'])
 				);
 			}
