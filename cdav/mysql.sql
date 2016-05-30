@@ -1,4 +1,4 @@
-CREATE TABLE addressbooks (
+CREATE TABLE if not exists addressbooks (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     principaluri VARBINARY(255),
     displayname VARCHAR(255),
@@ -8,7 +8,7 @@ CREATE TABLE addressbooks (
     UNIQUE(principaluri(100), uri(100))
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE cards (
+CREATE TABLE if not exists cards (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     addressbookid INT(11) UNSIGNED NOT NULL,
     carddata MEDIUMBLOB,
@@ -18,7 +18,7 @@ CREATE TABLE cards (
     size INT(11) UNSIGNED NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE addressbookchanges (
+CREATE TABLE if not exists addressbookchanges (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     uri VARBINARY(200) NOT NULL,
     synctoken INT(11) UNSIGNED NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE addressbookchanges (
     INDEX addressbookid_synctoken (addressbookid, synctoken)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE calendarobjects (
+CREATE TABLE if not exists calendarobjects (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     calendardata MEDIUMBLOB,
     uri VARBINARY(200),
@@ -42,7 +42,7 @@ CREATE TABLE calendarobjects (
     UNIQUE(calendarid, uri)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE calendars (
+CREATE TABLE if not exists calendars (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     principaluri VARBINARY(100),
     displayname VARCHAR(100),
@@ -57,7 +57,7 @@ CREATE TABLE calendars (
     UNIQUE(principaluri, uri)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE calendarchanges (
+CREATE TABLE if not exists calendarchanges (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     uri VARBINARY(200) NOT NULL,
     synctoken INT(11) UNSIGNED NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE calendarchanges (
     INDEX calendarid_synctoken (calendarid, synctoken)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE calendarsubscriptions (
+CREATE TABLE if not exists calendarsubscriptions (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     uri VARBINARY(200) NOT NULL,
     principaluri VARBINARY(100) NOT NULL,
@@ -82,7 +82,7 @@ CREATE TABLE calendarsubscriptions (
     UNIQUE(principaluri, uri)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE schedulingobjects (
+CREATE TABLE if not exists schedulingobjects (
     id INT(11) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     principaluri VARBINARY(255),
     calendardata MEDIUMBLOB,
@@ -92,7 +92,7 @@ CREATE TABLE schedulingobjects (
     size INT(11) UNSIGNED NOT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE locks (
+CREATE TABLE if not exists locks (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     owner VARCHAR(100),
     timeout INTEGER UNSIGNED,
@@ -105,7 +105,7 @@ CREATE TABLE locks (
     INDEX(uri(100))
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE principals (
+CREATE TABLE if not exists principals (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     uri VARBINARY(200) NOT NULL,
     email VARBINARY(80),
@@ -113,14 +113,14 @@ CREATE TABLE principals (
     UNIQUE(uri)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE groupmembers (
+CREATE TABLE if not exists groupmembers (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     principal_id INTEGER UNSIGNED NOT NULL,
     member_id INTEGER UNSIGNED NOT NULL,
     UNIQUE(principal_id, member_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE propertystorage (
+CREATE TABLE if not exists propertystorage (
     id INT UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     path VARBINARY(1024) NOT NULL,
     name VARBINARY(100) NOT NULL,
@@ -128,9 +128,9 @@ CREATE TABLE propertystorage (
     value MEDIUMBLOB
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE UNIQUE INDEX path_property ON propertystorage (path(600), name(100));
+CREATE UNIQUE INDEX if not exists path_property ON propertystorage (path(600), name(100));
 
-CREATE TABLE users (
+CREATE TABLE if not exists users (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
     username VARBINARY(50),
     digesta1 VARBINARY(32),

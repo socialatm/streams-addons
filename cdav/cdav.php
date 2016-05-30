@@ -18,15 +18,21 @@ function cdav_install() {
 	}
 
 	$str = file_get_contents('addon/cdav/' . $type . '.sql');
-    $arr = explode(';',$str);
-    foreach($arr as $a) {
-        if(strlen(trim($a))) {
-            $r = q(trim($a));
-            if(! $r) {
-                $errors .=  t('Errors encountered creating database tables.') . $a . EOL;
-            }
-        }
-    }
+	$arr = explode(';',$str);
+
+	$errors = '';
+
+	foreach($arr as $a) {
+		if(strlen(trim($a))) {
+			$r = q(trim($a));
+			if(! $r) {
+				$errors .=  t('Errors encountered creating database table: ') . $a . EOL;
+			}
+		}
+	}
+	if($errors) {
+		notice(t('Errors encountered creating database tables.') . EOL);
+	}
 }
 
 
@@ -57,7 +63,6 @@ function cdav_feature_settings_post(&$b) {
  	if($_POST['cdav-submit']) {
 
 		$channel = \App::get_channel();
-		$account = \App::get_account();
 
 		set_pconfig(local_channel(),'cdav','enabled',intval($_POST['cdav_enabled']));
 		if(intval($_POST['cdav_enabled'])) {
@@ -66,7 +71,7 @@ function cdav_feature_settings_post(&$b) {
 			);
 			if($r) {
 				$r = q("update principals set email = '%s', displayname = '%s' where uri = '%s' ",
-					dbesc($account['account_email']),
+					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name']),
 					dbesc('principals/' . $channel['channel_address'])
 				);
@@ -74,7 +79,7 @@ function cdav_feature_settings_post(&$b) {
 			else {
 				$r = q("insert into principals ( uri, email, displayname ) values('%s','%s','%s') ",
 					dbesc('principals/' . $channel['channel_address']),
-					dbesc($account['account_email']),
+					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name'])
 				);
 			}
@@ -96,6 +101,7 @@ function cdav_feature_settings(&$b) {
 	$sc .= '<div class="settings-block">';
 	$sc .= '<div id="cdav-wrapper">';
 
+	$sc .= '<div class="section-content-warning-wrapper">' . t('<strong>WARNING:</strong> Please note that this plugin is in early alpha state and highly experimental. You will likely loose your data at some point!') . '</div>';
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'    => array('cdav_enabled', t('Enable CalDAV/CardDAV Server for this channel'), $enabled, '', array(t('No'),t('Yes'))),
@@ -107,6 +113,7 @@ function cdav_feature_settings(&$b) {
 	$sc .= '<div class="descriptive-text">' . sprintf( t('Your CardDAV resources are located at %s '), 
 		z_root() . '/cdav/addressbooks/' . $channel['channel_address']) . '</div>';
 
+	$sc .= '</div>';
 
 	$b .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
 		'$addon'    => array('cdav', t('CalDAV/CardDAV Settings'), '', t('Submit')),
@@ -118,8 +125,8 @@ function cdav_module() {}
 
 function cdav_init(&$a) {
 
-	if(\DBA::$dba && \DBA::$dba->connected)
-		$pdovars = \DBA::$dba->pdo_get();
+	if(DBA::$dba && DBA::$dba->connected)
+		$pdovars = DBA::$dba->pdo_get();
 	else
 		killme();
 
