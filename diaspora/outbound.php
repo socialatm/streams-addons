@@ -73,8 +73,11 @@ function diaspora_msg_build($msg,$channel,$contact,$prvkey,$pubkey,$public = fal
 
     $handle = $channel['channel_address'] . '@' . App::get_hostname();
 
-	$padded_data = pkcs5_pad($msg,16);
-	$inner_encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $inner_aes_key, $padded_data, MCRYPT_MODE_CBC, $inner_iv);
+
+	$inner_encrypted = AES256CBC_encrypt($msg,$inner_aes_key,$inner_iv);
+
+//	$padded_data = pkcs5_pad($msg,16);
+//	$inner_encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $inner_aes_key, $padded_data, MCRYPT_MODE_CBC, $inner_iv);
 
 	$b64_data = base64_encode($inner_encrypted);
 
@@ -102,9 +105,10 @@ $decrypted_header = <<< EOT
 </decrypted_header>
 EOT;
 
-	$decrypted_header = pkcs5_pad($decrypted_header,16);
+	$ciphertext = AES256CBC_encrypt($decrypted_header,$outer_aes_key,$outer_iv);
 
-	$ciphertext = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $outer_aes_key, $decrypted_header, MCRYPT_MODE_CBC, $outer_iv);
+//	$decrypted_header = pkcs5_pad($decrypted_header,16);
+//	$ciphertext = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $outer_aes_key, $decrypted_header, MCRYPT_MODE_CBC, $outer_iv);
 
 	$outer_json = json_encode(array('iv' => $b_outer_iv,'key' => $b_outer_aes_key));
 
