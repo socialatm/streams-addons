@@ -143,14 +143,14 @@ function statistics_json_cron($a,$b) {
 
 
 	$wordpress = false;
-	$r = q("select * from addon where hidden = 0 and name = 'wppost'");
+	$r = q("select * from addon where hidden = 0 and aname = 'wppost'");
 		if($r)
 		$wordpress = true;
 
 	set_config('statistics_json','wordpress', intval($wordpress));
 
 	$twitter = false;
-	$r = q("select * from addon where hidden = 0 and name = 'twitter'");
+	$r = q("select * from addon where hidden = 0 and aname = 'twitter'");
 	if($r)
 		$twitter = true;
 
