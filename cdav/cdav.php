@@ -63,24 +63,43 @@ function cdav_feature_settings_post(&$b) {
  	if($_POST['cdav-submit']) {
 
 		$channel = \App::get_channel();
+		$uri = 'principals/' . $channel['channel_address'];
 
 		set_pconfig(local_channel(),'cdav','enabled',intval($_POST['cdav_enabled']));
 		if(intval($_POST['cdav_enabled'])) {
 			$r = q("select * from principals where uri = '%s' limit 1",
-				dbesc('principals/' . $channel['channel_address'])
+				dbesc($uri)
 			);
 			if($r) {
 				$r = q("update principals set email = '%s', displayname = '%s' where uri = '%s' ",
 					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name']),
-					dbesc('principals/' . $channel['channel_address'])
+					dbesc($uri)
 				);
 			}
 			else {
 				$r = q("insert into principals ( uri, email, displayname ) values('%s','%s','%s') ",
-					dbesc('principals/' . $channel['channel_address']),
+					dbesc($uri),
 					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name'])
+				);
+
+				//create default calendar
+				$r = q("insert into calendars (components) values('%s') ",
+					dbesc('VEVENT,VTODO')
+				);
+
+				$r = q("insert into calendarinstances (calendarid, principaluri, displayname, uri) values(LAST_INSERT_ID(), '%s', '%s', '%s') ",
+					dbesc($uri),
+					dbesc(t('Default Calendar')),
+					dbesc('default')
+				);
+
+				//create default addressbook
+				$r = q("insert into addressbooks (principaluri, displayname, uri) values('%s', '%s', '%s') ",
+					dbesc($uri),
+					dbesc(t('Default Addressbook')),
+					dbesc('default')
 				);
 			}
 		}
@@ -130,6 +149,7 @@ function cdav_init(&$a) {
 		$pdovars = DBA::$dba->pdo_get();
 	else
 		killme();
+
 
 	// workaround for HTTP-auth in CGI mode
 	if (x($_SERVER, 'REDIRECT_REMOTE_USER')) {
