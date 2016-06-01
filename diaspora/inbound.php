@@ -628,7 +628,7 @@ function diaspora_post($importer,$xml,$msg) {
 			if($success['replaced']) {
 				$datarray['term'][] = array(
 					'uid'   => $importer['channel_id'],
-					'type'  => $success['termtype'],
+					'ttype'  => $success['termtype'],
 					'otype' => TERM_OBJ_POST,
 					'term'  => $success['term'],
 					'url'   => $success['url']
@@ -658,7 +658,7 @@ function diaspora_post($importer,$xml,$msg) {
 		foreach($matches as $mtch) {
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $mtch[2],
 				'url'   => $mtch[1]
@@ -673,7 +673,7 @@ function diaspora_post($importer,$xml,$msg) {
 			$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $term,
 				'url'   => $mtch[1]
@@ -881,7 +881,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 			if($success['replaced']) {
 				$datarray['term'][] = array(
 					'uid'   => $importer['channel_id'],
-					'type'  => $success['termtype'],
+					'ttype'  => $success['termtype'],
 					'otype' => TERM_OBJ_POST,
 					'term'  => $success['term'],
 					'url'   => $success['url']
@@ -895,7 +895,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 		foreach($matches as $mtch) {
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $mtch[2],
 				'url'   => $mtch[1]
@@ -910,7 +910,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 			$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $term,
 				'url'   => $mtch[1]
@@ -1250,7 +1250,7 @@ function diaspora_comment($importer,$xml,$msg) {
 			if($success['replaced']) {
 				$datarray['term'][] = array(
 					'uid'   => $importer['channel_id'],
-					'type'  => $success['termtype'],
+					'ttype'  => $success['termtype'],
 					'otype' => TERM_OBJ_POST,
 					'term'  => $success['term'],
 					'url'   => $success['url']
@@ -1264,7 +1264,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		foreach($matches as $mtch) {
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $mtch[2],
 				'url'   => $mtch[1]
@@ -1279,7 +1279,7 @@ function diaspora_comment($importer,$xml,$msg) {
 			$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $term,
 				'url'   => $mtch[1]
