@@ -1972,7 +1972,7 @@ function diaspora_like($importer,$xml,$msg) {
 	$arr['item_private'] = $parent_item['item_private'];
 	$arr['verb'] = $activity;
 	$arr['obj_type'] = $objtype;
-	$arr['object'] = $object;
+	$arr['obj'] = $object;
 
 	if(! $parent_author_signature) {
 		$key = get_config('system','pubkey');
