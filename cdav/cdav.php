@@ -44,6 +44,7 @@ function cdav_uninstall() {
 }
 
 function cdav_load() {
+	Zotlabs\Extend\Hook::register('well_known', 'addon/cdav/cdav.php', 'cdav_well_known');
 	Zotlabs\Extend\Hook::register('feature_settings', 'addon/cdav/cdav.php', 'cdav_feature_settings');
 	Zotlabs\Extend\Hook::register('feature_settings_post', 'addon/cdav/cdav.php','cdav_feature_settings_post');
 
@@ -54,6 +55,12 @@ function cdav_unload() {
 	Zotlabs\Extend\Hook::unregister_by_file('addon/cdav/cdav.php');
 }
 
+
+function cdav_well_known(&$x) {
+	if(argv(1) === 'caldav' || argv(1) === 'carddav') {
+		goaway(z_root() . '/cdav');
+	}
+}
 
 
 
