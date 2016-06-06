@@ -118,6 +118,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			// CalDAV plugins
 			$server->addPlugin(new \Sabre\CalDAV\Plugin());
+			$server->addPlugin(new \Sabre\CalDAV\SharingPlugin());
 			//$server->addPlugin(new \Sabre\CalDAV\Schedule\Plugin());
 			$server->addPlugin(new \Sabre\CalDAV\ICSExportPlugin());
 
