@@ -6,6 +6,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	function init() {
 	
+		if(argv(1) != 'manage') {
+
 			if(\DBA::$dba && \DBA::$dba->connected)
 				$pdovars = \DBA::$dba->pdo_get();
 			else
@@ -132,4 +134,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	}
 
+	function post() {
+
+	}
+
+	function get() {
+
+		return argv(1);
+
+	}
 }
