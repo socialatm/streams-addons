@@ -9,6 +9,7 @@
  */
 
 require_once('addon/cdav/Mod_Cdav.php');
+require_once('addon/cdav/widgets.php');
 
 function cdav_install() {
 
@@ -48,7 +49,7 @@ function cdav_load() {
 	Zotlabs\Extend\Hook::register('well_known', 'addon/cdav/cdav.php', 'cdav_well_known');
 	Zotlabs\Extend\Hook::register('feature_settings', 'addon/cdav/cdav.php', 'cdav_feature_settings');
 	Zotlabs\Extend\Hook::register('feature_settings_post', 'addon/cdav/cdav.php','cdav_feature_settings_post');
-
+	Zotlabs\Extend\Hook::register('load_pdl', 'addon/cdav/cdav.php', 'cdav_load_pdl');
 }
 
 function cdav_unload() {
@@ -141,4 +142,14 @@ function cdav_feature_settings(&$b) {
 		'$addon'    => array('cdav', t('CalDAV/CardDAV Settings'), '', t('Submit')),
 		'$content'  => $sc
 	));
+}
+
+function cdav_load_pdl(&$b) {
+	if ($b['module'] === 'cdav') {
+		$b['layout'] = '
+			[region=aside]
+			[widget=cdav][/widget]
+			[/region]
+		';
+	}
 }
