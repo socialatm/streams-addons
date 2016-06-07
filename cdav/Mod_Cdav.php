@@ -6,7 +6,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	function init() {
 	
-		if(argv(1) != 'manage') {
+		if(argv(1) != 'display') {
 
 			if(\DBA::$dba && \DBA::$dba->connected)
 				$pdovars = \DBA::$dba->pdo_get();
@@ -136,6 +136,52 @@ class Cdav extends \Zotlabs\Web\Controller {
 	}
 
 	function post() {
+		if(!local_channel())
+			return;
+
+		if(\DBA::$dba && \DBA::$dba->connected)
+			$pdovars = \DBA::$dba->pdo_get();
+		else
+			killme();
+
+		$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
+		$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+		require_once 'vendor/autoload.php';
+
+		$channel = \App::get_channel();
+
+		$principalUri = 'principals/' . $channel['channel_address'];
+
+		$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
+
+		if(argc() == 3 && argv(2) === 'caldav') {
+
+			print_r($_REQUEST); killme();
+
+			//create new calendar
+			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
+				do {
+
+					$duplicate = false;
+					$calendarUri = random_string(20);
+
+					$r = q("SELECT uri FROM calendarinstances WHERE principaluri = '%s' AND uri = '%s' LIMIT 1",
+						dbesc($principalUri),
+						dbesc($calendarUri)
+					);
+
+					if (count($r))
+						$duplicate = true;
+
+				} while ($duplicate == true);
+
+				$properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']));
+
+				$caldavBackend->createCalendar($principalUri, $calendarUri, $properties);
+			}
+
+		}
 
 	}
 
@@ -158,24 +204,32 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$principalUri = 'principals/' . $channel['channel_address'];
 
-		//manage caldav stuff
-		if(argv(2) === 'caldav') {
+		$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
 
-			$caldavBackend    = new \Sabre\CalDAV\Backend\PDO($pdo);
+		$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
-			//list calendars
+		//return print_r($calendars,true); killme();
 
-			$calendars = $caldavBackend->getCalendarsForUser($principalUri);
+		if(argc() == 3 && argv(2) === 'caldav') {
 
-			foreach($calendars as $calendar)
-				$string .= $calendar['{DAV:}displayname'] . ' | calendarid: ' . $calendar['id'][0] . '<br>';
-
-			return $string;
 
 		}
 
+		//delete calendar
+		if(argc() > 4 && argv(3) === 'drop' && intval(argv(4))) {
+			$id = argv(4);
+			foreach($calendars as $calendar) {
+				if($id == $calendar['id'][0]) {
+					$caldavBackend->deleteCalendar($calendar['id']);
+					info( t('Calendar deleted.') . EOL);
+				}
+			}
+			goaway('/cdav/display/caldav');
+		}
+
+
 		//manage carddav stuff
-		if((argc() > 3) && (argv(2) === 'carddav')) {
+		if((argc() == 3) && (argv(2) === 'carddav')) {
 			return argv(2);
 		}
 
