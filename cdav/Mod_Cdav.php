@@ -141,7 +141,43 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	function get() {
 
-		return argv(1);
+		if(!local_channel())
+			return;
+
+		if(\DBA::$dba && \DBA::$dba->connected)
+			$pdovars = \DBA::$dba->pdo_get();
+		else
+			killme();
+
+		$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
+		$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+		require_once 'vendor/autoload.php';
+
+		$channel = \App::get_channel();
+
+		$principalUri = 'principals/' . $channel['channel_address'];
+
+		//manage caldav stuff
+		if(argv(2) === 'caldav') {
+
+			$caldavBackend    = new \Sabre\CalDAV\Backend\PDO($pdo);
+
+			//list calendars
+
+			$calendars = $caldavBackend->getCalendarsForUser($principalUri);
+
+			foreach($calendars as $calendar)
+				$string .= $calendar['{DAV:}displayname'] . ' | calendarid: ' . $calendar['id'][0] . '<br>';
+
+			return $string;
+
+		}
+
+		//manage carddav stuff
+		if((argc() > 3) && (argv(2) === 'carddav')) {
+			return argv(2);
+		}
 
 	}
 }
