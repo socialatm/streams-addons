@@ -154,7 +154,7 @@ function chess_post(&$a) {
                     json_return_and_die(array('errormsg' => 'Invalid game', 'status' => false));
                 }
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
                 }                
@@ -174,7 +174,7 @@ function chess_post(&$a) {
                     json_return_and_die(array('errormsg' => 'Invalid game', 'status' => false));
                 }
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
                 }                
@@ -212,7 +212,7 @@ function chess_post(&$a) {
                     json_return_and_die(array('errormsg' => 'Invalid game', 'status' => false));
                 }
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
                 }
@@ -236,7 +236,7 @@ function chess_post(&$a) {
                     json_return_and_die(array('errormsg' => 'Invalid game', 'status' => false));
                 }
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
                 }
@@ -257,7 +257,7 @@ function chess_post(&$a) {
                     json_return_and_die(array('errormsg' => 'Invalid game', 'status' => false));
                 }
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
                 }
@@ -277,7 +277,7 @@ function chess_post(&$a) {
                     json_return_and_die(array('errormsg' => 'Invalid game ID', 'status' => false));
                 }                
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     notice(t('You are not a player in this game.') . EOL);
                     goaway('/chess');
@@ -321,7 +321,15 @@ function chess_post(&$a) {
                 $acl->set_from_array($_REQUEST);
                 $perms = $acl->get();
                 $allow_cid = expand_acl($perms['allow_cid']);
-                if (count($allow_cid) != 1 || array_pop($allow_cid) === $channel['channel_hash']) {                    
+				$valid = 0;
+				if(count($allow_cid) > 1) {
+					foreach($allow_cid as $allow) {
+						if($allow == $channel['channel_hash'])
+							continue;
+						$valid ++;
+					}
+				}
+                if ($valid != 1) {
                     notice(t('You must select one opponent that is not yourself.') . EOL);
                     return;
                 } else {
@@ -419,7 +427,7 @@ function chess_content($a) {
                     return;
                 }
                 // Verify that observer is a valid player
-                $game = json_decode($g['game']['object'], true);
+                $game = json_decode($g['game']['obj'], true);
                 if(!in_array($observer['xchan_hash'], $game['players'])) {                    
                     notice(t('You are not a player in this game.') . EOL);
                     goaway('/chess');
@@ -480,7 +488,17 @@ function chess_create_game($channel, $color, $acl) {
     $objtype = ACTIVITY_OBJ_CHESSGAME; 
     $perms = $acl->get();
     $allow_cid = expand_acl($perms['allow_cid']);
-    $players = array($channel['channel_hash'], $allow_cid[0]);
+	$player2 = null;
+	if(count($allow_cid)) {
+		foreach($allow_cid as $allow) {
+			if($allow === $channel['channel_hash'])
+				continue;
+			$player2 = $allow;
+		}
+	}
+
+
+    $players = array($channel['channel_hash'], $player2);
     $object = json_encode(array(
 		'id' => z_root() . '/chess/game/' . $resource_id,
         'players' => $players, 
@@ -744,15 +762,15 @@ function chess_get_games($observer, $owner_address) {
         $date = array_shift(split(' ',$game['created']));
         if($game['owner_xchan'] === $observer['xchan_hash']) {
             if(!x($gameobj,'ended') || $gameobj['ended'] === 0) {
-                $g['owner_active'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active, 'object' => $gameobj);
+                $g['owner_active'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active, 'obj' => $gameobj);
             } else {
-                $g['owner_ended'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active,  'object' => $gameobj);
+                $g['owner_ended'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active,  'obj' => $gameobj);
             }
         } elseif (in_array($observer['xchan_hash'], $gameobj['players'])) { 
             if(!x($gameobj,'ended') || $gameobj['ended'] === 0) {
-                $g['player_active'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active,  'object' => $gameobj);
+                $g['player_active'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active,  'obj' => $gameobj);
             } else {
-                $g['player_ended'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active,  'object' => $gameobj);
+                $g['player_ended'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active,  'obj' => $gameobj);
             }
         }
     }
