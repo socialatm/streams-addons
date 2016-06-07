@@ -157,8 +157,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		if(argc() == 3 && argv(2) === 'caldav') {
 
-			print_r($_REQUEST); killme();
-
 			//create new calendar
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
 				do {
