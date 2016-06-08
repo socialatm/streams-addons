@@ -50,24 +50,26 @@ function widget_cdav() {
 				if((strpos($invite->href, 'mailto:') !== false)) {
 					$sharee = substr($invite->href, 7);
 					if($sharee != $channel['xchan_addr'])
-						$sharees .= $sharee . (($invite->access == 3) ? ' (RW)' : ' (R)');
+						$sharees .= $sharee . (($invite->access == 3) ? ' (RW)' : ' (R)') . '<br>';
 				}
 			}
 
 			$list .= '<strong>' . $calendar['{DAV:}displayname'] . '</strong> ' . $perms . ' <a href="/cdav/display/caldav/drop/' . $calendar['id'][0] . '">Delete</a><br>';
-			$list .= $sharees;
-			$list .= '<form method="post" action="">';
-			$list .= '<input name="calendarid" type="hidden" value="' . $calendar['id'][0] . '">';
-			$list .= '<input name="instanceid" type="hidden" value="' . $calendar['id'][1] . '">';
-			$list .= '<select name="sharee">';
-			$list .= $options;
-			$list .= '</select><br>';
-			$list .= '<select name="access">';
-			$list .= '<option value="3">Read-write</option>';
-			$list .= '<option value="2">Read-only</option>';
-			$list .= '<option value="4">Revoke access</option>';
-			$list .= '</select>';
-			$list .= '<input value="Share" type="submit" name="share"><br><br>';
+			if($calendar['share-access'] == 1) {
+				$list .= $sharees;
+				$list .= '<form method="post" action="">';
+				$list .= '<input name="calendarid" type="hidden" value="' . $calendar['id'][0] . '">';
+				$list .= '<input name="instanceid" type="hidden" value="' . $calendar['id'][1] . '">';
+				$list .= '<select name="sharee">';
+				$list .= $options;
+				$list .= '</select><br>';
+				$list .= '<select name="access">';
+				$list .= '<option value="3">Read-write</option>';
+				$list .= '<option value="2">Read-only</option>';
+				$list .= '<option value="4">Revoke access</option>';
+				$list .= '</select>';
+				$list .= '<input value="Share" type="submit" name="share"><br><br>';
+			}
 			$list .= '</form>';
 
 		}
