@@ -248,7 +248,7 @@
                 var moves = [];
                 $("#chess-move-history").empty();
                 for(var i=move_history.length-1; i>=0; i--) {
-                    var move = JSON.parse(move_history[i]['object']);
+                    var move = JSON.parse(move_history[i]['obj']);
                     moves.push(move['position']);
                     var moveListElem = '';
                     if (i === move_history.length-1) {
