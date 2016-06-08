@@ -54,7 +54,7 @@ function widget_cdav() {
 				}
 			}
 
-			$list .= '<strong>' . $calendar['{DAV:}displayname'] . '</strong> ' . $perms . ' <a href="/cdav/display/caldav/drop/' . $calendar['id'][0] . '">Delete</a><br>';
+			$list .= '<strong>' . $calendar['{DAV:}displayname'] . '</strong> ' . $perms . ' <a href="/cdav/calendar/drop/' . $calendar['id'][0] . '">Delete</a><br>';
 			if($calendar['share-access'] == 1) {
 				$list .= $sharees;
 				$list .= '<form method="post" action="">';
