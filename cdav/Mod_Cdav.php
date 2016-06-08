@@ -6,7 +6,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	function init() {
 	
-		if(argv(1) != 'display') {
+		if((argv(1) !== 'calendar') && (argv(1) !== 'addressbook')) {
 
 			if(\DBA::$dba && \DBA::$dba->connected)
 				$pdovars = \DBA::$dba->pdo_get();
@@ -155,7 +155,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
 
-		if(argc() == 3 && argv(2) === 'caldav') {
+		if(argc() == 2 && argv(1) === 'calendar') {
 
 			//create new calendar
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
@@ -221,26 +221,26 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
-		if(argc() == 3 && argv(2) === 'caldav') {
+		if(argc() == 2 && argv(1) === 'calendar') {
 			//Display calendar here
 			return 'not implemented';
 		}
 
 		//delete calendar
-		if(argc() > 4 && argv(3) === 'drop' && intval(argv(4))) {
-			$id = argv(4);
+		if(argc() > 3 && argv(2) === 'drop' && intval(argv(3))) {
+			$id = argv(2);
 			foreach($calendars as $calendar) {
 				if($id == $calendar['id'][0]) {
 					$caldavBackend->deleteCalendar($calendar['id']);
 					info( t('Calendar deleted.') . EOL);
 				}
 			}
-			goaway('/cdav/display/caldav');
+			goaway('/cdav/calendar');
 		}
 
 
 		//manage carddav stuff
-		if((argc() == 3) && (argv(2) === 'carddav')) {
+		if((argc() == 2) && (argv(1) === 'addressbook')) {
 			//Display Adressbook here
 			return 'not implemented';
 		}
