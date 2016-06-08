@@ -179,6 +179,21 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$caldavBackend->createCalendar($principalUri, $calendarUri, $properties);
 			}
 
+			//share a calendar - this only works on local system (with channels on the same server)
+			if($_REQUEST['sharee'] && $_REQUEST['share']) {
+				$id = array(intval($_REQUEST['calendarid']), intval($_REQUEST['instanceid']));
+
+				$member = dbesc($_REQUEST['sharee']);
+
+				$sharee = new \Sabre\DAV\Xml\Element\Sharee();
+
+				$sharee->href = 'mailto:' . $member .  '@' . substr(z_root(), 8);
+				$sharee->principal = 'principals/' . $member;
+				$sharee->access = intval($_REQUEST['access']);
+
+				$caldavBackend->updateInvites($id, array($sharee));
+
+			}
 		}
 
 	}
@@ -206,13 +221,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
-		//return print_r($calendars,true); killme();
-
-		if(argc() == 3 && argv(2) === 'caldav') {
-
-
-		}
-
 		//delete calendar
 		if(argc() > 4 && argv(3) === 'drop' && intval(argv(4))) {
 			$id = argv(4);
@@ -228,7 +236,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		//manage carddav stuff
 		if((argc() == 3) && (argv(2) === 'carddav')) {
-			return argv(2);
+			return 'not implemented';
 		}
 
 	}
