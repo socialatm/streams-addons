@@ -32,7 +32,7 @@ function widget_cdav() {
 	foreach($local_channels as $local_channel)
 		$options .= '<option value="' . $local_channel['channel_address'] . '">' . $local_channel['channel_name'] . '</option>' . "\r\n";
 
-	if(argc() == 3 && argv(2) === 'caldav') {
+	if(argc() == 2 && argv(1) === 'calendar') {
 
 		//list calendars
 		foreach($calendars as $calendar) {
@@ -54,7 +54,7 @@ function widget_cdav() {
 				}
 			}
 
-			$list .= '<strong>' . $calendar['{DAV:}displayname'] . '</strong> ' . $perms . ' <a href="/cdav/display/caldav/drop/' . $calendar['id'][0] . '">Delete</a><br>';
+			$list .= '<strong>' . $calendar['{DAV:}displayname'] . '</strong> ' . $perms . ' <a href="/cdav/calendar/drop/' . $calendar['id'][0] . '">Delete</a><br>';
 			if($calendar['share-access'] == 1) {
 				$list .= $sharees;
 				$list .= '<form method="post" action="">';
@@ -69,8 +69,8 @@ function widget_cdav() {
 				$list .= '<option value="4">Revoke access</option>';
 				$list .= '</select>';
 				$list .= '<input value="Share" type="submit" name="share"><br><br>';
+				$list .= '</form>';
 			}
-			$list .= '</form>';
 
 		}
 
