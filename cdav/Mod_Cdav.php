@@ -221,6 +221,11 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
+		if(argc() == 3 && argv(2) === 'caldav') {
+			//Display calendar here
+			return 'not implemented';
+		}
+
 		//delete calendar
 		if(argc() > 4 && argv(3) === 'drop' && intval(argv(4))) {
 			$id = argv(4);
@@ -236,6 +241,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		//manage carddav stuff
 		if((argc() == 3) && (argv(2) === 'carddav')) {
+			//Display Adressbook here
 			return 'not implemented';
 		}
 

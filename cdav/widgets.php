@@ -22,6 +22,16 @@ function widget_cdav() {
 
 	$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
+	//TODO: should probably also check for permission to send stream here
+	$local_channels = q("SELECT * FROM channel LEFT JOIN abook ON abook_xchan = channel_hash WHERE channel_system = 0 AND channel_hash != '%s' AND abook_channel = %d",
+		dbesc($channel['channel_hash']),
+		intval($channel['channel_id'])
+	);
+
+	$options .= '<option value="">' . t('Select Channel') . '</option>' . "\r\n";
+	foreach($local_channels as $local_channel)
+		$options .= '<option value="' . $local_channel['channel_address'] . '">' . $local_channel['channel_name'] . '</option>' . "\r\n";
+
 	if(argc() == 3 && argv(2) === 'caldav') {
 
 		//list calendars
@@ -44,12 +54,14 @@ function widget_cdav() {
 				}
 			}
 
-			$list .= $calendar['{DAV:}displayname'] . ' ' . $perms . ' <a href="/cdav/display/caldav/drop/' . $calendar['id'][0] . '">Delete</a><br>';
+			$list .= '<strong>' . $calendar['{DAV:}displayname'] . '</strong> ' . $perms . ' <a href="/cdav/display/caldav/drop/' . $calendar['id'][0] . '">Delete</a><br>';
 			$list .= $sharees;
 			$list .= '<form method="post" action="">';
 			$list .= '<input name="calendarid" type="hidden" value="' . $calendar['id'][0] . '">';
 			$list .= '<input name="instanceid" type="hidden" value="' . $calendar['id'][1] . '">';
-			$list .= '<input name="sharee" type="text"><br>';
+			$list .= '<select name="sharee">';
+			$list .= $options;
+			$list .= '</select><br>';
 			$list .= '<select name="access">';
 			$list .= '<option value="3">Read-write</option>';
 			$list .= '<option value="2">Read-only</option>';
