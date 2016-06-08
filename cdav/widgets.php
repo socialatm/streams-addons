@@ -23,7 +23,7 @@ function widget_cdav() {
 	$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
 	//TODO: should probably also check for permission to send stream here
-	$local_channels = q("SELECT * FROM channel LEFT JOIN abook ON abook_xchan = channel_hash WHERE channel_system = 0 AND channel_hash != '%s' AND abook_channel = %d",
+	$local_channels = q("SELECT * FROM channel LEFT JOIN abook ON abook_xchan = channel_hash WHERE channel_system = 0 AND channel_removed = 0 AND channel_hash != '%s' AND abook_channel = %d",
 		dbesc($channel['channel_hash']),
 		intval($channel['channel_id'])
 	);
