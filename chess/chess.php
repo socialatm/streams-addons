@@ -855,6 +855,7 @@ function chess_resume_game($g) {
  */
 function chess_get_info($observer, $game_id) {
     // Get the game by game_id and 
+
     $g = chess_get_game($game_id);
     if (!$g) {
         return array('players' => null, 'status' => false);   
