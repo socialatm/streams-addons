@@ -9,7 +9,7 @@
  */
 
 require_once('addon/cdav/Mod_Cdav.php');
-require_once('addon/cdav/widgets.php');
+require_once('addon/cdav/include/widgets.php');
 
 function cdav_install() {
 
