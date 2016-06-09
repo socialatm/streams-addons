@@ -232,7 +232,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 			foreach($calendars as $calendar) {
 				if($id == $calendar['id'][0]) {
 					$caldavBackend->deleteCalendar($calendar['id']);
-					info( t('Calendar deleted.') . EOL);
 				}
 			}
 			goaway('/cdav/calendar');
