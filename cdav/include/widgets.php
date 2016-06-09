@@ -57,29 +57,38 @@ function widget_cdav() {
 			foreach($invites as $invite) {
 				if(strpos($invite->href, 'mailto:') !== false) {
 					$sharee = channelx_by_hash(substr($invite->href, 7));
-					$sharees[] = ((!$access) ? $sharee['channel_name'] . (($invite->access == 3) ? ' (RW)' : ' (R)') : '');
+					$sharees[] = $sharee['channel_name'] . (($invite->access == 3) ? ' (RW)' : ' (R)');
 					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
+			if(!$access) {
+				$my_calendars[] = array(
+					'displayname' => $sabrecal['{DAV:}displayname'],
+					'calendarid' => $sabrecal['id'][0],
+					'instanceid' => $sabrecal['id'][1],
+					'sharees' => $sharees
+				);
+			}
+			else {
+				$shared_calendars[] = array(
+					'share_displayname' => $share_displayname[0],
+					'calendarid' => $sabrecal['id'][0],
+					'instanceid' => $sabrecal['id'][1],
+					'access' => $access
 
-			$calendars[] = array(
-				'displayname' => $sabrecal['{DAV:}displayname'],
-				'calendarid' => $sabrecal['id'][0],
-				'instanceid' => $sabrecal['id'][1],
-				'access' => $access,
-				'sharees' => $sharees,
-				'share_displayname' => $share_displayname[0]
-			);
+				);
+			}
 		}
 
 		$o .= replace_macros(get_markup_template('cdav_widget_calendar.tpl', 'addon/cdav'), array(
 			'$my_calendars_label' => t('My Calendars'),
-			'$create_label' => t('Create new calendar'),
-			'$create_placeholder' => t('Calendar Name'),
+			'$my_calendars' => $my_calendars,
 			'$shared_calendars_label' => t('Shared Calendars'),
-			'$calendars' => $calendars,
+			'$shared_calendars' => $shared_calendars,
 			'$sharee_options' => $sharee_options,
-			'$access_options' => $access_options
+			'$access_options' => $access_options,
+			'$create_label' => t('Create new calendar'),
+			'$create_placeholder' => t('Calendar Name')
 		));
 
 		return $o;
