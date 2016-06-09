@@ -95,4 +95,30 @@ function widget_cdav() {
 
 	}
 
+	if(argc() == 2 && argv(1) === 'addressbook') {
+
+		$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
+
+		$sabreabooks = $carddavBackend->getAddressBooksForUser($principalUri);
+
+		//list addressbooks
+		foreach($sabreabooks as $sabreabook) {
+			$addressbooks[] = array(
+				'displayname' => $sabreabook['{DAV:}displayname'],
+				'id' => $sabreabook['id']
+			);
+		}
+
+		//print_r($sabreabooks);killme();
+		$o .= replace_macros(get_markup_template('cdav_widget_addressbook.tpl', 'addon/cdav'), array(
+			'$addressbooks_label' => t('Addressbooks'),
+			'$addressbooks' => $addressbooks,
+			'$create_label' => t('Create new addressbook'),
+			'$create_placeholder' => t('Addressbook Name')
+		));
+
+		return $o;
+
+	}
+
 }

@@ -153,9 +153,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$principalUri = 'principals/' . $channel['channel_address'];
 
-		$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
 
 		if(argc() == 2 && argv(1) === 'calendar') {
+
+			$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
 
 			//create new calendar
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
@@ -196,6 +197,31 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$caldavBackend->updateInvites($id, array($sharee));
 			}
 		}
+
+		if(argc() == 2 && argv(1) === 'addressbook') {
+
+			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
+
+			//create new calendar
+			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
+				do {
+					$duplicate = false;
+					$addressbookUri = random_string(20);
+
+					$r = q("SELECT uri FROM calendarinstances WHERE principaluri = '%s' AND uri = '%s' LIMIT 1",
+						dbesc($principalUri),
+						dbesc($addressbookUri)
+					);
+
+					if (count($r))
+						$duplicate = true;
+				} while ($duplicate == true);
+
+				$properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']));
+
+				$carddavBackend->createAddressBook($principalUri, $addressbookUri, $properties);
+			}
+		}
 	}
 
 	function get() {
@@ -217,31 +243,41 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$principalUri = 'principals/' . $channel['channel_address'];
 
-		$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
-
-		$calendars = $caldavBackend->getCalendarsForUser($principalUri);
-
 		if(argc() == 2 && argv(1) === 'calendar') {
 			//Display calendar(s) here
 			return 'not implemented';
 		}
 
 		//delete calendar
-		if(argc() > 3 && argv(2) === 'drop' && intval(argv(3))) {
+		if(argc() > 3 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3))) {
+			$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
+			$calendars = $caldavBackend->getCalendarsForUser($principalUri);
+
 			$id = argv(3);
 			foreach($calendars as $calendar) {
 				if($id == $calendar['id'][0]) {
 					$caldavBackend->deleteCalendar($calendar['id']);
 				}
 			}
-			goaway('/cdav/calendar');
 		}
-
 
 		//manage carddav stuff
 		if((argc() == 2) && (argv(1) === 'addressbook')) {
 			//Display Adressbook here
 			return 'not implemented';
+		}
+
+		//delete addressbook
+		if(argc() > 3 && argv(1) === 'addressbook' && argv(2) === 'drop' && intval(argv(3))) {
+			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
+			$addressbooks = $carddavBackend->getAddressBooksForUser($principalUri);
+
+			$id = argv(3);
+			foreach($addressbooks as $addressbook) {
+				if($id == $addressbook['id']) {
+					$carddavBackend->deleteAddressBook($addressbook['id']);
+				}
+			}
 		}
 
 	}

@@ -53,10 +53,10 @@
 <div class="widget">
 	<h3>{{$shared_calendars_label}}</h3>
 	{{foreach $shared_calendars as $calendar}}
-	<div class="form-group">
+	<div id="shared-calendar-{{$calendar.calendarid}}" class="form-group">
 		<i class="fa {{if $calendar.access == 'read-write'}}fa-calendar-check-o{{else}} fa-calendar-times-o{{/if}} generic-icons"></i>{{$calendar.share_displayname}}
 		<div class="pull-right">
-			<a href="/cdav/calendar/drop/{{$calendar.calendarid}}"><i class="fa fa-trash-o drop-icons"></i></a>
+			<a href="#" onclick="dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}', '#shared-calendar-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 		</div>
 	</div>
 	{{/foreach}}
