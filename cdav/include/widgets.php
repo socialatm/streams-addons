@@ -36,7 +36,7 @@ function widget_cdav() {
 
 		$sharee_options .= '<option value="">' . t('Select Channel') . '</option>' . "\r\n";
 		foreach($local_channels as $local_channel) {
-			$sharee_options .= '<option value="' . $local_channel['channel_address'] . '">' . $local_channel['channel_name'] . '</option>' . "\r\n";
+			$sharee_options .= '<option value="' . $local_channel['channel_hash'] . '">' . $local_channel['channel_name'] . '</option>' . "\r\n";
 		}
 
 		$access_options = '<option value="3">' . t('Read-write') . '</option>' . "\r\n";
@@ -58,8 +58,8 @@ function widget_cdav() {
 
 			foreach($invites as $invite) {
 				if(strpos($invite->href, 'mailto:') !== false && !$access) {
-					$sharee = substr($invite->href, 7);
-					$sharees[] = $sharee . (($invite->access == 3) ? ' (RW)' : ' (R)');
+					$sharee = channelx_by_hash(substr($invite->href, 7));
+					$sharees[] = $sharee['channel_name'] . (($invite->access == 3) ? ' (RW)' : ' (R)');
 				}
 			}
 

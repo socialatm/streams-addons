@@ -160,7 +160,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//create new calendar
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
 				do {
-
 					$duplicate = false;
 					$calendarUri = random_string(20);
 
@@ -171,7 +170,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					if (count($r))
 						$duplicate = true;
-
 				} while ($duplicate == true);
 
 				$properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']));
@@ -183,19 +181,19 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if($_REQUEST['sharee'] && $_REQUEST['share']) {
 				$id = array(intval($_REQUEST['calendarid']), intval($_REQUEST['instanceid']));
 
-				$member = dbesc($_REQUEST['sharee']);
+				$hash = dbesc($_REQUEST['sharee']);
+
+				$sharee_arr = channelx_by_hash($hash);
 
 				$sharee = new \Sabre\DAV\Xml\Element\Sharee();
 
-				$sharee->href = 'mailto:' . $member .  '@' . substr(z_root(), 8);
-				$sharee->principal = 'principals/' . $member;
+				$sharee->href = 'mailto:' . $hash;
+				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
 				$sharee->access = intval($_REQUEST['access']);
 
 				$caldavBackend->updateInvites($id, array($sharee));
-
 			}
 		}
-
 	}
 
 	function get() {
@@ -222,7 +220,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 		$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
 		if(argc() == 2 && argv(1) === 'calendar') {
-			//Display calendar here
+			//Display calendar(s) here
 			return 'not implemented';
 		}
 
