@@ -5,7 +5,6 @@
 		<i class="fa fa-calendar"></i>&nbsp;<strong>{{$calendar.displayname}}</strong>
 		<div class="pull-right">
 			<i id="share-icon" class="fa fa-share-alt fakelink" onclick="openClose('share-calendar-{{$calendar.calendarid}}')"></i>
-			<a href="/cdav/calendars/{{$calendar.nick}}/{{$calendar.uri}}/?export"><i class="fa fa-cloud-download"></i></a>
 			<a href="/cdav/calendar/drop/{{$calendar.calendarid}}"><i class="fa fa-trash-o drop-icons"></i></a>
 		</div>
 	</div>
@@ -53,7 +52,6 @@
 	<div class="form-group">
 		<i class="fa {{if $calendar.access == 'read-write'}}fa-calendar-check-o{{else}} fa-calendar-times-o{{/if}}"></i>&nbsp;<strong>{{$calendar.share_displayname}}</strong>
 		<div class="pull-right">
-			<a href="/cdav/calendars/{{$calendar.nick}}/{{$calendar.uri}}/?export"><i class="fa fa-cloud-download"></i></a>
 			<a href="/cdav/calendar/drop/{{$calendar.calendarid}}"><i class="fa fa-trash-o drop-icons"></i></a>
 		</div>
 	</div>
