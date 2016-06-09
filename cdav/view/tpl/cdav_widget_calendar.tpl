@@ -13,7 +13,7 @@
 			{{if $calendar.sharees}}
 			<div class="form-group">
 				{{foreach $calendar.sharees as $sharee}}
-				<div><i class="fa fa-share"></i>&nbsp;{{$sharee}}</div>
+				<div><i class="fa fa-share generic-icons"></i>{{$sharee}}</div>
 				{{/foreach}}
 			</div>
 			{{/if}}
