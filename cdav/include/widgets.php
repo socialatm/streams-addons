@@ -61,21 +61,25 @@ function widget_cdav() {
 					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
+
 			if(!$access) {
 				$my_calendars[] = array(
-					'displayname' => $sabrecal['{DAV:}displayname'],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
+					'uri' => $sabrecal['uri'],
+					'nick' => $channel['channel_address'],
+					'displayname' => $sabrecal['{DAV:}displayname'],
 					'sharees' => $sharees
 				);
 			}
 			else {
 				$shared_calendars[] = array(
-					'share_displayname' => $share_displayname[0],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
+					'uri' => $sabrecal['uri'],
+					'nick' => $channel['channel_address'],
+					'share_displayname' => $share_displayname[0],
 					'access' => $access
-
 				);
 			}
 		}
