@@ -59,7 +59,7 @@ function widget_cdav() {
 			foreach($invites as $invite) {
 				if((strpos($invite->href, 'mailto:') !== false)) {
 					$sharee = substr($invite->href, 7);
-					if($sharee != $channel['xchan_addr'])
+					if(!$access) //filter the owner
 						$sharees[] = $sharee . (($invite->access == 3) ? ' (RW)' : ' (R)');
 				}
 			}
