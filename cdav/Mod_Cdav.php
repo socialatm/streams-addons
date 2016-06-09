@@ -179,6 +179,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			//share a calendar - this only works on local system (with channels on the same server)
 			if($_REQUEST['sharee'] && $_REQUEST['share']) {
+
 				$id = array(intval($_REQUEST['calendarid']), intval($_REQUEST['instanceid']));
 
 				$hash = dbesc($_REQUEST['sharee']);
@@ -190,6 +191,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$sharee->href = 'mailto:' . $hash;
 				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
 				$sharee->access = intval($_REQUEST['access']);
+				$sharee->properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']) . ' (' . $channel['channel_name'] . ')');
 
 				$caldavBackend->updateInvites($id, array($sharee));
 			}

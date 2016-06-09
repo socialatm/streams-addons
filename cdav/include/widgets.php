@@ -26,8 +26,6 @@ function widget_cdav() {
 
 		$sabrecals = $caldavBackend->getCalendarsForUser($principalUri);
 
-		//print_r($calendars); killme();
-
 		//TODO: we should probably also check for permission to send stream here
 		$local_channels = q("SELECT * FROM channel LEFT JOIN abook ON abook_xchan = channel_hash WHERE channel_system = 0 AND channel_removed = 0 AND channel_hash != '%s' AND abook_channel = %d",
 			dbesc($channel['channel_hash']),
@@ -55,11 +53,12 @@ function widget_cdav() {
 			$invites = $caldavBackend->getInvites($sabrecal['id']);
 
 			$sharees = array();
-
+			$share_displayname = array();
 			foreach($invites as $invite) {
-				if(strpos($invite->href, 'mailto:') !== false && !$access) {
+				if(strpos($invite->href, 'mailto:') !== false) {
 					$sharee = channelx_by_hash(substr($invite->href, 7));
-					$sharees[] = $sharee['channel_name'] . (($invite->access == 3) ? ' (RW)' : ' (R)');
+					$sharees[] = ((!$access) ? $sharee['channel_name'] . (($invite->access == 3) ? ' (RW)' : ' (R)') : '');
+					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
 
@@ -68,9 +67,9 @@ function widget_cdav() {
 				'calendarid' => $sabrecal['id'][0],
 				'instanceid' => $sabrecal['id'][1],
 				'access' => $access,
-				'sharees' => $sharees
+				'sharees' => $sharees,
+				'share_displayname' => $share_displayname[0]
 			);
-
 		}
 
 		$o .= replace_macros(get_markup_template('cdav_widget_calendar.tpl', 'addon/cdav'), array(

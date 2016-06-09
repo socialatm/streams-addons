@@ -25,6 +25,7 @@
 		<form id="share-calendar-{{$calendar.calendarid}}" method="post" action="" style="display: none;">
 			<input name="calendarid" type="hidden" value="{{$calendar.calendarid}}">
 			<input name="instanceid" type="hidden" value="{{$calendar.instanceid}}">
+			<input name="{DAV:}displayname" type="hidden" value="{{$calendar.displayname}}">
 			<div class="form-group">
 				<select name="sharee" class="form-control">
 					{{$sharee_options}}
@@ -62,7 +63,7 @@
 	<div>
 		{{if $calendar.access}}
 		<div class="form-group">
-			<i class="fa {{if $calendar.access == 'read-write'}}fa-calendar-check-o{{else}} fa-calendar-times-o{{/if}}"></i>&nbsp;<strong>{{$calendar.displayname}}</strong>
+			<i class="fa {{if $calendar.access == 'read-write'}}fa-calendar-check-o{{else}} fa-calendar-times-o{{/if}}"></i>&nbsp;<strong>{{$calendar.share_displayname}}</strong>
 			<div class="pull-right">
 				<a href="/cdav/calendar/drop/{{$calendar.calendarid}}"><i class="fa fa-trash-o drop-icons"></i></a>
 			</div>
