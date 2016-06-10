@@ -31,16 +31,10 @@ flattrs received.
 Static flattr buttton, the image is hosted on your server for privacy of the
 visitors.
 
-Feedback
---------
-
-You can send feedback, bug reports etc, for this widget to [my red# stuff
-feedback channel][3], you can also leave a flattr there if you like.
-
 Author
 ------
 
-Original Author: [Tobias Diekershoff][TD]
+Original Author: Tobias Diekershoff
 
 License
 -------
@@ -72,5 +66,3 @@ homepage.
 
 [1]: https://flattr.com
 [2]: http://opensource.org/licenses/mit-license.php
-[3]: https://diekershoff.de/channel/basredstuff
-[TD]: https://diekershoff.de/channel/bavatar
