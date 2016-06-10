@@ -183,13 +183,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$id = array(intval($_REQUEST['calendarid']), intval($_REQUEST['instanceid']));
 
-				$hash = dbesc($_REQUEST['sharee']);
+				$hash = $_REQUEST['sharee'];
 
 				$sharee_arr = channelx_by_hash($hash);
 
 				$sharee = new \Sabre\DAV\Xml\Element\Sharee();
 
-				$sharee->href = 'mailto:' . $hash;
+				$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
 				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
 				$sharee->access = intval($_REQUEST['access']);
 				$sharee->properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']) . ' (' . $channel['channel_name'] . ')');
@@ -243,16 +243,69 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$principalUri = 'principals/' . $channel['channel_address'];
 
+		if(argv(1) === 'calendar') {
+			$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
+			$calendars = $caldavBackend->getCalendarsForUser($principalUri);
+		}
+
+		//Display calendar(s) here
 		if(argc() == 2 && argv(1) === 'calendar') {
-			//Display calendar(s) here
-			return 'not implemented';
+
+			head_add_css('library/fullcalendar/fullcalendar.css');
+
+			//TODO: issue #411 https://github.com/redmatrix/hubzilla/issues/411 js is included in template for now...
+			//head_add_js('library/moment/moment.min.js');
+			//head_add_js('library/fullcalendar/fullcalendar.min.js');
+			//head_add_js('library/fullcalendar/lang-all.js');
+
+			foreach($calendars as $calendar) {
+				$calendar_sources .= '\'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', ';
+			}
+
+			$calendar_sources = rtrim($calendar_sources, ', ');
+
+			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), array(
+				'$calendar_sources' => $calendar_sources
+			));
+
+			return $o;
+
+		}
+
+		//Provide json data for calendar
+		if(argc() == 5 && argv(1) === 'calendar' && argv(2) === 'json'  && intval(argv(3)) && intval(argv(4))) {
+
+			$id = array(argv(3), argv(4));
+
+			//TODO: we get always the whole calendar atm. start/end needs to be implemented somehow. otherwise we might choke on big calendars...
+			if (x($_GET,'start'))	$start = $_GET['start'];
+			if (x($_GET,'end'))	$finish = $_GET['end'];
+
+			$objects = $caldavBackend->getCalendarObjects($id);
+
+			//getCalendarObjects does not return calendardata. collect calendar uris here
+			foreach($objects as $object)
+				$uris[] = $object['uri'];
+
+			$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
+
+			foreach($objects as $object) {
+
+				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+
+				$events[] = array(
+					'title' => (string)$vcalendar->VEVENT->SUMMARY,
+					'start' => (string)$vcalendar->VEVENT->DTSTART,
+					'end' => (string)$vcalendar->VEVENT->DTEND
+				);
+			}
+
+			json_return_and_die($events);
+
 		}
 
 		//delete calendar
-		if(argc() > 3 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3))) {
-			$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
-			$calendars = $caldavBackend->getCalendarsForUser($principalUri);
-
+		if(argc() == 4 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3))) {
 			$id = argv(3);
 			foreach($calendars as $calendar) {
 				if($id == $calendar['id'][0]) {
@@ -261,17 +314,20 @@ class Cdav extends \Zotlabs\Web\Controller {
 			}
 		}
 
-		//manage carddav stuff
+
+
+		if(argv(1) === 'addressbook') {
+			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
+			$addressbooks = $carddavBackend->getAddressBooksForUser($principalUri);
+		}
+
+		//Display Adressbook here
 		if((argc() == 2) && (argv(1) === 'addressbook')) {
-			//Display Adressbook here
 			return 'not implemented';
 		}
 
 		//delete addressbook
 		if(argc() > 3 && argv(1) === 'addressbook' && argv(2) === 'drop' && intval(argv(3))) {
-			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
-			$addressbooks = $carddavBackend->getAddressBooksForUser($principalUri);
-
 			$id = argv(3);
 			foreach($addressbooks as $addressbook) {
 				if($id == $addressbook['id']) {
