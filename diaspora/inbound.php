@@ -2130,6 +2130,7 @@ function diaspora_profile($importer,$xml,$msg) {
 	$a = get_app();
 	$diaspora_handle = notags(diaspora_get_author($xml));
 
+	logger('xml: ' . print_r($xml,true));
 
 	if($diaspora_handle != $msg['author']) {
 		logger('diaspora_post: Potential forgery. Message handle is not the same as envelope sender.');
@@ -2145,7 +2146,7 @@ function diaspora_profile($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$name = unxmlify($xml['first_name']) . ((strlen($xml['last_name'])) ? ' ' . unxmlify($xml['last_name']) : '');
+	$name = unxmlify($xml['first_name']) . ((strlen($xml['last_name'])) ? ' ' . $xml['last_name'] : '');
 	$image_url = unxmlify($xml['image_url']);
 	$birthday = unxmlify($xml['birthday']);
 
