@@ -279,28 +279,40 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			//TODO: we get always the whole calendar atm. start/end needs to be implemented somehow. otherwise we might choke on big calendars...
 			if (x($_GET,'start'))	$start = $_GET['start'];
-			if (x($_GET,'end'))	$finish = $_GET['end'];
+			if (x($_GET,'end'))	$end = $_GET['end'];
 
-			$objects = $caldavBackend->getCalendarObjects($id);
+			$filters['name'] = 'VCALENDAR';
 
-			//getCalendarObjects does not return calendardata. collect calendar uris here
-			foreach($objects as $object)
-				$uris[] = $object['uri'];
+			$filters['prop-filters'][0]['name'] = 'VEVENT';
+			$filters['prop-filters'][0]['is-not-defined'] = array();
 
-			$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
+			$filters['comp-filters'][0]['name'] = 'VEVENT';
+			$filters['comp-filters'][0]['time-range']['start'] = date_create($start);
+			$filters['comp-filters'][0]['time-range']['end'] = date_create($end);
 
-			foreach($objects as $object) {
+			$uris = $caldavBackend->calendarQuery($id, $filters);
 
-				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+			if(count($uris)) {
 
-				$events[] = array(
-					'title' => (string)$vcalendar->VEVENT->SUMMARY,
-					'start' => (string)$vcalendar->VEVENT->DTSTART,
-					'end' => (string)$vcalendar->VEVENT->DTEND
-				);
+				$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
+
+				foreach($objects as $object) {
+
+					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+
+					$events[] = array(
+						'title' => (string)$vcalendar->VEVENT->SUMMARY,
+						'start' => (string)$vcalendar->VEVENT->DTSTART,
+						'end' => (string)$vcalendar->VEVENT->DTEND
+					);
+				}
+
+				json_return_and_die($events);
 			}
+			else {
 
-			json_return_and_die($events);
+				killme();
+			}
 
 		}
 
