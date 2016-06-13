@@ -98,6 +98,7 @@ function widget_cdav() {
 			'$shared_calendars' => $shared_calendars,
 			'$sharee_options' => $sharee_options,
 			'$access_options' => $access_options,
+			'$share_label' => t('Share this calendar'),
 			'$create_label' => t('Create new calendar'),
 			'$create_placeholder' => t('Calendar Name')
 		));

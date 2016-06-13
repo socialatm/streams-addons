@@ -323,7 +323,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			killme();
 		}
 
-		//delete calendar
+		//drop calendar
 		if(argc() == 4 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3))) {
 			$id = argv(3);
 			foreach($calendars as $calendar) {
@@ -332,8 +332,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				}
 			}
 		}
-
-
 
 		if(argv(1) === 'addressbook') {
 			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);

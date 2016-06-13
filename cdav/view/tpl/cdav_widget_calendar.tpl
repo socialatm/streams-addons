@@ -23,11 +23,12 @@
 			</div>
 			{{/if}}
 			<form method="post" action="">
+				<label for="create">{{$share_label}}</label>
 				<input name="calendarid" type="hidden" value="{{$calendar.calendarid}}">
 				<input name="instanceid" type="hidden" value="{{$calendar.instanceid}}">
 				<input name="{DAV:}displayname" type="hidden" value="{{$calendar.displayname}}">
 				<div class="form-group">
-					<select name="sharee" class="form-control">
+					<select id="create" name="sharee" class="form-control">
 						{{$sharee_options}}
 					</select>
 				</div>
