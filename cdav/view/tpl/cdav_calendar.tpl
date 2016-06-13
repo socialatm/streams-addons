@@ -38,15 +38,17 @@ function drop_sharee(id, iid, sharee) {
 	var selector = '#sharee-' + id;
 	var confirm = confirmDelete();
 
-	$('body').css('cursor', 'wait');
-	$(selector).fadeTo('fast', 0.33);
+	if(confirm) {
+		$('body').css('cursor', 'wait');
+		$(selector).fadeTo('fast', 0.33);
 
-	var posting = $.post( '/cdav/calendar', { calendarid: id, instanceid: iid, sharee: sharee, access: 4, share: 'drop' } );
+		var posting = $.post( '/cdav/calendar', { calendarid: id, instanceid: iid, sharee: sharee, access: 4, share: 'drop' } );
 
-	posting.done(function() {
-		$(selector).remove();
-		$('body').css('cursor', 'auto');
-	});
+		posting.done(function() {
+			$(selector).remove();
+			$('body').css('cursor', 'auto');
+		});
+	}
 }
 </script>
 
