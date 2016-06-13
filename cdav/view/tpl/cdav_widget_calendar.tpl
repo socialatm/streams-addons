@@ -3,7 +3,7 @@
 	{{foreach $my_calendars as $calendar}}
 	<div id="calendar-{{$calendar.calendarid}}">
 		<div class="form-group">
-			<i id="calendar-btn-{{$calendar.calendarid}}" class="fa {{if $calendar.switch}}fa-calendar{{else}}fa-calendar-o{{/if}} generic-icons fakelink" onclick="add_remove_json_source('{{$calendar.json_source}}')"></i>{{$calendar.displayname}}
+			<i id="calendar-btn-{{$calendar.calendarid}}" class="fa {{if $calendar.switch}}fa-calendar-check-o{{else}}fa-calendar-o{{/if}} generic-icons fakelink" onclick="add_remove_json_source('{{$calendar.json_source}}')"></i>{{$calendar.displayname}}
 			<div class="pull-right">
 				<i id="share-icon" class="fa fa-share-alt fakelink generic-icons" onclick="openClose('share-calendar-{{$calendar.calendarid}}')"></i>
 				<a href="#" onclick="dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}', '#calendar-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
@@ -13,7 +13,12 @@
 			{{if $calendar.sharees}}
 			<div class="form-group">
 				{{foreach $calendar.sharees as $sharee}}
-				<div><i class="fa fa-share generic-icons"></i>{{$sharee}}</div>
+				<div id="sharee-{{$calendar.calendarid}}">
+					<i class="fa fa-share generic-icons"></i>{{$sharee.name}}&nbsp;{{$sharee.access}}
+					<div class="pull-right">
+						<i class="fa fa-trash-o drop-icons" onclick="drop_sharee('{{$calendar.calendarid}}', '{{$calendar.instanceid}}', '{{$sharee.hash}}');"></i>
+					</div>
+				</div>
 				{{/foreach}}
 			</div>
 			{{/if}}
@@ -32,7 +37,7 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<button type="submit" name="share" value="share" class="btn btn-success btn-sm btn-block"><i class="fa fa-share-alt"></i> Submit</button>
+					<button type="submit" name="share" value="share" class="btn btn-success btn-sm btn-block"><i class="fa fa-share-alt"></i> Share</button>
 				</div>
 			</form>
 		</div>

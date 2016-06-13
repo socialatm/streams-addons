@@ -5,7 +5,7 @@
 <script>
 $(document).ready(function() {
 	$('#calendar').fullCalendar({
-		eventSources: [ {{$calendar_sources}} ]
+		eventSources: [ {{$sources}} ]
 	});
 
 });
@@ -13,7 +13,7 @@ $(document).ready(function() {
 function add_remove_json_source(source, status) {
 
 	if(status === undefined)
-		status = 'fa-calendar';
+		status = 'fa-calendar-check-o';
 
 	var parts = source.split('/');
 	var id = parts[4];
@@ -32,6 +32,21 @@ function add_remove_json_source(source, status) {
 		$(selector).addClass('fa-calendar-o');
 		$.get('/cdav/calendar/switch/' + id + '/0');
 	}
+}
+
+function drop_sharee(id, iid, sharee) {
+	var selector = '#sharee-' + id;
+	var confirm = confirmDelete();
+
+	$('body').css('cursor', 'wait');
+	$(selector).fadeTo('fast', 0.33);
+
+	var posting = $.post( '/cdav/calendar', { calendarid: id, instanceid: iid, sharee: sharee, access: 4, share: 'drop' } );
+
+	posting.done(function() {
+		$(selector).remove();
+		$('body').css('cursor', 'auto');
+	});
 }
 </script>
 

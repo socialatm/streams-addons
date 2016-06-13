@@ -192,7 +192,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
 				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
 				$sharee->access = intval($_REQUEST['access']);
-				$sharee->properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']) . ' (' . $channel['channel_name'] . ')');
+				if($_REQUEST['{DAV:}displayname'])
+					$sharee->properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']) . ' (' . $channel['channel_name'] . ')');
 
 				$caldavBackend->updateInvites($id, array($sharee));
 			}
@@ -261,13 +262,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 			foreach($calendars as $calendar) {
 				$switch = get_pconfig(local_channel(), 'cdav_calendar', $calendar['id'][0]);
 				if($switch)
-					$calendar_sources .= '\'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', ';
+					$sources .= '\'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', ';
 			}
 
-			$calendar_sources = rtrim($calendar_sources, ', ');
+			$sources = rtrim($sources, ', ');
 
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), array(
-				'$calendar_sources' => $calendar_sources
+				'$sources' => $sources
 			));
 
 			return $o;

@@ -39,7 +39,6 @@ function widget_cdav() {
 
 		$access_options = '<option value="3">' . t('Read-write') . '</option>' . "\r\n";
 		$access_options .= '<option value="2">' . t('Read-only') . '</option>' . "\r\n";
-		$access_options .= '<option value="4">' . t('Revoke access') . '</option>' . "\r\n";
 
 		//list calendars
 		foreach($sabrecals as $sabrecal) {
@@ -61,7 +60,11 @@ function widget_cdav() {
 			foreach($invites as $invite) {
 				if(strpos($invite->href, 'mailto:') !== false) {
 					$sharee = channelx_by_hash(substr($invite->href, 7));
-					$sharees[] = $sharee['channel_name'] . (($invite->access == 3) ? ' (RW)' : ' (R)');
+					$sharees[] = array(
+						'name' => $sharee['channel_name'],
+						'access' => (($invite->access == 3) ? ' (RW)' : ' (R)'),
+						'hash' => $sharee['channel_hash']
+					);
 					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
