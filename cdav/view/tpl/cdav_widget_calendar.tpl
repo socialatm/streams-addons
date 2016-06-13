@@ -3,7 +3,7 @@
 	{{foreach $my_calendars as $calendar}}
 	<div id="calendar-{{$calendar.calendarid}}">
 		<div class="form-group">
-			<i class="fa fa-calendar generic-icons"></i>{{$calendar.displayname}}
+			<i id="calendar-btn-{{$calendar.calendarid}}" class="fa {{if $calendar.switch}}fa-calendar{{else}}fa-calendar-o{{/if}} generic-icons fakelink" onclick="add_remove_json_source('{{$calendar.json_source}}')"></i>{{$calendar.displayname}}
 			<div class="pull-right">
 				<i id="share-icon" class="fa fa-share-alt fakelink generic-icons" onclick="openClose('share-calendar-{{$calendar.calendarid}}')"></i>
 				<a href="#" onclick="dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}', '#calendar-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
@@ -54,7 +54,7 @@
 	<h3>{{$shared_calendars_label}}</h3>
 	{{foreach $shared_calendars as $calendar}}
 	<div id="shared-calendar-{{$calendar.calendarid}}" class="form-group">
-		<i class="fa {{if $calendar.access == 'read-write'}}fa-calendar-check-o{{else}} fa-calendar-times-o{{/if}} generic-icons"></i>{{$calendar.share_displayname}}
+		<i id="calendar-btn-{{$calendar.calendarid}}" class="fa {{if $calendar.switch}}{{if $calendar.access == 'read-write'}}fa-calendar-check-o{{else}}fa-calendar-times-o{{/if}}{{else}}fa-calendar-o{{/if}} generic-icons fakelink" onclick="add_remove_json_source('{{$calendar.json_source}}', {{if $calendar.access == 'read-write'}}'fa-calendar-check-o'{{else}}'fa-calendar-times-o'{{/if}})"></i>{{$calendar.share_displayname}}
 		<div class="pull-right">
 			<a href="#" onclick="dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}', '#shared-calendar-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 		</div>

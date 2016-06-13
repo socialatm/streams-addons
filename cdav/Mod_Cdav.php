@@ -259,10 +259,14 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//head_add_js('library/fullcalendar/lang-all.js');
 
 			foreach($calendars as $calendar) {
-				$calendar_sources .= '\'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', ';
+				$switch = get_pconfig(local_channel(), 'cdav_calendar', $calendar['id'][0]);
+				if($switch)
+					$calendar_sources .= '\'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', ';
 			}
 
 			$calendar_sources = rtrim($calendar_sources, ', ');
+
+			//print_r($calendar_sources); killme();
 
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), array(
 				'$calendar_sources' => $calendar_sources
@@ -277,15 +281,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			$id = array(argv(3), argv(4));
 
-			//TODO: we get always the whole calendar atm. start/end needs to be implemented somehow. otherwise we might choke on big calendars...
-			if (x($_GET,'start'))	$start = $_GET['start'];
-			if (x($_GET,'end'))	$end = $_GET['end'];
+			if (x($_GET,'start'))
+				$start = $_GET['start'];
+			if (x($_GET,'end'))
+				$end = $_GET['end'];
 
 			$filters['name'] = 'VCALENDAR';
-
 			$filters['prop-filters'][0]['name'] = 'VEVENT';
-			$filters['prop-filters'][0]['is-not-defined'] = array();
-
 			$filters['comp-filters'][0]['name'] = 'VEVENT';
 			$filters['comp-filters'][0]['time-range']['start'] = date_create($start);
 			$filters['comp-filters'][0]['time-range']['end'] = date_create($end);
@@ -314,6 +316,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 				killme();
 			}
 
+		}
+
+		//enable/disable calendars
+		if(argc() == 5 && argv(1) === 'calendar' && argv(2) === 'switch'  && intval(argv(3)) && (argv(4) == 1 || argv(4) == 0)) {
+			set_pconfig(local_channel(), 'cdav_calendar' , argv(3), argv(4));
+			killme();
 		}
 
 		//delete calendar

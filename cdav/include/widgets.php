@@ -52,6 +52,10 @@ function widget_cdav() {
 
 			$invites = $caldavBackend->getInvites($sabrecal['id']);
 
+			$json_source = '/cdav/calendar/json/' . $sabrecal['id'][0] . '/' . $sabrecal['id'][1];
+
+			$switch = get_pconfig(local_channel(), 'cdav_calendar', $sabrecal['id'][0]);
+
 			$sharees = array();
 			$share_displayname = array();
 			foreach($invites as $invite) {
@@ -66,6 +70,8 @@ function widget_cdav() {
 					'displayname' => $sabrecal['{DAV:}displayname'],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
+					'json_source' => $json_source,
+					'switch' => $switch,
 					'sharees' => $sharees
 				);
 			}
@@ -74,6 +80,8 @@ function widget_cdav() {
 					'share_displayname' => $share_displayname[0],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
+					'json_source' => $json_source,
+					'switch' => $switch,
 					'access' => $access
 
 				);
