@@ -266,8 +266,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			$calendar_sources = rtrim($calendar_sources, ', ');
 
-			//print_r($calendar_sources); killme();
-
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), array(
 				'$calendar_sources' => $calendar_sources
 			));
