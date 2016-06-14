@@ -560,7 +560,7 @@ function diaspora_post($importer,$xml,$msg) {
 
 	$guid = notags(unxmlify($xml['guid']));
 	$diaspora_handle = notags(diaspora_get_author($xml));
-	$app = notags(xmlify($xml['provider_display_name']));
+	$app = ((array_key_exists('provider_display_name',$xml)) ? notags(unxmlify($xml['provider_display_name']) : '');
 
 
 	if($diaspora_handle != $msg['author']) {
