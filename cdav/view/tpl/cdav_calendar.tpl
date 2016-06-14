@@ -8,6 +8,8 @@ $(document).ready(function() {
 		eventSources: [ {{$sources}} ]
 	});
 
+	$('#create-form').colorpicker({ input: '#color' });
+
 });
 
 function add_remove_json_source(source, status) {

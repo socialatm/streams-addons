@@ -173,7 +173,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$duplicate = true;
 				} while ($duplicate == true);
 
-				$properties = array('{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']));
+				$properties = array(
+					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
+					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color']),
+				);
 
 				$caldavBackend->createCalendar($principalUri, $calendarUri, $properties);
 			}

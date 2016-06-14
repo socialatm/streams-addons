@@ -45,13 +45,19 @@
 	</div>
 	{{/foreach}}
 	<form id="create-calendar" method="post" action="">
+
 		<label for="create">{{$create_label}}</label>
-		<div class="input-group">
+		<div id="create-form" class="input-group colorpicker-component form-group">
+			<input id="color" name="color" type="hidden" value="#3a87ad">
 			<input id="create" name="{DAV:}displayname" type="text" placeholder="{{$create_placeholder}}" class="widget-input">
+			<span class="input-group-addon"><i></i></span>
 			<div class="input-group-btn">
+
 				<button type="submit" name="create" value="create" class="btn btn-default btn-sm"><i class="fa fa-calendar-plus-o"></i></button>
 			</div>
 		</div>
+
+
 	</form>
 </div>
 
