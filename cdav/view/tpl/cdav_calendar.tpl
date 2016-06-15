@@ -12,7 +12,7 @@ $(document).ready(function() {
 
 });
 
-function add_remove_json_source(source, status) {
+function add_remove_json_source(source, color, status) {
 
 	if(status === undefined)
 		status = 'fa-calendar-check-o';
@@ -23,7 +23,7 @@ function add_remove_json_source(source, status) {
 	var selector = '#calendar-btn-' + id;
 
 	if($(selector).hasClass('fa-calendar-o')) {
-		$('#calendar').fullCalendar( 'addEventSource', source );
+		$('#calendar').fullCalendar( 'addEventSource', { url: source, color: color });
 		$(selector).removeClass('fa-calendar-o');
 		$(selector).addClass(status);
 		$.get('/cdav/calendar/switch/' + id + '/1');

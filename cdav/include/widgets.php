@@ -55,7 +55,7 @@ function widget_cdav() {
 
 			$switch = get_pconfig(local_channel(), 'cdav_calendar', $sabrecal['id'][0]);
 
-			$color = $sabrecal['{http://apple.com/ns/ical/}calendar-color'];
+			$color = (($sabrecal['{http://apple.com/ns/ical/}calendar-color']) ? $sabrecal['{http://apple.com/ns/ical/}calendar-color'] : '#3a87ad');
 
 			$sharees = array();
 			$share_displayname = array();
@@ -70,8 +70,11 @@ function widget_cdav() {
 					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
+
 			if(!$access) {
 				$my_calendars[] = array(
+					'ownernick' => $channel['channel_address'],
+					'uri' => $sabrecal['uri'],
 					'displayname' => $sabrecal['{DAV:}displayname'],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
@@ -83,6 +86,8 @@ function widget_cdav() {
 			}
 			else {
 				$shared_calendars[] = array(
+					'ownernick' => $channel['channel_address'],
+					'uri' => $sabrecal['uri'],
 					'share_displayname' => $share_displayname[0],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
@@ -90,7 +95,6 @@ function widget_cdav() {
 					'color' => $color,
 					'switch' => $switch,
 					'access' => $access
-
 				);
 			}
 		}

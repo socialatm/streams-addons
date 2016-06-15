@@ -280,10 +280,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//head_add_js('library/fullcalendar/lang-all.js');
 
 			foreach($calendars as $calendar) {
-				$color = $calendar['{http://apple.com/ns/ical/}calendar-color']; 
+				$color = (($calendar['{http://apple.com/ns/ical/}calendar-color']) ? $calendar['{http://apple.com/ns/ical/}calendar-color'] : '#3a87ad');
 				$switch = get_pconfig(local_channel(), 'cdav_calendar', $calendar['id'][0]);
 				if($switch) {
-					$sources .= '\'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', ';
+					$sources .= '{ url: \'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', color: \'' . $color . '\' }, ';
 				}
 			}
 
