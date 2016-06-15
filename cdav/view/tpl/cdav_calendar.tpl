@@ -9,7 +9,6 @@ $(document).ready(function() {
 	});
 
 	$('#create-form').colorpicker({ input: '#color' });
-
 });
 
 function add_remove_json_source(source, color, status) {
@@ -33,23 +32,6 @@ function add_remove_json_source(source, color, status) {
 		$(selector).removeClass(status);
 		$(selector).addClass('fa-calendar-o');
 		$.get('/cdav/calendar/switch/' + id + '/0');
-	}
-}
-
-function drop_sharee(id, iid, sharee) {
-	var selector = '#sharee-' + id;
-	var confirm = confirmDelete();
-
-	if(confirm) {
-		$('body').css('cursor', 'wait');
-		$(selector).fadeTo('fast', 0.33);
-
-		var posting = $.post( '/cdav/calendar', { calendarid: id, instanceid: iid, sharee: sharee, access: 4, share: 'drop' } );
-
-		posting.done(function() {
-			$(selector).remove();
-			$('body').css('cursor', 'auto');
-		});
 	}
 }
 </script>

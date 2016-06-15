@@ -17,7 +17,7 @@
 				<div id="sharee-{{$calendar.calendarid}}">
 					<i class="fa fa-share generic-icons"></i>{{$sharee.name}}&nbsp;{{$sharee.access}}
 					<div class="pull-right">
-						<i class="fa fa-trash-o drop-icons" onclick="drop_sharee('{{$calendar.calendarid}}', '{{$calendar.instanceid}}', '{{$sharee.hash}}');"></i>
+						<a href="#" onclick="dropItem('/cdav/calendar/dropsharee/{{$calendar.calendarid}}/{{$calendar.instanceid}}/{{$sharee.hash}}', '#sharee-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 					</div>
 				</div>
 				{{/foreach}}

@@ -356,6 +356,25 @@ class Cdav extends \Zotlabs\Web\Controller {
 			}
 		}
 
+		//drop sharee
+		if(argc() == 6 && argv(1) === 'calendar' && argv(2) === 'dropsharee'  && intval(argv(3)) && intval(argv(4))) {
+
+				$id = [argv(3), argv(4)];
+
+				$hash = argv(5);
+
+				$sharee_arr = channelx_by_hash($hash);
+
+				$sharee = new \Sabre\DAV\Xml\Element\Sharee();
+
+				$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
+				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
+				$sharee->access = 4;
+				$caldavBackend->updateInvites($id, array($sharee));
+				killme();
+		}
+
+
 		if(argv(1) === 'addressbook') {
 			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
 			$addressbooks = $carddavBackend->getAddressBooksForUser($principalUri);
