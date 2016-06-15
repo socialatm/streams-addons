@@ -57,22 +57,22 @@ function widget_cdav() {
 
 			$color = (($sabrecal['{http://apple.com/ns/ical/}calendar-color']) ? $sabrecal['{http://apple.com/ns/ical/}calendar-color'] : '#3a87ad');
 
-			$sharees = array();
-			$share_displayname = array();
+			$sharees = [];
+			$share_displayname = [];
 			foreach($invites as $invite) {
 				if(strpos($invite->href, 'mailto:') !== false) {
 					$sharee = channelx_by_hash(substr($invite->href, 7));
-					$sharees[] = array(
+					$sharees[] = [
 						'name' => $sharee['channel_name'],
 						'access' => (($invite->access == 3) ? ' (RW)' : ' (R)'),
 						'hash' => $sharee['channel_hash']
-					);
+					];
 					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
 
 			if(!$access) {
-				$my_calendars[] = array(
+				$my_calendars[] = [
 					'ownernick' => $channel['channel_address'],
 					'uri' => $sabrecal['uri'],
 					'displayname' => $sabrecal['{DAV:}displayname'],
@@ -82,10 +82,10 @@ function widget_cdav() {
 					'color' => $color,
 					'switch' => $switch,
 					'sharees' => $sharees
-				);
+				];
 			}
 			else {
-				$shared_calendars[] = array(
+				$shared_calendars[] = [
 					'ownernick' => $channel['channel_address'],
 					'uri' => $sabrecal['uri'],
 					'share_displayname' => $share_displayname[0],
@@ -95,11 +95,11 @@ function widget_cdav() {
 					'color' => $color,
 					'switch' => $switch,
 					'access' => $access
-				);
+				];
 			}
 		}
 
-		$o .= replace_macros(get_markup_template('cdav_widget_calendar.tpl', 'addon/cdav'), array(
+		$o .= replace_macros(get_markup_template('cdav_widget_calendar.tpl', 'addon/cdav'), [
 			'$my_calendars_label' => t('My Calendars'),
 			'$my_calendars' => $my_calendars,
 			'$shared_calendars_label' => t('Shared Calendars'),
@@ -109,7 +109,7 @@ function widget_cdav() {
 			'$share_label' => t('Share this calendar'),
 			'$create_label' => t('Create new calendar'),
 			'$create_placeholder' => t('Calendar Name')
-		));
+		]);
 
 		return $o;
 
@@ -123,19 +123,19 @@ function widget_cdav() {
 
 		//list addressbooks
 		foreach($sabreabooks as $sabreabook) {
-			$addressbooks[] = array(
+			$addressbooks[] = [
 				'displayname' => $sabreabook['{DAV:}displayname'],
 				'id' => $sabreabook['id']
-			);
+			];
 		}
 
 		//print_r($sabreabooks);killme();
-		$o .= replace_macros(get_markup_template('cdav_widget_addressbook.tpl', 'addon/cdav'), array(
+		$o .= replace_macros(get_markup_template('cdav_widget_addressbook.tpl', 'addon/cdav'), [
 			'$addressbooks_label' => t('Addressbooks'),
 			'$addressbooks' => $addressbooks,
 			'$create_label' => t('Create new addressbook'),
 			'$create_placeholder' => t('Addressbook Name')
-		));
+		]);
 
 		return $o;
 
