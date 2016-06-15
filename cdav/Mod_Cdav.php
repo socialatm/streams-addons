@@ -371,7 +371,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$hash = argv(5);
 
 			foreach($calendars as $calendar) {
-				if($id == $calendar['id'][0]) {
+				if($id[0] == $calendar['id'][0]) {
 					$sharee_arr = channelx_by_hash($hash);
 
 					$sharee = new \Sabre\DAV\Xml\Element\Sharee();
