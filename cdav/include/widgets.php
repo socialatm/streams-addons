@@ -55,6 +55,8 @@ function widget_cdav() {
 
 			$switch = get_pconfig(local_channel(), 'cdav_calendar', $sabrecal['id'][0]);
 
+			$color = $sabrecal['{http://apple.com/ns/ical/}calendar-color'];
+
 			$sharees = array();
 			$share_displayname = array();
 			foreach($invites as $invite) {
@@ -74,6 +76,7 @@ function widget_cdav() {
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
 					'json_source' => $json_source,
+					'color' => $color,
 					'switch' => $switch,
 					'sharees' => $sharees
 				);
@@ -84,6 +87,7 @@ function widget_cdav() {
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
 					'json_source' => $json_source,
+					'color' => $color,
 					'switch' => $switch,
 					'access' => $access
 
