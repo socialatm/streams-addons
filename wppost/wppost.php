@@ -189,7 +189,8 @@ function wppost_send(&$a,&$b) {
 	$DR = new Zotlabs\Zot\DReport(z_root(),$b['owner_xchan'],'wordpress wordpress',$b['mid']);
 
 	if($edited) {
-		$r = q("select * from item_id where service = 'wordpress' and iid = %d and uid = %d limit 1",
+		$r = q("select * from iconfig left join item on item.id = iconfig.iid 
+			where cat = 'system' and k = 'wordpress' and v = %d and item.uid = %d limit 1",
 			intval($b['id']),
 			intval($b['uid'])
 		);
@@ -198,7 +199,7 @@ function wppost_send(&$a,&$b) {
 			return;
 		}
 
-		$wp_post_id = intval(basename($r[0]['sid']));
+		$wp_post_id = intval(basename($r[0]['v']));
 	}
 
 	$tags = null;
@@ -263,9 +264,8 @@ function wppost_send(&$a,&$b) {
 			return;
 
 		if($post_id) {
-			q("insert into item_id ( iid, uid, sid, service ) values ( %d, %d, '%s','%s' )",
+			q("insert into iconfig ( iid, cat, v, k, sharing ) values ( %d, 'system', '%s', '%s', 1 )",
 				intval($b['id']),
-				intval($b['uid']),
 				dbesc(dirname($wp_blog) . '/' . $post_id),
 				dbesc('wordpress')
 			);
@@ -307,14 +307,14 @@ function wppost_post_remote_end(&$a,&$b) {
 
 	// Now we have to get down and dirty. Was the parent shared with wordpress?
 
-	$r = q("select * from item_id where service = 'wordpress' and iid = %d and uid = %d limit 1",
+	$r = q("select * from iconfig left join item on iconfig.iid = item.id where cat = 'system' and k = 'wordpress' and iid = %d and item.uid = %d limit 1",
 		intval($b['parent']),
 		intval($b['uid'])
 	);
 	if(! $r)
 		return;
 
-	$wp_parent_id = intval(basename($r[0]['sid']));
+	$wp_parent_id = intval(basename($r[0]['v']));
 
 	$x = q("select * from xchan where xchan_hash = '%s' limit 1",
 		dbesc($b['author_xchan'])
@@ -327,14 +327,15 @@ function wppost_post_remote_end(&$a,&$b) {
 	$edited = (($b['created'] !== $b['edited']) ? true : false);
 		
 	if($edited) {
-		$r = q("select * from item_id where service = 'wordpress' and iid = %d and uid = %d limit 1",
+		$r = q("select * from iconfig left join item on iconfig.iid = item.id
+			where cat = 'system' and k = 'wordpress' and iid = %d and uid = %d limit 1",
 			intval($b['id']),
 			intval($b['uid'])
 		);
 		if(! $r)
 			return;
 
-		$wp_comment_id = intval(basename($r[0]['sid']));
+		$wp_comment_id = intval(basename($r[0]['v']));
 	}
 
 	$wp_username = get_pconfig($b['uid'],'wppost','wp_username');
@@ -379,9 +380,8 @@ function wppost_post_remote_end(&$a,&$b) {
 			return;
 
 		if($post_id) {
-			q("insert into item_id ( iid, uid, sid, service ) values ( %d, %d, '%s','%s' )",
+			q("insert into iconfig ( iid, cat, v, k, sharing ) values ( %d, 'system', '%s', '%s', 1 )",
 				intval($b['id']),
-				intval($b['uid']),
 				dbesc(dirname($wp_blog) . '/' . $post_id),
 				dbesc('wordpress')
 			);
@@ -399,14 +399,14 @@ function wppost_drop_item(&$a,&$b) {
 	if(! $wp_enabled)
 		return;
 
-	$r = q("select * from item_id where service = 'wordpress' and iid = %d and uid = %d limit 1",
+	$r = q("select * from iconfig left join item on item.id = iconfig.iid where cat = 'system' and k = 'wordpress' and iid = %d and uid = %d limit 1",
 		intval($b['item']['id']),
 		intval($b['item']['uid'])
 	);
 	if(! $r)
 		return;
 
-	$post_id = basename($r[0]['sid']);
+	$post_id = basename($r[0]['v']);
 
 	$wp_username = get_pconfig($b['item']['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['item']['uid'],'wppost','wp_password'));

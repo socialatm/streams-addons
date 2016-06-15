@@ -81,6 +81,23 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$auth = new \Zotlabs\Storage\BasicAuth();
 			$auth->setRealm(ucfirst(\Zotlabs\Lib\System::get_platform_name()) . 'CalDAV/CardDAV');
 
+		//	$ob_hash = get_observer_hash();
+
+		//	if ($ob_hash) {
+				if (local_channel()) {
+					logger('loggedin');
+					$channel = \App::get_channel();
+					$auth->setCurrentUser($channel['channel_address']);
+					$auth->channel_id = $channel['channel_id'];
+					$auth->channel_hash = $channel['channel_hash'];
+					$auth->channel_account_id = $channel['channel_account_id'];
+					if($channel['channel_timezone'])
+						$auth->setTimezone($channel['channel_timezone']);
+					$auth->observer = $channel['channel_hash'];
+				}
+		//		$auth->observer = $ob_hash;
+		//	}
+
 			//$authBackend      = new \Sabre\DAV\Auth\Backend\PDO($pdo);
 			$principalBackend = new \Sabre\DAVACL\PrincipalBackend\PDO($pdo);
 			$carddavBackend   = new \Sabre\CardDAV\Backend\PDO($pdo);
