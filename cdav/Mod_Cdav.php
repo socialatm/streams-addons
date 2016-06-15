@@ -314,36 +314,44 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$filters['comp-filters'][0]['time-range']['start'] = date_create($start);
 			$filters['comp-filters'][0]['time-range']['end'] = date_create($end);
 
-			$uris = $caldavBackend->calendarQuery($id, $filters);
+			foreach($calendars as $calendar) {
+				if($id[0] == $calendar['id'][0]) {
+					$uris = $caldavBackend->calendarQuery($id, $filters);
+					if(count($uris)) {
 
-			if(count($uris)) {
+						$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
 
-				$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
+						foreach($objects as $object) {
 
-				foreach($objects as $object) {
+							$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
-					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+							$events[] = array(
+								'title' => (string)$vcalendar->VEVENT->SUMMARY,
+								'start' => (string)$vcalendar->VEVENT->DTSTART,
+								'end' => (string)$vcalendar->VEVENT->DTEND
+							);
+						}
 
-					$events[] = array(
-						'title' => (string)$vcalendar->VEVENT->SUMMARY,
-						'start' => (string)$vcalendar->VEVENT->DTSTART,
-						'end' => (string)$vcalendar->VEVENT->DTEND
-					);
+						json_return_and_die($events);
+					}
+					else {
+
+						killme();
+					}
 				}
-
-				json_return_and_die($events);
-			}
-			else {
-
-				killme();
 			}
 
 		}
 
 		//enable/disable calendars
 		if(argc() == 5 && argv(1) === 'calendar' && argv(2) === 'switch'  && intval(argv(3)) && (argv(4) == 1 || argv(4) == 0)) {
-			set_pconfig(local_channel(), 'cdav_calendar' , argv(3), argv(4));
-			killme();
+			$id = argv(3);
+			foreach($calendars as $calendar) {
+				if($id == $calendar['id'][0]) {
+					set_pconfig(local_channel(), 'cdav_calendar' , argv(3), argv(4));
+					killme();
+				}
+			}
 		}
 
 		//drop calendar
@@ -359,19 +367,23 @@ class Cdav extends \Zotlabs\Web\Controller {
 		//drop sharee
 		if(argc() == 6 && argv(1) === 'calendar' && argv(2) === 'dropsharee'  && intval(argv(3)) && intval(argv(4))) {
 
-				$id = [argv(3), argv(4)];
+			$id = [argv(3), argv(4)];
+			$hash = argv(5);
 
-				$hash = argv(5);
+			foreach($calendars as $calendar) {
+				if($id == $calendar['id'][0]) {
+					$sharee_arr = channelx_by_hash($hash);
 
-				$sharee_arr = channelx_by_hash($hash);
+					$sharee = new \Sabre\DAV\Xml\Element\Sharee();
 
-				$sharee = new \Sabre\DAV\Xml\Element\Sharee();
+					$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
+					$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
+					$sharee->access = 4;
+					$caldavBackend->updateInvites($id, array($sharee));
 
-				$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
-				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
-				$sharee->access = 4;
-				$caldavBackend->updateInvites($id, array($sharee));
-				killme();
+					killme();
+				}
+			}
 		}
 
 
