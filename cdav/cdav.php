@@ -218,10 +218,11 @@ function cdav_init(&$a) {
 	$auth = new \Zotlabs\Storage\BasicAuth();
 	$auth->setRealm(ucfirst(\Zotlabs\Lib\System::get_platform_name()) . 'CalDAV/CardDAV');
 
-	$ob_hash = get_observer_hash();
+//	$ob_hash = get_observer_hash();
 	
-	if ($ob_hash) {
+//	if ($ob_hash) {
 		if (local_channel()) {
+			logger('loggedin');
 			$channel = App::get_channel();
 			$auth->setCurrentUser($channel['channel_address']);
 			$auth->channel_id = $channel['channel_id'];
@@ -229,9 +230,10 @@ function cdav_init(&$a) {
 			$auth->channel_account_id = $channel['channel_account_id'];
 			if($channel['channel_timezone'])
 				$auth->setTimezone($channel['channel_timezone']);
+			$auth->observer = $channel['channel_hash'];	
 		}
-		$auth->observer = $ob_hash;
-	}
+//		$auth->observer = $ob_hash;
+//	}
 
 
 
@@ -282,8 +284,14 @@ function cdav_init(&$a) {
 	$server->addPlugin(new \Sabre\DAVACL\Plugin());
 	$server->addPlugin(new \Sabre\DAV\Sync\Plugin());
 
+
+
+	ob_start();
+
 	// And off we go!
 	$server->exec();
+
+	ob_end_flush();
 
 	killme();
 }
