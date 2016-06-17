@@ -290,13 +290,17 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			$sources = rtrim($sources, ', ');
 
+			$first_day = get_pconfig(local_channel(),'system','cal_first_day');
+			$first_day = (($first_day) ? $first_day : 0);
+
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), [
 				'$sources' => $sources,
 				'$color' => $color,
 				'$lang' => \App::$language,
-				'$prev'		=> t('Previous'),
-				'$next'		=> t('Next'),
-				'$today'	=> t('Today')
+				'$first_day' => $first_day,
+				'$prev'	=> t('Previous'),
+				'$next'	=> t('Next'),
+				'$today' => t('Today')
 			]);
 
 			return $o;

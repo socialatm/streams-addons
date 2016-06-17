@@ -11,6 +11,7 @@ $(document).ready(function() {
 		height: 'auto',
 
 		lang: '{{$lang}}',
+		firstDay: {{$first_day}},
 
 		monthNames: aStr['monthNames'],
 		monthNamesShort: aStr['monthNamesShort'],
