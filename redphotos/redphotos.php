@@ -28,12 +28,14 @@ function redphotos_init(&$a) {
 	$fr_username = $_REQUEST['fr_username'];
 	$fr_password = $_REQUEST['fr_password'];
 	$fr_album = $_REQUEST['fr_album'];
+	
+	$max = intval($_REQUEST['fr_max']);
 
 	$cookies = 'store/[data]/redphoto_cookie_' . $channel['channel_address'];
 
 	if($fr_server && $fr_username && $fr_password) {
 
-		$ch = curl_init($fr_server . '/api/red/photos' . (($fr_album) ? '&album=' . $fr_album : ''));
+		$ch = curl_init($fr_server . '/api/red/photos' . '?f=&scale=0' . (($fr_album) ? '&album=' . $fr_album : ''));
 
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
        	curl_setopt ($ch, CURLOPT_COOKIEFILE, $cookies);
@@ -65,12 +67,15 @@ function redphotos_init(&$a) {
 
 			foreach($j['photos'] as $jj) {
 
-				logger('json data: ' . print_r($jj,true));
+//				logger('json data: ' . print_r($jj,true));
 
 				if(in_array($jj['resource_id'],$arr_done)) {
 					$done ++;
 					continue;
 				}
+
+				if(intval($jj['scale']))
+					continue;
 
 				$r = q("select uid from photo where resource_id = '%s' and uid = %d limit 1",
 					dbesc($jj['resource_id']),
@@ -84,8 +89,12 @@ function redphotos_init(&$a) {
 				}
 
 				$total ++;
-				proc_run('php','addon/redphotos/redphotohelper.php',$jj['resource_id'], $channel['channel_address'], urlencode($fr_server));
-				sleep(3);
+
+				if($max && $total > $max)
+					break;
+
+				proc_run('php','addon/redphotos/redphotohelper.php',$jj['resource_id'], $channel['channel_address'], urlencode($fr_server), urlencode($fr_username));
+				sleep(5);
 				$arr_done[] = $jj['resource_id'];
 
 			}
@@ -93,6 +102,8 @@ function redphotos_init(&$a) {
 
 		logger('redphotos: already done: ' . $done);
 		logger('redphotos: done this run: ' . $total); 
+
+		info(t('Photos imported') . ' ' . $done . '/' . $total); 
 
 //		set_pconfig(local_channel(),'redphotos','complete','1');
 
@@ -121,6 +132,7 @@ function redphotos_content(&$a) {
 		'$fr_username' => array('fr_username', t('Redmatrix Login Username'),'',''),
 		'$fr_password' => array('fr_password', t('Redmatrix Login Password'),'',''),
 		'$fr_album' => array('fr_album', t('Import just this album'),'', t('Leave blank to import all albums')),
+		'$fr_max' => array('fr_max', t('Maximum count to import'), '0', t('0 or blank to import all available')),
 		'$submit' => t('Submit'),
 	));
 	return $o;
