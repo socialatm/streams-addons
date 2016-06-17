@@ -273,6 +273,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(argc() == 2 && argv(1) === 'calendar') {
 
 			head_add_css('library/fullcalendar/fullcalendar.css');
+			head_add_css('addon/cdav/view/css/cdav_calendar.css');
 
 			//TODO: issue #411 https://github.com/redmatrix/hubzilla/issues/411 js is included in template for now...
 			//head_add_js('library/moment/moment.min.js');
@@ -291,7 +292,11 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), [
 				'$sources' => $sources,
-				'$color' => $color
+				'$color' => $color,
+				'$lang' => \App::$language,
+				'$prev'		=> t('Previous'),
+				'$next'		=> t('Next'),
+				'$today'	=> t('Today')
 			]);
 
 			return $o;
