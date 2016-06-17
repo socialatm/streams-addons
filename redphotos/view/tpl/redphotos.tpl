@@ -8,6 +8,7 @@
 {{include file="field_input.tpl" field=$fr_username}}
 {{include file="field_password.tpl" field=$fr_password}}
 {{include file="field_input.tpl" field=$fr_album}}
+{{include file="field_input.tpl" field=$fr_max}}
 
 <input type="submit" name="submit" value="{{$submit}}" />
 </form>

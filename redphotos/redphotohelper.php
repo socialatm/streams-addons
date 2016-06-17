@@ -11,9 +11,12 @@ $a = get_app();
 $photo_id = $argv[1];
 $channel_address = $argv[2];
 $fr_server = urldecode($argv[3]);
+$fr_username = urldecode($argv[4]);
+
+$rand = random_string(16);
 
 $cookies = 'store/[data]/redphoto_cookie_' . $channel_address;
-$photo_tmp = 'store/[data]/redphoto_data_' . $channel_address;
+$photo_tmp = 'store/[data]/redphoto_data_' . $channel_address . $rand;
 
 	$c = q("select * from channel left join xchan on channel_hash = xchan_hash where channel_address = '%s' limit 1",
 		dbesc($channel_address)
@@ -42,29 +45,34 @@ $photo_tmp = 'store/[data]/redphoto_data_' . $channel_address;
 
 		$j = json_decode($output,true);
 
-		if(! ($j['photo'] && $j['photo']['data'])) {
+		logger('received: ' . print_r($j,true));
+
+
+		if(! ($j['photo'] && $j['photo']['src'])) {
 			logger('redphotohelper: no data');
 			killme();
 		}
 
-		if(array_key_exists('content',$j['photo'])) {
-			file_put_contents($photo_tmp,base64_decode($j['photo']['content']));
-			unset($j['photo']['content']);
-		}
-		else {
-			file_put_contents($photo_tmp,base64_decode($j['photo']['data']));
-			unset($j['photo']['data']);
+		$filep = fopen($photo_tmp,'w');
+		$redirects = 0;
+		$x = z_fetch_url($fr_server . '/api/red/getphoto?f=&photo_id=' . $photo_id,true,$redirects,array('filep' => $filep, 'cookiejar' => $cookies, 'cookiefile' => $cookies));
+		fclose($filep);
+		if(! $x['success']) {
+			logger('photo download failed');
+			@unlink($photo_tmp);
+			killme();
 		}
 
 		$args = array();
 
 
 		$args['src'] = $photo_tmp; 
+		$args['nosync'] = true;
 		
 		$args['filename'] = $j['photo']['filename'];
 		if(! $args['filename'])
 			$args['filename'] = t('photo');
-		$args['hash'] = $j['photo']['hash'];
+		$args['hash'] = ((array_key_exists($j['photo']['hash'])) ? $j['photo']['hash'] : $j['photo']['resource_id']);
 		$args['imgscale'] = ((array_key_exists('imgscale',$j['photo'])) ? $j['photo']['imgscale'] : $j['photo']['scale']);
 		$args['album'] = $j['photo']['album'];
 		$args['visible'] = 0;
@@ -95,7 +103,7 @@ $photo_tmp = 'store/[data]/redphoto_data_' . $channel_address;
 //		logger('redphotohelper: ' . print_r($j,true));
 
 		$r = q("select id from photo where resource_id = '%s' and uid = %d limit 1",
-			dbesc($args['resource_id']),
+			dbesc($args['hash']),
 			intval($channel['channel_id'])
 		);
 		if($r) {
@@ -104,6 +112,30 @@ $photo_tmp = 'store/[data]/redphoto_data_' . $channel_address;
 
 
 		$ret = attach_store($channel,$channel['channel_hash'],'import',$args);
+
+		$r = q("select * from item where resource_id = '%s' and resource_type = 'photo' and uid = %d limit 1",
+			dbesc($args['hash']),
+			intval($channel['channel_id'])
+		);
+
+		if($r) {
+			$item = $r[0];
+			item_url_replace($channel,$item,$fr_server,z_root(),$fr_username);
+
+			dbesc_array($item);
+			$item_id = $item['id'];
+			unset($item['id']);
+			$str = '';
+			foreach($item as $k => $v) {
+				if($str)
+					$str .= ",";
+				$str .= " `" . $k . "` = '" . $v . "' ";
+			}
+
+			$r = dbq("update `item` set " . $str . " where id = " . $item_id ); 
+		}
+
+
 //		logger('photo_import: ' . print_r($ret,true));
 
 		killme();
