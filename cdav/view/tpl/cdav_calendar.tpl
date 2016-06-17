@@ -8,7 +8,6 @@ $(document).ready(function() {
 		eventSources: [ {{$sources}} ],
 
 		header: false,
-		height: 'auto',
 
 		lang: '{{$lang}}',
 		firstDay: {{$first_day}},
@@ -44,6 +43,12 @@ $(document).ready(function() {
 function changeView(action, viewName) {
 	$('#calendar').fullCalendar(action, viewName);
 	var view = $('#calendar').fullCalendar('getView');
+	if(view.type === 'agendaDay' || view.type === 'agendaWeek') {
+		$('#calendar').fullCalendar('option', 'height', 'auto');
+	}
+	else {
+		$('#calendar').fullCalendar('option', 'height', '');
+	}
 	$('#title').text(view.title);
 }
 
