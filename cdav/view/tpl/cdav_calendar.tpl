@@ -86,7 +86,7 @@ function on_fullscreen() {
 function on_inline() {
 	var view = $('#calendar').fullCalendar('getView');
 	if(view.type === 'month') {
-		$('#calendar').fullCalendar('option', 'height', 'auto');
+		$('#calendar').fullCalendar('option', 'height', '');
 	}
 }
 </script>

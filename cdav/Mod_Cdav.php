@@ -217,13 +217,30 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$caldavBackend->updateInvites($id, [$sharee]);
 			}
+
+			//Import calendar or events
+			if(($_FILES) && array_key_exists('userfile',$_FILES) && intval($_FILES['userfile']['size']) && $_REQUEST['calendar']) {
+
+				$src = @file_get_contents($_FILES['userfile']['tmp_name']);
+				$id = explode(':', $_REQUEST['calendar']);
+
+				if($src) {
+					$objects = new \Sabre\VObject\Splitter\ICalendar($src);
+					while ($object = $objects->getNext()) {
+						//TODO: validate object
+						$objectUri = (string)$object->VEVENT->UID . '.ics';
+						$caldavBackend->createCalendarObject($id, $objectUri, $object->serialize());
+					}
+				}
+				@unlink($src);
+			}
 		}
 
 		if(argc() == 2 && argv(1) === 'addressbook') {
 
 			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
 
-			//create new calendar
+			//create new addressbook
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
 				do {
 					$duplicate = false;

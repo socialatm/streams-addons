@@ -39,7 +39,7 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<button type="submit" name="share" value="share" class="btn btn-success btn-sm btn-block"><i class="fa fa-share-alt"></i> Share</button>
+					<button type="submit" name="share" value="share" class="btn btn-primary btn-sm"><i class="fa fa-share-alt"></i> Share</button>
 				</div>
 			</form>
 		</div>
@@ -47,7 +47,7 @@
 	{{/foreach}}
 	<form id="create-calendar" method="post" action="">
 		<label for="create">{{$create_label}}</label>
-		<div id="create-form" class="input-group colorpicker-component">
+		<div id="create-form" class="input-group form-group colorpicker-component">
 			<input id="color" name="color" type="hidden" value="#3a87ad">
 			<input id="create" name="{DAV:}displayname" type="text" placeholder="{{$create_placeholder}}" class="widget-input">
 			<span class="input-group-addon"><i></i></span>
@@ -72,3 +72,26 @@
 	{{/foreach}}
 </div>
 {{/if}}
+
+<div class="widget">
+	<h3>{{$tools_label}}</h3>
+	<ul class="nav nav-pills nav-stacked">
+		<li>
+			<a href="#" onclick="openClose('event-upload-form'); return false;"><i class="fa fa-arrow-circle-o-up"></i> {{$import_label}}</a>
+		</li>
+	</ul>
+	<form id="event-upload-form" enctype="multipart/form-data" method="post" action="" style="display: none;">
+		<div class="form-group">
+			<select id="import" name="calendar" class="form-control">
+				<option value="">{{$import_placeholder}}</option>
+				{{foreach $writable_calendars as $writable_calendar}}
+				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}</option>
+				{{/foreach}}
+			</select>
+		</div>
+		<div class="form-group">
+			<input id="event-upload-choose" type="file" name="userfile" />
+		</div>
+		<button id="dbtn-submit" class="btn btn-primary btn-sm" type="submit" name="upload" > Upload</button>
+	</form>
+</div>

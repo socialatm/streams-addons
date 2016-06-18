@@ -97,6 +97,13 @@ function widget_cdav() {
 					'access' => $access
 				];
 			}
+
+			if(!$access || $access === 'read-write') {
+				$writable_calendars[] = [
+					'displayname' => ((!$access) ? $sabrecal['{DAV:}displayname'] : $share_displayname[0]),
+					'id' => $sabrecal['id']
+				];
+			}
 		}
 
 		$o .= replace_macros(get_markup_template('cdav_widget_calendar.tpl', 'addon/cdav'), [
@@ -108,7 +115,11 @@ function widget_cdav() {
 			'$access_options' => $access_options,
 			'$share_label' => t('Share this calendar'),
 			'$create_label' => t('Create new calendar'),
-			'$create_placeholder' => t('Calendar Name')
+			'$create_placeholder' => t('Calendar Name'),
+			'$tools_label' => t('Calendar Tools'),
+			'$import_label' => t('Import calendar'),
+			'$import_placeholder' => t('Select a calendar to import to'),
+			'$writable_calendars' => $writable_calendars
 		]);
 
 		return $o;
