@@ -227,8 +227,22 @@ class Cdav extends \Zotlabs\Web\Controller {
 				if($src) {
 					$objects = new \Sabre\VObject\Splitter\ICalendar($src);
 					while ($object = $objects->getNext()) {
+
+						do {
+							$duplicate = false;
+							$objectUri = random_string(40) . '.ics';
+
+							$r = q("SELECT uri FROM calendarobjects WHERE calendarid = %d AND uri = '%s' LIMIT 1",
+								dbesc($id[0]),
+								dbesc($objectUri)
+							);
+
+							if (count($r))
+								$duplicate = true;
+						} while ($duplicate == true);
+
 						//TODO: validate object
-						$objectUri = (string)$object->VEVENT->UID . '.ics';
+
 						$caldavBackend->createCalendarObject($id, $objectUri, $object->serialize());
 					}
 				}
