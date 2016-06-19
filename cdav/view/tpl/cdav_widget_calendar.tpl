@@ -1,3 +1,4 @@
+{{if $my_calendars}}
 <div class="widget">
 	<h3>{{$my_calendars_label}}</h3>
 	{{foreach $my_calendars as $calendar}}
@@ -44,6 +45,7 @@
 	</div>
 	{{/foreach}}
 </div>
+{{/if}}
 
 {{if $shared_calendars}}
 <div class="widget">
