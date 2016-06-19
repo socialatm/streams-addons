@@ -10,18 +10,16 @@
 				<a href="#" onclick="var drop = dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}', '#calendar-{{$calendar.calendarid}}'); if(drop) { add_remove_json_source('{{$calendar.json_source}}', '{{$calendar.color}}', 'drop'); } return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 			</div>
 		</div>
-		<div id="share-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none;">
+		<div id="share-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
 			{{if $calendar.sharees}}
-			<div class="form-group">
-				{{foreach $calendar.sharees as $sharee}}
-				<div id="sharee-{{$calendar.calendarid}}">
-					<i class="fa fa-share generic-icons"></i>{{$sharee.name}}&nbsp;{{$sharee.access}}
-					<div class="pull-right">
-						<a href="#" onclick="dropItem('/cdav/calendar/dropsharee/{{$calendar.calendarid}}/{{$calendar.instanceid}}/{{$sharee.hash}}', '#sharee-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
-					</div>
+			{{foreach $calendar.sharees as $sharee}}
+			<div id="sharee-{{$calendar.calendarid}}" class="form-group">
+				<i class="fa fa-share generic-icons"></i>{{$sharee.name}}&nbsp;{{$sharee.access}}
+				<div class="pull-right">
+					<a href="#" onclick="dropItem('/cdav/calendar/dropsharee/{{$calendar.calendarid}}/{{$calendar.instanceid}}/{{$sharee.hash}}', '#sharee-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 				</div>
-				{{/foreach}}
 			</div>
+			{{/foreach}}
 			{{/if}}
 			<form method="post" action="">
 				<label for="create">{{$share_label}}</label>
@@ -96,5 +94,4 @@
 			<button class="btn btn-primary btn-sm" type="submit" name="upload">Upload</button>
 		</form>
 	</ul>
-
 </div>
