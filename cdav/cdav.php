@@ -148,8 +148,8 @@ function cdav_load_pdl(&$b) {
 	if ($b['module'] === 'cdav') {
 		$b['layout'] = '
 			[region=aside]
-			[widget=cdav_changeview][/widget]
 			[widget=cdav][/widget]
+			[widget=cdav_changeview][/widget]
 			[/region]
 		';
 	}

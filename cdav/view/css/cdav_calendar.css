@@ -30,3 +30,8 @@
 	margin-bottom: -9px;
 }
 
+.sub-menu {
+	margin-top: 10px;
+	padding-left: 15px;
+	border-left: 3px solid #ccc;
+}

@@ -159,7 +159,7 @@ function widget_cdav_changeview($arr) {
 		return;
 
 	return replace_macros(get_markup_template('cdav_widget_calendar_changeview.tpl', 'addon/cdav'), array(
-		'$title' => t('Calendar Menu'),
+		'$title' => t('Calendar Views'),
 		'$day' => t('Day View'),
 		'$week' => t('Week View'),
 		'$month' => t('Month View')

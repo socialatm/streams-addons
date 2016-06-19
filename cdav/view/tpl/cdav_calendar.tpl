@@ -57,6 +57,11 @@ function add_remove_json_source(source, color, status) {
 	if(status === undefined)
 		status = 'fa-calendar-check-o';
 
+	if(status === 'drop') {
+		$('#calendar').fullCalendar( 'removeEventSource', source );
+		return;
+	}
+
 	var parts = source.split('/');
 	var id = parts[4];
 

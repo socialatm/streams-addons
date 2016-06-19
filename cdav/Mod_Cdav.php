@@ -179,7 +179,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
 				do {
 					$duplicate = false;
-					$calendarUri = random_string(20);
+					$calendarUri = random_string(40);
 
 					$r = q("SELECT uri FROM calendarinstances WHERE principaluri = '%s' AND uri = '%s' LIMIT 1",
 						dbesc($principalUri),
@@ -195,7 +195,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color']),
 				];
 
-				$caldavBackend->createCalendar($principalUri, $calendarUri, $properties);
+				$id = $caldavBackend->createCalendar($principalUri, $calendarUri, $properties);
+
+				// set new calendar to be visible
+				set_pconfig(local_channel(), 'cdav_calendar' , $id[0], 1);
 			}
 
 			//share a calendar - this only works on local system (with channels on the same server)
