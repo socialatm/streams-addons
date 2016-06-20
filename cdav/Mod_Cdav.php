@@ -227,8 +227,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$src = @file_get_contents($_FILES['userfile']['tmp_name']);
 				$id = explode(':', $_REQUEST['calendar']);
 
-				$i = 0;
-
 				if($src) {
 					$objects = new \Sabre\VObject\Splitter\ICalendar($src);
 					while ($object = $objects->getNext()) {
