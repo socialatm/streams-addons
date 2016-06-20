@@ -227,26 +227,41 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$src = @file_get_contents($_FILES['userfile']['tmp_name']);
 				$id = explode(':', $_REQUEST['calendar']);
 
+				$i = 0;
+
 				if($src) {
 					$objects = new \Sabre\VObject\Splitter\ICalendar($src);
 					while ($object = $objects->getNext()) {
 
-						do {
-							$duplicate = false;
-							$objectUri = random_string(40) . '.ics';
+						$ret = $object->validate(\Sabre\VObject\Node::PROFILE_CALDAV & \Sabre\VObject\Node::REPAIR);
 
-							$r = q("SELECT uri FROM calendarobjects WHERE calendarid = %d AND uri = '%s' LIMIT 1",
-								dbesc($id[0]),
-								dbesc($objectUri)
+						//level 3 Means that the document is invalid,
+						//level 2 means a warning. A warning means it's valid but it could cause interopability issues,
+						//level 1 means that there was a problem earlier, but the problem was automatically repaired.
+
+						if($ret[0]['level'] < 3) {
+							do {
+								$duplicate = false;
+								$objectUri = random_string(40) . '.ics';
+
+								$r = q("SELECT uri FROM calendarobjects WHERE calendarid = %d AND uri = '%s' LIMIT 1",
+									dbesc($id[0]),
+									dbesc($objectUri)
+								);
+
+								if (count($r))
+									$duplicate = true;
+							} while ($duplicate == true);
+
+							$caldavBackend->createCalendarObject($id, $objectUri, $object->serialize());
+						}
+						else {
+							notice( '<strong>' . t('INVALID EVENT DISMISSED!') . '</strong>' . EOL .
+								'<strong>' . t('Summary: ') . '</strong>' . (($object->VEVENT->SUMMARY) ? $object->VEVENT->SUMMARY : t('Unknown')) . EOL .
+								'<strong>' . t('Date: ') . '</strong>' . (($object->VEVENT->DTSTART) ? $object->VEVENT->DTSTART : t('Unknown')) . EOL .
+								'<strong>' . t('Reason: ') . '</strong>' . $ret[0]['message'] . EOL
 							);
-
-							if (count($r))
-								$duplicate = true;
-						} while ($duplicate == true);
-
-						//TODO: validate object
-
-						$caldavBackend->createCalendarObject($id, $objectUri, $object->serialize());
+						}
 					}
 				}
 				@unlink($src);
