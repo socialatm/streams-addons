@@ -15,8 +15,14 @@ function diaspora_dispatch_public($msg) {
 		dbesc($msg['author'])
 	);
 
+	// look for those following tags - we'll check tag validity for each specific channel later 
 
-	// also need to look for those following public streams
+	$y = q("select * from channel where channel_id in ( SELECT uid from pconfig where cat = 'diaspora' and k = 'followed_tags' and v != '') and channel_removed = 0 ");
+
+	if(is_array($y) && is_array($r))
+		$r = array_merge($r,$y);
+		
+	// @FIXME we should also enumerate channels that allow postings by anybody
 
 	if($r) {
 		foreach($r as $rr) {
@@ -492,8 +498,7 @@ function diaspora_request($importer,$xml) {
 			dbesc($ret['xchan_hash'])
 		);
 		if($new_connection) {
-			require_once('include/enotify.php');
-			notification(array(
+			\Zotlabs\Lib\Enotify::submit(array(
 				'type'	     => NOTIFY_INTRO,
 				'from_xchan'   => $ret['xchan_hash'],
 				'to_xchan'     => $importer['channel_hash'],
@@ -504,7 +509,7 @@ function diaspora_request($importer,$xml) {
 				// Send back a sharing notification to them
 				$x = diaspora_share($importer,$new_connection[0]);
 				if($x)
-					proc_run('php','include/deliver.php',$x);
+					Zotlabs\Daemon\Master::Summon(array('Deliver',$x));
 		
 			}
 
@@ -623,7 +628,7 @@ function diaspora_post($importer,$xml,$msg) {
 			if($success['replaced']) {
 				$datarray['term'][] = array(
 					'uid'   => $importer['channel_id'],
-					'type'  => $success['termtype'],
+					'ttype'  => $success['termtype'],
 					'otype' => TERM_OBJ_POST,
 					'term'  => $success['term'],
 					'url'   => $success['url']
@@ -653,7 +658,7 @@ function diaspora_post($importer,$xml,$msg) {
 		foreach($matches as $mtch) {
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $mtch[2],
 				'url'   => $mtch[1]
@@ -668,7 +673,7 @@ function diaspora_post($importer,$xml,$msg) {
 			$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $term,
 				'url'   => $mtch[1]
@@ -876,7 +881,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 			if($success['replaced']) {
 				$datarray['term'][] = array(
 					'uid'   => $importer['channel_id'],
-					'type'  => $success['termtype'],
+					'ttype'  => $success['termtype'],
 					'otype' => TERM_OBJ_POST,
 					'term'  => $success['term'],
 					'url'   => $success['url']
@@ -890,7 +895,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 		foreach($matches as $mtch) {
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $mtch[2],
 				'url'   => $mtch[1]
@@ -905,7 +910,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 			$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $term,
 				'url'   => $mtch[1]
@@ -1081,12 +1086,17 @@ function diaspora_comment($importer,$xml,$msg) {
 	$author_signature = notags(unxmlify($xml['author_signature']));
 	$parent_author_signature = (($xml['parent_author_signature']) ? notags(unxmlify($xml['parent_author_signature'])) : '');
 
-	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$msg['author']);
-	if(! $contact) {
-		logger('diaspora_comment: cannot find contact: ' . $msg['author']);
+
+	$xchan = find_diaspora_person_by_handle($diaspora_handle);
+
+	if((! $xchan) || (! strstr($xchan['xchan_network'],'diaspora'))) {
+		logger('Cannot resolve diaspora handle ' . $diaspora_handle);
 		return;
 	}
-	
+
+	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$msg['author']);
+
+
 	$pubcomment = get_pconfig($importer['channel_id'],'system','diaspora_public_comments');
 
 	// by default comments on public posts are allowed from anybody on Diaspora. That is their policy.
@@ -1209,7 +1219,7 @@ function diaspora_comment($importer,$xml,$msg) {
 	if(strcasecmp($diaspora_handle,$msg['author']) == 0)
 		$person = $contact;
 	else {
-		$person = find_diaspora_person_by_handle($diaspora_handle);
+		$person = $xchan;
 
 		if(! is_array($person)) {
 			logger('diaspora_comment: unable to find author details');
@@ -1240,7 +1250,7 @@ function diaspora_comment($importer,$xml,$msg) {
 			if($success['replaced']) {
 				$datarray['term'][] = array(
 					'uid'   => $importer['channel_id'],
-					'type'  => $success['termtype'],
+					'ttype'  => $success['termtype'],
 					'otype' => TERM_OBJ_POST,
 					'term'  => $success['term'],
 					'url'   => $success['url']
@@ -1254,7 +1264,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		foreach($matches as $mtch) {
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $mtch[2],
 				'url'   => $mtch[1]
@@ -1269,7 +1279,7 @@ function diaspora_comment($importer,$xml,$msg) {
 			$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 			$datarray['term'][] = array(
 				'uid'   => $importer['channel_id'],
-				'type'  => TERM_MENTION,
+				'ttype'  => TERM_MENTION,
 				'otype' => TERM_OBJ_POST,
 				'term'  => $term,
 				'url'   => $mtch[1]
@@ -1316,7 +1326,7 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$tgroup = tgroup_check($importer['channel_id'],$datarray);
 
-	if((! $importer['system']) && (! $pubcomment) && (! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'post_comments')) && (! $tgroup)) {
+	if((! $importer['system']) && (! $pubcomment) && (! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments')) && (! $tgroup)) {
 		logger('diaspora_comment: Ignoring this author.');
 		return 202;
 	}
@@ -1335,7 +1345,7 @@ function diaspora_comment($importer,$xml,$msg) {
 		// the existence of parent_author_signature means the parent_author or owner
 		// is already relaying.
 		$upstream_leg = true;
-		proc_run('php','include/notifier.php','comment-import',$message_id);
+		Zotlabs\Daemon\Master::Summon(array('Notifier','comment-import',$message_id));
 	}
 
 	if($result['success']) {
@@ -1526,8 +1536,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			intval($importer['channel_id'])
 		);
 
-		require_once('include/enotify.php');
-		notification(array(
+		\Zotlabs\Lib\Enotify::submit(array(
 			'from_xchan' => $person['xchan_hash'],
 			'to_xchan' => $importer['channel_hash'],
 			'type' => NOTIFY_MAIL,
@@ -1664,8 +1673,7 @@ function diaspora_message($importer,$xml,$msg) {
 		intval($importer['channel_id'])
 	);
 
-	require_once('include/enotify.php');
-	notification(array(
+	\Zotlabs\Lib\Enotify::submit(array(
 		'from_xchan' => $person['xchan_hash'],
 		'to_xchan' => $importer['channel_hash'],
 		'type' => NOTIFY_MAIL,
@@ -1964,7 +1972,7 @@ function diaspora_like($importer,$xml,$msg) {
 	$arr['item_private'] = $parent_item['item_private'];
 	$arr['verb'] = $activity;
 	$arr['obj_type'] = $objtype;
-	$arr['object'] = $object;
+	$arr['obj'] = $object;
 
 	if(! $parent_author_signature) {
 		$key = get_config('system','pubkey');
@@ -1983,7 +1991,7 @@ function diaspora_like($importer,$xml,$msg) {
 		// is already relaying. The parent_item['origin'] indicates the message was created on our system
 
 		if(intval($parent_item['item_origin']) && (! $parent_author_signature))
-			proc_run('php','include/notifier.php','comment-import',$result['item_id']);
+			Zotlabs\Daemon\Master::Summon(array('Notifier','comment-import',$result['item_id']));
 		sync_an_item($importer['channel_id'],$result['item_id']);
 	}
 
@@ -2002,7 +2010,6 @@ function diaspora_retraction($importer,$xml,$msg = null) {
 		return;
 
 	if($type === 'Person' || $type === 'Contact') {
-		require_once('include/Contact.php');
 		contact_remove($importer['channel_id'],$contact['abook_id']);
 	}
 	elseif(($type === 'Post') || ($type === 'StatusMessage') || ($type === 'Comment') || ($type === 'Like')) {
@@ -2105,7 +2112,7 @@ function diaspora_signed_retraction($importer,$xml,$msg) {
 						// is already relaying.
 
 						logger('diaspora_signed_retraction: relaying relayable_retraction');
-						proc_run('php','include/notifier.php','drop',$r[0]['id']);
+						Zotlabs\Daemon\Master::Summon(array('Notifier','drop',$r[0]['id']));
 					}
 				}
 			}
@@ -2123,6 +2130,7 @@ function diaspora_profile($importer,$xml,$msg) {
 	$a = get_app();
 	$diaspora_handle = notags(diaspora_get_author($xml));
 
+	logger('xml: ' . print_r($xml,true), LOGGER_DEBUG);
 
 	if($diaspora_handle != $msg['author']) {
 		logger('diaspora_post: Potential forgery. Message handle is not the same as envelope sender.');
@@ -2138,7 +2146,7 @@ function diaspora_profile($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$name = unxmlify($xml['first_name']) . ((strlen($xml['last_name'])) ? ' ' . unxmlify($xml['last_name']) : '');
+	$name = unxmlify($xml['first_name'] . (($xml['last_name']) ? ' ' . $xml['last_name'] : ''));
 	$image_url = unxmlify($xml['image_url']);
 	$birthday = unxmlify($xml['birthday']);
 

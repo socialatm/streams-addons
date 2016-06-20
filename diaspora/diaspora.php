@@ -15,7 +15,6 @@
 require_once('include/crypto.php');
 require_once('include/items.php');
 require_once('include/bb2diaspora.php');
-require_once('include/contact_selectors.php');
 require_once('include/queue_fn.php');
 
 require_once('addon/diaspora/inbound.php');
@@ -125,7 +124,7 @@ function diaspora_notifier_process(&$a,&$arr) {
 
 	// If target_item isn't set it's likely to be refresh packet.
 
-	if(! array_key_exists('target_item',$arr)) {
+	if(! ((array_key_exists('target_item',$arr)) && (is_array($arr['target_item'])))) {
 		return;
 	} 
 
