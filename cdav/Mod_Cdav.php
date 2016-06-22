@@ -373,7 +373,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			foreach($calendars as $calendar) {
 				if($id[0] == $calendar['id'][0]) {
 					$uris = $caldavBackend->calendarQuery($id, $filters);
-					if(count($uris)) {
+					if($uris) {
 
 						$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
 
@@ -449,8 +449,43 @@ class Cdav extends \Zotlabs\Web\Controller {
 		}
 
 		//Display Adressbook here
-		if((argc() == 2) && (argv(1) === 'addressbook')) {
-			return 'not implemented';
+		if(argc() == 3 && argv(1) === 'addressbook' && intval(argv(2))) {
+
+			$o = '';
+			$id = argv(2);
+
+			foreach($addressbooks as $addressbook) {
+				if($id == $addressbook['id']) {
+					$displayname = $addressbook['{DAV:}displayname'];
+					$sabrecards = $carddavBackend->getCards($addressbook['id']);
+					foreach($sabrecards as $sabrecard) {
+						$uris[] = $sabrecard['uri'];
+					}
+				}
+			}
+
+			if($uris) {
+				$objects = $carddavBackend->getMultipleCards($id, $uris);
+
+				foreach($objects as $object) {
+					$vcard = \Sabre\VObject\Reader::read($object['carddata']);
+					$cards[] = [
+						'fn' => (string)$vcard->FN,
+						'tel' => (string)$vcard->TEL,
+						'email' => (string)$vcard->EMAIL,
+					];
+				}
+
+				usort($cards, function($a, $b) { return strcmp($a['fn'], $b['fn']); });
+
+				$o .= replace_macros(get_markup_template('cdav_addressbook.tpl', 'addon/cdav'), [
+					'$cards' => $cards,
+					'$displayname' => $displayname
+				]);
+
+			}
+
+			return $o;
 		}
 
 		//delete addressbook

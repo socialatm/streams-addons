@@ -126,7 +126,7 @@ function widget_cdav() {
 
 	}
 
-	if(argc() == 2 && argv(1) === 'addressbook') {
+	if(argc() >= 2 && argv(1) === 'addressbook') {
 
 		$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
 
@@ -158,10 +158,16 @@ function widget_cdav_changeview($arr) {
 	if (! local_channel())
 		return;
 
-	return replace_macros(get_markup_template('cdav_widget_calendar_changeview.tpl', 'addon/cdav'), array(
-		'$title' => t('Calendar Views'),
-		'$day' => t('Day View'),
-		'$week' => t('Week View'),
-		'$month' => t('Month View')
-	));
+	$o = '';
+
+	if(argc() == 2 && argv(1) === 'calendar') {
+		$o = replace_macros(get_markup_template('cdav_widget_calendar_changeview.tpl', 'addon/cdav'), array(
+			'$title' => t('Calendar Views'),
+			'$day' => t('Day View'),
+			'$week' => t('Week View'),
+			'$month' => t('Month View')
+		));
+	}
+
+	return $o;
 }

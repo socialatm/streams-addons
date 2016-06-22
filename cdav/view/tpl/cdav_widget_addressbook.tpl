@@ -3,7 +3,7 @@
 	{{foreach $addressbooks as $addressbook}}
 	<div id="addressbook-{{$addressbook.id}}">
 		<div class="form-group">
-			<i class="fa fa-user generic-icons"></i>{{$addressbook.displayname}}
+			<i class="fa fa-user generic-icons"></i><a href="/cdav/addressbook/{{$addressbook.id}}">{{$addressbook.displayname}}</a>
 			<div class="pull-right">
 				<a href="#" onclick="dropItem('/cdav/addressbook/drop/{{$addressbook.id}}', '#addressbook-{{$addressbook.id}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 			</div>
