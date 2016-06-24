@@ -137,6 +137,14 @@ function cdav_init(&$a) {
 	else
 		killme();
 
+
+//	logger('cdav: ' . file_get_contents('php://input'));
+
+//	logger('request_method: ' . $_SERVER['REQUEST_METHOD']);
+//	logger('Depth: ' . $_SERVER['HTTP_DEPTH']);
+//	logger('Prefer: ' . $_SERVER['HTTP_PREFER']);
+
+
 	// workaround for HTTP-auth in CGI mode
 	if (x($_SERVER, 'REDIRECT_REMOTE_USER')) {
 		$userpass = base64_decode(substr($_SERVER["REDIRECT_REMOTE_USER"], 6)) ;

@@ -300,9 +300,9 @@ function pubsubhubbub_subscribe($url,$channel,$xchan,$feed,$hubmode = 'subscribe
 
 	$push_url = z_root() . '/pubsub/' . $channel['channel_address'] . '/' . $xchan['abook_id'];
 
-	$verify = get_abconfig($channel['channel_hash'],$xchan['xchan_hash'],'pubsubhubbub','verify_token');
+	$verify = get_abconfig($channel['channel_id'],$xchan['xchan_hash'],'pubsubhubbub','verify_token');
 	if(! $verify)
-		$verify = set_abconfig($channel['channel_hash'],$xchan['xchan_hash'],'pubsubhubbub','verify_token',random_string(16));
+		$verify = set_abconfig($channel['channel_id'],$xchan['xchan_hash'],'pubsubhubbub','verify_token',random_string(16));
 	if($feed)
 		set_xconfig($xchan['xchan_hash'],'system','feed_url',$feed);
 	else
