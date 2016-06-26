@@ -4,7 +4,9 @@
 	</div>
 	<div class="section-content-wrapper">
 		{{foreach $cards as $card}}
-			{{$card@index}}. {{$card.fn}}, {{$card.tel}}, <a href="mailto:{{$card.email}}">{{$card.email}}</a><br>
+			{{$card@index}}. {{$card.fn}},
+			{{foreach $card.tels as $tel}}{{$tel.type}}: {{$tel.nr}}{{if !$tel@last}}, {{/if}}{{/foreach}}
+			{{foreach $card.emails as $email}}{{$email.type}}: <a href="mailto:{{$email.address}}">{{$email.address}}</a>{{if !$email@last}}, {{/if}}{{/foreach}}<br>
 		{{/foreach}}
 	</div>
 </div>

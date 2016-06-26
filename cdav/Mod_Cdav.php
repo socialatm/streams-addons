@@ -469,10 +469,33 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				foreach($objects as $object) {
 					$vcard = \Sabre\VObject\Reader::read($object['carddata']);
+
+					$tels = [];
+					$emails = [];
+
+					if($vcard->TEL) {
+						foreach($vcard->TEL as $tel)
+							$type = (($vcard->TEL['TYPE']) ? translate_type((string)$vcard->TEL['TYPE']) : '');
+							$tels[] = [
+								'type' => $type,
+								'nr' => (string)$tel
+							];
+					}
+
+					if($vcard->EMAIL) {
+						foreach($vcard->EMAIL as $email)
+
+							$type = (($vcard->EMAIL['TYPE']) ? translate_type((string)$vcard->EMAIL['TYPE']) : '');
+							$emails[] = [
+								'type' => $type,
+								'address' => (string)$email
+							];
+					}
+
 					$cards[] = [
 						'fn' => (string)$vcard->FN,
-						'tel' => (string)$vcard->TEL,
-						'email' => (string)$vcard->EMAIL,
+						'tels' => $tels,
+						'emails' => $emails,
 					];
 				}
 
@@ -499,4 +522,22 @@ class Cdav extends \Zotlabs\Web\Controller {
 		}
 
 	}
+
+}
+
+function translate_type($type) {
+
+	$map = [
+		'cell' => t('Mobile phone'),
+		'home' => t('Home'),
+		'work' => t('Work')
+	];
+
+	if (array_key_exists($type, $map)) {
+		return $map[$type];
+	}
+	else {
+		return t('Other') . ' (' . $type . ')';
+	}
+
 }
