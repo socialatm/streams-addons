@@ -287,7 +287,7 @@ function openclipatar_content(&$a) {
 				);
 			
 			require_once('include/photos.php');
-			profile_photo_set_profile_perms(); //Reset default profile photo permissions to public
+			profile_photo_set_profile_perms(local_channel()); //Reset default profile photo permissions to public
 			
 			// only the default needs reload since it uses canonical url -- despite the slightly ambiguous message, left it so as to re-use translations
 			info( t('Shift-reload the page or clear browser cache if the new photo does not display immediately.') . EOL);

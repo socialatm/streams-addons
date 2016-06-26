@@ -523,7 +523,7 @@ function diaspora_request($importer,$xml) {
 			unset($clone['abook_account']);
 			unset($clone['abook_channel']);
 		
-			$abconfig = load_abconfig($importer['channel_hash'],$clone['abook_xchan']);
+			$abconfig = load_abconfig($importer['channel_id'],$clone['abook_xchan']);
 
 			if($abconfig)
 				$clone['abconfig'] = $abconfig;

@@ -35,7 +35,7 @@ function pubsub_init(&$a) {
 		}
 
 		if($hub_verify) {
-			$verify = get_abconfig($channel['channel_hash'],$xchan['xchan_hash'],'pubsubhubbub','verify_token');
+			$verify = get_abconfig($channel['channel_id'],$xchan['xchan_hash'],'pubsubhubbub','verify_token');
 			if($verify != $hub_verify) {
 				logger('hub verification failed.');
 				http_status_exit(404,'not found.');
@@ -65,7 +65,7 @@ function pubsub_init(&$a) {
 		}
 
 		if($hub_mode) {
-			set_abconfig($channel['channel_hash'],$xchan['xchan_hash'],'pubsubhubbub','subscribed',intval($subscribe));
+			set_abconfig($channel['channel_id'],$xchan['xchan_hash'],'pubsubhubbub','subscribed',intval($subscribe));
 		}
 
 		header($_SERVER["SERVER_PROTOCOL"] . ' 200 ' . 'OK');
