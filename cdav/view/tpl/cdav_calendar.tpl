@@ -34,7 +34,7 @@ $(document).ready(function() {
 	var view = $('#calendar').fullCalendar('getView');
 	$('#title').text(view.title);
 
-	$('#create-form').colorpicker({ input: '#color' });
+	$('.color-edit').colorpicker({ input: '.color-edit-input' });
 
 	$(document).on('click','#fullscreen-btn', on_fullscreen);
 	$(document).on('click','#inline-btn', on_inline);

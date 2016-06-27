@@ -11,10 +11,10 @@
 			</div>
 		</div>
 		<div id="edit-addressbook-{{$addressbook.id}}" class="sub-menu" style="display: none;">
-			<form id="edit-addressbook" method="post" action="">
-				<div id="edit-form" class="form-group">
-					<input id="id" name="id" type="hidden" value="{{$addressbook.id}}">
-					<input id="create" name="{DAV:}displayname" type="text" value="{{$addressbook.displayname}}" class="form-control">
+			<form id="edit-addressbook-{{$addressbook.id}}" method="post" action="">
+				<div id="edit-form-{{$addressbook.id}}" class="form-group">
+					<input id="id-{{$addressbook.id}}" name="id" type="hidden" value="{{$addressbook.id}}">
+					<input id="create-{{$addressbook.id}}" name="{DAV:}displayname" type="text" value="{{$addressbook.displayname}}" class="form-control">
 				</div>
 				<div class="form-group">
 					<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
