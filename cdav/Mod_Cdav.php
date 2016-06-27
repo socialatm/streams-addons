@@ -263,6 +263,23 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$carddavBackend->createAddressBook($principalUri, $addressbookUri, $properties);
 			}
+
+			//edit addressbook
+			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && intval($_REQUEST['id'])) {
+
+				$id = $_REQUEST['id'];
+
+				$mutations = [
+					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname'])
+				];
+
+				$patch = new \Sabre\DAV\PropPatch($mutations);
+
+				$carddavBackend->updateAddressBook($id, $patch);
+
+				$patch->commit();
+
+			}
 		}
 
 		//Import calendar or addressbook

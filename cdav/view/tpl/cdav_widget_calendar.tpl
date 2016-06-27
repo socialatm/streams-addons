@@ -45,7 +45,7 @@
 		</div>
 		<div id="edit-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
 			<form id="edit-calendar" method="post" action="">
-				<div id="create-form" class="input-group form-group colorpicker-component">
+				<div id="edit-form" class="input-group form-group colorpicker-component">
 					<input id="id" name="id" type="hidden" value="{{$calendar.calendarid}}:{{$calendar.instanceid}}">
 					<input id="color" name="color" type="hidden" value="{{$calendar.color}}">
 					<input id="create" name="{DAV:}displayname" type="text" value="{{$calendar.displayname}}" class="widget-input">

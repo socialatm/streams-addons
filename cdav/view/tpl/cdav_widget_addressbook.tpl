@@ -5,9 +5,21 @@
 		<div class="form-group">
 			<i class="fa fa-user generic-icons"></i><a href="/cdav/addressbook/{{$addressbook.id}}">{{$addressbook.displayname}}</a>
 			<div class="pull-right">
+				<i id="edit-icon" class="fa fa-pencil fakelink generic-icons" onclick="openClose('edit-addressbook-{{$addressbook.id}}')"></i>
 				<a href="/cdav/addressbooks/{{$addressbook.ownernick}}/{{$addressbook.uri}}/?export"><i id="download-icon" class="fa fa-cloud-download fakelink generic-icons"></i></a>
 				<a href="#" onclick="dropItem('/cdav/addressbook/drop/{{$addressbook.id}}', '#addressbook-{{$addressbook.id}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 			</div>
+		</div>
+		<div id="edit-addressbook-{{$addressbook.id}}" class="sub-menu" style="display: none;">
+			<form id="edit-addressbook" method="post" action="">
+				<div id="edit-form" class="form-group">
+					<input id="id" name="id" type="hidden" value="{{$addressbook.id}}">
+					<input id="create" name="{DAV:}displayname" type="text" value="{{$addressbook.displayname}}" class="form-control">
+				</div>
+				<div class="form-group">
+					<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
+				</div>
+			</form>
 		</div>
 	</div>
 	{{/foreach}}
