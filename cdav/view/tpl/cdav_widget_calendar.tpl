@@ -83,7 +83,7 @@
 		</li>
 		<form id="upload-form" enctype="multipart/form-data" method="post" action="" style="display: none;" class="sub-menu">
 			<div class="form-group">
-				<select id="import" name="calendar" class="form-control">
+				<select id="import" name="target" class="form-control">
 					<option value="">{{$import_placeholder}}</option>
 					{{foreach $writable_calendars as $writable_calendar}}
 					<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}</option>
@@ -93,7 +93,7 @@
 			<div class="form-group">
 				<input id="event-upload-choose" type="file" name="userfile" />
 			</div>
-			<button class="btn btn-primary btn-sm" type="submit" name="upload">Upload</button>
+			<button class="btn btn-primary btn-sm" type="submit" name="c_upload" value="c_upload">Upload</button>
 		</form>
 	</ul>
 </div>

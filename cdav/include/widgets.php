@@ -135,17 +135,22 @@ function widget_cdav() {
 		//list addressbooks
 		foreach($sabreabooks as $sabreabook) {
 			$addressbooks[] = [
+				'ownernick' => $channel['channel_address'],
+				'uri' => $sabreabook['uri'],
 				'displayname' => $sabreabook['{DAV:}displayname'],
 				'id' => $sabreabook['id']
+
 			];
 		}
 
-		//print_r($sabreabooks);killme();
 		$o .= replace_macros(get_markup_template('cdav_widget_addressbook.tpl', 'addon/cdav'), [
 			'$addressbooks_label' => t('Addressbooks'),
 			'$addressbooks' => $addressbooks,
 			'$create_label' => t('Create new addressbook'),
-			'$create_placeholder' => t('Addressbook Name')
+			'$create_placeholder' => t('Addressbook Name'),
+			'$tools_label' => t('Addressbook Tools'),
+			'$import_label' => t('Import addressbook'),
+			'$import_placeholder' => t('Select an addressbook to import to'),
 		]);
 
 		return $o;

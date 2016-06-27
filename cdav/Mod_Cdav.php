@@ -220,53 +220,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$caldavBackend->updateInvites($id, [$sharee]);
 			}
-
-			//Import calendar or events
-			if(($_FILES) && array_key_exists('userfile',$_FILES) && intval($_FILES['userfile']['size']) && $_REQUEST['calendar']) {
-
-				$src = @file_get_contents($_FILES['userfile']['tmp_name']);
-				$id = explode(':', $_REQUEST['calendar']);
-
-				if($src) {
-					$objects = new \Sabre\VObject\Splitter\ICalendar($src);
-					while ($object = $objects->getNext()) {
-
-						$ret = $object->validate(\Sabre\VObject\Node::PROFILE_CALDAV & \Sabre\VObject\Node::REPAIR);
-
-						//level 3 Means that the document is invalid,
-						//level 2 means a warning. A warning means it's valid but it could cause interopability issues,
-						//level 1 means that there was a problem earlier, but the problem was automatically repaired.
-
-						if($ret[0]['level'] < 3) {
-							do {
-								$duplicate = false;
-								$objectUri = random_string(40) . '.ics';
-
-								$r = q("SELECT uri FROM calendarobjects WHERE calendarid = %d AND uri = '%s' LIMIT 1",
-									dbesc($id[0]),
-									dbesc($objectUri)
-								);
-
-								if (count($r))
-									$duplicate = true;
-							} while ($duplicate == true);
-
-							$caldavBackend->createCalendarObject($id, $objectUri, $object->serialize());
-						}
-						else {
-							notice( '<strong>' . t('INVALID EVENT DISMISSED!') . '</strong>' . EOL .
-								'<strong>' . t('Summary: ') . '</strong>' . (($object->VEVENT->SUMMARY) ? $object->VEVENT->SUMMARY : t('Unknown')) . EOL .
-								'<strong>' . t('Date: ') . '</strong>' . (($object->VEVENT->DTSTART) ? $object->VEVENT->DTSTART : t('Unknown')) . EOL .
-								'<strong>' . t('Reason: ') . '</strong>' . $ret[0]['message'] . EOL
-							);
-						}
-					}
-				}
-				@unlink($src);
-			}
 		}
 
-		if(argc() == 2 && argv(1) === 'addressbook') {
+		if(argc() >= 2 && argv(1) === 'addressbook') {
 
 			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
 
@@ -276,7 +232,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$duplicate = false;
 					$addressbookUri = random_string(20);
 
-					$r = q("SELECT uri FROM calendarinstances WHERE principaluri = '%s' AND uri = '%s' LIMIT 1",
+					$r = q("SELECT uri FROM addressbooks WHERE principaluri = '%s' AND uri = '%s' LIMIT 1",
 						dbesc($principalUri),
 						dbesc($addressbookUri)
 					);
@@ -289,6 +245,83 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$carddavBackend->createAddressBook($principalUri, $addressbookUri, $properties);
 			}
+		}
+
+		//Import calendar or addressbook
+		if(($_FILES) && array_key_exists('userfile',$_FILES) && intval($_FILES['userfile']['size']) && $_REQUEST['target']) {
+
+			$src = @file_get_contents($_FILES['userfile']['tmp_name']);
+
+			if($src) {
+
+				if($_REQUEST['c_upload']) {
+					$id = explode(':', $_REQUEST['target']);
+					$ext = 'ics';
+					$table = 'calendarobjects';
+					$column = 'calendarid';
+					$objects = new \Sabre\VObject\Splitter\ICalendar($src);
+					$profile = \Sabre\VObject\Node::PROFILE_CALDAV;
+					$backend = new \Sabre\CalDAV\Backend\PDO($pdo);
+				}
+
+				if($_REQUEST['a_upload']) {
+					$id[] = intval($_REQUEST['target']);
+					$ext = 'vcf';
+					$table = 'cards';
+					$column = 'addressbookid';
+					$objects = new \Sabre\VObject\Splitter\VCard($src);
+					$profile = \Sabre\VObject\Node::PROFILE_CARDDAV;
+					$backend = new \Sabre\CardDAV\Backend\PDO($pdo);
+				}
+
+				while ($object = $objects->getNext()) {
+					$ret = $object->validate($profile & \Sabre\VObject\Node::REPAIR);
+
+					//level 3 Means that the document is invalid,
+					//level 2 means a warning. A warning means it's valid but it could cause interopability issues,
+					//level 1 means that there was a problem earlier, but the problem was automatically repaired.
+
+					if($ret[0]['level'] < 3) {
+						do {
+							$duplicate = false;
+							$objectUri = random_string(40) . '.' . $extV ;
+
+							$r = q("SELECT uri FROM $table WHERE $column = %d AND uri = '%s' LIMIT 1",
+								dbesc($id[0]),
+								dbesc($objectUri)
+							);
+
+							if (count($r))
+								$duplicate = true;
+						} while ($duplicate == true);
+
+						if($_REQUEST['c_upload']) {
+							$backend->createCalendarObject($id, $objectUri, $object->serialize());
+						}
+
+						if($_REQUEST['a_upload']) {
+							$backend->createCard($id[0], $objectUri, $object->serialize());
+						}
+					}
+					else {
+						if($_REQUEST['c_upload']) {
+							notice( '<strong>' . t('INVALID EVENT DISMISSED!') . '</strong>' . EOL .
+								'<strong>' . t('Summary: ') . '</strong>' . (($object->VEVENT->SUMMARY) ? $object->VEVENT->SUMMARY : t('Unknown')) . EOL .
+								'<strong>' . t('Date: ') . '</strong>' . (($object->VEVENT->DTSTART) ? $object->VEVENT->DTSTART : t('Unknown')) . EOL .
+								'<strong>' . t('Reason: ') . '</strong>' . $ret[0]['message'] . EOL
+							);
+						}
+
+						if($_REQUEST['a_upload']) {
+							notice( '<strong>' . t('INVALID CARD DISMISSED!') . '</strong>' . EOL .
+								'<strong>' . t('Name: ') . '</strong>' . (($object->FN) ? $object->FN : t('Unknown')) . EOL .
+								'<strong>' . t('Reason: ') . '</strong>' . $ret[0]['message'] . EOL
+							);
+						}
+					}
+				}
+			}
+			@unlink($src);
 		}
 	}
 
@@ -310,6 +343,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 		$channel = \App::get_channel();
 
 		$principalUri = 'principals/' . $channel['channel_address'];
+
+		head_add_css('addon/cdav/view/css/cdav.css');
 
 		if(argv(1) === 'calendar') {
 			$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
@@ -474,28 +509,36 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$emails = [];
 
 					if($vcard->TEL) {
-						foreach($vcard->TEL as $tel)
+						foreach($vcard->TEL as $tel) {
 							$type = (($vcard->TEL['TYPE']) ? translate_type((string)$vcard->TEL['TYPE']) : '');
 							$tels[] = [
 								'type' => $type,
 								'nr' => (string)$tel
 							];
+						}
 					}
 
 					if($vcard->EMAIL) {
-						foreach($vcard->EMAIL as $email)
-
+						foreach($vcard->EMAIL as $email) {
 							$type = (($vcard->EMAIL['TYPE']) ? translate_type((string)$vcard->EMAIL['TYPE']) : '');
 							$emails[] = [
 								'type' => $type,
 								'address' => (string)$email
 							];
+						}
+					}
+
+					if($vcard->ADR) {
+						foreach($vcard->ADR as $adr) {
+							$adr = $adr->getParts();
+						}
 					}
 
 					$cards[] = [
 						'fn' => (string)$vcard->FN,
 						'tels' => $tels,
 						'emails' => $emails,
+						'adr' => $adr
 					];
 				}
 
@@ -528,7 +571,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 function translate_type($type) {
 
 	$map = [
-		'cell' => t('Mobile phone'),
+		'cell' => t('Mobile'),
 		'home' => t('Home'),
 		'work' => t('Work')
 	];
