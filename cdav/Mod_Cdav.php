@@ -201,6 +201,24 @@ class Cdav extends \Zotlabs\Web\Controller {
 				set_pconfig(local_channel(), 'cdav_calendar' , $id[0], 1);
 			}
 
+			//edit calendar
+			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && $_REQUEST['id']) {
+
+				$id = explode(':', $_REQUEST['id']);
+
+				$mutations = [
+					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
+					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color'])
+				];
+
+				$patch = new \Sabre\DAV\PropPatch($mutations);
+
+				$caldavBackend->updateCalendar($id, $patch);
+
+				$patch->commit();
+
+			}
+
 			//share a calendar - this only works on local system (with channels on the same server)
 			if($_REQUEST['sharee'] && $_REQUEST['share']) {
 

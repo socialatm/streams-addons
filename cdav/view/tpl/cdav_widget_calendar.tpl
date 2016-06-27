@@ -6,6 +6,7 @@
 		<div{{if !$calendar@last}} class="form-group"{{/if}}>
 			<i id="calendar-btn-{{$calendar.calendarid}}" class="fa {{if $calendar.switch}}fa-calendar-check-o{{else}}fa-calendar-o{{/if}} generic-icons fakelink" onclick="add_remove_json_source('{{$calendar.json_source}}', '{{$calendar.color}}')" style="color: {{$calendar.color}};"></i>{{$calendar.displayname}}
 			<div class="pull-right">
+				<i id="edit-icon" class="fa fa-pencil fakelink generic-icons" onclick="openClose('edit-calendar-{{$calendar.calendarid}}')"></i>
 				<a href="/cdav/calendars/{{$calendar.ownernick}}/{{$calendar.uri}}/?export"><i id="download-icon" class="fa fa-cloud-download fakelink generic-icons"></i></a>
 				<i id="share-icon" class="fa fa-share-alt fakelink generic-icons" onclick="openClose('share-calendar-{{$calendar.calendarid}}')"></i>
 				<a href="#" onclick="var drop = dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}', '#calendar-{{$calendar.calendarid}}'); if(drop) { add_remove_json_source('{{$calendar.json_source}}', '{{$calendar.color}}', 'drop'); } return false;"><i class="fa fa-trash-o drop-icons"></i></a>
@@ -38,7 +39,20 @@
 					</select>
 				</div>
 				<div class="form-group">
-					<button type="submit" name="share" value="share" class="btn btn-primary btn-sm"><i class="fa fa-share-alt"></i> Share</button>
+					<button type="submit" name="share" value="share" class="btn btn-primary btn-sm">Share</button>
+				</div>
+			</form>
+		</div>
+		<div id="edit-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
+			<form id="edit-calendar" method="post" action="">
+				<div id="create-form" class="input-group form-group colorpicker-component">
+					<input id="id" name="id" type="hidden" value="{{$calendar.calendarid}}:{{$calendar.instanceid}}">
+					<input id="color" name="color" type="hidden" value="{{$calendar.color}}">
+					<input id="create" name="{DAV:}displayname" type="text" value="{{$calendar.displayname}}" class="widget-input">
+					<span class="input-group-addon"><i></i></span>
+				</div>
+				<div class="form-group">
+					<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
 				</div>
 			</form>
 		</div>
