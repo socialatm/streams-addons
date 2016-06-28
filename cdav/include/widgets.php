@@ -114,6 +114,7 @@ function widget_cdav() {
 			'$sharee_options' => $sharee_options,
 			'$access_options' => $access_options,
 			'$share_label' => t('Share this calendar'),
+			'$edit_label' => t('Calendar name and color'),
 			'$create_label' => t('Create new calendar'),
 			'$create_placeholder' => t('Calendar Name'),
 			'$tools_label' => t('Calendar Tools'),
@@ -146,6 +147,7 @@ function widget_cdav() {
 		$o .= replace_macros(get_markup_template('cdav_widget_addressbook.tpl', 'addon/cdav'), [
 			'$addressbooks_label' => t('Addressbooks'),
 			'$addressbooks' => $addressbooks,
+			'$edit_label' => t('Addressbook name'),
 			'$create_label' => t('Create new addressbook'),
 			'$create_placeholder' => t('Addressbook Name'),
 			'$tools_label' => t('Addressbook Tools'),
