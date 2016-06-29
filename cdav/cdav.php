@@ -181,14 +181,14 @@ function cdav_feature_settings_post(&$b) {
 
 				$r = q("insert into calendarinstances (calendarid, principaluri, displayname, uri) values(LAST_INSERT_ID(), '%s', '%s', '%s') ",
 					dbesc($uri),
-					dbesc($channel['channel_name'] . '\'s ' . t('Calendar')),
+					dbesc(t('Default Calendar')),
 					dbesc('default')
 				);
 
 				//create default addressbook
 				$r = q("insert into addressbooks (principaluri, displayname, uri) values('%s', '%s', '%s') ",
 					dbesc($uri),
-					dbesc($channel['channel_name'] . '\'s ' . t('Addressbook')),
+					dbesc(t('Default Addressbook')),
 					dbesc('default')
 				);
 			}

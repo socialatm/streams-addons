@@ -1,7 +1,7 @@
 <?php
 
 function widget_cdav() {
-	if(!local_channel())
+	if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 		return;
 
 	if(\DBA::$dba && \DBA::$dba->connected)
@@ -162,7 +162,7 @@ function widget_cdav() {
 }
 
 function widget_cdav_changeview($arr) {
-	if (! local_channel())
+	if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 		return;
 
 	$o = '';

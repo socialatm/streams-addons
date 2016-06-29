@@ -153,7 +153,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 	}
 
 	function post() {
-		if(!local_channel())
+		if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 			return;
 
 		if(\DBA::$dba && \DBA::$dba->connected)
@@ -362,7 +362,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	function get() {
 
-		if(!local_channel())
+		if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 			return;
 
 		if(\DBA::$dba && \DBA::$dba->connected)
