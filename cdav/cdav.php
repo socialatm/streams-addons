@@ -3,103 +3,13 @@
 /**
  * Name: CalDAV,CardDAV server
  * Description: CalDAV and CardDAV sync server (experimental, unsupported)
- * Version: 1.0
+ * Version: 1.1
  * Author: Mike Macgirvin <mike@macgirvin.com>
  * 
  */
 
 require_once('addon/cdav/Mod_Cdav.php');
 require_once('addon/cdav/include/widgets.php');
-
-/**
- * MYSQL DB Migration Code
- * This section can be removed after a while (when everybody did the migration)
- *
- */
-
-if(ACTIVE_DBTYPE === DBTYPE_MYSQL) {
-
-	//check if calendarinstances table exist
-	$r = q('SELECT * FROM calendarinstances LIMIT 1');
-
-	if(!$r) {
-
-		//create calendarinstances table
-		q("
-			CREATE TABLE calendarinstances (
-			    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-			    calendarid INTEGER UNSIGNED NOT NULL,
-			    principaluri VARBINARY(100),
-			    access TINYINT(1) NOT NULL DEFAULT '1' COMMENT '1 = owner, 2 = read, 3 = readwrite',
-			    displayname VARCHAR(100),
-			    uri VARBINARY(200),
-			    description TEXT,
-			    calendarorder INT(11) UNSIGNED NOT NULL DEFAULT '0',
-			    calendarcolor VARBINARY(10),
-			    timezone TEXT,
-			    transparent TINYINT(1) NOT NULL DEFAULT '0',
-			    share_href VARBINARY(100),
-			    share_displayname VARCHAR(100),
-			    share_invitestatus TINYINT(1) NOT NULL DEFAULT '2' COMMENT '1 = noresponse, 2 = accepted, 3 = declined, 4 = invalid',
-			    UNIQUE(principaluri, uri),
-			    UNIQUE(calendarid, principaluri),
-			    UNIQUE(calendarid, share_href)
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-		");
-
-		// Populate calendarinstances
-		q("
-			INSERT INTO calendarinstances
-			    (
-				calendarid,
-				principaluri,
-				access,
-				displayname,
-				uri,
-				description,
-				calendarorder,
-				calendarcolor,
-				transparent
-			    )
-			SELECT
-			    id,
-			    principaluri,
-			    1,
-			    displayname,
-			    uri,
-			    description,
-			    calendarorder,
-			    calendarcolor,
-			    transparent
-			FROM calendars
-		");
-
-		//backup calendars table
-		q('RENAME TABLE calendars TO calendars_bak');
-
-		//create new calendars table
-		q("
-			CREATE TABLE calendars (
-			    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
-			    synctoken INTEGER UNSIGNED NOT NULL DEFAULT '1',
-			    components VARBINARY(21)
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8;
-		");
-
-		//migrating data from old to new table
-		q("
-			INSERT INTO calendars (id, synctoken, components) SELECT id, synctoken, COALESCE(components,'VEVENT,VTODO,VJOURNAL') as components FROM calendars_bak
-		");
-
-		//get rid of the backup table
-		q('DROP TABLE calendars_bak');
-	}
-}
-
-/**
- * End DB Migration
- *
- */
 
 function cdav_install() {
 
@@ -129,6 +39,97 @@ function cdav_install() {
 }
 
 function cdav_uninstall() {
+
+	/**
+	 * MYSQL DB Migration Code
+	 * This section can be removed after a while (when everybody did the migration)
+	 *
+	 */
+
+	if(ACTIVE_DBTYPE === DBTYPE_MYSQL) {
+
+		//check if calendarinstances table exist
+		$r = q('SELECT * FROM calendarinstances LIMIT 1');
+
+		if(!$r) {
+
+			//create calendarinstances table
+			q("
+				CREATE TABLE calendarinstances (
+				    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+				    calendarid INTEGER UNSIGNED NOT NULL,
+				    principaluri VARBINARY(100),
+				    access TINYINT(1) NOT NULL DEFAULT '1' COMMENT '1 = owner, 2 = read, 3 = readwrite',
+				    displayname VARCHAR(100),
+				    uri VARBINARY(200),
+				    description TEXT,
+				    calendarorder INT(11) UNSIGNED NOT NULL DEFAULT '0',
+				    calendarcolor VARBINARY(10),
+				    timezone TEXT,
+				    transparent TINYINT(1) NOT NULL DEFAULT '0',
+				    share_href VARBINARY(100),
+				    share_displayname VARCHAR(100),
+				    share_invitestatus TINYINT(1) NOT NULL DEFAULT '2' COMMENT '1 = noresponse, 2 = accepted, 3 = declined, 4 = invalid',
+				    UNIQUE(principaluri, uri),
+				    UNIQUE(calendarid, principaluri),
+				    UNIQUE(calendarid, share_href)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+			");
+	
+			// Populate calendarinstances
+			q("
+				INSERT INTO calendarinstances
+				    (
+					calendarid,
+					principaluri,
+					access,
+					displayname,
+					uri,
+					description,
+					calendarorder,
+					calendarcolor,
+					transparent
+				    )
+				SELECT
+				    id,
+				    principaluri,
+				    1,
+				    displayname,
+				    uri,
+				    description,
+				    calendarorder,
+				    calendarcolor,
+				    transparent
+				FROM calendars
+			");
+
+			//backup calendars table
+			q('RENAME TABLE calendars TO calendars_bak');
+
+			//create new calendars table
+			q("
+				CREATE TABLE calendars (
+				    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+				    synctoken INTEGER UNSIGNED NOT NULL DEFAULT '1',
+				    components VARBINARY(21)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+			");
+
+			//migrating data from old to new table
+			q("
+				INSERT INTO calendars (id, synctoken, components) SELECT id, synctoken, COALESCE(components,'VEVENT,VTODO,VJOURNAL') as components FROM calendars_bak
+			");
+
+			//get rid of the backup table
+			q('DROP TABLE calendars_bak');
+		}
+	}
+
+	/**
+	 * End DB Migration
+	 *
+	 */
+
 	// Currently we do nothing here as it could destroy a lot of data, when
 	// often you only want to reset the plugin state. 
 	// We need a way to specify that you really really want to destroy
