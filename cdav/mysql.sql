@@ -140,7 +140,7 @@ CREATE TABLE if not exists propertystorage (
     value MEDIUMBLOB
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE UNIQUE INDEX if not exists path_property ON propertystorage (path(600), name(100));
+CREATE UNIQUE INDEX path_property ON propertystorage (path(600), name(100));
 
 CREATE TABLE if not exists users (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
