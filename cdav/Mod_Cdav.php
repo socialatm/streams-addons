@@ -458,7 +458,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 							$events[] = [
 								'title' => (string)$vcalendar->VEVENT->SUMMARY,
 								'start' => (string)$vcalendar->VEVENT->DTSTART,
-								'end' => (string)$vcalendar->VEVENT->DTEND
+								'end' => (string)$vcalendar->VEVENT->DTEND,
+								'allDay' => ((strpos((string)$vcalendar->VEVENT->DTSTART, 'T') && strpos((string)$vcalendar->VEVENT->DTEND, 'T')) ? false : true)
 							];
 						}
 
@@ -490,6 +491,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			foreach($calendars as $calendar) {
 				if($id == $calendar['id'][0]) {
 					$caldavBackend->deleteCalendar($calendar['id']);
+					killme();
 				}
 			}
 		}
@@ -599,6 +601,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			foreach($addressbooks as $addressbook) {
 				if($id == $addressbook['id']) {
 					$carddavBackend->deleteAddressBook($addressbook['id']);
+					killme();
 				}
 			}
 		}
