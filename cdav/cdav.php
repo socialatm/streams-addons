@@ -20,21 +20,25 @@ function cdav_install() {
 		$type = 'mysql';
 	}
 
-	$str = file_get_contents('addon/cdav/' . $type . '.sql');
-	$arr = explode(';',$str);
+	$r = q('SELECT * FROM principals LIMIT 1');
 
-	$errors = '';
+	if(!is_array($r)) {
+		$str = file_get_contents('addon/cdav/' . $type . '.sql');
+		$arr = explode(';',$str);
 
-	foreach($arr as $a) {
-		if(strlen(trim($a))) {
-			$r = q(trim($a));
-			if(! $r) {
-				$errors .=  t('Errors encountered creating database table: ') . $a . EOL;
+		$errors = '';
+
+		foreach($arr as $a) {
+			if(strlen(trim($a))) {
+				$r = q(trim($a));
+				if(! $r) {
+					$errors .=  t('Errors encountered creating database table: ') . $a . EOL;
+				}
 			}
 		}
-	}
-	if($errors) {
-		notice(t('Errors encountered creating database tables.') . EOL);
+		if($errors) {
+			notice(t('Errors encountered creating database tables.') . EOL);
+		}
 	}
 }
 
@@ -51,7 +55,7 @@ function cdav_uninstall() {
 		//check if calendarinstances table exist
 		$r = q('SELECT * FROM calendarinstances LIMIT 1');
 
-		if(!$r) {
+		if(!is_array($r)) {
 
 			//create calendarinstances table
 			q("
