@@ -156,6 +156,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 			return;
 
+
+		$channel = \App::get_channel();
+		$principalUri = 'principals/' . $channel['channel_address'];
+
+		if(!cdav_principal($principalUri))
+			return;
+
 		if(\DBA::$dba && \DBA::$dba->connected)
 			$pdovars = \DBA::$dba->pdo_get();
 		else
@@ -165,11 +172,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 		$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
 		require_once 'vendor/autoload.php';
-
-		$channel = \App::get_channel();
-
-		$principalUri = 'principals/' . $channel['channel_address'];
-
 
 		if(argc() == 2 && argv(1) === 'calendar') {
 
@@ -365,6 +367,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 			return;
 
+		$channel = \App::get_channel();
+		$principalUri = 'principals/' . $channel['channel_address'];
+
+		if(!cdav_principal($principalUri))
+			return;
+
 		if(\DBA::$dba && \DBA::$dba->connected)
 			$pdovars = \DBA::$dba->pdo_get();
 		else
@@ -374,10 +382,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 		$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
 		require_once 'vendor/autoload.php';
-
-		$channel = \App::get_channel();
-
-		$principalUri = 'principals/' . $channel['channel_address'];
 
 		head_add_css('addon/cdav/view/css/cdav.css');
 
@@ -599,23 +603,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 			}
 		}
 
-	}
-
-}
-
-function translate_type($type) {
-
-	$map = [
-		'cell' => t('Mobile'),
-		'home' => t('Home'),
-		'work' => t('Work')
-	];
-
-	if (array_key_exists($type, $map)) {
-		return $map[$type];
-	}
-	else {
-		return t('Other') . ' (' . $type . ')';
 	}
 
 }

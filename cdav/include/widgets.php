@@ -4,6 +4,12 @@ function widget_cdav() {
 	if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 		return;
 
+	$channel = \App::get_channel();
+	$principalUri = 'principals/' . $channel['channel_address'];
+
+	if(!cdav_principal($principalUri))
+		return;
+
 	if(\DBA::$dba && \DBA::$dba->connected)
 		$pdovars = \DBA::$dba->pdo_get();
 	else
@@ -15,10 +21,6 @@ function widget_cdav() {
 	require_once 'vendor/autoload.php';
 
 	$o = '';
-
-	$channel = \App::get_channel();
-
-	$principalUri = 'principals/' . $channel['channel_address'];
 
 	if(argc() == 2 && argv(1) === 'calendar') {
 
@@ -163,6 +165,12 @@ function widget_cdav() {
 
 function widget_cdav_changeview($arr) {
 	if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
+		return;
+
+	$channel = \App::get_channel();
+	$principalUri = 'principals/' . $channel['channel_address'];
+
+	if(!cdav_principal($principalUri))
 		return;
 
 	$o = '';
