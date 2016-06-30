@@ -252,7 +252,6 @@ function cdav_load_pdl(&$b) {
 
 
 function translate_type($type) {
-
 	$map = [
 		'cell' => t('Mobile'),
 		'home' => t('Home'),
@@ -265,7 +264,6 @@ function translate_type($type) {
 	else {
 		return t('Other') . ' (' . $type . ')';
 	}
-
 }
 
 function cdav_principal($uri) {
