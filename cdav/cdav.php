@@ -3,10 +3,13 @@
 /**
  * Name: CalDAV,CardDAV server
  * Description: CalDAV and CardDAV sync server (experimental, unsupported)
- * Version: 1.0
+ * Version: 1.1
  * Author: Mike Macgirvin <mike@macgirvin.com>
  * 
  */
+
+require_once('addon/cdav/Mod_Cdav.php');
+require_once('addon/cdav/include/widgets.php');
 
 function cdav_install() {
 
@@ -35,8 +38,98 @@ function cdav_install() {
 	}
 }
 
-
 function cdav_uninstall() {
+
+	/**
+	 * MYSQL DB Migration Code
+	 * This section can be removed after a while (when everybody did the migration)
+	 *
+	 */
+
+	if(ACTIVE_DBTYPE === DBTYPE_MYSQL) {
+
+		//check if calendarinstances table exist
+		$r = q('SELECT * FROM calendarinstances LIMIT 1');
+
+		if(!$r) {
+
+			//create calendarinstances table
+			q("
+				CREATE TABLE calendarinstances (
+				    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+				    calendarid INTEGER UNSIGNED NOT NULL,
+				    principaluri VARBINARY(100),
+				    access TINYINT(1) NOT NULL DEFAULT '1' COMMENT '1 = owner, 2 = read, 3 = readwrite',
+				    displayname VARCHAR(100),
+				    uri VARBINARY(200),
+				    description TEXT,
+				    calendarorder INT(11) UNSIGNED NOT NULL DEFAULT '0',
+				    calendarcolor VARBINARY(10),
+				    timezone TEXT,
+				    transparent TINYINT(1) NOT NULL DEFAULT '0',
+				    share_href VARBINARY(100),
+				    share_displayname VARCHAR(100),
+				    share_invitestatus TINYINT(1) NOT NULL DEFAULT '2' COMMENT '1 = noresponse, 2 = accepted, 3 = declined, 4 = invalid',
+				    UNIQUE(principaluri, uri),
+				    UNIQUE(calendarid, principaluri),
+				    UNIQUE(calendarid, share_href)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+			");
+	
+			// Populate calendarinstances
+			q("
+				INSERT INTO calendarinstances
+				    (
+					calendarid,
+					principaluri,
+					access,
+					displayname,
+					uri,
+					description,
+					calendarorder,
+					calendarcolor,
+					transparent
+				    )
+				SELECT
+				    id,
+				    principaluri,
+				    1,
+				    displayname,
+				    uri,
+				    description,
+				    calendarorder,
+				    calendarcolor,
+				    transparent
+				FROM calendars
+			");
+
+			//backup calendars table
+			q('RENAME TABLE calendars TO calendars_bak');
+
+			//create new calendars table
+			q("
+				CREATE TABLE calendars (
+				    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+				    synctoken INTEGER UNSIGNED NOT NULL DEFAULT '1',
+				    components VARBINARY(21)
+				) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+			");
+
+			//migrating data from old to new table
+			q("
+				INSERT INTO calendars (id, synctoken, components) SELECT id, synctoken, COALESCE(components,'VEVENT,VTODO,VJOURNAL') as components FROM calendars_bak
+			");
+
+			//get rid of the backup table
+			q('DROP TABLE calendars_bak');
+		}
+	}
+
+	/**
+	 * End DB Migration
+	 *
+	 */
+
 	// Currently we do nothing here as it could destroy a lot of data, when
 	// often you only want to reset the plugin state. 
 	// We need a way to specify that you really really want to destroy
@@ -47,14 +140,12 @@ function cdav_load() {
 	Zotlabs\Extend\Hook::register('well_known', 'addon/cdav/cdav.php', 'cdav_well_known');
 	Zotlabs\Extend\Hook::register('feature_settings', 'addon/cdav/cdav.php', 'cdav_feature_settings');
 	Zotlabs\Extend\Hook::register('feature_settings_post', 'addon/cdav/cdav.php','cdav_feature_settings_post');
-
+	Zotlabs\Extend\Hook::register('load_pdl', 'addon/cdav/cdav.php', 'cdav_load_pdl');
 }
-
 
 function cdav_unload() {
 	Zotlabs\Extend\Hook::unregister_by_file('addon/cdav/cdav.php');
 }
-
 
 function cdav_well_known(&$x) {
 	if(argv(1) === 'caldav' || argv(1) === 'carddav') {
@@ -62,32 +153,48 @@ function cdav_well_known(&$x) {
 	}
 }
 
-
-
-
 function cdav_feature_settings_post(&$b) {
 
  	if($_POST['cdav-submit']) {
 
 		$channel = \App::get_channel();
+		$uri = 'principals/' . $channel['channel_address'];
 
 		set_pconfig(local_channel(),'cdav','enabled',intval($_POST['cdav_enabled']));
 		if(intval($_POST['cdav_enabled'])) {
 			$r = q("select * from principals where uri = '%s' limit 1",
-				dbesc('principals/' . $channel['channel_address'])
+				dbesc($uri)
 			);
 			if($r) {
 				$r = q("update principals set email = '%s', displayname = '%s' where uri = '%s' ",
 					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name']),
-					dbesc('principals/' . $channel['channel_address'])
+					dbesc($uri)
 				);
 			}
 			else {
 				$r = q("insert into principals ( uri, email, displayname ) values('%s','%s','%s') ",
-					dbesc('principals/' . $channel['channel_address']),
+					dbesc($uri),
 					dbesc($channel['xchan_addr']),
 					dbesc($channel['channel_name'])
+				);
+
+				//create default calendar
+				$r = q("insert into calendars (components) values('%s') ",
+					dbesc('VEVENT,VTODO')
+				);
+
+				$r = q("insert into calendarinstances (calendarid, principaluri, displayname, uri) values(LAST_INSERT_ID(), '%s', '%s', '%s') ",
+					dbesc($uri),
+					dbesc(t('Default Calendar')),
+					dbesc('default')
+				);
+
+				//create default addressbook
+				$r = q("insert into addressbooks (principaluri, displayname, uri) values('%s', '%s', '%s') ",
+					dbesc($uri),
+					dbesc(t('Default Addressbook')),
+					dbesc('default')
 				);
 			}
 		}
@@ -99,11 +206,11 @@ function cdav_feature_settings_post(&$b) {
 	}
 }
 
-
 function cdav_feature_settings(&$b) {
 
 	$channel = App::get_channel();
 	$enabled = get_pconfig(local_channel(),'cdav','enabled');
+
 		
 	$sc .= '<div class="settings-block">';
 	$sc .= '<div id="cdav-wrapper">';
@@ -128,178 +235,13 @@ function cdav_feature_settings(&$b) {
 	));
 }
 
-function cdav_module() {}
-
-function cdav_init(&$a) {
-
-	if(DBA::$dba && DBA::$dba->connected)
-		$pdovars = DBA::$dba->pdo_get();
-	else
-		killme();
-
-
-//	logger('cdav: ' . file_get_contents('php://input'));
-
-//	logger('request_method: ' . $_SERVER['REQUEST_METHOD']);
-//	logger('Depth: ' . $_SERVER['HTTP_DEPTH']);
-//	logger('Prefer: ' . $_SERVER['HTTP_PREFER']);
-
-
-	// workaround for HTTP-auth in CGI mode
-	if (x($_SERVER, 'REDIRECT_REMOTE_USER')) {
-		$userpass = base64_decode(substr($_SERVER["REDIRECT_REMOTE_USER"], 6)) ;
-		if(strlen($userpass)) {
-			list($name, $password) = explode(':', $userpass);
-			$_SERVER['PHP_AUTH_USER'] = $name;
-			$_SERVER['PHP_AUTH_PW'] = $password;
-		}
+function cdav_load_pdl(&$b) {
+	if ($b['module'] === 'cdav') {
+		$b['layout'] = '
+			[region=aside]
+			[widget=cdav][/widget]
+			[widget=cdav_changeview][/widget]
+			[/region]
+		';
 	}
-
-	if (x($_SERVER, 'HTTP_AUTHORIZATION')) {
-		$userpass = base64_decode(substr($_SERVER["HTTP_AUTHORIZATION"], 6)) ;
-		if(strlen($userpass)) {
-			list($name, $password) = explode(':', $userpass);
-			$_SERVER['PHP_AUTH_USER'] = $name;
-			$_SERVER['PHP_AUTH_PW'] = $password;
-		}
-	}
-
-	/**
-	 * This server combines both CardDAV and CalDAV functionality into a single
-	 * server. It is assumed that the server runs at the root of a HTTP domain (be
-	 * that a domainname-based vhost or a specific TCP port.
-	 *
-	 * This example also assumes that you're using SQLite and the database has
-	 * already been setup (along with the database tables).
-	 *
-	 * You may choose to use MySQL instead, just change the PDO connection
-	 * statement.
-	 */
-
-	/**
-	 * UTC or GMT is easy to work with, and usually recommended for any
-	 * application.
-	 */
-	date_default_timezone_set('UTC');
-
-	/**
-	 * Make sure this setting is turned on and reflect the root url for your WebDAV
-	 * server.
-	 *
-	 * This can be for example the root / or a complete path to your server script.
-	 */
-
-	$baseUri = '/cdav';
-
-	/**
-	 * Database
-	 *
-	 */
-
-	$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
-	$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-	/**
-	 * Mapping PHP errors to exceptions.
-	 *
-	 * While this is not strictly needed, it makes a lot of sense to do so. If an
-	 * E_NOTICE or anything appears in your code, this allows SabreDAV to intercept
-	 * the issue and send a proper response back to the client (HTTP/1.1 500).
-	 */
-
-	function exception_error_handler($errno, $errstr, $errfile, $errline) {
-		throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-	}
-
-	set_error_handler("exception_error_handler");
-
-	// Autoloader
-	require_once 'vendor/autoload.php';
-
-	/**
-	 * The backends. Yes we do really need all of them.
-	 *
-	 * This allows any developer to subclass just any of them and hook into their
-	 * own backend systems.
-	 */
-
-	$auth = new \Zotlabs\Storage\BasicAuth();
-	$auth->setRealm(ucfirst(\Zotlabs\Lib\System::get_platform_name()) . 'CalDAV/CardDAV');
-
-//	$ob_hash = get_observer_hash();
-	
-//	if ($ob_hash) {
-		if (local_channel()) {
-			logger('loggedin');
-			$channel = App::get_channel();
-			$auth->setCurrentUser($channel['channel_address']);
-			$auth->channel_id = $channel['channel_id'];
-			$auth->channel_hash = $channel['channel_hash'];
-			$auth->channel_account_id = $channel['channel_account_id'];
-			if($channel['channel_timezone'])
-				$auth->setTimezone($channel['channel_timezone']);
-			$auth->observer = $channel['channel_hash'];	
-		}
-//		$auth->observer = $ob_hash;
-//	}
-
-
-
-
-
-	//$authBackend      = new \Sabre\DAV\Auth\Backend\PDO($pdo);
-	$principalBackend = new \Sabre\DAVACL\PrincipalBackend\PDO($pdo);
-	$carddavBackend   = new \Sabre\CardDAV\Backend\PDO($pdo);
-	$caldavBackend    = new \Sabre\CalDAV\Backend\PDO($pdo);
-
-	/**
-	 * The directory tree
-	 *
-	 * Basically this is an array which contains the 'top-level' directories in the
-	 * WebDAV server.
-	 */
-
-	$nodes = [
-		// /principals
-		new \Sabre\CalDAV\Principal\Collection($principalBackend),
-		// /calendars
-		new \Sabre\CalDAV\CalendarRoot($principalBackend, $caldavBackend),
-		// /addressbook
-		new \Sabre\CardDAV\AddressBookRoot($principalBackend, $carddavBackend),
-	];
-
-	// The object tree needs in turn to be passed to the server class
-
-	$server = new \Sabre\DAV\Server($nodes);
-
-	if(isset($baseUri))
-		$server->setBaseUri($baseUri);
-
-	// Plugins
-	$server->addPlugin(new \Sabre\DAV\Auth\Plugin($auth));
-
-//		$browser = new \Zotlabs\Storage\Browser($auth);
-//		$auth->setBrowserPlugin($browser);
-	
-//		$server->addPlugin($browser);
-
-
-	$server->addPlugin(new \Sabre\DAV\Browser\Plugin());
-
-
-	$server->addPlugin(new \Sabre\CalDAV\Plugin());
-	$server->addPlugin(new \Sabre\CardDAV\Plugin());
-	$server->addPlugin(new \Sabre\DAVACL\Plugin());
-	$server->addPlugin(new \Sabre\DAV\Sync\Plugin());
-
-
-
-	ob_start();
-
-	// And off we go!
-	$server->exec();
-
-	ob_end_flush();
-
-	killme();
 }

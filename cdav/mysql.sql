@@ -39,22 +39,34 @@ CREATE TABLE if not exists calendarobjects (
     firstoccurence INT(11) UNSIGNED,
     lastoccurence INT(11) UNSIGNED,
     uid VARBINARY(200),
-    UNIQUE(calendarid, uri)
+    UNIQUE(calendarid, uri),
+    INDEX calendarid_time (calendarid, firstoccurence)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE if not exists calendars (
     id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    synctoken INTEGER UNSIGNED NOT NULL DEFAULT '1',
+    components VARBINARY(21)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+CREATE TABLE if not exists calendarinstances (
+    id INTEGER UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    calendarid INTEGER UNSIGNED NOT NULL,
     principaluri VARBINARY(100),
+    access TINYINT(1) NOT NULL DEFAULT '1' COMMENT '1 = owner, 2 = read, 3 = readwrite',
     displayname VARCHAR(100),
     uri VARBINARY(200),
-    synctoken INTEGER UNSIGNED NOT NULL DEFAULT '1',
     description TEXT,
     calendarorder INT(11) UNSIGNED NOT NULL DEFAULT '0',
     calendarcolor VARBINARY(10),
     timezone TEXT,
-    components VARBINARY(21),
     transparent TINYINT(1) NOT NULL DEFAULT '0',
-    UNIQUE(principaluri, uri)
+    share_href VARBINARY(100),
+    share_displayname VARCHAR(100),
+    share_invitestatus TINYINT(1) NOT NULL DEFAULT '2' COMMENT '1 = noresponse, 2 = accepted, 3 = declined, 4 = invalid',
+    UNIQUE(principaluri, uri),
+    UNIQUE(calendarid, principaluri),
+    UNIQUE(calendarid, share_href)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 CREATE TABLE if not exists calendarchanges (

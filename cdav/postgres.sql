@@ -16,7 +16,7 @@ CREATE UNIQUE INDEX if not exists addressbooks_ukey
 CREATE TABLE if not exists cards (
     id SERIAL NOT NULL,
     addressbookid INTEGER NOT NULL,
-    carddata TEXT,
+    carddata BYTEA,
     uri VARCHAR(200),
     lastmodified INTEGER,
     etag VARCHAR(32),
@@ -28,10 +28,6 @@ ALTER TABLE ONLY cards
 
 CREATE UNIQUE INDEX if not exists cards_ukey
     ON cards USING btree (addressbookid, uri);
-
-ALTER TABLE ONLY cards
-    ADD CONSTRAINT cards_addressbookid_fkey FOREIGN KEY (addressbookid) REFERENCES addressbooks(id)
-        ON DELETE CASCADE;
 
 CREATE TABLE if not exists addressbookchanges (
     id SERIAL NOT NULL,
@@ -46,10 +42,6 @@ ALTER TABLE ONLY addressbookchanges
 
 CREATE INDEX if not exists addressbookchanges_addressbookid_synctoken_ix
     ON addressbookchanges USING btree (addressbookid, synctoken);
-
-ALTER TABLE ONLY addressbookchanges
-    ADD CONSTRAINT addressbookchanges_addressbookid_fkey FOREIGN KEY (addressbookid) REFERENCES addressbooks(id)
-        ON DELETE CASCADE;
 
 CREATE TABLE if not exists calendars (
     id SERIAL NOT NULL,
@@ -203,7 +195,7 @@ CREATE TABLE if not exists propertystorage (
     path VARCHAR(1024) NOT NULL,
     name VARCHAR(100) NOT NULL,
     valuetype INT,
-    value TEXT
+    value BYTEA
 );
 
 ALTER TABLE ONLY propertystorage
