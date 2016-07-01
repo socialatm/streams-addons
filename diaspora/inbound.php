@@ -68,19 +68,7 @@ function diaspora_dispatch($importer,$msg) {
 		return;
 	}
 
-	// php doesn't like dashes in variable names
-	// I doubt we need this any more. The Cubbi.es activity stream photo thing died in 2011
-
-	$msg['message'] = str_replace(
-			array('<activity_streams-photo>','</activity_streams-photo>'),
-			array('<asphoto>','</asphoto>'),
-			$msg['message']);
-
-
-//	$parsed_xml = parse_xml_string($msg['message'],false);
-
 	$parsed_xml = xml2array($msg['message'],false,0,'tag');
-
 
 	if($parsed_xml) {
 		if(array_key_exists('xml',$parsed_xml) && array_key_exists('post',$parsed_xml['xml']))
@@ -95,7 +83,7 @@ function diaspora_dispatch($importer,$msg) {
 	if($xmlbase['request']) {
 		$ret = diaspora_request($importer,$xmlbase['request']);
 	}
-	if($xmlbase['contact']) {
+	elseif($xmlbase['contact']) {
 		$ret = diaspora_request($importer,$xmlbase['contact']);
 	}
 	elseif($xmlbase['status_message']) {
@@ -109,9 +97,6 @@ function diaspora_dispatch($importer,$msg) {
 	}
 	elseif($xmlbase['like']) {
 		$ret = diaspora_like($importer,$xmlbase['like'],$msg);
-	}
-	elseif($xmlbase['asphoto']) {
-		$ret = diaspora_asphoto($importer,$xmlbase['asphoto'],$msg);
 	}
 	elseif($xmlbase['reshare']) {
 		$ret = diaspora_reshare($importer,$xmlbase['reshare'],$msg);
@@ -405,58 +390,6 @@ function diaspora_request($importer,$xml) {
 		return;
 	}
 
-
-//FIXME
-/*
-	if(feature_enabled($channel['channel_id'],'premium_channel')) {
-		$myaddr = $importer['channel_address'] . '@' .  App::get_hostname();
-		$cnv = random_string();
-		$mid = random_string();
-
-		$msg = t('You have started sharing with a $Projectname premium channel.');
-		$msg .= t('$Projectname premium channels are not available for sharing with Diaspora members. This sharing request has been blocked.') . "\r";
-
-		$msg .= t('Please do not reply to this message, as this channel is not sharing with you and any reply will not be seen by the recipient.') . "\r";
-
-		$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
-		$signed_text =  $mid . ';' . $cnv . ';' . $msg .  ';'
-        . $created . ';' . $myaddr . ';' . $cnv;
-
-		$sig = base64_encode(rsa_sign($signed_text,$importer['channel_prvkey'],'sha256'));
-
-		$conv = array(
-			'guid' => xmlify($cnv),
-			'subject' => xmlify(t('Sharing request failed.')),
-			'created_at' => xmlify($created),
-			'diaspora_handle' => xmlify($myaddr),
-			'participant_handles' => xmlify($myaddr . ';' . $sender_handle)
-		);
-
-		$msg = array(
-			'guid' => xmlify($mid),
-			'parent_guid' => xmlify($cnv),
-			'parent_author_signature' => xmlify($sig),
-			'author_signature' => xmlify($sig),
-			'text' => xmlify($msg),
-			'created_at' => xmlify($created),
-			'diaspora_handle' => xmlify($myaddr),
-			'conversation_guid' => xmlify($cnv)
-		);
-
-		$conv['messages'] = array($msg);
-		$tpl = get_markup_template('diaspora_conversation.tpl','addon/diaspora');
-		$xmsg = replace_macros($tpl, array('$conv' => $conv));
-
-		$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($xmsg,$importer,$ret,$importer['channel_prvkey'],$ret['xchan_pubkey'],false)));
-
-		$qi = diaspora_queue($importer,$ret,$slap,false);
-		return $qi;
-	}
-
-*/
-// End FIXME
-
-
 	$role = get_pconfig($importer['channel_id'],'system','permissions_role');
 	if($role) {
 		$x = get_role_perms($role);
@@ -498,12 +431,14 @@ function diaspora_request($importer,$xml) {
 			dbesc($ret['xchan_hash'])
 		);
 		if($new_connection) {
-			\Zotlabs\Lib\Enotify::submit(array(
-				'type'	     => NOTIFY_INTRO,
-				'from_xchan'   => $ret['xchan_hash'],
-				'to_xchan'     => $importer['channel_hash'],
-				'link'         => z_root() . '/connedit/' . $new_connection[0]['abook_id'],
-			));
+			\Zotlabs\Lib\Enotify::submit(
+				[
+					'type'	       => NOTIFY_INTRO,
+					'from_xchan'   => $ret['xchan_hash'],
+					'to_xchan'     => $importer['channel_hash'],
+					'link'         => z_root() . '/connedit/' . $new_connection[0]['abook_id'],
+				]
+			);
 
 			if($default_perms) {
 				// Send back a sharing notification to them
@@ -528,7 +463,7 @@ function diaspora_request($importer,$xml) {
 			if($abconfig)
 				$clone['abconfig'] = $abconfig;
 
-			build_sync_packet($importer['channel_id'], array('abook' => array($clone)));
+			build_sync_packet($importer['channel_id'], [ 'abook' => array($clone) ] );
 
 		}
 	}
@@ -966,113 +901,6 @@ function diaspora_reshare($importer,$xml,$msg) {
 	return;
 
 }
-
-
-function diaspora_asphoto($importer,$xml,$msg) {
-
-	// This call is believed to be obsolete since 2011-2012 and has not been ported 
-	// from the original Friendica implementation. The code remains in case it is 
-	// ever reimplemented in Diaspora, though it is unlikely that will occur in the
-	// same context. 
-
-	logger('diaspora_asphoto called');
-
-	$a = get_app();
-	$guid = notags(unxmlify($xml['guid']));
-	$diaspora_handle = notags(diaspora_get_author($xml));
-
-	if($diaspora_handle != $msg['author']) {
-		logger('diaspora_post: Potential forgery. Message handle is not the same as envelope sender.');
-		return 202;
-	}
-
-	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$diaspora_handle);
-	if(! $contact)
-		return;
-
-	if((! $importer['system']) && (! perm_is_allowed($importer['channel_id'],$contact['xchan_hash'],'send_stream'))) {
-		logger('diaspora_asphoto: Ignoring this author.');
-		return 202;
-	}
-
-	$message_id = $diaspora_handle . ':' . $guid;
-	$r = q("SELECT `id` FROM `item` WHERE `uid` = %d AND `uri` = '%s' AND `guid` = '%s' LIMIT 1",
-		intval($importer['channel_id']),
-		dbesc($message_id),
-		dbesc($guid)
-	);
-	if(count($r)) {
-		logger('diaspora_asphoto: message exists: ' . $guid);
-		return;
-	}
-
-	// allocate a guid on our system - we aren't fixing any collisions.
-	// we're ignoring them
-
-	$g = q("select * from guid where guid = '%s' limit 1",
-		dbesc($guid)
-	);
-	if(! count($g)) {
-		q("insert into guid ( guid ) values ( '%s' )",
-			dbesc($guid)
-		);
-	}
-
-	$created = unxmlify($xml['created_at']);
-	$private = ((unxmlify($xml['public']) == 'false') ? 1 : 0);
-
-	if(strlen($xml['objectId']) && ($xml['objectId'] != 0) && ($xml['image_url'])) {
-		$body = '[url=' . notags(unxmlify($xml['image_url'])) . '][img]' . notags(unxmlify($xml['objectId'])) . '[/img][/url]' . "\n";
-		$body = scale_external_images($body,false);
-	}
-	elseif($xml['image_url']) {
-		$body = '[img]' . notags(unxmlify($xml['image_url'])) . '[/img]' . "\n";
-		$body = scale_external_images($body);
-	}
-	else {
-		logger('diaspora_asphoto: no photo url found.');
-		return;
-	}
-
-	$plink = service_plink($contact,$guid);
-
-	$datarray = array();
-
-	$datarray['uid'] = $importer['channel_id'];
-	$datarray['contact-id'] = $contact['id'];
-	$datarray['wall'] = 0;
-	$datarray['network']  = NETWORK_DIASPORA;
-	$datarray['guid'] = $guid;
-	$datarray['uri'] = $datarray['parent-uri'] = $message_id;
-	$datarray['changed'] = $datarray['created'] = $datarray['edited'] = datetime_convert('UTC','UTC',$created);
-	$datarray['private'] = $private;
-	$datarray['parent'] = 0;
-	$datarray['plink'] = $plink;
-	$datarray['owner-name'] = $contact['name'];
-	$datarray['owner-link'] = $contact['url'];
-	//$datarray['owner-avatar'] = $contact['thumb'];
-	$datarray['owner-avatar'] = ((x($contact,'thumb')) ? $contact['thumb'] : $contact['photo']);
-	$datarray['author-name'] = $contact['name'];
-	$datarray['author-link'] = $contact['url'];
-	$datarray['author-avatar'] = $contact['thumb'];
-	$datarray['body'] = $body;
-
-	$datarray['app']  = 'Diaspora/Cubbi.es';
-
-	$result = item_store($datarray);
-
-	if($result['success']) {
-		sync_an_item($importer['channel_id'],$result['item_id']);
-	}
-
-
-	return;
-
-}
-
-
-
-
 
 
 function diaspora_comment($importer,$xml,$msg) {
