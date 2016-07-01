@@ -156,7 +156,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
 			return;
 
-
 		$channel = \App::get_channel();
 		$principalUri = 'principals/' . $channel['channel_address'];
 
@@ -364,8 +363,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 	function get() {
 
-		if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
+		if(!local_channel())
 			return;
+
+		if(get_pconfig(local_channel(),'cdav','enabled') != 1)
+			return t('You have to enable this plugin in Feature/Addon Settings > CalDAV/CardDAV Settings before you can use it.');
+			//TODO: add a possibility to enable this plugin here.
 
 		$channel = \App::get_channel();
 		$principalUri = 'principals/' . $channel['channel_address'];
