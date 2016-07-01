@@ -43,18 +43,17 @@ $(document).ready(function() {
 function changeView(action, viewName) {
 	$('#calendar').fullCalendar(action, viewName);
 	var view = $('#calendar').fullCalendar('getView');
-	if(view.type === 'agendaDay' || view.type === 'agendaWeek') {
+	if(view.type !== 'month' && !$('main').hasClass('fullscreen')) {
 		$('#calendar').fullCalendar('option', 'height', 'auto');
 	}
 	else {
-		if($('main').hasClass('fullscreen')) {
-			$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
-
-		}
-		else {
-			$('#calendar').fullCalendar('option', 'height', '');
-		}
+		$('#calendar').fullCalendar('option', 'height', '');
 	}
+
+	if($('main').hasClass('fullscreen')) {
+		$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
+	}
+
 	$('#title').text(view.title);
 }
 
@@ -89,24 +88,26 @@ function add_remove_json_source(source, color, status) {
 
 function on_fullscreen() {
 	var view = $('#calendar').fullCalendar('getView');
-	if(view.type === 'month') {
-		$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
-	}
+	$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
 }
 
 function on_inline() {
 	var view = $('#calendar').fullCalendar('getView');
-	if(view.type === 'month') {
-		$('#calendar').fullCalendar('option', 'height', '');
-	}
+	((view.type === 'month') ?$('#calendar').fullCalendar('option', 'height', '') : $('#calendar').fullCalendar('option', 'height', 'auto'));
 }
 </script>
 
 <div class="generic-content-wrapper">
 	<div class="section-title-wrapper">
-		<div class="pull-right">
+		<div class="pull-right dropdown">
 			<button id="fullscreen-btn" type="button" class="btn btn-default btn-xs" onclick="makeFullScreen();"><i class="fa fa-expand"></i></button>
 			<button id="inline-btn" type="button" class="btn btn-default btn-xs" onclick="makeFullScreen(false);"><i class="fa fa-compress"></i></button>
+			<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown"><i class="fa fa-caret-down"></i>&nbsp;{{$view_label}}</button>
+			<ul class="dropdown-menu">
+				<li><a href="#" onclick="changeView('changeView', 'month'); return false;">{{$month}}</a></li>
+				<li><a href="#" onclick="changeView('changeView', 'agendaWeek'); return false;">{{$week}}</a></li>
+				<li><a href="#" onclick="changeView('changeView', 'agendaDay'); return false;">{{$day}}</a></li>
+			</ul>
 			<div class="btn-group">
 				<button class="btn btn-default btn-xs" onclick="changeView('prev', false);" title="{{$prev}}"><i class="fa fa-backward"></i></button>
 				<button id="events-spinner" class="btn btn-default btn-xs" onclick="changeView('today', false);" title="{{$today}}"><i class="fa fa-bullseye"></i></button>

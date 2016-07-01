@@ -244,7 +244,6 @@ function cdav_load_pdl(&$b) {
 		$b['layout'] = '
 			[region=aside]
 			[widget=cdav][/widget]
-			[widget=cdav_changeview][/widget]
 			[/region]
 		';
 	}

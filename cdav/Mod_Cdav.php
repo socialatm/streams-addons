@@ -421,7 +421,11 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$first_day' => $first_day,
 				'$prev'	=> t('Previous'),
 				'$next'	=> t('Next'),
-				'$today' => t('Today')
+				'$today' => t('Today'),
+				'$view_label' => t('View'),
+				'$month' => t('Month'),
+				'$week' => t('Week'),
+				'$day' => t('Day')
 			]);
 
 			return $o;

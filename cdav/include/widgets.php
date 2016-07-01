@@ -162,27 +162,3 @@ function widget_cdav() {
 	}
 
 }
-
-function widget_cdav_changeview($arr) {
-	if(!local_channel() || get_pconfig(local_channel(),'cdav','enabled') != 1)
-		return;
-
-	$channel = \App::get_channel();
-	$principalUri = 'principals/' . $channel['channel_address'];
-
-	if(!cdav_principal($principalUri))
-		return;
-
-	$o = '';
-
-	if(argc() == 2 && argv(1) === 'calendar') {
-		$o = replace_macros(get_markup_template('cdav_widget_calendar_changeview.tpl', 'addon/cdav'), array(
-			'$title' => t('Calendar Views'),
-			'$day' => t('Day View'),
-			'$week' => t('Week View'),
-			'$month' => t('Month View')
-		));
-	}
-
-	return $o;
-}
