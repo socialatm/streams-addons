@@ -69,6 +69,10 @@ function diaspora_load_module(&$a, &$b) {
 		require_once('addon/diaspora/p.php');
 		$b['installed'] = true;
 	}
+	if($b['module'] === 'fetch') {
+		require_once('addon/diaspora/fetch.php');
+		$b['installed'] = true;
+	}
 }
 
 

@@ -161,4 +161,77 @@ function diaspora_build_relay_tags() {
 
 }
 	
-						
+
+function diaspora_magic_env($channel,$msg) {
+
+	$data        = preg_replace('/s+/','', base64url_encode($msg));
+	$keyhash     = base64url_encode($channel['channel_address'] . '@' . App::get_hostname());
+	$type        = 'application/xml';
+	$encoding    = 'base64url';
+	$algorithm   = 'RSA-SHA256';
+	$precomputed = '.YXBwbGljYXRpb24vYXRvbSt4bWw=.YmFzZTY0dXJs.UlNBLVNIQTI1Ng==';
+	$signature   = base64url_encode(rsa_sign($data . $precomputed, $channel['channel_prvkey']));
+
+	return replace_macros(get_markup_template('magicsig.tpl','addon/diaspora'),
+		[
+			'$data'      => $data,
+			'$encoding'  => $encoding,
+			'$algorithm' => $algorithm, 
+			'$keyhash'   => $keyhash,
+			'$signature' => $signature
+		]
+	);
+}
+
+
+function diaspora_build_status($item,$owner) {
+
+	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
+
+	if(intval($item['id']) != intval($item['parent'])) {
+		logger('attempted to send a comment as a top-level post');
+		return;
+	}
+
+	$images = array();
+
+	$title = $item['title'];
+	$body = bb2diaspora_itembody($item,true);
+
+	$poll = '';
+
+	$public = (($item['item_private']) ? 'false' : 'true');
+
+	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
+
+	// Detect a share element and do a reshare
+
+	if((! $item['item_private']) && ($ret = diaspora_is_reshare($item['body']))) {
+		$msg = replace_macros(get_markup_template('diaspora_reshare.tpl','addon/diaspora'),
+			[
+				'$root_handle' => xmlify($ret['root_handle']),
+				'$root_guid' => $ret['root_guid'],
+				'$guid' => $item['mid'],
+				'$handle' => xmlify($myaddr),
+				'$public' => $public,
+				'$created' => $created,
+				'$provider' => (($item['app']) ? $item['app'] : t('$projectname'))
+			]
+		);
+	} 
+	else {
+		$msg = replace_macros(get_markup_template('diaspora_post.tpl','addon/diaspora'),
+			[
+				'$body' => xmlify($body),
+				'$guid' => $item['mid'],
+				'$poll' => $poll,
+				'$handle' => xmlify($myaddr),
+				'$public' => $public,
+				'$created' => $created,
+				'$provider' => (($item['app']) ? $item['app'] : t('$projectname'))
+			]
+		);
+	}
+
+	return $msg;
+}

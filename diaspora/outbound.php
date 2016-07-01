@@ -8,7 +8,6 @@ function diaspora_pubmsg_build($msg,$channel,$contact,$prvkey,$pubkey) {
 
     $handle = $channel['channel_address'] . '@' . App::get_hostname();
 
-
 	$b64url_data = base64url_encode($msg,false);
 
 	$data = str_replace(array("\n","\r"," ","\t"),array('','','',''),$b64url_data);
@@ -201,117 +200,20 @@ function diaspora_unshare($owner,$contact) {
 }
 
 
+
+
+
+
+
 function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 
-	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
-
-	if(intval($item['id']) != intval($item['parent'])) {
-		logger('attempted to send a comment as a top-level post');
-		return;
-	}
-
-	$images = array();
-
-	$title = $item['title'];
-	$body = bb2diaspora_itembody($item,true);
-
-/*
-	// We're trying to match Diaspora's split message/photo protocol but
-	// all the photos are displayed on D* as links and not img's - even
-	// though we're sending pretty much precisely what they send us when
-	// doing the same operation.  
-	// Commented out for now, we'll use bb2diaspora to convert photos to markdown
-	// which seems to get through intact.
-
-	$cnt = preg_match_all('|\[img\](.*?)\[\/img\]|',$body,$matches,PREG_SET_ORDER);
-	if($cnt) {
-		foreach($matches as $mtch) {
-			$detail = array();
-			$detail['str'] = $mtch[0];
-			$detail['path'] = dirname($mtch[1]) . '/';
-			$detail['file'] = basename($mtch[1]);
-			$detail['guid'] = $item['guid'];
-			$detail['handle'] = $myaddr;
-			$images[] = $detail;
-			$body = str_replace($detail['str'],$mtch[1],$body);
-		}
-	}
-*/
-
-// @TODO We need a bit more infrastructure before we can process Diaspora polls
-//	if(intval($item['item_consensus'])) {
-//		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
-//			'$guid_q' => '10000000',
-//			'$question' => t('Please choose'),
-//			'$guid_y' => '00000001',
-//			'$agree' => t('Agree'),
-//			'$guid_n' => '0000000F',
-//			'$disagree' => t('Disagree'),
-//			'$guid_a' => '00000000',
-//			'$abstain' => t('Abstain')
-//		));
-//	}
-//	elseif($item['resource_type'] === 'event' && $item['resource_id']) {
-//		$poll = replace_macros(get_markup_template('diaspora_consensus.tpl','addon/diaspora'), array(
-//			'$guid_q' => '1000000',
-//			'$question' => t('Please choose'),
-//			'$guid_y' => '0000001',
-//			'$agree' => t('I will attend'),
-///			'$guid_n' => '000000F',
-//			'$disagree' => t('I will not attend'),
-//			'$guid_a' => '0000000',
-//			'$abstain' => t('I may attend')
-//		));
-//	}
-//	else
-		$poll = '';
-
-	$public = (($item['item_private']) ? 'false' : 'true');
-
-	require_once('include/datetime.php');
-	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
-
-	// Detect a share element and do a reshare
-	// see: https://github.com/Raven24/diaspora-federation/blob/master/lib/diaspora-federation/entities/reshare.rb
-	if (!$item['item_private'] AND ($ret = diaspora_is_reshare($item["body"]))) {
-		$tpl = get_markup_template('diaspora_reshare.tpl','addon/diaspora');
-		$msg = replace_macros($tpl, array(
-			'$root_handle' => xmlify($ret['root_handle']),
-			'$root_guid' => $ret['root_guid'],
-			'$guid' => $item['mid'],
-			'$handle' => xmlify($myaddr),
-			'$public' => $public,
-			'$created' => $created,
-			'$provider' => (($item['app']) ? $item['app'] : t('$projectname'))
-		));
-	} else {
-		$tpl = get_markup_template('diaspora_post.tpl','addon/diaspora');
-		$msg = replace_macros($tpl, array(
-			'$body' => xmlify($body),
-			'$guid' => $item['mid'],
-			'$poll' => $poll,
-			'$handle' => xmlify($myaddr),
-			'$public' => $public,
-			'$created' => $created,
-			'$provider' => (($item['app']) ? $item['app'] : t('$projectname'))
-		));
-	}
+	$msg = diaspora_build_status($item,$owner);
 
 	logger('diaspora_send_status: '.$owner['channel_name'].' -> '.$contact['xchan_name'].' base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
 	$qi = array(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
-
-//	logger('diaspora_send_status: guid: '.$item['mid'].' result '.$return_code, LOGGER_DEBUG);
-
-	if(count($images)) {
-		$qim = diaspora_send_images($item,$owner,$contact,$images,$public_batch,$item['mid']);
-		if($qim)
-			$qi = array_merge($qi,$qim);
-	}
-
 	return $qi;
 }
 
