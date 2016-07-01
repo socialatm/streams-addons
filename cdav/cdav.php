@@ -249,3 +249,30 @@ function cdav_load_pdl(&$b) {
 		';
 	}
 }
+
+
+function translate_type($type) {
+	$map = [
+		'cell' => t('Mobile'),
+		'home' => t('Home'),
+		'work' => t('Work')
+	];
+
+	if (array_key_exists($type, $map)) {
+		return $map[$type];
+	}
+	else {
+		return t('Other') . ' (' . $type . ')';
+	}
+}
+
+function cdav_principal($uri) {
+	$r = q("SELECT uri FROM principals WHERE uri = '%s' LIMIT 1",
+		dbesc($uri)
+	);
+
+	if($r[0]['uri'] === $uri)
+		return true;
+	else
+		return false;
+}
