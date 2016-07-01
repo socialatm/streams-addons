@@ -70,7 +70,8 @@ function diaspora_load_module(&$a, &$b) {
 		$b['installed'] = true;
 	}
 	if($b['module'] === 'fetch') {
-		require_once('addon/diaspora/fetch.php');
+		require_once('addon/diaspora/Mod_Fetch.php');
+		$b['controller'] = new \Zotlabs\Module\Fetch();
 		$b['installed'] = true;
 	}
 }
