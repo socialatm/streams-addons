@@ -87,13 +87,12 @@ function add_remove_json_source(source, color, status) {
 }
 
 function on_fullscreen() {
-	var view = $('#calendar').fullCalendar('getView');
 	$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
 }
 
 function on_inline() {
 	var view = $('#calendar').fullCalendar('getView');
-	((view.type === 'month') ?$('#calendar').fullCalendar('option', 'height', '') : $('#calendar').fullCalendar('option', 'height', 'auto'));
+	((view.type === 'month') ? $('#calendar').fullCalendar('option', 'height', '') : $('#calendar').fullCalendar('option', 'height', 'auto'));
 }
 </script>
 
