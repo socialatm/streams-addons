@@ -128,7 +128,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			// Plugins
 			$server->addPlugin(new \Sabre\DAV\Auth\Plugin($auth));
-			$server->addPlugin(new \Sabre\DAV\Browser\Plugin());
+			//$server->addPlugin(new \Sabre\DAV\Browser\Plugin());
 			$server->addPlugin(new \Sabre\DAV\Sync\Plugin());
 			$server->addPlugin(new \Sabre\DAV\Sharing\Plugin());
 			$server->addPlugin(new \Sabre\DAVACL\Plugin());
