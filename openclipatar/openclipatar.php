@@ -274,7 +274,7 @@ function openclipatar_content(&$a) {
 		} 
 		if($is_default_profile) {
 			// unset any existing profile photos
-			$r = q("UPDATE photo SET photo_usage = %d WHERE usage = %d AND uid = %d",
+			$r = q("UPDATE photo SET photo_usage = %d WHERE photo_usage = %d AND uid = %d",
 				intval(PHOTO_NORMAL),
 				intval(PHOTO_PROFILE),
 				intval(local_channel()));
