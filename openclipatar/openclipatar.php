@@ -307,6 +307,9 @@ function openclipatar_content(&$a) {
 			dbesc(datetime_convert()),
 			dbesc($chan['xchan_hash'])
 		);
+		// Similarly, tell the nav bar to bypass the cache and update the avater image.
+		$_SESSION['reload_avatar'] = true;
+
 		// tell everybody
 		Zotlabs\Daemon\Master::Summon(array('Directory',local_channel()));
 		
