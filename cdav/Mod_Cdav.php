@@ -175,6 +175,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(argc() == 2 && argv(1) === 'calendar') {
 
 			$caldavBackend = new \Sabre\CalDAV\Backend\PDO($pdo);
+			$calendars = $caldavBackend->getCalendarsForUser($principalUri);
 
 			//create new calendar
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
@@ -202,22 +203,54 @@ class Cdav extends \Zotlabs\Web\Controller {
 				set_pconfig(local_channel(), 'cdav_calendar' , $id[0], 1);
 			}
 
-			//edit calendar
+			//edit calendar name and color
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && $_REQUEST['id']) {
 
 				$id = explode(':', $_REQUEST['id']);
+				foreach($calendars as $calendar) {
+					if($id[0] == $calendar['id'][0]) {
+						$mutations = [
+							'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
+							'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color'])
+						];
 
-				$mutations = [
-					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
-					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color'])
-				];
+						$patch = new \Sabre\DAV\PropPatch($mutations);
 
-				$patch = new \Sabre\DAV\PropPatch($mutations);
+						$caldavBackend->updateCalendar($id, $patch);
 
-				$caldavBackend->updateCalendar($id, $patch);
+						$patch->commit();
+					}
+				}
 
-				$patch->commit();
+			}
 
+			//edit calendar object date/timeme via ajax request (drag and drop)
+			if($_REQUEST['update'] && $_REQUEST['id'] && $_REQUEST['uri']) {
+
+				foreach($calendars as $calendar) {
+					if($_REQUEST['id'][0] == $calendar['id'][0] && $calendar['share-access'] != 2) {
+						$object = $caldavBackend->getCalendarObject($_REQUEST['id'], $_REQUEST['uri']);
+
+						$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+
+						if($_REQUEST['update'] === 'dt') {
+							if($_REQUEST['start']) {
+								$vcalendar->VEVENT->DTSTART = date_create(dbesc($_REQUEST['start']));
+							}
+
+							if($_REQUEST['end']) {
+								$vcalendar->VEVENT->DTEND = date_create(dbesc($_REQUEST['end']));
+							}
+							else {
+								unset($vcalendar->VEVENT->DTEND);
+							}
+						}
+
+						$caldavBackend->updateCalendarObject($_REQUEST['id'], $_REQUEST['uri'], $vcalendar->serialize());
+
+						killme();
+					}
+				}
 			}
 
 			//share a calendar - this only works on local system (with channels on the same server)
@@ -320,7 +353,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					if($ret[0]['level'] < 3) {
 						do {
 							$duplicate = false;
-							$objectUri = random_string(40) . '.' . $extV ;
+							$objectUri = random_string(40) . '.' . $ext;
 
 							$r = q("SELECT uri FROM $table WHERE $column = %d AND uri = '%s' LIMIT 1",
 								dbesc($id[0]),
@@ -405,10 +438,15 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//head_add_js('library/fullcalendar/lang-all.js');
 
 			foreach($calendars as $calendar) {
+				$editable = (($calendar['share-access'] == 2) ? 'false' : 'true');  // false/true must be string since we're passing it to javascript
 				$color = (($calendar['{http://apple.com/ns/ical/}calendar-color']) ? $calendar['{http://apple.com/ns/ical/}calendar-color'] : '#3a87ad');
 				$switch = get_pconfig(local_channel(), 'cdav_calendar', $calendar['id'][0]);
 				if($switch) {
-					$sources .= '{ url: \'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\', color: \'' . $color . '\' }, ';
+					$sources .= '{
+						url: \'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\',
+						color: \'' . $color . '\',
+						editable: ' . $editable . '
+					 }, ';
 				}
 			}
 
@@ -463,6 +501,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 							$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
 							$events[] = [
+								'calendar_id' => $id,
+								'uri' => $object['uri'],
 								'title' => (string)$vcalendar->VEVENT->SUMMARY,
 								'start' => (string)$vcalendar->VEVENT->DTSTART,
 								'end' => (string)$vcalendar->VEVENT->DTEND,

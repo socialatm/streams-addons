@@ -20,6 +20,35 @@ $(document).ready(function() {
 
 		timeFormat: 'HH:mm',
 
+		eventResize: function(event, delta, revertFunc) {
+			$.post( 'cdav/calendar', {
+				'update': 'dt',
+				'id[]': event.calendar_id,
+				'uri': event.uri,
+				'start': event.start ? event.start.format() : '',
+				'end': event.end ? event.end.format() : ''
+			})
+			.fail(function() {
+				revertFunc();
+			});
+		},
+
+		eventDrop: function(event, delta, allDay, revertFunc) {
+
+			console.log(event);
+
+			$.post( 'cdav/calendar', {
+				'update': 'dt',
+				'id[]': event.calendar_id,
+				'uri': event.uri,
+				'start': event.start ? event.start.format() : '',
+				'end': event.end ? event.end.format() : ''
+			})
+			.fail(function() {
+				revertFunc();
+			});
+		},
+
 		loading: function(isLoading, view) {
 			$('#events-spinner').spin('tiny');
 			$('#events-spinner > i').css('color', 'transparent');
@@ -57,7 +86,7 @@ function changeView(action, viewName) {
 	$('#title').text(view.title);
 }
 
-function add_remove_json_source(source, color, status) {
+function add_remove_json_source(source, color, editable, status) {
 
 	if(status === undefined)
 		status = 'fa-calendar-check-o';
@@ -73,7 +102,7 @@ function add_remove_json_source(source, color, status) {
 	var selector = '#calendar-btn-' + id;
 
 	if($(selector).hasClass('fa-calendar-o')) {
-		$('#calendar').fullCalendar( 'addEventSource', { url: source, color: color });
+		$('#calendar').fullCalendar( 'addEventSource', { url: source, color: color, editable: editable });
 		$(selector).removeClass('fa-calendar-o');
 		$(selector).addClass(status);
 		$.get('/cdav/calendar/switch/' + id + '/1');

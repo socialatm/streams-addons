@@ -59,6 +59,8 @@ function widget_cdav() {
 
 			$color = (($sabrecal['{http://apple.com/ns/ical/}calendar-color']) ? $sabrecal['{http://apple.com/ns/ical/}calendar-color'] : '#3a87ad');
 
+			$editable = (($sabrecal['share-access'] == 2) ? 'false' : 'true'); // false/true must be string since we're passing it to javascript
+
 			$sharees = [];
 			$share_displayname = [];
 			foreach($invites as $invite) {
@@ -82,6 +84,7 @@ function widget_cdav() {
 					'instanceid' => $sabrecal['id'][1],
 					'json_source' => $json_source,
 					'color' => $color,
+					'editable' => $editable,
 					'switch' => $switch,
 					'sharees' => $sharees
 				];
@@ -95,6 +98,7 @@ function widget_cdav() {
 					'instanceid' => $sabrecal['id'][1],
 					'json_source' => $json_source,
 					'color' => $color,
+					'editable' => $editable,
 					'switch' => $switch,
 					'access' => $access
 				];
