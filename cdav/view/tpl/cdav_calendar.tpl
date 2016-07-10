@@ -33,7 +33,7 @@ $(document).ready(function() {
 			});
 		},
 
-		eventDrop: function(event, delta, allDay, revertFunc) {
+		eventDrop: function(event, delta, revertFunc) {
 			$.post( 'cdav/calendar', {
 				'update': 'dt',
 				'id[]': event.calendar_id,
