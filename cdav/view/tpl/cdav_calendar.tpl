@@ -34,9 +34,6 @@ $(document).ready(function() {
 		},
 
 		eventDrop: function(event, delta, allDay, revertFunc) {
-
-			console.log(event);
-
 			$.post( 'cdav/calendar', {
 				'update': 'dt',
 				'id[]': event.calendar_id,
