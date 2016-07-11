@@ -207,56 +207,56 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && $_REQUEST['id']) {
 
 				$id = explode(':', $_REQUEST['id']);
-				foreach($calendars as $calendar) {
-					if($id[0] == $calendar['id'][0]) {
-						$mutations = [
-							'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
-							'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color'])
-						];
 
-						$patch = new \Sabre\DAV\PropPatch($mutations);
+				if(! cdav_perms($id[0],$calendars))
+					return;
 
-						$caldavBackend->updateCalendar($id, $patch);
+				$mutations = [
+					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
+					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color'])
+				];
 
-						$patch->commit();
-					}
-				}
+				$patch = new \Sabre\DAV\PropPatch($mutations);
+
+				$caldavBackend->updateCalendar($id, $patch);
+
+				$patch->commit();
 
 			}
 
 			//edit calendar object date/timeme via ajax request (drag and drop)
 			if($_REQUEST['update'] && $_REQUEST['id'] && $_REQUEST['uri']) {
 
-				foreach($calendars as $calendar) {
-					if($_REQUEST['id'][0] == $calendar['id'][0] && $calendar['share-access'] != 2) {
-						$object = $caldavBackend->getCalendarObject($_REQUEST['id'], $_REQUEST['uri']);
+				if(!cdav_perms($_REQUEST['id'][0],$calendars,true))
+					return;
 
-						$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+				$object = $caldavBackend->getCalendarObject($_REQUEST['id'], $_REQUEST['uri']);
 
-						if($_REQUEST['update'] === 'dt') {
-							if($_REQUEST['start']) {
-								$vcalendar->VEVENT->DTSTART = date_create(dbesc($_REQUEST['start']));
-							}
+				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
-							if($_REQUEST['end']) {
-								$vcalendar->VEVENT->DTEND = date_create(dbesc($_REQUEST['end']));
-							}
-							else {
-								unset($vcalendar->VEVENT->DTEND);
-							}
-						}
-
-						$caldavBackend->updateCalendarObject($_REQUEST['id'], $_REQUEST['uri'], $vcalendar->serialize());
-
-						killme();
+				if($_REQUEST['update'] === 'dt') {
+					if($_REQUEST['start']) {
+						$vcalendar->VEVENT->DTSTART = date_create(dbesc($_REQUEST['start']));
+					}
+					if($_REQUEST['end']) {
+						$vcalendar->VEVENT->DTEND = date_create(dbesc($_REQUEST['end']));
+					}
+					else {
+						unset($vcalendar->VEVENT->DTEND);
 					}
 				}
+
+				$caldavBackend->updateCalendarObject($_REQUEST['id'], $_REQUEST['uri'], $vcalendar->serialize());
+				killme();
 			}
 
 			//share a calendar - this only works on local system (with channels on the same server)
 			if($_REQUEST['sharee'] && $_REQUEST['share']) {
 
 				$id = [intval($_REQUEST['calendarid']), intval($_REQUEST['instanceid'])];
+
+				if(! cdav_perms($id[0],$calendars))
+					return;
 
 				$hash = $_REQUEST['sharee'];
 
@@ -277,6 +277,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(argc() >= 2 && argv(1) === 'addressbook') {
 
 			$carddavBackend = new \Sabre\CardDAV\Backend\PDO($pdo);
+			$addressbooks = $carddavBackend->getAddressBooksForUser($principalUri);
 
 			//create new addressbook
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['create']) {
@@ -302,6 +303,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && intval($_REQUEST['id'])) {
 
 				$id = $_REQUEST['id'];
+
+				if(! cdav_perms($id,$addressbooks))
+					return;
 
 				$mutations = [
 					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname'])
@@ -478,6 +482,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			$id = [argv(3), argv(4)];
 
+			if(! cdav_perms($id[0],$calendars))
+				killme();
+
 			if (x($_GET,'start'))
 				$start = $_GET['start'];
 			if (x($_GET,'end'))
@@ -489,58 +496,52 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$filters['comp-filters'][0]['time-range']['start'] = date_create($start);
 			$filters['comp-filters'][0]['time-range']['end'] = date_create($end);
 
-			foreach($calendars as $calendar) {
-				if($id[0] == $calendar['id'][0]) {
-					$uris = $caldavBackend->calendarQuery($id, $filters);
-					if($uris) {
+			$uris = $caldavBackend->calendarQuery($id, $filters);
+			if($uris) {
 
-						$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
+				$objects = $caldavBackend->getMultipleCalendarObjects($id, $uris);
 
-						foreach($objects as $object) {
+				foreach($objects as $object) {
 
-							$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
-							$events[] = [
-								'calendar_id' => $id,
-								'uri' => $object['uri'],
-								'title' => (string)$vcalendar->VEVENT->SUMMARY,
-								'start' => (string)$vcalendar->VEVENT->DTSTART,
-								'end' => (string)$vcalendar->VEVENT->DTEND,
-								'allDay' => ((strpos((string)$vcalendar->VEVENT->DTSTART, 'T') && strpos((string)$vcalendar->VEVENT->DTEND, 'T')) ? false : true)
-							];
-						}
-
-						json_return_and_die($events);
-					}
-					else {
-
-						killme();
-					}
+					$events[] = [
+						'calendar_id' => $id,
+						'uri' => $object['uri'],
+						'title' => (string)$vcalendar->VEVENT->SUMMARY,
+						'start' => (string)$vcalendar->VEVENT->DTSTART,
+						'end' => (string)$vcalendar->VEVENT->DTEND,
+						'allDay' => ((strpos((string)$vcalendar->VEVENT->DTSTART, 'T') && strpos((string)$vcalendar->VEVENT->DTEND, 'T')) ? false : true)
+					];
 				}
-			}
 
+				json_return_and_die($events);
+			}
+			else {
+				killme();
+			}
 		}
 
 		//enable/disable calendars
 		if(argc() == 5 && argv(1) === 'calendar' && argv(2) === 'switch'  && intval(argv(3)) && (argv(4) == 1 || argv(4) == 0)) {
 			$id = argv(3);
-			foreach($calendars as $calendar) {
-				if($id == $calendar['id'][0]) {
-					set_pconfig(local_channel(), 'cdav_calendar' , argv(3), argv(4));
-					killme();
-				}
-			}
+
+			if(! cdav_perms($id,$calendars))
+				killme();
+
+			set_pconfig(local_channel(), 'cdav_calendar' , argv(3), argv(4));
+			killme();
 		}
 
 		//drop calendar
 		if(argc() == 4 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3))) {
 			$id = argv(3);
-			foreach($calendars as $calendar) {
-				if($id == $calendar['id'][0]) {
-					$caldavBackend->deleteCalendar($calendar['id']);
-					killme();
-				}
-			}
+
+			if(! cdav_perms($id,$calendars))
+				killme();
+
+			$caldavBackend->deleteCalendar($calendar['id']);
+			killme();
 		}
 
 		//drop sharee
@@ -549,20 +550,19 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$id = [argv(3), argv(4)];
 			$hash = argv(5);
 
-			foreach($calendars as $calendar) {
-				if($id[0] == $calendar['id'][0]) {
-					$sharee_arr = channelx_by_hash($hash);
+			if(! cdav_perms($id[0],$calendars))
+				killme();
 
-					$sharee = new \Sabre\DAV\Xml\Element\Sharee();
+			$sharee_arr = channelx_by_hash($hash);
 
-					$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
-					$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
-					$sharee->access = 4;
-					$caldavBackend->updateInvites($id, [$sharee]);
+			$sharee = new \Sabre\DAV\Xml\Element\Sharee();
 
-					killme();
-				}
-			}
+			$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
+			$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
+			$sharee->access = 4;
+			$caldavBackend->updateInvites($id, [$sharee]);
+
+			killme();
 		}
 
 
@@ -574,17 +574,18 @@ class Cdav extends \Zotlabs\Web\Controller {
 		//Display Adressbook here
 		if(argc() == 3 && argv(1) === 'addressbook' && intval(argv(2))) {
 
-			$o = '';
 			$id = argv(2);
 
-			foreach($addressbooks as $addressbook) {
-				if($id == $addressbook['id']) {
-					$displayname = $addressbook['{DAV:}displayname'];
-					$sabrecards = $carddavBackend->getCards($addressbook['id']);
-					foreach($sabrecards as $sabrecard) {
-						$uris[] = $sabrecard['uri'];
-					}
-				}
+			$displayname = cdav_perms($id,$addressbooks);
+
+			if(!$displayname)
+				return;
+
+			$o = '';
+
+			$sabrecards = $carddavBackend->getCards($id);
+			foreach($sabrecards as $sabrecard) {
+				$uris[] = $sabrecard['uri'];
 			}
 
 			if($uris) {
@@ -645,12 +646,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 		//delete addressbook
 		if(argc() > 3 && argv(1) === 'addressbook' && argv(2) === 'drop' && intval(argv(3))) {
 			$id = argv(3);
-			foreach($addressbooks as $addressbook) {
-				if($id == $addressbook['id']) {
-					$carddavBackend->deleteAddressBook($addressbook['id']);
-					killme();
-				}
-			}
+
+			if(! cdav_perms($id,$addressbooks))
+				return;
+
+			$carddavBackend->deleteAddressBook($id);
+			killme();
 		}
 
 	}
