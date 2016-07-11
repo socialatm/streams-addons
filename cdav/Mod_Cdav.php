@@ -459,6 +459,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$first_day = get_pconfig(local_channel(),'system','cal_first_day');
 			$first_day = (($first_day) ? $first_day : 0);
 
+			$title = ['title', t('Event title')];
+			$dtstart = ['dtstart', t('Start date and time')];
+			$dtend = ['dtend', t('End date and time')];
+
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), [
 				'$sources' => $sources,
 				'$color' => $color,
@@ -470,7 +474,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$view_label' => t('View'),
 				'$month' => t('Month'),
 				'$week' => t('Week'),
-				'$day' => t('Day')
+				'$day' => t('Day'),
+				'$title' => $title,
+				'$dtstart' => $dtstart,
+				'$dtend' => $dtend
 			]);
 
 			return $o;

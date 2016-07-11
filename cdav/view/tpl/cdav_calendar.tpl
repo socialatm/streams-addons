@@ -3,6 +3,10 @@
 <script language="javascript" type="text/javascript" src="/library/fullcalendar/lang-all.js"></script>
 
 <script>
+
+var new_event = [];
+var new_event_id = Math.random().toString(36).substring(7);
+
 $(document).ready(function() {
 	$('#calendar').fullCalendar({
 		eventSources: [ {{$sources}} ],
@@ -20,7 +24,51 @@ $(document).ready(function() {
 
 		timeFormat: 'HH:mm',
 
-		eventResize: function(event, delta, revertFunc) {
+		dayClick: function(date, jsEvent, view) {
+			if(new_event.length)
+				$('#calendar').fullCalendar( 'removeEventSource', new_event);
+
+			$('.section-content-tools-wrapper').show();
+			$('#id_title').val('New event');
+			$('#id_dtstart').val(date.format());
+			$('#id_dtend').val(view.name === 'month' ? date.add(1, 'days').format() : date.add(1, 'hours').format());
+			$('#event_submit').val('create').html('Create');
+
+			new_event = [{ id: new_event_id, title  : 'New event', start: $('#id_dtstart').val(), end: $('#id_dtend').val(), editable: true }]
+			$('#calendar').fullCalendar( 'addEventSource', new_event);
+		},
+
+		eventClick: function(event, jsEvent, view) {
+
+			if(event.id == new_event_id)
+				return false;
+
+			if(new_event.length)
+				$('#calendar').fullCalendar( 'removeEventSource', new_event);
+
+			if(event.source.editable) {
+				$('.section-content-tools-wrapper').show();
+				$('#id_title').val(event.title);
+				$('#id_dtstart').val(event.start.format());
+				$('#id_dtend').val(event.end ? event.end.format() : '');
+				$('#event_submit').val('update').html('Update');
+			}
+			else {
+				$('.section-content-tools-wrapper').hide();
+				$('#id_title').val('');
+				$('#id_dtstart').val('');
+				$('#id_dtend').val('');
+			}
+
+		},
+
+		eventResize: function(event, revertFunc) {
+
+			if(new_event.length) {
+				$('#id_dtstart').val(event.start.format());
+				$('#id_dtend').val(event.end.format());
+			}
+
 			$.post( 'cdav/calendar', {
 				'update': 'dt',
 				'id[]': event.calendar_id,
@@ -33,7 +81,13 @@ $(document).ready(function() {
 			});
 		},
 
-		eventDrop: function(event, delta, revertFunc) {
+		eventDrop: function(event, allDay, revertFunc) {
+
+			if(new_event.length) {
+				$('#id_dtstart').val(event.start.format());
+				$('#id_dtend').val(event.end ? event.end.format() : '');
+			}
+
 			$.post( 'cdav/calendar', {
 				'update': 'dt',
 				'id[]': event.calendar_id,
@@ -64,6 +118,8 @@ $(document).ready(function() {
 
 	$(document).on('click','#fullscreen-btn', on_fullscreen);
 	$(document).on('click','#inline-btn', on_inline);
+
+	$(document).on('click','#event_cancel', on_cancel);
 });
 
 function changeView(action, viewName) {
@@ -120,6 +176,16 @@ function on_inline() {
 	var view = $('#calendar').fullCalendar('getView');
 	((view.type === 'month') ? $('#calendar').fullCalendar('option', 'height', '') : $('#calendar').fullCalendar('option', 'height', 'auto'));
 }
+
+function on_cancel() {
+	if(new_event.length) {
+		$('#calendar').fullCalendar( 'removeEventSource', new_event);
+	}
+	$('.section-content-tools-wrapper').hide();
+	$('#id_title').val('');
+	$('#id_dtstart').val('');
+	$('#id_dtend').val('');
+}
 </script>
 
 <div class="generic-content-wrapper">
@@ -144,7 +210,19 @@ function on_inline() {
 		<h2 id="title"></h2>
 		<div class="clear"></div>
 	</div>
-	<div class="clear"></div>
+	<div class="section-content-tools-wrapper" style="display: none">
+		<form method="post" action="">
+			{{include file="field_input.tpl" field=$title}}
+			{{include file="field_input.tpl" field=$dtstart}}
+			{{include file="field_input.tpl" field=$dtend}}
+			<div class="form-group pull-right">
+				<button id="event_submit" type="submit" name="submit" value="" class="btn btn-primary btn-sm"></button>
+				<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
+
+			</div>
+			<div class="clear"></div>
+		</form>
+	</div>
 	<div class="section-content-wrapper-np">
 		<div id="calendar"></div>
 	</div>
