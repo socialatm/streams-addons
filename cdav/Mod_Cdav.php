@@ -228,6 +228,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$duplicate = true;
 				} while ($duplicate == true);
 
+
 				$vcalendar = new \Sabre\VObject\Component\VCalendar([
 				    'VEVENT' => [
 					'SUMMARY' => $title,
@@ -237,6 +238,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 				]);
 
 				$calendarData = $vcalendar->serialize();
+
+				//print_r($calendarData); killme();
 
 				$caldavBackend->createCalendarObject($id, $objectUri, $calendarData);
 			}
@@ -259,6 +262,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$caldavBackend->updateCalendar($id, $patch);
 
 				$patch->commit();
+
 			}
 
 			//edit calendar object
@@ -271,8 +275,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$uri = dbesc($_REQUEST['uri']);
 				$title = dbesc($_REQUEST['title']);
-				$dtstart = date_create(dbesc($_REQUEST['dtstart']));
-				$dtend = $_REQUEST['dtend'] ? date_create(dbesc($_REQUEST['dtend'])) : '';
+				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
+				$dtend = $_REQUEST['dtend'] ? new \DateTime(dbesc($_REQUEST['dtend'])) : '';
 
 				$object = $caldavBackend->getCalendarObject($id, $uri);
 
@@ -308,6 +312,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$uri = dbesc($_REQUEST['uri']);
 
 				$caldavBackend->deleteCalendarObject($id, $uri);
+
 			}
 
 			//edit calendar object date/timeme via ajax request (drag and drop)
@@ -319,8 +324,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 					return;
 
 				$uri = dbesc($_REQUEST['uri']);
-				$dtstart = date_create(dbesc($_REQUEST['dtstart']));
-				$dtend = $_REQUEST['dtend'] ? date_create(dbesc($_REQUEST['dtend'])) : '';
+				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
+				$dtend = $_REQUEST['dtend'] ? new \DateTime(dbesc($_REQUEST['dtend'])) : '';
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
@@ -413,6 +418,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$carddavBackend->updateAddressBook($id, $patch);
 
 				$patch->commit();
+
 			}
 		}
 
@@ -610,8 +616,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$filters['name'] = 'VCALENDAR';
 			$filters['prop-filters'][0]['name'] = 'VEVENT';
 			$filters['comp-filters'][0]['name'] = 'VEVENT';
-			$filters['comp-filters'][0]['time-range']['start'] = date_create($start);
-			$filters['comp-filters'][0]['time-range']['end'] = date_create($end);
+			$filters['comp-filters'][0]['time-range']['start'] = new \DateTime($start);
+			$filters['comp-filters'][0]['time-range']['end'] = new \DateTime($end);
 
 			$uris = $caldavBackend->calendarQuery($id, $filters);
 			if($uris) {

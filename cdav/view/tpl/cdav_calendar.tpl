@@ -77,8 +77,8 @@ $(document).ready(function() {
 				'update': 'dt',
 				'id[]': event.calendar_id,
 				'uri': event.uri,
-				'start': event.start ? event.start.format() : '',
-				'end': event.end ? event.end.format() : ''
+				'dtstart': event.start ? event.start.format() : '',
+				'dtend': event.end ? event.end.format() : ''
 			})
 			.fail(function() {
 				revertFunc();
@@ -95,8 +95,8 @@ $(document).ready(function() {
 				'update': 'dt',
 				'id[]': event.calendar_id,
 				'uri': event.uri,
-				'start': event.start ? event.start.format() : '',
-				'end': event.end ? event.end.format() : ''
+				'dtstart': event.start ? event.start.format() : '',
+				'dtend': event.end ? event.end.format() : ''
 			})
 			.fail(function() {
 				revertFunc();
