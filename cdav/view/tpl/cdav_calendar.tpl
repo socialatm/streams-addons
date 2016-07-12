@@ -51,7 +51,7 @@ $(document).ready(function() {
 				return false;
 			}
 
-			if(new_event.length)
+			if(new_event.length && event.source.editable)
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 
 			if(event.source.editable) {
