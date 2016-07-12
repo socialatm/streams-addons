@@ -10,7 +10,7 @@ function xmpp_load() {
 	register_hook('feature_settings', 'addon/xmpp/xmpp.php', 'xmpp_plugin_settings');
 	register_hook('feature_settings_post', 'addon/xmpp/xmpp.php', 'xmpp_plugin_settings_post');
 	register_hook('page_end', 'addon/xmpp/xmpp.php', 'xmpp_script');
-	register_hook('logged_in', 'addon/xmpp/xmpp.php', 'xmpp_login');
+	register_hook('change_channel', 'addon/xmpp/xmpp.php', 'xmpp_login');
 }
 
 function xmpp_unload() {
@@ -18,6 +18,7 @@ function xmpp_unload() {
 	unregister_hook('feature_settings_post', 'addon/xmpp/xmpp.php', 'xmpp_plugin_settings_post');
 	unregister_hook('page_end', 'addon/xmpp/xmpp.php', 'xmpp_script');
 	unregister_hook('logged_in', 'addon/xmpp/xmpp.php', 'xmpp_login');
+	unregister_hook('change_channel', 'addon/xmpp/xmpp.php', 'xmpp_login');
 }
 
 function xmpp_plugin_settings_post($a,$post) {
@@ -74,15 +75,11 @@ function xmpp_plugin_settings(&$a,&$s) {
 
 function xmpp_login($a,$b) {
 
-	// The 'logged_in' hook is called when authenticating the account. 
-	// Whether or not the account is logged into a channel is another
-	// matter entirely. 
-
 	if(! local_channel())
 		return;
 
 	if (! $_SESSION['allow_api']) {
-		$password = substr(random_string(),0,16);
+		$password = substr(random_string(16));
 		set_pconfig(local_channel(), "xmpp", "password", $password);
 	}
 }
