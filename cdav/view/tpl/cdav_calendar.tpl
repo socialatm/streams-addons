@@ -25,6 +25,7 @@ $(document).ready(function() {
 		timeFormat: 'HH:mm',
 
 		dayClick: function(date, jsEvent, view) {
+
 			if(new_event.length)
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 
@@ -35,7 +36,7 @@ $(document).ready(function() {
 			$('#calendar_select').val($("#calendar_select option:first").val()).attr('disabled', false);
 			$('#static_target').val('');
 			$('#id_dtstart').val(date.format());
-			$('#id_dtend').val(view.name === 'month' ? date.add(1, 'days').format() : date.add(1, 'hours').format());
+			$('#id_dtend').val(date.hasTime() ? date.add(1, 'hours').format() : '');
 			$('#event_submit').val('create_event').html('Create');
 			$('#event_delete').hide();
 
@@ -67,7 +68,7 @@ $(document).ready(function() {
 			}
 		},
 
-		eventResize: function(event, revertFunc) {
+		eventResize: function(event, delta, revertFunc) {
 
 			$('#id_title').val(event.title);
 			$('#id_dtstart').val(event.start.format());
@@ -85,7 +86,7 @@ $(document).ready(function() {
 			});
 		},
 
-		eventDrop: function(event, allDay, revertFunc) {
+		eventDrop: function(event, delta, revertFunc) {
 
 			$('#id_title').val(event.title);
 			$('#id_dtstart').val(event.start.format());

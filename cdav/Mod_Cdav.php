@@ -213,7 +213,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$title = dbesc($_REQUEST['title']);
 				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
-				$dtend = new \DateTime(dbesc($_REQUEST['dtend']));
+				if($_REQUEST['dtend'])
+					$dtend = new \DateTime(dbesc($_REQUEST['dtend']));
 
 				do {
 					$duplicate = false;
@@ -232,14 +233,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$vcalendar = new \Sabre\VObject\Component\VCalendar([
 				    'VEVENT' => [
 					'SUMMARY' => $title,
-					'DTSTART' => $dtstart,
-					'DTEND'   => $dtend
+					'DTSTART' => $dtstart
 				    ]
 				]);
+				if($dtend)
+					$vcalendar->VEVENT->add('DTEND', $dtend);
 
 				$calendarData = $vcalendar->serialize();
-
-				//print_r($calendarData); killme();
 
 				$caldavBackend->createCalendarObject($id, $objectUri, $calendarData);
 			}
