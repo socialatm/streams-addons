@@ -536,7 +536,7 @@ function diaspora_post($importer,$xml,$msg) {
 	$created = unxmlify($xml['created_at']);
 	$private = ((unxmlify($xml['public']) == 'false') ? 1 : 0);
 
-	$body = diaspora2bb($xml['raw_message']);
+	$body = diaspora2bb(diaspora_get_body($xml));
 
 	if($xml['photo']) {
 		$body = '[img]' . $xml['photo']['remote_photo_path'] . $xml['photo']['remote_photo_name'] . '[/img]' . "\n\n" . $body;
@@ -753,7 +753,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 	$source_xml = get_diaspora_reshare_xml($source_url);
 
 	if($source_xml['status_message']) {
-		$body = diaspora2bb($source_xml['status_message']['raw_message']);
+		$body = diaspora2bb(diaspora_get_body($source_xml['status_message']));
 
 		
 		$orig_author = diaspora_get_author($source_xml['status_message']);
@@ -2120,6 +2120,15 @@ function diaspora_get_recipient($xml) {
 		return unxmlify($xml['recipient_handle']);
 	elseif(array_key_exists('recipient',$xml))
 		return unxmlify($xml['recipient']);
+	else
+		return '';
+}
+
+function diaspora_get_body($xml) {
+	if(array_key_exists('raw_message',$xml))
+		return unxmlify($xml['raw_message']);
+	elseif(array_key_exists('text',$xml))
+		return unxmlify($xml['text']);
 	else
 		return '';
 }

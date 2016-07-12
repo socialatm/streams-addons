@@ -14,13 +14,14 @@ function tour_module(){};
 function tour_load() {
 	register_hook('page_header','addon/tour/tour.php','tour_alterheader');
 	register_hook('page_end','addon/tour/tour.php','tour_addfooter');
-	register_hook('register_account','addon/tour/tour.php','tour_register');
+	register_hook('create_identity','addon/tour/tour.php','tour_register');
 }
 
 function tour_unload() {
 	unregister_hook('page_header','addon/tour/tour.php','tour_alterheader');
 	unregister_hook('page_end','addon/tour/tour.php','tour_addfooter');
-	unregister_hook('register_account','addon/tour/tour.php','tour_register');
+	unregister_hook('register_account','addon/tour/tour.php','tour_register'); 
+	unregister_hook('create_identity','addon/tour/tour.php','tour_register');
 }
 
 function tour_alterheader($a, &$navHtml) {
@@ -174,6 +175,7 @@ EOD;
 
 function tour_register($a, $uid) {
 	// Show tour for new users
+
 	set_pconfig($uid, 'tour', 'showtour', 1);
 }
-?>
+

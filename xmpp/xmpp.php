@@ -73,6 +73,14 @@ function xmpp_plugin_settings(&$a,&$s) {
 }
 
 function xmpp_login($a,$b) {
+
+	// The 'logged_in' hook is called when authenticating the account. 
+	// Whether or not the account is logged into a channel is another
+	// matter entirely. 
+
+	if(! local_channel())
+		return;
+
 	if (! $_SESSION['allow_api']) {
 		$password = substr(random_string(),0,16);
 		set_pconfig(local_channel(), "xmpp", "password", $password);
