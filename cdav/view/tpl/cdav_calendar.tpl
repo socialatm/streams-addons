@@ -29,45 +29,52 @@ $(document).ready(function() {
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 
 			$('.section-content-tools-wrapper').show();
+
+			$('#event_uri').val('');
 			$('#id_title').val('New event');
+			$('#calendar_select').val($("#calendar_select option:first").val()).attr('disabled', false);
+			$('#static_target').val('');
 			$('#id_dtstart').val(date.format());
 			$('#id_dtend').val(view.name === 'month' ? date.add(1, 'days').format() : date.add(1, 'hours').format());
-			$('#event_submit').val('create').html('Create');
+			$('#event_submit').val('create_event').html('Create');
+			$('#event_delete').hide();
 
-			new_event = [{ id: new_event_id, title  : 'New event', start: $('#id_dtstart').val(), end: $('#id_dtend').val(), editable: true }]
+			new_event = [{ id: new_event_id, title  : 'New event', start: $('#id_dtstart').val(), end: $('#id_dtend').val(), editable: true, color: '#bbb' }]
 			$('#calendar').fullCalendar( 'addEventSource', new_event);
 		},
 
 		eventClick: function(event, jsEvent, view) {
 
-			if(event.id == new_event_id)
+			console.log(event);
+
+			if(event.id == new_event_id) {
+				$(window).scrollTop(0);
+				$('#id_title').focus().val('');
 				return false;
+			}
 
 			if(new_event.length)
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 
 			if(event.source.editable) {
 				$('.section-content-tools-wrapper').show();
+				$('#event_uri').val(event.uri);
 				$('#id_title').val(event.title);
+				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
+				$('#static_target').val(event.calendar_id[0] + ':' + event.calendar_id[1]);
 				$('#id_dtstart').val(event.start.format());
 				$('#id_dtend').val(event.end ? event.end.format() : '');
-				$('#event_submit').val('update').html('Update');
-			}
-			else {
-				$('.section-content-tools-wrapper').hide();
-				$('#id_title').val('');
-				$('#id_dtstart').val('');
-				$('#id_dtend').val('');
+				$('#event_submit').val('update_event').html('Update');
+				$('#event_delete').show();
 			}
 
 		},
 
 		eventResize: function(event, revertFunc) {
 
-			if(new_event.length) {
-				$('#id_dtstart').val(event.start.format());
-				$('#id_dtend').val(event.end.format());
-			}
+			$('#id_title').val(event.title);
+			$('#id_dtstart').val(event.start.format());
+			$('#id_dtend').val(event.end.format());
 
 			$.post( 'cdav/calendar', {
 				'update': 'dt',
@@ -83,10 +90,9 @@ $(document).ready(function() {
 
 		eventDrop: function(event, allDay, revertFunc) {
 
-			if(new_event.length) {
-				$('#id_dtstart').val(event.start.format());
-				$('#id_dtend').val(event.end ? event.end.format() : '');
-			}
+			$('#id_title').val(event.title);
+			$('#id_dtstart').val(event.start.format());
+			$('#id_dtend').val(event.end ? event.end.format() : '');
 
 			$.post( 'cdav/calendar', {
 				'update': 'dt',
@@ -212,15 +218,27 @@ function on_cancel() {
 	</div>
 	<div class="section-content-tools-wrapper" style="display: none">
 		<form method="post" action="">
+			<input id="event_uri" type="hidden" name="uri" value="">
 			{{include file="field_input.tpl" field=$title}}
+			<label for="calendar_select">Select calendar</label>
+			<select id="calendar_select" name="target" class="form-control form-group">
+				{{foreach $writable_calendars as $writable_calendar}}
+				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}</option>
+				{{/foreach}}
+			</select>
+			<input id="static_target" type="hidden" name="static_target" value="">
 			{{include file="field_input.tpl" field=$dtstart}}
 			{{include file="field_input.tpl" field=$dtend}}
-			<div class="form-group pull-right">
-				<button id="event_submit" type="submit" name="submit" value="" class="btn btn-primary btn-sm"></button>
-				<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
-
+			<div class="form-group">
+				<div class="pull-right">
+					<button id="event_submit" type="submit" name="submit" value="" class="btn btn-primary btn-sm"></button>
+					<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
+				</div>
+				<div>
+					<button id="event_delete" type="submit" name="delete" value="delete" class="btn btn-danger btn-sm">Delete</button>
+				</div>
+				<div class="clear"></div>
 			</div>
-			<div class="clear"></div>
 		</form>
 	</div>
 	<div class="section-content-wrapper-np">

@@ -203,10 +203,51 @@ class Cdav extends \Zotlabs\Web\Controller {
 				set_pconfig(local_channel(), 'cdav_calendar' , $id[0], 1);
 			}
 
+			//create new calendar object
+			if($_REQUEST['submit'] === 'create_event' && $_REQUEST['title'] && $_REQUEST['target'] && $_REQUEST['dtstart']) {
+
+				$id = explode(':', dbesc($_REQUEST['target']));
+
+				if(!cdav_perms($id[0],$calendars,true))
+					return;
+
+				$title = dbesc($_REQUEST['title']);
+				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
+				$dtend = new \DateTime(dbesc($_REQUEST['dtend']));
+
+				do {
+					$duplicate = false;
+					$objectUri = random_string(40) . '.ics';
+
+					$r = q("SELECT uri FROM calendarobjects WHERE calendarid = %s AND uri = '%s' LIMIT 1",
+						intval($id[0]),
+						dbesc($objectUri)
+					);
+
+					if (count($r))
+						$duplicate = true;
+				} while ($duplicate == true);
+
+
+				$vcalendar = new \Sabre\VObject\Component\VCalendar([
+				    'VEVENT' => [
+					'SUMMARY' => $title,
+					'DTSTART' => $dtstart,
+					'DTEND'   => $dtend
+				    ]
+				]);
+
+				$calendarData = $vcalendar->serialize();
+
+				//print_r($calendarData); killme();
+
+				$caldavBackend->createCalendarObject($id, $objectUri, $calendarData);
+			}
+
 			//edit calendar name and color
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && $_REQUEST['id']) {
 
-				$id = explode(':', $_REQUEST['id']);
+				$id = explode(':', dbesc($_REQUEST['id']));
 
 				if(! cdav_perms($id[0],$calendars))
 					return;
@@ -224,29 +265,90 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			}
 
+			//edit calendar object
+			if($_REQUEST['submit'] === 'update_event' && $_REQUEST['uri'] && $_REQUEST['title'] && $_REQUEST['static_target'] && $_REQUEST['dtstart']) {
+
+				$id = explode(':', dbesc($_REQUEST['static_target']));
+
+				if(!cdav_perms($id[0],$calendars,true))
+					return;
+
+				$uri = dbesc($_REQUEST['uri']);
+				$title = dbesc($_REQUEST['title']);
+				$dtstart = date_create(dbesc($_REQUEST['dtstart']));
+				$dtend = $_REQUEST['dtend'] ? date_create(dbesc($_REQUEST['dtend'])) : '';
+
+				$object = $caldavBackend->getCalendarObject($id, $uri);
+
+				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+
+				if($title) {
+					$vcalendar->VEVENT->SUMMARY = $title;
+				}
+				if($dtstart) {
+					$vcalendar->VEVENT->DTSTART = $dtstart;
+				}
+				if($dtend) {
+					$vcalendar->VEVENT->DTEND = $dtend;
+				}
+				else {
+					unset($vcalendar->VEVENT->DTEND);
+				}
+
+				$calendarData = $vcalendar->serialize();
+
+				$caldavBackend->updateCalendarObject($id, $uri, $calendarData);
+
+			}
+
+			//delete calendar object
+			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['static_target']) {
+
+				$id = explode(':', dbesc($_REQUEST['static_target']));
+
+				if(!cdav_perms($id[0],$calendars,true))
+					return;
+
+				$uri = dbesc($_REQUEST['uri']);
+
+				$caldavBackend->deleteCalendarObject($id, $uri);
+
+			}
+
 			//edit calendar object date/timeme via ajax request (drag and drop)
 			if($_REQUEST['update'] && $_REQUEST['id'] && $_REQUEST['uri']) {
 
-				if(!cdav_perms($_REQUEST['id'][0],$calendars,true))
+				$id = [dbesc($_REQUEST['id'][0]), dbesc($_REQUEST['id'][1])];
+
+				if(!cdav_perms($id[0],$calendars,true))
 					return;
 
-				$object = $caldavBackend->getCalendarObject($_REQUEST['id'], $_REQUEST['uri']);
+				$uri = dbesc($_REQUEST['uri']);
+				$dtstart = date_create(dbesc($_REQUEST['dtstart']));
+				$dtend = $_REQUEST['dtend'] ? date_create(dbesc($_REQUEST['dtend'])) : '';
+
+				if(!cdav_perms($id[0],$calendars,true))
+					return;
+
+				$object = $caldavBackend->getCalendarObject($id, $uri);
 
 				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
 				if($_REQUEST['update'] === 'dt') {
-					if($_REQUEST['start']) {
-						$vcalendar->VEVENT->DTSTART = date_create(dbesc($_REQUEST['start']));
+					if($dtstart) {
+						$vcalendar->VEVENT->DTSTART = $dtstart;
 					}
-					if($_REQUEST['end']) {
-						$vcalendar->VEVENT->DTEND = date_create(dbesc($_REQUEST['end']));
+					if($dtend) {
+						$vcalendar->VEVENT->DTEND = $dtend;
 					}
 					else {
 						unset($vcalendar->VEVENT->DTEND);
 					}
 				}
 
-				$caldavBackend->updateCalendarObject($_REQUEST['id'], $_REQUEST['uri'], $vcalendar->serialize());
+				$calendarData = $vcalendar->serialize();
+
+				$caldavBackend->updateCalendarObject($id, $uri, $calendarData);
 				killme();
 			}
 
@@ -328,7 +430,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if($src) {
 
 				if($_REQUEST['c_upload']) {
-					$id = explode(':', $_REQUEST['target']);
+					$id = explode(':', dbesc($_REQUEST['target']));
 					$ext = 'ics';
 					$table = 'calendarobjects';
 					$column = 'calendarid';
@@ -463,6 +565,19 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$dtstart = ['dtstart', t('Start date and time')];
 			$dtend = ['dtend', t('End date and time')];
 
+
+
+			foreach($calendars as $calendar) {
+				if($calendar['share-access'] != 2) {
+					$writable_calendars[] = [
+						'displayname' => $calendar['{DAV:}displayname'],
+						'id' => $calendar['id']
+					];
+				}
+			}
+
+
+
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), [
 				'$sources' => $sources,
 				'$color' => $color,
@@ -476,6 +591,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$week' => t('Week'),
 				'$day' => t('Day'),
 				'$title' => $title,
+				'$writable_calendars' => $writable_calendars,
 				'$dtstart' => $dtstart,
 				'$dtend' => $dtend
 			]);
