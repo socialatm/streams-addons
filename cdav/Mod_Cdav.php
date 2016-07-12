@@ -228,7 +228,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$duplicate = true;
 				} while ($duplicate == true);
 
-
 				$vcalendar = new \Sabre\VObject\Component\VCalendar([
 				    'VEVENT' => [
 					'SUMMARY' => $title,
@@ -238,8 +237,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				]);
 
 				$calendarData = $vcalendar->serialize();
-
-				//print_r($calendarData); killme();
 
 				$caldavBackend->createCalendarObject($id, $objectUri, $calendarData);
 			}
@@ -262,7 +259,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$caldavBackend->updateCalendar($id, $patch);
 
 				$patch->commit();
-
 			}
 
 			//edit calendar object
@@ -312,7 +308,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$uri = dbesc($_REQUEST['uri']);
 
 				$caldavBackend->deleteCalendarObject($id, $uri);
-
 			}
 
 			//edit calendar object date/timeme via ajax request (drag and drop)
@@ -418,7 +413,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$carddavBackend->updateAddressBook($id, $patch);
 
 				$patch->commit();
-
 			}
 		}
 

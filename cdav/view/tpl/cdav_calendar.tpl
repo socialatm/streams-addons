@@ -45,8 +45,6 @@ $(document).ready(function() {
 
 		eventClick: function(event, jsEvent, view) {
 
-			console.log(event);
-
 			if(event.id == new_event_id) {
 				$(window).scrollTop(0);
 				$('#id_title').focus().val('');
@@ -67,7 +65,6 @@ $(document).ready(function() {
 				$('#event_submit').val('update_event').html('Update');
 				$('#event_delete').show();
 			}
-
 		},
 
 		eventResize: function(event, revertFunc) {
