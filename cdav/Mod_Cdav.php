@@ -657,13 +657,13 @@ class Cdav extends \Zotlabs\Web\Controller {
 		}
 
 		//drop calendar
-		if(argc() == 4 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3))) {
-			$id = argv(3);
+		if(argc() == 5 && argv(1) === 'calendar' && argv(2) === 'drop' && intval(argv(3)) && intval(argv(4))) {
+			$id = [argv(3), argv(4)];
 
-			if(! cdav_perms($id,$calendars))
+			if(! cdav_perms($id[0],$calendars))
 				killme();
 
-			$caldavBackend->deleteCalendar($calendar['id']);
+			$caldavBackend->deleteCalendar($id);
 			killme();
 		}
 
@@ -760,9 +760,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					'$cards' => $cards,
 					'$displayname' => $displayname
 				]);
-
 			}
-
 			return $o;
 		}
 
@@ -776,7 +774,5 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$carddavBackend->deleteAddressBook($id);
 			killme();
 		}
-
 	}
-
 }
