@@ -565,8 +565,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$dtstart = ['dtstart', t('Start date and time')];
 			$dtend = ['dtend', t('End date and time')];
 
-
-
 			foreach($calendars as $calendar) {
 				if($calendar['share-access'] != 2) {
 					$writable_calendars[] = [
@@ -575,8 +573,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 					];
 				}
 			}
-
-
 
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), [
 				'$sources' => $sources,
@@ -628,13 +624,25 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
+					$title = (string)$vcalendar->VEVENT->SUMMARY;
+					$dtstart = (string)$vcalendar->VEVENT->DTSTART;
+					$dtend = (string)$vcalendar->VEVENT->DTEND;
+
+					$allDay = false;
+
+					// allDay event rules
+					if(strpos($dtstart, 'T000000') || !strpos($dtstart, 'T') && !$dtend)
+						$allDay = true;
+					if(strpos($dtstart, 'T000000') && strpos($dtend, 'T000000'))
+						$allDay = true;
+
 					$events[] = [
 						'calendar_id' => $id,
 						'uri' => $object['uri'],
 						'title' => (string)$vcalendar->VEVENT->SUMMARY,
 						'start' => (string)$vcalendar->VEVENT->DTSTART,
 						'end' => (string)$vcalendar->VEVENT->DTEND,
-						'allDay' => ((strpos((string)$vcalendar->VEVENT->DTSTART, 'T') && strpos((string)$vcalendar->VEVENT->DTEND, 'T')) ? false : true)
+						'allDay' => $allDay
 					];
 				}
 

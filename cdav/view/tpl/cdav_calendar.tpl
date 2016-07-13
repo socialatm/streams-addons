@@ -23,6 +23,7 @@ $(document).ready(function() {
 		allDayText: aStr['allday'],
 
 		timeFormat: 'HH:mm',
+		defaultTimedEventDuration: '01:00:00',
 
 		dayClick: function(date, jsEvent, view) {
 
@@ -124,6 +125,7 @@ $(document).ready(function() {
 	$(document).on('click','#inline-btn', on_inline);
 
 	$(document).on('click','#event_cancel', on_cancel);
+	$(document).on('click','#event_more', on_more);
 });
 
 function changeView(action, viewName) {
@@ -190,6 +192,17 @@ function on_cancel() {
 	$('#id_dtstart').val('');
 	$('#id_dtend').val('');
 }
+
+function on_more() {
+	if($('#more_block').hasClass('open')) {
+		$('#event_more').html('<i class="fa fa-caret-down"></i> More');
+		$('#more_block').removeClass('open').hide();
+	}
+	else {
+		$('#event_more').html('<i class="fa fa-caret-up"></i> Less');
+		$('#more_block').addClass('open').show();
+	}
+}
 </script>
 
 <div class="generic-content-wrapper">
@@ -225,8 +238,10 @@ function on_cancel() {
 				{{/foreach}}
 			</select>
 			<input id="static_target" type="hidden" name="static_target" value="">
-			{{include file="field_input.tpl" field=$dtstart}}
-			{{include file="field_input.tpl" field=$dtend}}
+			<div id="more_block" style="display: none;">
+				{{include file="field_input.tpl" field=$dtstart}}
+				{{include file="field_input.tpl" field=$dtend}}
+			</div>
 			<div class="form-group">
 				<div class="pull-right">
 					<button id="event_submit" type="submit" name="submit" value="" class="btn btn-primary btn-sm"></button>
@@ -234,6 +249,7 @@ function on_cancel() {
 				</div>
 				<div>
 					<button id="event_delete" type="submit" name="delete" value="delete" class="btn btn-danger btn-sm">Delete</button>
+					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> More</button>
 				</div>
 				<div class="clear"></div>
 			</div>
