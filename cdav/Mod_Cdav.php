@@ -203,7 +203,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				set_pconfig(local_channel(), 'cdav_calendar' , $id[0], 1);
 			}
 
-			//create new calendar object
+			//create new calendar object via ajax request
 			if($_REQUEST['submit'] === 'create_event' && $_REQUEST['title'] && $_REQUEST['target'] && $_REQUEST['dtstart']) {
 
 				$id = explode(':', dbesc($_REQUEST['target']));
@@ -242,6 +242,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$calendarData = $vcalendar->serialize();
 
 				$caldavBackend->createCalendarObject($id, $objectUri, $calendarData);
+
+				killme();
 			}
 
 			//edit calendar name and color
@@ -265,7 +267,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			}
 
-			//edit calendar object
+			//edit calendar object via ajax request
 			if($_REQUEST['submit'] === 'update_event' && $_REQUEST['uri'] && $_REQUEST['title'] && $_REQUEST['static_target'] && $_REQUEST['dtstart']) {
 
 				$id = explode(':', dbesc($_REQUEST['static_target']));
@@ -299,9 +301,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$caldavBackend->updateCalendarObject($id, $uri, $calendarData);
 
+				killme();
 			}
 
-			//delete calendar object
+			//delete calendar object via ajax request
 			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['static_target']) {
 
 				$id = explode(':', dbesc($_REQUEST['static_target']));
@@ -313,6 +316,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$caldavBackend->deleteCalendarObject($id, $uri);
 
+				killme();
 			}
 
 			//edit calendar object date/timeme via ajax request (drag and drop)
@@ -334,21 +338,20 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
-				if($_REQUEST['update'] === 'dt') {
-					if($dtstart) {
-						$vcalendar->VEVENT->DTSTART = $dtstart;
-					}
-					if($dtend) {
-						$vcalendar->VEVENT->DTEND = $dtend;
-					}
-					else {
-						unset($vcalendar->VEVENT->DTEND);
-					}
+				if($dtstart) {
+					$vcalendar->VEVENT->DTSTART = $dtstart;
+				}
+				if($dtend) {
+					$vcalendar->VEVENT->DTEND = $dtend;
+				}
+				else {
+					unset($vcalendar->VEVENT->DTEND);
 				}
 
 				$calendarData = $vcalendar->serialize();
 
 				$caldavBackend->updateCalendarObject($id, $uri, $calendarData);
+
 				killme();
 			}
 
@@ -418,7 +421,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$carddavBackend->updateAddressBook($id, $patch);
 
 				$patch->commit();
-
 			}
 		}
 

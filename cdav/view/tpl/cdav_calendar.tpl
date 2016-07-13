@@ -77,7 +77,7 @@ $(document).ready(function() {
 			$('#id_dtend').val(event.end.format());
 
 			$.post( 'cdav/calendar', {
-				'update': 'dt',
+				'update': 'resize',
 				'id[]': event.calendar_id,
 				'uri': event.uri,
 				'dtstart': event.start ? event.start.format() : '',
@@ -95,7 +95,7 @@ $(document).ready(function() {
 			$('#id_dtend').val(event.end ? event.end.format() : '');
 
 			$.post( 'cdav/calendar', {
-				'update': 'dt',
+				'update': 'drop',
 				'id[]': event.calendar_id,
 				'uri': event.uri,
 				'dtstart': event.start ? event.start.format() : '',
@@ -112,6 +112,7 @@ $(document).ready(function() {
 			if(!isLoading) {
 				$('#events-spinner').spin(false);
 				$('#events-spinner > i').css('color', '');
+				reset_form();
 			}
 		}
 	});
@@ -125,8 +126,11 @@ $(document).ready(function() {
 	$(document).on('click','#fullscreen-btn', on_fullscreen);
 	$(document).on('click','#inline-btn', on_inline);
 
-	$(document).on('click','#event_cancel', on_cancel);
+	$(document).on('click','#event_submit', on_submit);
 	$(document).on('click','#event_more', on_more);
+	$(document).on('click','#event_cancel', reset_form);
+	$(document).on('click','#event_delete', on_delete);
+
 });
 
 function changeView(action, viewName) {
@@ -147,6 +151,8 @@ function changeView(action, viewName) {
 }
 
 function add_remove_json_source(source, color, editable, status) {
+
+	reset_form();
 
 	if(status === undefined)
 		status = 'fa-calendar-check-o';
@@ -184,17 +190,48 @@ function on_inline() {
 	((view.type === 'month') ? $('#calendar').fullCalendar('option', 'height', '') : $('#calendar').fullCalendar('option', 'height', 'auto'));
 }
 
-function on_cancel() {
-	if(new_event.length) {
-		$('#calendar').fullCalendar( 'removeEventSource', new_event);
-	}
-	if($('#more_block').hasClass('open')) {
-		on_more();
-	}
-	$('.section-content-tools-wrapper').hide();
+function on_submit() {
+	$.post( 'cdav/calendar', {
+		'submit': $('#event_submit').val(),
+		'target': $('#calendar_select').val(),
+		'static_target': $('#static_target').val(),
+		'uri': $('#event_uri').val(),
+		'title': $('#id_title').val(),
+		'dtstart': $('#id_dtstart').val(),
+		'dtend': $('#id_dtend').val()
+	})
+	.done(function() {
+		$('#calendar').fullCalendar( 'refetchEventSources', [ {{$sources}} ] );
+	});
+}
+
+function on_delete() {
+	$.post( 'cdav/calendar', {
+		'delete': 'delete',
+		'static_target': $('#static_target').val(),
+		'uri': $('#event_uri').val(),
+	})
+	.done(function() {
+		$('#calendar').fullCalendar( 'refetchEventSources', [ {{$sources}} ] );
+	});
+}
+
+function reset_form() {
+	$('#event_submit').val('');
+	$('#calendar_select').val('');
+	$('#static_target').val('');
+	$('#event_uri').val('');
 	$('#id_title').val('');
 	$('#id_dtstart').val('');
 	$('#id_dtend').val('');
+
+	if(new_event.length)
+		$('#calendar').fullCalendar( 'removeEventSource', new_event);
+
+	if($('#more_block').hasClass('open'))
+		on_more();
+
+	$('.section-content-tools-wrapper').hide();
 }
 
 function on_more() {
@@ -207,6 +244,7 @@ function on_more() {
 		$('#more_block').addClass('open').show();
 	}
 }
+
 </script>
 
 <div class="generic-content-wrapper">
@@ -232,7 +270,7 @@ function on_more() {
 		<div class="clear"></div>
 	</div>
 	<div class="section-content-tools-wrapper" style="display: none">
-		<form method="post" action="">
+		<form id="event_form" method="post" action="">
 			<input id="event_uri" type="hidden" name="uri" value="">
 			{{include file="field_input.tpl" field=$title}}
 			<label for="calendar_select">Select calendar</label>
@@ -249,11 +287,11 @@ function on_more() {
 			<div class="form-group">
 				<div class="pull-right">
 					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> More</button>
-					<button id="event_submit" type="submit" name="submit" value="" class="btn btn-primary btn-sm"></button>
+					<button id="event_submit" type="button" value="" class="btn btn-primary btn-sm"></button>
 
 				</div>
 				<div>
-					<button id="event_delete" type="submit" name="delete" value="delete" class="btn btn-danger btn-sm">Delete</button>
+					<button id="event_delete" type="button" class="btn btn-danger btn-sm">Delete</button>
 					<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
 				</div>
 				<div class="clear"></div>
