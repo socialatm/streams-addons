@@ -30,8 +30,6 @@ $(document).ready(function() {
 			if(new_event.length)
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 
-			$('.section-content-tools-wrapper').show();
-
 			$('#event_uri').val('');
 			$('#id_title').val('New event');
 			$('#calendar_select').val($("#calendar_select option:first").val()).attr('disabled', false);
@@ -48,9 +46,10 @@ $(document).ready(function() {
 		eventClick: function(event, jsEvent, view) {
 
 			$(window).scrollTop(0);
-			$('#id_title').focus().val('');
+			$('.section-content-tools-wrapper').show();
 
 			if(event.id == new_event_id) {
+				$('#id_title').focus().val('');
 				return false;
 			}
 
@@ -58,7 +57,7 @@ $(document).ready(function() {
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 
 			if(event.source.editable) {
-				$('.section-content-tools-wrapper').show();
+				$('#id_title').focus();
 				$('#event_uri').val(event.uri);
 				$('#id_title').val(event.title);
 				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
