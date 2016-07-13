@@ -215,6 +215,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
 				if($_REQUEST['dtend'])
 					$dtend = new \DateTime(dbesc($_REQUEST['dtend']));
+				$description = dbesc($_REQUEST['description']);
+				$location = dbesc($_REQUEST['location']);
 
 				do {
 					$duplicate = false;
@@ -238,6 +240,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 				]);
 				if($dtend)
 					$vcalendar->VEVENT->add('DTEND', $dtend);
+				if($description)
+					$vcalendar->VEVENT->add('DESCRIPTION', $description);
+				if($location)
+					$vcalendar->VEVENT->add('LOCATION', $location);
 
 				$calendarData = $vcalendar->serialize();
 
@@ -279,23 +285,25 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$title = dbesc($_REQUEST['title']);
 				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
 				$dtend = $_REQUEST['dtend'] ? new \DateTime(dbesc($_REQUEST['dtend'])) : '';
+				$description = dbesc($_REQUEST['description']);
+				$location = dbesc($_REQUEST['location']);
 
 				$object = $caldavBackend->getCalendarObject($id, $uri);
 
 				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
-				if($title) {
+				if($title)
 					$vcalendar->VEVENT->SUMMARY = $title;
-				}
-				if($dtstart) {
+				if($dtstart)
 					$vcalendar->VEVENT->DTSTART = $dtstart;
-				}
-				if($dtend) {
+				if($dtend)
 					$vcalendar->VEVENT->DTEND = $dtend;
-				}
-				else {
+				else
 					unset($vcalendar->VEVENT->DTEND);
-				}
+				if($description)
+					$vcalendar->VEVENT->DESCRIPTION = $description;
+				if($location)
+					$vcalendar->VEVENT->LOCATION = $location;
 
 				$calendarData = $vcalendar->serialize();
 
@@ -564,8 +572,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$first_day = (($first_day) ? $first_day : 0);
 
 			$title = ['title', t('Event title')];
-			$dtstart = ['dtstart', t('Start date and time')];
-			$dtend = ['dtend', t('End date and time')];
+			$dtstart = ['dtstart', t('Start date and time'), '', t('Example: YYYY-MM-DD HH:mm')];
+			$dtend = ['dtend', t('End date and time'), '', t('Example: YYYY-MM-DD HH:mm')];
+			$description = ['description', t('Description')];
+			$location = ['location', t('Location')];
 
 			foreach($calendars as $calendar) {
 				if($calendar['share-access'] != 2) {
@@ -590,7 +600,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$title' => $title,
 				'$writable_calendars' => $writable_calendars,
 				'$dtstart' => $dtstart,
-				'$dtend' => $dtend
+				'$dtend' => $dtend,
+				'$description' => $description,
+				'$location' => $location
 			]);
 
 			return $o;
@@ -643,6 +655,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 						'title' => (string)$vcalendar->VEVENT->SUMMARY,
 						'start' => (string)$vcalendar->VEVENT->DTSTART,
 						'end' => (string)$vcalendar->VEVENT->DTEND,
+						'description' => (string)$vcalendar->VEVENT->DESCRIPTION,
+						'location' => (string)$vcalendar->VEVENT->LOCATION,
 						'allDay' => $allDay
 					];
 				}

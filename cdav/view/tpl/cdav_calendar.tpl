@@ -36,6 +36,8 @@ $(document).ready(function() {
 			$('#calendar_select').val($("#calendar_select option:first").val()).attr('disabled', false);
 			$('#id_dtstart').val(date.format());
 			$('#id_dtend').val(date.hasTime() ? date.add(1, 'hours').format() : date.add(1, 'days').format());
+			$('#id_description').val('');
+			$('#id_location').val('');
 			$('#event_submit').val('create_event').html('Create');
 			$('#event_delete').hide();
 
@@ -68,6 +70,8 @@ $(document).ready(function() {
 				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
 				$('#id_dtstart').val(event.start.format());
 				$('#id_dtend').val(event.end ? event.end.format() : event.start.hasTime() ? '' : noend_allday);
+				$('#id_description').val(event.description);
+				$('#id_location').val(event.location);
 				$('#event_submit').val('update_event').html('Update');
 				$('#event_delete').show();
 			}
@@ -206,7 +210,9 @@ function on_submit() {
 		'uri': $('#event_uri').val(),
 		'title': $('#id_title').val(),
 		'dtstart': $('#id_dtstart').val(),
-		'dtend': $('#id_dtend').val()
+		'dtend': $('#id_dtend').val(),
+		'description': $('#id_description').val(),
+		'location': $('#id_location').val()
 	})
 	.done(function() {
 		$('#calendar').fullCalendar( 'refetchEventSources', [ {{$sources}} ] );
@@ -291,6 +297,8 @@ function on_more() {
 			<div id="more_block" style="display: none;">
 				{{include file="field_input.tpl" field=$dtstart}}
 				{{include file="field_input.tpl" field=$dtend}}
+				{{include file="field_textarea.tpl" field=$description}}
+				{{include file="field_textarea.tpl" field=$location}}
 			</div>
 			<div class="form-group">
 				<div class="pull-right">
