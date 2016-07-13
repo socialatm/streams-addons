@@ -35,7 +35,7 @@ $(document).ready(function() {
 			$('#id_title').val('New event');
 			$('#calendar_select').val($("#calendar_select option:first").val()).attr('disabled', false);
 			$('#id_dtstart').val(date.format());
-			$('#id_dtend').val(date.hasTime() ? date.add(1, 'hours').format() : '');
+			$('#id_dtend').val(date.hasTime() ? date.add(1, 'hours').format() : date.add(1, 'days').format());
 			$('#event_submit').val('create_event').html('Create');
 			$('#event_delete').hide();
 
@@ -45,24 +45,31 @@ $(document).ready(function() {
 
 		eventClick: function(event, jsEvent, view) {
 
-			$(window).scrollTop(0);
-			$('.section-content-tools-wrapper').show();
+
 
 			if(event.id == new_event_id) {
+				$(window).scrollTop(0);
+				$('.section-content-tools-wrapper').show();
 				$('#id_title').focus().val('');
 				return false;
 			}
 
-			if(new_event.length && event.source.editable)
+			if(new_event.length && event.source.editable) {
+				$(window).scrollTop(0);
+				$('.section-content-tools-wrapper').show();
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
+			}
 
 			if(event.source.editable) {
+				var start_clone = moment(event.start);
+				var noend_allday = start_clone.add(1, 'day').format('YYYY-MM-DD');
+
 				$('#id_title').focus();
 				$('#event_uri').val(event.uri);
 				$('#id_title').val(event.title);
 				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
 				$('#id_dtstart').val(event.start.format());
-				$('#id_dtend').val(event.end ? event.end.format() : '');
+				$('#id_dtend').val(event.end ? event.end.format() : event.start.hasTime() ? '' : noend_allday);
 				$('#event_submit').val('update_event').html('Update');
 				$('#event_delete').show();
 			}
@@ -88,16 +95,19 @@ $(document).ready(function() {
 
 		eventDrop: function(event, delta, revertFunc) {
 
+			var start_clone = moment(event.start);
+			var noend_allday = start_clone.add(1, 'day').format('YYYY-MM-DD');
+
 			$('#id_title').val(event.title);
 			$('#id_dtstart').val(event.start.format());
-			$('#id_dtend').val(event.end ? event.end.format() : '');
+			$('#id_dtend').val(event.end ? event.end.format() : event.start.hasTime() ? '' : noend_allday);
 
 			$.post( 'cdav/calendar', {
 				'update': 'drop',
 				'id[]': event.calendar_id,
 				'uri': event.uri,
 				'dtstart': event.start ? event.start.format() : '',
-				'dtend': event.end ? event.end.format() : ''
+				'dtend': event.end ? event.end.format() : event.start.hasTime() ? '' : noend_allday
 			})
 			.fail(function() {
 				revertFunc();
