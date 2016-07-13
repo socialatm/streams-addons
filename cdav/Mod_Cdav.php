@@ -632,7 +632,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$allDay = false;
 
 					// allDay event rules
-					if(strpos($dtstart, 'T000000') || !strpos($dtstart, 'T') && !$dtend)
+					if(!strpos($dtstart, 'T') && !strpos($dtend, 'T'))
 						$allDay = true;
 					if(strpos($dtstart, 'T000000') && strpos($dtend, 'T000000'))
 						$allDay = true;

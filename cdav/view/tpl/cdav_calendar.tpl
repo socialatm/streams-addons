@@ -45,8 +45,6 @@ $(document).ready(function() {
 
 		eventClick: function(event, jsEvent, view) {
 
-
-
 			if(event.id == new_event_id) {
 				$(window).scrollTop(0);
 				$('.section-content-tools-wrapper').show();
@@ -54,7 +52,7 @@ $(document).ready(function() {
 				return false;
 			}
 
-			if(new_event.length && event.source.editable) {
+			if(new_event.length || event.source.editable) {
 				$(window).scrollTop(0);
 				$('.section-content-tools-wrapper').show();
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
