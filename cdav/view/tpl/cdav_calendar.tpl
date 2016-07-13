@@ -47,9 +47,10 @@ $(document).ready(function() {
 
 		eventClick: function(event, jsEvent, view) {
 
+			$(window).scrollTop(0);
+			$('#id_title').focus().val('');
+
 			if(event.id == new_event_id) {
-				$(window).scrollTop(0);
-				$('#id_title').focus().val('');
 				return false;
 			}
 
