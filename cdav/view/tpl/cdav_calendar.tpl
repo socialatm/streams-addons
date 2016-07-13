@@ -187,6 +187,9 @@ function on_cancel() {
 	if(new_event.length) {
 		$('#calendar').fullCalendar( 'removeEventSource', new_event);
 	}
+	if($('#more_block').hasClass('open')) {
+		on_more();
+	}
 	$('.section-content-tools-wrapper').hide();
 	$('#id_title').val('');
 	$('#id_dtstart').val('');
@@ -244,12 +247,13 @@ function on_more() {
 			</div>
 			<div class="form-group">
 				<div class="pull-right">
+					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> More</button>
 					<button id="event_submit" type="submit" name="submit" value="" class="btn btn-primary btn-sm"></button>
-					<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
+
 				</div>
 				<div>
 					<button id="event_delete" type="submit" name="delete" value="delete" class="btn btn-danger btn-sm">Delete</button>
-					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> More</button>
+					<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
 				</div>
 				<div class="clear"></div>
 			</div>
