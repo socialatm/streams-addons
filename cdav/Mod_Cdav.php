@@ -268,9 +268,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 			}
 
 			//edit calendar object via ajax request
-			if($_REQUEST['submit'] === 'update_event' && $_REQUEST['uri'] && $_REQUEST['title'] && $_REQUEST['static_target'] && $_REQUEST['dtstart']) {
+			if($_REQUEST['submit'] === 'update_event' && $_REQUEST['uri'] && $_REQUEST['title'] && $_REQUEST['target'] && $_REQUEST['dtstart']) {
 
-				$id = explode(':', dbesc($_REQUEST['static_target']));
+				$id = explode(':', dbesc($_REQUEST['target']));
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
@@ -305,9 +305,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 			}
 
 			//delete calendar object via ajax request
-			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['static_target']) {
+			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['target']) {
 
-				$id = explode(':', dbesc($_REQUEST['static_target']));
+				$id = explode(':', dbesc($_REQUEST['target']));
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
@@ -584,7 +584,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$prev'	=> t('Previous'),
 				'$next'	=> t('Next'),
 				'$today' => t('Today'),
-				'$view_label' => t('View'),
 				'$month' => t('Month'),
 				'$week' => t('Week'),
 				'$day' => t('Day'),

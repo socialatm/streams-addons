@@ -6,6 +6,7 @@
 
 var new_event = [];
 var new_event_id = Math.random().toString(36).substring(7);
+var views = {'month' : '{{$month}}', 'agendaWeek' : '{{$week}}', 'agendaDay' : '{{$day}}'};
 
 $(document).ready(function() {
 	$('#calendar').fullCalendar({
@@ -33,7 +34,6 @@ $(document).ready(function() {
 			$('#event_uri').val('');
 			$('#id_title').val('New event');
 			$('#calendar_select').val($("#calendar_select option:first").val()).attr('disabled', false);
-			$('#static_target').val('');
 			$('#id_dtstart').val(date.format());
 			$('#id_dtend').val(date.hasTime() ? date.add(1, 'hours').format() : '');
 			$('#event_submit').val('create_event').html('Create');
@@ -61,7 +61,6 @@ $(document).ready(function() {
 				$('#event_uri').val(event.uri);
 				$('#id_title').val(event.title);
 				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
-				$('#static_target').val(event.calendar_id[0] + ':' + event.calendar_id[1]);
 				$('#id_dtstart').val(event.start.format());
 				$('#id_dtend').val(event.end ? event.end.format() : '');
 				$('#event_submit').val('update_event').html('Update');
@@ -111,14 +110,16 @@ $(document).ready(function() {
 			if(!isLoading) {
 				$('#events-spinner').spin(false);
 				$('#events-spinner > i').css('color', '');
-				reset_form();
 			}
 		}
 	});
 
 	// echo the title
 	var view = $('#calendar').fullCalendar('getView');
+
 	$('#title').text(view.title);
+
+	$('#view_selector').html('<i class="fa fa-caret-down"></i> ' + views[view.name]);
 
 	$('.color-edit').colorpicker({ input: '.color-edit-input' });
 
@@ -147,16 +148,17 @@ function changeView(action, viewName) {
 	}
 
 	$('#title').text(view.title);
+	$('#view_selector').html('<i class="fa fa-caret-down"></i> ' + views[view.name]);
 }
 
 function add_remove_json_source(source, color, editable, status) {
 
-	reset_form();
 
 	if(status === undefined)
 		status = 'fa-calendar-check-o';
 
 	if(status === 'drop') {
+		reset_form();
 		$('#calendar').fullCalendar( 'removeEventSource', source );
 		return;
 	}
@@ -193,7 +195,6 @@ function on_submit() {
 	$.post( 'cdav/calendar', {
 		'submit': $('#event_submit').val(),
 		'target': $('#calendar_select').val(),
-		'static_target': $('#static_target').val(),
 		'uri': $('#event_uri').val(),
 		'title': $('#id_title').val(),
 		'dtstart': $('#id_dtstart').val(),
@@ -201,24 +202,25 @@ function on_submit() {
 	})
 	.done(function() {
 		$('#calendar').fullCalendar( 'refetchEventSources', [ {{$sources}} ] );
+		reset_form();
 	});
 }
 
 function on_delete() {
 	$.post( 'cdav/calendar', {
 		'delete': 'delete',
-		'static_target': $('#static_target').val(),
+		'target': $('#calendar_select').val(),
 		'uri': $('#event_uri').val(),
 	})
 	.done(function() {
 		$('#calendar').fullCalendar( 'refetchEventSources', [ {{$sources}} ] );
+		reset_form();
 	});
 }
 
 function reset_form() {
 	$('#event_submit').val('');
 	$('#calendar_select').val('');
-	$('#static_target').val('');
 	$('#event_uri').val('');
 	$('#id_title').val('');
 	$('#id_dtstart').val('');
@@ -250,7 +252,7 @@ function on_more() {
 	<div class="section-title-wrapper">
 		<div class="pull-right">
 			<div class="dropdown">
-				<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown"><i class="fa fa-caret-down"></i>&nbsp;{{$view_label}}</button>
+				<button id="view_selector" type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown"><i class="fa fa-caret-down"></i>&nbsp;</button>
 				<ul class="dropdown-menu">
 					<li><a href="#" onclick="changeView('changeView', 'month'); return false;">{{$month}}</a></li>
 					<li><a href="#" onclick="changeView('changeView', 'agendaWeek'); return false;">{{$week}}</a></li>
@@ -278,7 +280,6 @@ function on_more() {
 				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}</option>
 				{{/foreach}}
 			</select>
-			<input id="static_target" type="hidden" name="static_target" value="">
 			<div id="more_block" style="display: none;">
 				{{include file="field_input.tpl" field=$dtstart}}
 				{{include file="field_input.tpl" field=$dtend}}
