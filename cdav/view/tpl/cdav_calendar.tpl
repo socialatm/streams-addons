@@ -49,15 +49,15 @@ $(document).ready(function() {
 
 		eventClick: function(event, jsEvent, view) {
 
-			if($('main').hasClass('fullscreen') && view.type !== 'month')
-				$('#calendar').fullCalendar('option', 'height', 'auto');
-
 			if(event.id == new_event_id) {
 				$(window).scrollTop(0);
 				$('.section-content-tools-wrapper').show();
 				$('#id_title').focus().val('');
 				return false;
 			}
+
+			if($('main').hasClass('fullscreen') && view.type !== 'month' && event.source.editable)
+				$('#calendar').fullCalendar('option', 'height', 'auto');
 
 			if(new_event.length && event.source.editable) {
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
@@ -155,8 +155,11 @@ function changeView(action, viewName) {
 	$('#calendar').fullCalendar(action, viewName);
 	var view = $('#calendar').fullCalendar('getView');
 
-	if($('main').hasClass('fullscreen') && $('.section-content-tools-wrapper').css('display') === 'none')
-		on_fullscreen();
+	if($('main').hasClass('fullscreen'))
+		if(view.name !== 'month')
+			$('.section-content-tools-wrapper').css('display') === 'none' ? on_fullscreen() : on_inline() ;
+		else
+			on_fullscreen();
 	else
 		on_inline();
 
@@ -195,7 +198,8 @@ function add_remove_json_source(source, color, editable, status) {
 }
 
 function on_fullscreen() {
-	if($('.section-content-tools-wrapper').css('display') === 'none')
+	var view = $('#calendar').fullCalendar('getView');
+	if(($('.section-content-tools-wrapper').css('display') === 'none') || ($('.section-content-tools-wrapper').css('display') !== 'none' && view.type === 'month'))
 		$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
 }
 
