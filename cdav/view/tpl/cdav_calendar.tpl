@@ -154,16 +154,11 @@ $(document).ready(function() {
 function changeView(action, viewName) {
 	$('#calendar').fullCalendar(action, viewName);
 	var view = $('#calendar').fullCalendar('getView');
-	if(view.type !== 'month' && !$('main').hasClass('fullscreen')) {
-		$('#calendar').fullCalendar('option', 'height', 'auto');
-	}
-	else {
-		$('#calendar').fullCalendar('option', 'height', '');
-	}
 
-	if($('main').hasClass('fullscreen')) {
-		$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
-	}
+	if($('main').hasClass('fullscreen') && $('.section-content-tools-wrapper').css('display') === 'none')
+		on_fullscreen();
+	else
+		on_inline();
 
 	$('#title').text(view.title);
 	$('#view_selector').html('<i class="fa fa-caret-down"></i> ' + views[view.name]);
@@ -200,7 +195,7 @@ function add_remove_json_source(source, color, editable, status) {
 }
 
 function on_fullscreen() {
-	if($('.section-content-tools-wrapper:hidden'))
+	if($('.section-content-tools-wrapper').css('display') === 'none')
 		$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
 }
 
@@ -239,6 +234,8 @@ function on_delete() {
 }
 
 function reset_form() {
+	$('.section-content-tools-wrapper').hide();
+
 	$('#event_submit').val('');
 	$('#calendar_select').val('');
 	$('#event_uri').val('');
@@ -252,12 +249,8 @@ function reset_form() {
 	if($('#more_block').hasClass('open'))
 		on_more();
 
-	var view = $('#calendar').fullCalendar('getView');
-
-	if($('main').hasClass('fullscreen') && view.type !== 'month')
+	if($('main').hasClass('fullscreen'))
 		on_fullscreen();
-
-	$('.section-content-tools-wrapper').hide();
 }
 
 function on_more() {
