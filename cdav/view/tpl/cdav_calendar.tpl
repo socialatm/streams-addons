@@ -24,7 +24,9 @@ $(document).ready(function() {
 		allDayText: aStr['allday'],
 
 		timeFormat: 'HH:mm',
+
 		defaultTimedEventDuration: '01:00:00',
+		snapDuration: '00:15:00',
 
 		dayClick: function(date, jsEvent, view) {
 
@@ -47,6 +49,9 @@ $(document).ready(function() {
 
 		eventClick: function(event, jsEvent, view) {
 
+			if($('main').hasClass('fullscreen') && view.type !== 'month')
+				$('#calendar').fullCalendar('option', 'height', 'auto');
+
 			if(event.id == new_event_id) {
 				$(window).scrollTop(0);
 				$('.section-content-tools-wrapper').show();
@@ -54,9 +59,7 @@ $(document).ready(function() {
 				return false;
 			}
 
-			if(new_event.length || event.source.editable) {
-				$(window).scrollTop(0);
-				$('.section-content-tools-wrapper').show();
+			if(new_event.length && event.source.editable) {
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 			}
 
@@ -64,7 +67,10 @@ $(document).ready(function() {
 				var start_clone = moment(event.start);
 				var noend_allday = start_clone.add(1, 'day').format('YYYY-MM-DD');
 
+				$(window).scrollTop(0);
+				$('.section-content-tools-wrapper').show();
 				$('#id_title').focus();
+
 				$('#event_uri').val(event.uri);
 				$('#id_title').val(event.title);
 				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
@@ -165,7 +171,6 @@ function changeView(action, viewName) {
 
 function add_remove_json_source(source, color, editable, status) {
 
-
 	if(status === undefined)
 		status = 'fa-calendar-check-o';
 
@@ -195,7 +200,8 @@ function add_remove_json_source(source, color, editable, status) {
 }
 
 function on_fullscreen() {
-	$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
+	if($('.section-content-tools-wrapper:hidden'))
+		$('#calendar').fullCalendar('option', 'height', $(window).height() - $('.section-title-wrapper').outerHeight(true) - 2); // -2 is for border width (.generic-content-wrapper top and bottom) of .generic-content-wrapper
 }
 
 function on_inline() {
@@ -245,6 +251,11 @@ function reset_form() {
 
 	if($('#more_block').hasClass('open'))
 		on_more();
+
+	var view = $('#calendar').fullCalendar('getView');
+
+	if($('main').hasClass('fullscreen') && view.type !== 'month')
+		on_fullscreen();
 
 	$('.section-content-tools-wrapper').hide();
 }
