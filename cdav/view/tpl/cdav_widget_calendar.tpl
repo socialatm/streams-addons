@@ -11,51 +11,51 @@
 				<i id="share-icon" class="fa fa-share-alt fakelink generic-icons" onclick="openClose('share-calendar-{{$calendar.calendarid}}')"></i>
 				<a href="#" onclick="var drop = dropItem('/cdav/calendar/drop/{{$calendar.calendarid}}/{{$calendar.instanceid}}', '#calendar-{{$calendar.calendarid}}'); if(drop) { add_remove_json_source('{{$calendar.json_source}}', '{{$calendar.color}}', {{$calendar.editable}}, 'drop'); } return false;"><i class="fa fa-trash-o drop-icons"></i></a>
 			</div>
-		</div>
-		<div id="share-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
-			{{if $calendar.sharees}}
-			{{foreach $calendar.sharees as $sharee}}
-			<div id="sharee-{{$calendar.calendarid}}" class="form-group">
-				<i class="fa fa-share generic-icons"></i>{{$sharee.name}}&nbsp;{{$sharee.access}}
-				<div class="pull-right">
-					<a href="#" onclick="dropItem('/cdav/calendar/dropsharee/{{$calendar.calendarid}}/{{$calendar.instanceid}}/{{$sharee.hash}}', '#sharee-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
+			<div id="share-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
+				{{if $calendar.sharees}}
+				{{foreach $calendar.sharees as $sharee}}
+				<div id="sharee-{{$calendar.calendarid}}" class="form-group">
+					<i class="fa fa-share generic-icons"></i>{{$sharee.name}}&nbsp;{{$sharee.access}}
+					<div class="pull-right">
+						<a href="#" onclick="dropItem('/cdav/calendar/dropsharee/{{$calendar.calendarid}}/{{$calendar.instanceid}}/{{$sharee.hash}}', '#sharee-{{$calendar.calendarid}}'); return false;"><i class="fa fa-trash-o drop-icons"></i></a>
+					</div>
 				</div>
+				{{/foreach}}
+				{{/if}}
+				<form method="post" action="">
+					<label for="share-{{$calendar.calendarid}}">{{$share_label}}</label>
+					<input name="calendarid" type="hidden" value="{{$calendar.calendarid}}">
+					<input name="instanceid" type="hidden" value="{{$calendar.instanceid}}">
+					<input name="{DAV:}displayname" type="hidden" value="{{$calendar.displayname}}">
+					<div class="form-group">
+						<select id="share-{{$calendar.calendarid}}" name="sharee" class="form-control">
+							{{$sharee_options}}
+						</select>
+					</div>
+					<div class="form-group">
+						<select name="access" class="form-control">
+							{{$access_options}}
+						</select>
+					</div>
+					<div class="form-group">
+						<button type="submit" name="share" value="share" class="btn btn-primary btn-sm">Share</button>
+					</div>
+				</form>
 			</div>
-			{{/foreach}}
-			{{/if}}
-			<form method="post" action="">
-				<label for="share-{{$calendar.calendarid}}">{{$share_label}}</label>
-				<input name="calendarid" type="hidden" value="{{$calendar.calendarid}}">
-				<input name="instanceid" type="hidden" value="{{$calendar.instanceid}}">
-				<input name="{DAV:}displayname" type="hidden" value="{{$calendar.displayname}}">
-				<div class="form-group">
-					<select id="share-{{$calendar.calendarid}}" name="sharee" class="form-control">
-						{{$sharee_options}}
-					</select>
-				</div>
-				<div class="form-group">
-					<select name="access" class="form-control">
-						{{$access_options}}
-					</select>
-				</div>
-				<div class="form-group">
-					<button type="submit" name="share" value="share" class="btn btn-primary btn-sm">Share</button>
-				</div>
-			</form>
-		</div>
-		<div id="edit-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
-			<form id="edit-calendar-{{$calendar.calendarid}}" method="post" action="" class="colorpicker-component color-edit">
-				<input id="id-{{$calendar.calendarid}}" name="id" type="hidden" value="{{$calendar.calendarid}}:{{$calendar.instanceid}}">
-				<input id="color-{{$calendar.calendarid}}" name="color" type="hidden" value="{{$calendar.color}}" class="color-edit-input">
-				<label for="edit-form-{{$calendar.calendarid}}">{{$edit_label}}</label>
-				<div id="edit-form-{{$calendar.calendarid}}" class="input-group form-group">
-					<input id="create-{{$calendar.calendarid}}" name="{DAV:}displayname" type="text" value="{{$calendar.displayname}}" class="form-control">
-					<span class="input-group-addon"><i></i></span>
-				</div>
-				<div class="form-group">
-					<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
-				</div>
-			</form>
+			<div id="edit-calendar-{{$calendar.calendarid}}" class="sub-menu" style="display: none; border-color: {{$calendar.color}};">
+				<form id="edit-calendar-{{$calendar.calendarid}}" method="post" action="" class="colorpicker-component color-edit">
+					<input id="id-{{$calendar.calendarid}}" name="id" type="hidden" value="{{$calendar.calendarid}}:{{$calendar.instanceid}}">
+					<input id="color-{{$calendar.calendarid}}" name="color" type="hidden" value="{{$calendar.color}}" class="color-edit-input">
+					<label for="edit-form-{{$calendar.calendarid}}">{{$edit_label}}</label>
+					<div id="edit-form-{{$calendar.calendarid}}" class="input-group form-group">
+						<input id="create-{{$calendar.calendarid}}" name="{DAV:}displayname" type="text" value="{{$calendar.displayname}}" class="form-control">
+						<span class="input-group-addon"><i></i></span>
+					</div>
+					<div class="form-group">
+						<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
+					</div>
+				</form>
+			</div>
 		</div>
 	</div>
 	{{/foreach}}
