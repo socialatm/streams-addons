@@ -299,7 +299,7 @@ function on_more() {
 			<label for="calendar_select">Select calendar</label>
 			<select id="calendar_select" name="target" class="form-control form-group">
 				{{foreach $writable_calendars as $writable_calendar}}
-				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}</option>
+				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}{{if $writable_calendar.sharer}} ({{$writable_calendar.sharer}}){{/if}}</option>
 				{{/foreach}}
 			</select>
 			<div id="more_block" style="display: none;">

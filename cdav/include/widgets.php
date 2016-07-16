@@ -71,7 +71,6 @@ function widget_cdav() {
 						'access' => (($invite->access == 3) ? ' (RW)' : ' (R)'),
 						'hash' => $sharee['channel_hash']
 					];
-					$share_displayname[] = $invite->properties['{DAV:}displayname'];
 				}
 			}
 
@@ -93,13 +92,14 @@ function widget_cdav() {
 				$shared_calendars[] = [
 					'ownernick' => $channel['channel_address'],
 					'uri' => $sabrecal['uri'],
-					'share_displayname' => $share_displayname[0],
+					'displayname' => $sabrecal['{DAV:}displayname'],
 					'calendarid' => $sabrecal['id'][0],
 					'instanceid' => $sabrecal['id'][1],
 					'json_source' => $json_source,
 					'color' => $color,
 					'editable' => $editable,
 					'switch' => $switch,
+					'sharer' => $sabrecal['{urn:ietf:params:xml:ns:caldav}calendar-description'],
 					'access' => $access
 				];
 			}

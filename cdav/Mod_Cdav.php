@@ -192,9 +192,11 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$duplicate = true;
 				} while ($duplicate == true);
 
+
 				$properties = [
 					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
 					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color']),
+					'{urn:ietf:params:xml:ns:caldav}calendar-description' => $channel['channel_name']
 				];
 
 				$id = $caldavBackend->createCalendar($principalUri, $calendarUri, $properties);
@@ -380,8 +382,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$sharee->href = 'mailto:' . $sharee_arr['channel_hash'];
 				$sharee->principal = 'principals/' . $sharee_arr['channel_address'];
 				$sharee->access = intval($_REQUEST['access']);
-				if($_REQUEST['{DAV:}displayname'])
-					$sharee->properties = ['{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']) . ' (' . $channel['channel_name'] . ')'];
+				$sharee->properties = ['{DAV:}displayname' => $channel['channel_name']];
 
 				$caldavBackend->updateInvites($id, [$sharee]);
 			}
@@ -556,6 +557,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			foreach($calendars as $calendar) {
 				$editable = (($calendar['share-access'] == 2) ? 'false' : 'true');  // false/true must be string since we're passing it to javascript
 				$color = (($calendar['{http://apple.com/ns/ical/}calendar-color']) ? $calendar['{http://apple.com/ns/ical/}calendar-color'] : '#3a87ad');
+				$sharer = (($calendar['share-access'] == 3) ? $calendar['{urn:ietf:params:xml:ns:caldav}calendar-description'] : '');
 				$switch = get_pconfig(local_channel(), 'cdav_calendar', $calendar['id'][0]);
 				if($switch) {
 					$sources .= '{
@@ -563,6 +565,14 @@ class Cdav extends \Zotlabs\Web\Controller {
 						color: \'' . $color . '\',
 						editable: ' . $editable . '
 					 }, ';
+				}
+
+				if($calendar['share-access'] != 2) {
+					$writable_calendars[] = [
+						'displayname' => $calendar['{DAV:}displayname'],
+						'sharer' => $sharer,
+						'id' => $calendar['id']
+					];
 				}
 			}
 
@@ -576,15 +586,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$dtend = ['dtend', t('End date and time'), '', t('Example: YYYY-MM-DD HH:mm')];
 			$description = ['description', t('Description')];
 			$location = ['location', t('Location')];
-
-			foreach($calendars as $calendar) {
-				if($calendar['share-access'] != 2) {
-					$writable_calendars[] = [
-						'displayname' => $calendar['{DAV:}displayname'],
-						'id' => $calendar['id']
-					];
-				}
-			}
 
 			$o .= replace_macros(get_markup_template('cdav_calendar.tpl', 'addon/cdav'), [
 				'$sources' => $sources,

@@ -188,10 +188,12 @@ function cdav_feature_settings_post(&$b) {
 					dbesc('VEVENT,VTODO')
 				);
 
-				$r = q("insert into calendarinstances (calendarid, principaluri, displayname, uri) values(LAST_INSERT_ID(), '%s', '%s', '%s') ",
+				$r = q("insert into calendarinstances (calendarid, principaluri, displayname, uri, description, calendarcolor) values(LAST_INSERT_ID(), '%s', '%s', '%s', '%s', '%s') ",
 					dbesc($uri),
 					dbesc(t('Default Calendar')),
-					dbesc('default')
+					dbesc('default'),
+					dbesc($channel['channel_name']),
+					dbesc('#3a87ad')
 				);
 
 				//create default addressbook
