@@ -192,7 +192,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$duplicate = true;
 				} while ($duplicate == true);
 
-
 				$properties = [
 					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
 					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color']),
