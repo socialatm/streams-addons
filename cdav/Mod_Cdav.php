@@ -821,6 +821,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					}
 
 					$cards[] = [
+						'id' => $object['id'],
 						'photo' => $photo,
 						'fn' => $fn,
 						'org' => $org,

@@ -4,6 +4,20 @@
 	border-left: 3px solid #ccc;
 }
 
+.vcard-header {
+	cursor: pointer;
+	padding: 7px 10px;
+	margin-bottom: 3px;
+}
+
+.vcard-header:hover {
+	background-color: rgb(238,238,238);
+}
+
+.vcard-info {
+	display: none;
+}
+
 .vcard-nophoto {
 	display: inline-block;
 	width: 32px;
@@ -25,7 +39,7 @@
 
 .vcard-fn {
 	display: inline-block;
-	margin-left: 7px;
+	margin: 0px 0px 0px 7px;
 }
 
 .vcard-org,
@@ -37,5 +51,5 @@
 .vcard-adr,
 .vcard-note {
 	margin-bottom: 1em;
-	margin-left: 39px;
+	margin-left: 48px;
 }
