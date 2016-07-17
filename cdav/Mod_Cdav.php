@@ -740,12 +740,30 @@ class Cdav extends \Zotlabs\Web\Controller {
 				foreach($objects as $object) {
 					$vcard = \Sabre\VObject\Reader::read($object['carddata']);
 
-					$tels = [];
-					$emails = [];
+					$photo = '';
+					if($vcard->PHOTO) {
+						$photo = (string)$vcard->PHOTO;
+					}
 
+					$fn = '';
+					if($vcard->FN) {
+						$fn = (string)$vcard->FN;
+					}
+
+					$org = '';
+					if($vcard->ORG) {
+						$org = (string)$vcard->ORG;
+					}
+
+					$title = '';
+					if($vcard->TITLE) {
+						$title = (string)$vcard->TITLE;
+					}
+
+					$tels = [];
 					if($vcard->TEL) {
 						foreach($vcard->TEL as $tel) {
-							$type = (($vcard->TEL['TYPE']) ? translate_type((string)$vcard->TEL['TYPE']) : '');
+							$type = (($tel['TYPE']) ? translate_type((string)$tel['TYPE']) : '');
 							$tels[] = [
 								'type' => $type,
 								'nr' => (string)$tel
@@ -753,9 +771,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 						}
 					}
 
+					$emails = [];
 					if($vcard->EMAIL) {
 						foreach($vcard->EMAIL as $email) {
-							$type = (($vcard->EMAIL['TYPE']) ? translate_type((string)$vcard->EMAIL['TYPE']) : '');
+							$type = (($email['TYPE']) ? translate_type((string)$email['TYPE']) : '');
 							$emails[] = [
 								'type' => $type,
 								'address' => (string)$email
@@ -763,19 +782,60 @@ class Cdav extends \Zotlabs\Web\Controller {
 						}
 					}
 
-					if($vcard->ADR) {
-						foreach($vcard->ADR as $adr) {
-							$adr = $adr->getParts();
+					$impps = [];
+					if($vcard->IMPP) {
+						foreach($vcard->IMPP as $impp) {
+							$type = (($impp['TYPE']) ? translate_type((string)$impp['TYPE']) : '');
+							$impps[] = [
+								'type' => $type,
+								'address' => (string)$impp
+							];
 						}
 					}
 
+					$urls = [];
+					if($vcard->URL) {
+						foreach($vcard->URL as $url) {
+							$type = (($url['TYPE']) ? translate_type((string)$url['TYPE']) : '');
+							$urls[] = [
+								'type' => $type,
+								'address' => (string)$url
+							];
+						}
+					}
+
+					$adrs = [];
+					if($vcard->ADR) {
+						foreach($vcard->ADR as $adr) {
+							$type = (($adr['TYPE']) ? translate_type((string)$adr['TYPE']) : '');
+							$adrs[] = [
+								'type' => $type,
+								'address' => $adr->getParts()
+							];
+						}
+					}
+
+					$note = '';
+					if($vcard->NOTE) {
+						$note = (string)$vcard->NOTE;
+					}
+
+
 					$cards[] = [
-						'fn' => (string)$vcard->FN,
+						'photo' => $photo,
+						'fn' => $fn,
+						'org' => $org,
+						'title' => $title,
 						'tels' => $tels,
 						'emails' => $emails,
-						'adr' => $adr
+						'impps' => $impps,
+						'urls' => $urls,
+						'adrs' => $adrs,
+						'note' => $note
 					];
 				}
+
+				//print_r($title); killme();
 
 				usort($cards, function($a, $b) { return strcmp($a['fn'], $b['fn']); });
 
