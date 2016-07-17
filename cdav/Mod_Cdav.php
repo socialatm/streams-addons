@@ -835,8 +835,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 					];
 				}
 
-				//print_r($title); killme();
-
 				usort($cards, function($a, $b) { return strcmp($a['fn'], $b['fn']); });
 
 				$o .= replace_macros(get_markup_template('cdav_addressbook.tpl', 'addon/cdav'), [
