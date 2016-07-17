@@ -820,7 +820,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$note = (string)$vcard->NOTE;
 					}
 
-
 					$cards[] = [
 						'photo' => $photo,
 						'fn' => $fn,
