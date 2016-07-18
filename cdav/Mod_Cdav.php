@@ -839,7 +839,15 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$o .= replace_macros(get_markup_template('cdav_addressbook.tpl', 'addon/cdav'), [
 					'$cards' => $cards,
-					'$displayname' => $displayname
+					'$displayname' => $displayname,
+					'$org_label' => t('Organisation'),
+					'$title_label' => t('Title'),
+					'$tel_label' => t('Phone'),
+					'$email_label' => t('Email'),
+					'$impp_label' => t('Instant message'),
+					'$url_label' => t('Website'),
+					'$adr_label' => t('Address'),
+					'$note_label' => t('Note'),
 				]);
 			}
 			return $o;

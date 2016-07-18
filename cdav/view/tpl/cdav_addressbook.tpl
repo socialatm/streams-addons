@@ -34,42 +34,42 @@ $(document).ready(function() {
 			<div id="vcard-info-{{$card.id}}" class="vcard-info">
 				{{if $card.org}}
 				<div class="vcard-org">
-					<strong>Organisation:</strong> {{$card.org}}
+					<strong>{{$org_label}}:</strong> {{$card.org}}
 				</div>
 				{{/if}}
 				{{if $card.title}}
 				<div class="vcard-title">
-					<strong>Title:</strong> {{$card.title}}
+					<strong>{{$title_label}}:</strong> {{$card.title}}
 				</div>
 				{{/if}}
 				{{if $card.tels}}
 				<div class="vcard-tel">
-					<strong>Phone:</strong><br>{{foreach $card.tels as $tel}}{{if $tel.type}}{{$tel.type}}: {{/if}}{{$tel.nr}}<br>{{/foreach}}
+					<strong>{{$tel_label}}:</strong><br>{{foreach $card.tels as $tel}}{{if $tel.type}}{{$tel.type}}: {{/if}}{{$tel.nr}}<br>{{/foreach}}
 				</div>
 				{{/if}}
 				{{if $card.emails}}
 				<div class="vcard-email">
-					<strong>Email:</strong><br>{{foreach $card.emails as $email}}{{if $email.type}}{{$email.type}}: {{/if}}<a href="mailto:{{$email.address}}">{{$email.address}}</a><br>{{/foreach}}
+					<strong>{{$email_label}}:</strong><br>{{foreach $card.emails as $email}}{{if $email.type}}{{$email.type}}: {{/if}}<a href="mailto:{{$email.address}}">{{$email.address}}</a><br>{{/foreach}}
 				</div>
 				{{/if}}
 				{{if $card.impps}}
 				<div class="vcard-impp">
-					<strong>Instant message:</strong><br>{{foreach $card.impps as $impp}}{{if $impp.type}}{{$impp.type}}: {{/if}}{{$impp.address}}<br>{{/foreach}}
+					<strong>{{$impp_label}}:</strong><br>{{foreach $card.impps as $impp}}{{if $impp.type}}{{$impp.type}}: {{/if}}{{$impp.address}}<br>{{/foreach}}
 				</div>
 				{{/if}}
 				{{if $card.urls}}
 				<div class="vcard-url">
-					<strong>Website:</strong><br>{{foreach $card.urls as $url}}{{if $url.type}}{{$url.type}}: {{/if}}{{$url.address}}<br>{{/foreach}}
+					<strong>{{$url_label}}:</strong><br>{{foreach $card.urls as $url}}{{if $url.type}}{{$url.type}}: {{/if}}{{$url.address}}<br>{{/foreach}}
 				</div>
 				{{/if}}
 				{{if $card.adrs}}
 				<div class="vcard-adr">
-					{{foreach $card.adrs as $adr}}<strong>Address{{if $adr.type}} ({{$adr.type}}){{/if}}:</strong><br>{{foreach $adr.address as $adr_part}}{{if $adr_part}}{{$adr_part}}<br>{{/if}}{{/foreach}}{{/foreach}}
+					{{foreach $card.adrs as $adr}}<strong>{{$adr_label}}{{if $adr.type}} ({{$adr.type}}){{/if}}:</strong><br>{{foreach $adr.address as $adr_part}}{{if $adr_part}}{{$adr_part}}<br>{{/if}}{{/foreach}}{{/foreach}}
 				</div>
 				{{/if}}
 				{{if $card.note}}
 				<div class="vcard-note">
-					<strong>Note:</strong> {{$card.note}}
+					<strong>{{$note_label}}:</strong> {{$card.note}}
 				</div>
 				{{/if}}
 			</div>
