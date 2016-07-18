@@ -602,7 +602,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$dtstart' => $dtstart,
 				'$dtend' => $dtend,
 				'$description' => $description,
-				'$location' => $location
+				'$location' => $location,
+				'$more' => t('More'),
+				'$less' => t('Less'),
+				'$calendar_select_label' => t('Select calendar'),
+				'$delete' => t('Delete'),
+				'$cancel' => t('Cancel')
 			]);
 
 			return $o;
