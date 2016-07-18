@@ -13,6 +13,8 @@ $(document).ready(function() {
 			$(info).hide();
 		}
 		else {
+			$('.vcard-header.active').removeClass('active');
+			$('.vcard-info:visible').hide()
 			$(header).addClass('active');
 			$(info).show();
 		}
