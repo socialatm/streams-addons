@@ -1,11 +1,35 @@
+<script>
+$(document).ready(function() {
+
+	$(document).on('click', '.vcard-header', setActive);
+
+	function setActive() {
+		var id = $(this).data('id');
+		var header = $('#vcard-header-' + id);
+		var info = $('#vcard-info-' + id);
+
+		if(header.hasClass('active')) {
+			$(header).removeClass('active');
+			$(info).hide();
+		}
+		else {
+			$(header).addClass('active');
+			$(info).show();
+		}
+	}
+
+});
+</script>
+
 <div class="generic-content-wrapper">
 	<div class="section-title-wrapper">
 		<h2>{{$displayname}}</h2>
 	</div>
 	<div class="section-content-wrapper-np">
 		{{foreach $cards as $card}}
-			<div id="vcard-header-{{$card.id}}" class="vcard-header" onclick="openClose('vcard-info-{{$card.id}}')">
+			<div id="vcard-header-{{$card.id}}" class="vcard-header" data-id="{{$card.id}}">
 				{{if $card.photo}}<img class="vcard-photo" src="{{$card.photo}}" width="32px" height="32px">{{else}}<div class="vcard-nophoto"><i class="fa fa-user"></i></div>{{/if}}<h3 class="vcard-fn">{{$card.fn}}</h3>
+				{{if $card.emails.0.address}}<span class="hidden-xs">{{$card.emails.0.address}}</span>{{/if}}
 			</div>
 			<div id="vcard-info-{{$card.id}}" class="vcard-info">
 				{{if $card.org}}

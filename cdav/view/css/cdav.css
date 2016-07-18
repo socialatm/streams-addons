@@ -10,7 +10,8 @@
 	margin-bottom: 3px;
 }
 
-.vcard-header:hover {
+.vcard-header:hover,
+.vcard-header.active {
 	background-color: rgb(238,238,238);
 }
 
