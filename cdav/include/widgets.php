@@ -120,12 +120,16 @@ function widget_cdav() {
 			'$sharee_options' => $sharee_options,
 			'$access_options' => $access_options,
 			'$share_label' => t('Share this calendar'),
+			'$share' => t('Share'),
 			'$edit_label' => t('Calendar name and color'),
+			'$edit' => t('Edit'),
 			'$create_label' => t('Create new calendar'),
+			'$create' => t('Create'),
 			'$create_placeholder' => t('Calendar Name'),
 			'$tools_label' => t('Calendar Tools'),
 			'$import_label' => t('Import calendar'),
 			'$import_placeholder' => t('Select a calendar to import to'),
+			'$upload' => t('Upload'),
 			'$writable_calendars' => $writable_calendars
 		]);
 
@@ -154,11 +158,14 @@ function widget_cdav() {
 			'$addressbooks_label' => t('Addressbooks'),
 			'$addressbooks' => $addressbooks,
 			'$edit_label' => t('Addressbook name'),
+			'$edit' => t('Edit'),
 			'$create_label' => t('Create new addressbook'),
 			'$create_placeholder' => t('Addressbook Name'),
+			'$create' => t('Create'),
 			'$tools_label' => t('Addressbook Tools'),
 			'$import_label' => t('Import addressbook'),
 			'$import_placeholder' => t('Select an addressbook to import to'),
+			'$upload' => t('Upload')
 		]);
 
 		return $o;

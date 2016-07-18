@@ -37,7 +37,7 @@
 						</select>
 					</div>
 					<div class="form-group">
-						<button type="submit" name="share" value="share" class="btn btn-primary btn-sm">Share</button>
+						<button type="submit" name="share" value="share" class="btn btn-primary btn-sm">{{$share}}</button>
 					</div>
 				</form>
 			</div>
@@ -51,7 +51,7 @@
 						<span class="input-group-addon"><i></i></span>
 					</div>
 					<div class="form-group">
-						<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
+						<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">{{$edit}}</button>
 					</div>
 				</form>
 			</div>
@@ -89,7 +89,7 @@
 				<span class="input-group-addon"><i></i></span>
 			</div>
 			<div class="form-group">
-				<button type="submit" name="create" value="create" class="btn btn-primary btn-sm">Create</button>
+				<button type="submit" name="create" value="create" class="btn btn-primary btn-sm">{{$create}}</button>
 			</div>
 		</form>
 		<li>
@@ -107,7 +107,7 @@
 			<div class="form-group">
 				<input id="event-upload-choose" type="file" name="userfile" />
 			</div>
-			<button class="btn btn-primary btn-sm" type="submit" name="c_upload" value="c_upload">Upload</button>
+			<button class="btn btn-primary btn-sm" type="submit" name="c_upload" value="c_upload">{{$upload}}</button>
 		</form>
 	</ul>
 </div>
