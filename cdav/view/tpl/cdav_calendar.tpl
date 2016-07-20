@@ -1,7 +1,3 @@
-<script language="javascript" type="text/javascript" src="/library/moment/moment.min.js"></script>
-<script language="javascript" type="text/javascript" src="/library/fullcalendar/fullcalendar.min.js"></script>
-<script language="javascript" type="text/javascript" src="/library/fullcalendar/lang-all.js"></script>
-
 <script>
 
 var new_event = [];
