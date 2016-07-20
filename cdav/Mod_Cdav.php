@@ -431,6 +431,116 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$patch->commit();
 			}
 
+			//create addressbook card
+			if($_REQUEST['create'] && $_REQUEST['target'] && $_REQUEST['fn']) {
+				$id = dbesc($_REQUEST['target']);
+
+				do {
+					$duplicate = false;
+					$uri = random_string(40) . '.vcf';
+
+					$r = q("SELECT uri FROM cards WHERE addressbookid = %s AND uri = '%s' LIMIT 1",
+						intval($id),
+						dbesc($uri)
+					);
+
+					if (count($r))
+						$duplicate = true;
+				} while ($duplicate == true);
+
+				//TODO: this mostly duplictes the procedure in update addressbook card. should move this part to a function to avoid duplication
+				$fn = dbesc($_REQUEST['fn']);
+
+				$vcard = new \Sabre\VObject\Component\VCard([
+					'FN' => $fn,
+					'N' => array_reverse(explode(' ', $fn))
+				]);
+
+				$org = dbesc($_REQUEST['org']);
+				if($org) {
+					$vcard->ORG = $org;
+				}
+
+				$title = dbesc($_REQUEST['title']);
+				if($title) {
+					$vcard->TITLE = $title;
+				}
+
+				$tel = $_REQUEST['tel'];
+				$tel_type = $_REQUEST['tel_type'];
+				if($tel) {
+					$i = 0;
+					foreach($tel as $item) {
+						if($item) {
+							$vcard->add('TEL', dbesc($item), ['type' => dbesc($tel_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$email = $_REQUEST['email'];
+				$email_type = $_REQUEST['email_type'];
+				if($email) {
+					$i = 0;
+					foreach($email as $item) {
+						if($item) {
+							$vcard->add('EMAIL', dbesc($item), ['type' => dbesc($email_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$impp = $_REQUEST['impp'];
+				$impp_type = $_REQUEST['impp_type'];
+				if($impp) {
+					$i = 0;
+					foreach($impp as $item) {
+						if($item) {
+							$vcard->add('IMPP', dbesc($item), ['type' => dbesc($impp_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$url = $_REQUEST['url'];
+				$url_type = $_REQUEST['url_type'];
+				if($url) {
+					$i = 0;
+					foreach($url as $item) {
+						if($item) {
+							$vcard->add('URL', dbesc($item), ['type' => dbesc($url_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$adr = $_REQUEST['adr'];
+				$adr_type = $_REQUEST['adr_type'];
+				if($adr) {
+					$i = 0;
+					foreach($adr as $arr_item) {
+						if($arr_item) {
+							$esc_arr_item = [];
+							foreach($arr_item as $item) {
+								$esc_arr_item[] = dbesc($item);
+							}
+							$vcard->add('ADR', $esc_arr_item, ['type' => dbesc($adr_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$note = dbesc($_REQUEST['note']);
+				if($note) {
+					$vcard->NOTE = $note;
+				}
+
+				$cardData = $vcard->serialize();
+
+				$carddavBackend->createCard($id, $uri, $cardData);
+
+			}
+
 			//edit addressbook card
 			if($_REQUEST['update'] && $_REQUEST['uri'] && $_REQUEST['target']) {
 
@@ -972,21 +1082,22 @@ class Cdav extends \Zotlabs\Web\Controller {
 				}
 
 				usort($cards, function($a, $b) { return strcasecmp($a['fn'], $b['fn']); });
-
-				$o .= replace_macros(get_markup_template('cdav_addressbook.tpl', 'addon/cdav'), [
-					'$id' => $id,
-					'$cards' => $cards,
-					'$displayname' => $displayname,
-					'$org_label' => t('Organisation'),
-					'$title_label' => t('Title'),
-					'$tel_label' => t('Phone'),
-					'$email_label' => t('Email'),
-					'$impp_label' => t('Instant message'),
-					'$url_label' => t('Website'),
-					'$adr_label' => t('Address'),
-					'$note_label' => t('Note'),
-				]);
 			}
+
+			$o .= replace_macros(get_markup_template('cdav_addressbook.tpl', 'addon/cdav'), [
+				'$id' => $id,
+				'$cards' => $cards,
+				'$displayname' => $displayname,
+				'$org_label' => t('Organisation'),
+				'$title_label' => t('Title'),
+				'$tel_label' => t('Phone'),
+				'$email_label' => t('Email'),
+				'$impp_label' => t('Instant message'),
+				'$url_label' => t('Website'),
+				'$adr_label' => t('Address'),
+				'$note_label' => t('Note'),
+			]);
+
 			return $o;
 		}
 

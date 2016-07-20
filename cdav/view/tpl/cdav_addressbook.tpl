@@ -33,8 +33,133 @@ $(document).ready(function() {
 
 <div class="generic-content-wrapper">
 	<div class="section-title-wrapper">
+		<button type="button" class="btn btn-success btn-xs pull-right" onclick="openClose('create_form')">Create</button>
 		<h2>{{$displayname}}</h2>
 	</div>
+	<div id="create_form" class="section-content-tools-wrapper">
+		<form id="new_card_form" method="post" action="">
+			<input type="hidden" name="target" value="{{$id}}">
+
+			<div class="vcard-fn-create form-group">
+				<label>Name:</label>
+				<input type="text" name="fn" value="">
+			</div>
+
+			<div class="vcard-org form-group">
+				<label>{{$org_label}}:</label>
+				<input type="text" name="org" value="">
+			</div>
+
+			<div class="vcard-title form-group">
+				<label>{{$title_label}}:</label>
+				<input type="text" name="title" value="">
+			</div>
+
+			<div class="vcard-tel form-group">
+				<label>{{$tel_label}}:</label><br>
+				<div class="form-group">
+					<select name="tel_type[]">
+						<option value="">Type</option>
+						<option value="cell">Mobile</option>
+						<option value="home">Home</option>
+						<option value="work">Work</option>
+						<option value="x-other">Other</option>
+					</select>
+					<input type="text" name="tel[]" value="">
+				</div>
+			</div>
+
+
+			<div class="vcard-email form-group">
+				<label>{{$email_label}}:</label><br>
+				<div class="form-group">
+					<select name="email_type[]">
+						<option value="">Type</option>
+						<option value="home">Home</option>
+						<option value="work">Work</option>
+						<option value="x-other">Other</option>
+					</select>
+					<input type="text" name="email[]" value="">
+				</div>
+			</div>
+
+			<div class="vcard-impp form-group">
+				<label>{{$impp_label}}:</label><br>
+				<div class="form-group">
+					<select name="impp_type[]">
+						<option value="">Type</option>
+						<option value="cell">Mobile</option>
+						<option value="home">Home</option>
+						<option value="work">Work</option>
+						<option value="x-other">Other</option>
+					</select>
+					<input type="text" name="impp[]" value="">
+				</div>
+			</div>
+
+			<div class="vcard-url form-group">
+				<label>{{$url_label}}:</label><br>
+				<div class="form-group">
+					<select name="url_type[]">
+						<option value="">Type</option>
+						<option value="home">Home</option>
+						<option value="work">Work</option>
+						<option value="x-other">Other</option>
+					</select>
+					<input type="text" name="url[]" value="">
+				</div>
+			</div>
+
+			<div class="vcard-url form-group">
+				<div class="form-group">
+					<label>{{$adr_label}}:</label>
+					<select name="adr_type[]">
+						<option value="">Type</option>
+						<option value="home">Home</option>
+						<option value="work">Work</option>
+						<option value="x-other">Other</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>P.O. Box:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+				<div class="form-group">
+					<label>Additional:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+				<div class="form-group">
+					<label>Street:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+				<div class="form-group">
+					<label>Locality:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+				<div class="form-group">
+					<label>Region:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+				<div class="form-group">
+					<label>ZIP Code:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+				<div class="form-group">
+					<label>Country:</label>
+					<input type="text" name="adr[0][]" value="">
+				</div>
+			</div>
+
+			<div class="vcard-note form-group">
+				<label>{{$note_label}}:</label>
+				<textarea name="note" class="form-control"></textarea>
+			</div>
+
+			<button type="submit" name="create" value="create_card" class="btn btn-primary btn-sm pull-right">Create</button>
+			<div class="clear"></div>
+		</form>
+	</div>
+
 	{{foreach $cards as $card}}
 	<form id="card_form" method="post" action="">
 		<input type="hidden" name="target" value="{{$id}}">
