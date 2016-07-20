@@ -430,6 +430,124 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$patch->commit();
 			}
+
+			//edit addressbook card
+			if($_REQUEST['submit'] === 'update_card' && $_REQUEST['uri'] && $_REQUEST['target']) {
+
+				$id = dbesc($_REQUEST['target']);
+
+				if(!cdav_perms($id,$addressbooks))
+					return;
+
+				$uri = dbesc($_REQUEST['uri']);
+
+				$object = $carddavBackend->getCard($id, $uri);
+				$vcard = \Sabre\VObject\Reader::read($object['carddata']);
+
+				$fn = dbesc($_REQUEST['fn']);
+				if($fn) {
+					$vcard->FN = $fn;
+					$vcard->N = array_reverse(explode(' ', $fn));
+				}
+
+				$org = dbesc($_REQUEST['org']);
+				if($org) {
+					$vcard->ORG = $org;
+				}
+				else {
+					unset($vcard->ORG);
+				}
+
+				$title = dbesc($_REQUEST['title']);
+				if($title) {
+					$vcard->TITLE = $title;
+				}
+				else {
+					unset($vcard->TITLE);
+				}
+
+				$tel = $_REQUEST['tel'];
+				$tel_type = $_REQUEST['tel_type'];
+				if($tel) {
+					$i = 0;
+					unset($vcard->TEL);
+					foreach($tel as $item) {
+						if($item) {
+							$vcard->add('TEL', dbesc($item), ['type' => dbesc($tel_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$email = $_REQUEST['email'];
+				$email_type = $_REQUEST['email_type'];
+				if($email) {
+					$i = 0;
+					unset($vcard->EMAIL);
+					foreach($email as $item) {
+						if($item) {
+							$vcard->add('EMAIL', dbesc($item), ['type' => dbesc($email_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$impp = $_REQUEST['impp'];
+				$impp_type = $_REQUEST['impp_type'];
+				if($impp) {
+					$i = 0;
+					unset($vcard->IMPP);
+					foreach($impp as $item) {
+						if($item) {
+							$vcard->add('IMPP', dbesc($item), ['type' => dbesc($impp_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$url = $_REQUEST['url'];
+				$url_type = $_REQUEST['url_type'];
+				if($url) {
+					$i = 0;
+					unset($vcard->URL);
+					foreach($url as $item) {
+						if($item) {
+							$vcard->add('URL', dbesc($item), ['type' => dbesc($url_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$adr = $_REQUEST['adr'];
+				$adr_type = $_REQUEST['adr_type'];
+				if($adr) {
+					$i = 0;
+					unset($vcard->ADR);
+					foreach($adr as $arr_item) {
+						if($arr_item) {
+							$esc_arr_item = [];
+							foreach($arr_item as $item) {
+								$esc_arr_item[] = dbesc($item);
+							}
+							$vcard->add('ADR', $esc_arr_item, ['type' => dbesc($adr_type[$i])]);
+						}
+						$i++;
+					}
+				}
+
+				$note = dbesc($_REQUEST['note']);
+				if($note) {
+					$vcard->NOTE = $note;
+				}
+				else {
+					unset($vcard->NOTE);
+				}
+
+				$cardData = $vcard->serialize();
+
+				$carddavBackend->updateCard($id, $uri, $cardData);
+
+			}
 		}
 
 		//Import calendar or addressbook
@@ -827,6 +945,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					$cards[] = [
 						'id' => $object['id'],
+						'uri' => $object['uri'],
+
 						'photo' => $photo,
 						'fn' => $fn,
 						'org' => $org,
@@ -840,9 +960,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 					];
 				}
 
-				usort($cards, function($a, $b) { return strcmp($a['fn'], $b['fn']); });
+				usort($cards, function($a, $b) { return strcasecmp($a['fn'], $b['fn']); });
 
 				$o .= replace_macros(get_markup_template('cdav_addressbook.tpl', 'addon/cdav'), [
+					'$id' => $id,
 					'$cards' => $cards,
 					'$displayname' => $displayname,
 					'$org_label' => t('Organisation'),

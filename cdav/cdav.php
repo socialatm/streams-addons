@@ -253,6 +253,10 @@ function cdav_load_pdl(&$b) {
 
 
 function translate_type($type) {
+
+	if(!$type)
+		return;
+
 	$map = [
 		'cell' => t('Mobile'),
 		'home' => t('Home'),
@@ -260,10 +264,10 @@ function translate_type($type) {
 	];
 
 	if (array_key_exists($type, $map)) {
-		return $map[$type];
+		return [$type, $map[$type]];
 	}
 	else {
-		return t('Other') . ' (' . $type . ')';
+		return [$type, t('Other') . ' (' . $type . ')'];
 	}
 }
 
