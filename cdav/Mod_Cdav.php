@@ -666,10 +666,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 			head_add_css('library/fullcalendar/fullcalendar.css');
 			head_add_css('addon/cdav/view/css/cdav_calendar.css');
 
-			//TODO: issue #411 https://github.com/redmatrix/hubzilla/issues/411 js is included in template for now...
-			//head_add_js('library/moment/moment.min.js');
-			//head_add_js('library/fullcalendar/fullcalendar.min.js');
-			//head_add_js('library/fullcalendar/lang-all.js');
+			head_add_js('library/moment/moment.min.js', 1);
+			head_add_js('library/fullcalendar/fullcalendar.min.js', 1);
+			head_add_js('library/fullcalendar/lang-all.js', 1);
 
 			foreach($calendars as $calendar) {
 				$editable = (($calendar['share-access'] == 2) ? 'false' : 'true');  // false/true must be string since we're passing it to javascript
