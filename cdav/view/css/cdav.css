@@ -87,14 +87,3 @@ input.vcard-fn,
 	background-color: transparent;
 	min-width: 160px;
 }
-
-.vcard-org,
-.vcard-title,
-.vcard-tel,
-.vcard-email,
-.vcard-impp,
-.vcard-url,
-.vcard-adr,
-.vcard-note {
-	margin-left: 40px;
-}

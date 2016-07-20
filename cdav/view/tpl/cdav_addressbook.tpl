@@ -180,7 +180,8 @@ $(document).ready(function() {
 				<textarea name="note" class="form-control">{{$card.note}}</textarea>
 			</div>
 			{{/if}}
-			<button type="submit" name="submit" value="update_card" class="btn btn-primary btn-sm pull-right">Update</button>
+			<button type="submit" name="delete" value="delete_card" class="btn btn-danger btn-sm pull-left">Delete</button>
+			<button type="submit" name="update" value="update_card" class="btn btn-primary btn-sm pull-right">Update</button>
 			<div class="clear"></div>
 		</div>
 	</form>

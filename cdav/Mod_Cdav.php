@@ -432,7 +432,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			}
 
 			//edit addressbook card
-			if($_REQUEST['submit'] === 'update_card' && $_REQUEST['uri'] && $_REQUEST['target']) {
+			if($_REQUEST['update'] && $_REQUEST['uri'] && $_REQUEST['target']) {
 
 				$id = dbesc($_REQUEST['target']);
 
@@ -546,7 +546,19 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$cardData = $vcard->serialize();
 
 				$carddavBackend->updateCard($id, $uri, $cardData);
+			}
 
+			//delete addressbook card
+			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['target']) {
+
+				$id = dbesc($_REQUEST['target']);
+
+				if(!cdav_perms($id,$addressbooks))
+					return;
+
+				$uri = dbesc($_REQUEST['uri']);
+
+				$carddavBackend->deleteCard($id, $uri);
 			}
 		}
 
@@ -988,5 +1000,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 			$carddavBackend->deleteAddressBook($id);
 			killme();
 		}
+
 	}
 }
