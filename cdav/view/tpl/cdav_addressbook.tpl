@@ -143,31 +143,31 @@ $(document).ready(function() {
 					</select>
 				</div>
 				<div class="form-group">
-					<label>pobox:</label>
+					<label>P.O. Box:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.0}}" size="{{$adr.address.0|count_characters:true}}">
 				</div>
 				<div class="form-group">
-					<label>ext:</label>
+					<label>Additional:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.1}}" size="{{$adr.address.1|count_characters:true}}">
 				</div>
 				<div class="form-group">
-					<label>street:</label>
+					<label>Street:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.2}}" size="{{$adr.address.2|count_characters:true}}">
 				</div>
 				<div class="form-group">
-					<label>locality:</label>
+					<label>Locality:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.3}}" size="{{$adr.address.3|count_characters:true}}">
 				</div>
 				<div class="form-group">
-					<label>region:</label>
+					<label>Region:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.4}}" size="{{$adr.address.4|count_characters:true}}">
 				</div>
 				<div class="form-group">
-					<label>code:</label>
+					<label>ZIP Code:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.5}}" size="{{$adr.address.5|count_characters:true}}">
 				</div>
 				<div class="form-group">
-					<label>country:</label>
+					<label>Country:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.6}}" size="{{$adr.address.6|count_characters:true}}">
 				</div>
 				{{/foreach}}
