@@ -357,24 +357,26 @@ function diaspora_request($importer,$xml) {
 
 	$contact = diaspora_get_contact_by_handle($importer['channel_id'],$sender_handle);
 
+	// Please note some permissions such as PERMS_R_PAGES are impossible for Disapora.
+	// They cannot currently authenticate to our system.
+
+	$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
+	$their_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
+
 	if($contact && $contact['abook_id']) {
 
 		// perhaps we were already sharing with this person. Now they're sharing with us.
 		// That makes us friends. Maybe.
 
-		// Please note some of these permissions such as PERMS_R_PAGES are impossible for Disapora.
-		// They cannot authenticate to our system.
-
-		$newperms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
+		foreach($their_perms as $k => $v)
+			set_abconfig($importer['channel_id'],$contact['abook_xchan'],'their_perms',$k,$v);
 
 		$abook_instance = $contact['abook_instance'];
 		if($abook_instance) 
 			$abook_instance .= ',';
 		$abook_instance .= z_root();
 
-
-		$r = q("update abook set abook_their_perms = %d, abook_instance = '%s' where abook_id = %d and abook_channel = %d",
-			intval($newperms),
+		$r = q("update abook set abook_instance = '%s' where abook_id = %d and abook_channel = %d",
 			dbesc($abook_instance),
 			intval($contact['abook_id']),
 			intval($importer['channel_id'])
@@ -390,22 +392,20 @@ function diaspora_request($importer,$xml) {
 		return;
 	}
 
+	$my_perms = false;
+
 	$role = get_pconfig($importer['channel_id'],'system','permissions_role');
 	if($role) {
-		$x = get_role_perms($role);
+		$x = \Zotlabs\Access\PermissionRoles::role_perms($role);
 		if($x['perms_auto'])
-		$default_perms = $x['perms_accept'];
+			$my_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
 	}
-	if(! $default_perms)
-		$default_perms = intval(get_pconfig($importer['channel_id'],'system','autoperms'));
+	if(! $my_perms)
+		$my_perms = \Zotlabs\Access\Permissions::FilledAutoperms($importer['channel_id']);
 				
-	$their_perms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
-
-
 	$closeness = get_pconfig($importer['channel_id'],'system','new_abook_closeness');
 	if($closeness === false)
 		$closeness = 80;
-
 
 	$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_my_perms, abook_their_perms, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending, abook_instance ) values ( %d, %d, '%s', %d, %d, %d, '%s', '%s', '%s', '%s', %d, '%s' )",
 		intval($importer['channel_account_id']),
@@ -418,10 +418,18 @@ function diaspora_request($importer,$xml) {
 		dbesc(datetime_convert()),
 		dbesc(datetime_convert()),
 		dbesc(NULL_DATE),
-		intval(($default_perms) ? 0 : 1),
+		intval(($my_perms) ? 0 : 1),
 		dbesc(z_root())
 	);
 		
+	if($my_perms)
+		foreach($my_perms as $k => $v)
+			set_abconfig($importer['channel_id'],$ret['xchan_hash'],'my_perms',$k,$v);
+
+	if($their_perms)
+		foreach($their_perms as $k => $v)
+			set_abconfig($importer['channel_id'],$ret['xchan_hash'],'their_perms',$k,$v);
+
 
 	if($r) {
 		logger("New Diaspora introduction received for {$importer['channel_name']}");
@@ -440,7 +448,7 @@ function diaspora_request($importer,$xml) {
 				]
 			);
 
-			if($default_perms) {
+			if($my_perms) {
 				// Send back a sharing notification to them
 				$x = diaspora_share($importer,$new_connection[0]);
 				if($x)
