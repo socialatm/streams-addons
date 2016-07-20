@@ -43,10 +43,10 @@ $(document).ready(function() {
 			<div id="vcard-cancel-{{$card.id}}" class="vcard-cancel" data-id="{{$card.id}}" data-action="cancel"><i class="fa fa-close"></i></div>
 			<div id="vcard-header-{{$card.id}}" class="vcard-header" data-id="{{$card.id}}" data-action="open">
 				{{if $card.photo}}<img class="vcard-photo" src="{{$card.photo}}" width="32px" height="32px">{{else}}<div class="vcard-nophoto"><i class="fa fa-user"></i></div>{{/if}}
-				<span id="vcard-preview-{{$card.id}}" class="vcard-preview hidden-xs">
+				<span id="vcard-preview-{{$card.id}}" class="vcard-preview">
 					{{if $card.fn}}<span class="vcard-fn-preview">{{$card.fn}}</span>{{/if}}
-					{{if $card.emails.0.address}}<span class="vcard-email-preview">{{$card.emails.0.address}}</span>{{/if}}
-					{{if $card.tels.0}}<span class="vcard-tel-preview">{{$card.tels.0.nr}}</span>{{/if}}
+					{{if $card.emails.0.address}}<span class="vcard-email-preview hidden-xs">{{$card.emails.0.address}}</span>{{/if}}
+					{{if $card.tels.0}}<span class="vcard-tel-preview hidden-xs">{{$card.tels.0.nr}}</span>{{/if}}
 				</span>
 				<input id="vcard-fn-{{$card.id}}" class="vcard-fn" type="text" name="fn" value="{{$card.fn}}" size="{{$card.fn|count_characters:true}}">
 			</div>
