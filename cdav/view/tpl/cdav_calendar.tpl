@@ -1,7 +1,3 @@
-<script language="javascript" type="text/javascript" src="/library/moment/moment.min.js"></script>
-<script language="javascript" type="text/javascript" src="/library/fullcalendar/fullcalendar.min.js"></script>
-<script language="javascript" type="text/javascript" src="/library/fullcalendar/lang-all.js"></script>
-
 <script>
 
 var new_event = [];
@@ -259,11 +255,11 @@ function reset_form() {
 
 function on_more() {
 	if($('#more_block').hasClass('open')) {
-		$('#event_more').html('<i class="fa fa-caret-down"></i> More');
+		$('#event_more').html('<i class="fa fa-caret-down"></i> {{$more}}');
 		$('#more_block').removeClass('open').hide();
 	}
 	else {
-		$('#event_more').html('<i class="fa fa-caret-up"></i> Less');
+		$('#event_more').html('<i class="fa fa-caret-up"></i> {{$less}}');
 		$('#more_block').addClass('open').show();
 	}
 }
@@ -296,7 +292,7 @@ function on_more() {
 		<form id="event_form" method="post" action="">
 			<input id="event_uri" type="hidden" name="uri" value="">
 			{{include file="field_input.tpl" field=$title}}
-			<label for="calendar_select">Select calendar</label>
+			<label for="calendar_select">{{$calendar_select_label}}</label>
 			<select id="calendar_select" name="target" class="form-control form-group">
 				{{foreach $writable_calendars as $writable_calendar}}
 				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}{{if $writable_calendar.sharer}} ({{$writable_calendar.sharer}}){{/if}}</option>
@@ -310,13 +306,13 @@ function on_more() {
 			</div>
 			<div class="form-group">
 				<div class="pull-right">
-					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> More</button>
+					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> {{$more}}</button>
 					<button id="event_submit" type="button" value="" class="btn btn-primary btn-sm"></button>
 
 				</div>
 				<div>
-					<button id="event_delete" type="button" class="btn btn-danger btn-sm">Delete</button>
-					<button id="event_cancel" type="button" class="btn btn-default btn-sm">Cancel</button>
+					<button id="event_delete" type="button" class="btn btn-danger btn-sm">{{$delete}}</button>
+					<button id="event_cancel" type="button" class="btn btn-default btn-sm">{{$cancel}}</button>
 				</div>
 				<div class="clear"></div>
 			</div>

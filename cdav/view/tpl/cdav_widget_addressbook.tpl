@@ -18,7 +18,7 @@
 					<input id="edit-{{$addressbook.id}}" name="{DAV:}displayname" type="text" value="{{$addressbook.displayname}}" class="form-control">
 				</div>
 				<div class="form-group">
-					<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">Edit</button>
+					<button type="submit" name="edit" value="edit" class="btn btn-primary btn-sm">{{$edit}}</button>
 				</div>
 			</form>
 		</div>
@@ -35,7 +35,7 @@
 		<form id="create-addressbook" method="post" action="" style="display: none;" class="sub-menu">
 			<div class="form-group">
 				<input id="create" name="{DAV:}displayname" type="text" placeholder="{{$create_placeholder}}" class="form-control form-group">
-				<button type="submit" name="create" value="create" class="btn btn-primary btn-sm">Create</button>
+				<button type="submit" name="create" value="create" class="btn btn-primary btn-sm">{{$create}}</button>
 			</div>
 		</form>
 		<li>
@@ -53,7 +53,7 @@
 			<div class="form-group">
 				<input id="addressbook-upload-choose" type="file" name="userfile" />
 			</div>
-			<button class="btn btn-primary btn-sm" type="submit" name="a_upload" value="a_upload">Upload</button>
+			<button class="btn btn-primary btn-sm" type="submit" name="a_upload" value="a_upload">{{$upload}}</button>
 		</form>
 	</ul>
 </div>

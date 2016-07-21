@@ -10,8 +10,26 @@
 	margin-bottom: 3px;
 }
 
-.vcard-header:hover {
+.vcard-header:hover,
+.vcard-header.active {
 	background-color: rgb(238,238,238);
+	cursor: pointer;
+}
+
+.vcard-header.active:hover {
+	cursor: initial;
+}
+
+.vcard-cancel {
+	margin: 6px 10px;
+	height: 32px;
+	line-height: 32px;
+	color: #777;
+	font-size: 16px;
+
+	cursor: pointer;
+	display: none;
+	float: right;
 }
 
 .vcard-info {
@@ -35,21 +53,39 @@
 	height: 32px;
 	border-radius: 4px;
 	border: 1px solid #ccc;
+	text-align: center;
 }
 
-.vcard-fn {
-	display: inline-block;
-	margin: 0px 0px 0px 7px;
+.vcard-fn-preview,
+input.vcard-fn {
+	font-size: 16px !important;
+	margin-left: 5px;
 }
 
-.vcard-org,
-.vcard-title,
-.vcard-tel,
-.vcard-email,
-.vcard-impp,
-.vcard-url,
-.vcard-adr,
-.vcard-note {
-	margin-bottom: 1em;
-	margin-left: 48px;
+.vcard-email-preview,
+.vcard-tel-preview {
+	color: #999;
+}
+
+.vcard-fn,
+#create_form {
+	display: none;
+}
+
+input.vcard-fn,
+.vcard-fn-create input,
+.vcard-org input,
+.vcard-title input,
+.vcard-tel input,
+.vcard-email input,
+.vcard-impp input,
+.vcard-url input,
+.vcard-adr input,
+.vcard-note input {
+	padding: 0px;
+	margin-left: 5px;
+	border-width: 0px 0px 1px 0px;
+	border-radius: 0px;
+	background-color: transparent;
+	min-width: 160px;
 }
