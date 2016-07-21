@@ -700,6 +700,11 @@ class Cdav extends \Zotlabs\Web\Controller {
 				}
 
 				while ($object = $objects->getNext()) {
+
+					if($_REQUEST['a_upload']) {
+						$object = $object->convert(\Sabre\VObject\Document::VCARD40);
+					}
+
 					$ret = $object->validate($profile & \Sabre\VObject\Node::REPAIR);
 
 					//level 3 Means that the document is invalid,
