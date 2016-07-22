@@ -257,10 +257,17 @@ function translate_type($type) {
 	if(!$type)
 		return;
 
+	$type = strtolower($type);
+
 	$map = [
 		'cell' => t('Mobile'),
 		'home' => t('Home'),
-		'work' => t('Work')
+		'home,voice' => t('Home, Voice'),
+		'home,fax' => t('Home, Fax'),
+		'work' => t('Work'),
+		'work,voice' => t('Work, Voice'),
+		'work,fax' => t('Work, Fax'),
+		'other' => t('Other')
 	];
 
 	if (array_key_exists($type, $map)) {
