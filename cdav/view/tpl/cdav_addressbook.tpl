@@ -60,10 +60,10 @@ $(document).ready(function() {
 				<div class="form-group">
 					<select name="tel_type[]">
 						<option value="">Type</option>
-						<option value="cell">Mobile</option>
-						<option value="home">Home</option>
-						<option value="work">Work</option>
-						<option value="x-other">Other</option>
+						<option value="CELL">Mobile</option>
+						<option value="HOME">Home</option>
+						<option value="WORK">Work</option>
+						<option value="OTHER">Other</option>
 					</select>
 					<input type="text" name="tel[]" value="">
 				</div>
@@ -75,9 +75,9 @@ $(document).ready(function() {
 				<div class="form-group">
 					<select name="email_type[]">
 						<option value="">Type</option>
-						<option value="home">Home</option>
-						<option value="work">Work</option>
-						<option value="x-other">Other</option>
+						<option value="HOME">Home</option>
+						<option value="WORK">Work</option>
+						<option value="OTHER">Other</option>
 					</select>
 					<input type="text" name="email[]" value="">
 				</div>
@@ -88,10 +88,9 @@ $(document).ready(function() {
 				<div class="form-group">
 					<select name="impp_type[]">
 						<option value="">Type</option>
-						<option value="cell">Mobile</option>
-						<option value="home">Home</option>
-						<option value="work">Work</option>
-						<option value="x-other">Other</option>
+						<option value="HOME">Home</option>
+						<option value="WORK">Work</option>
+						<option value="OTHER">Other</option>
 					</select>
 					<input type="text" name="impp[]" value="">
 				</div>
@@ -102,9 +101,9 @@ $(document).ready(function() {
 				<div class="form-group">
 					<select name="url_type[]">
 						<option value="">Type</option>
-						<option value="home">Home</option>
-						<option value="work">Work</option>
-						<option value="x-other">Other</option>
+						<option value="HOME">Home</option>
+						<option value="WORK">Work</option>
+						<option value="OTHER">Other</option>
 					</select>
 					<input type="text" name="url[]" value="">
 				</div>
@@ -115,9 +114,9 @@ $(document).ready(function() {
 					<label>{{$adr_label}}:</label>
 					<select name="adr_type[]">
 						<option value="">Type</option>
-						<option value="home">Home</option>
-						<option value="work">Work</option>
-						<option value="x-other">Other</option>
+						<option value="HOME">Home</option>
+						<option value="WORK">Work</option>
+						<option value="OTHER">Other</option>
 					</select>
 				</div>
 				<div class="form-group">
@@ -195,11 +194,11 @@ $(document).ready(function() {
 				{{foreach $card.tels as $tel}}
 				<div class="form-group">
 					<select name="tel_type[]">
-						<option value=""{{if $tel.type.0 != 'cell' && $tel.type.0 != 'home' && $tel.type.0 != 'work' && $tel.type.0 != 'cell' && $tel.type.0 != 'x-other'}} selected="selected"{{/if}}>{{$tel.type.1}}</option>
-						<option value="cell"{{if $tel.type.0 == 'cell'}} selected="selected"{{/if}}>Mobile</option>
-						<option value="home"{{if $tel.type.0 == 'home'}} selected="selected"{{/if}}>Home</option>
-						<option value="work"{{if $tel.type.0 == 'work'}} selected="selected"{{/if}}>Work</option>
-						<option value="x-other"{{if $tel.type.0 == 'other'}} selected="selected"{{/if}}>Other</option>
+						<option value=""{{if $tel.type.0 != 'CELL' && $tel.type.0 != 'HOME' && $tel.type.0 != 'WORK' && $tel.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$tel.type.1}}</option>
+						<option value="CELL"{{if $tel.type.0 == 'CELL'}} selected="selected"{{/if}}>Mobile</option>
+						<option value="HOME"{{if $tel.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+						<option value="WORK"{{if $tel.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+						<option value="OTHER"{{if $tel.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
 					</select>
 					<input type="text" name="tel[]" value="{{$tel.nr}}" size="{{$tel.nr|count_characters:true}}">
 				</div>
@@ -212,10 +211,10 @@ $(document).ready(function() {
 				{{foreach $card.emails as $email}}
 				<div class="form-group">
 					<select name="email_type[]">
-						<option value=""{{if $email.type.0 != 'home' && $email.type.0 != 'work' && $email.type.0 != 'cell' && $email.type.0 != 'x-other'}} selected="selected"{{/if}}>{{$email.type.1}}</option>
-						<option value="home"{{if $email.type.0 == 'home'}} selected="selected"{{/if}}>Home</option>
-						<option value="work"{{if $email.type.0 == 'work'}} selected="selected"{{/if}}>Work</option>
-						<option value="x-other"{{if $email.type.0 == 'other'}} selected="selected"{{/if}}>Other</option>
+						<option value=""{{if $email.type.0 != 'HOME' && $email.type.0 != 'WORK' && $email.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$email.type.1}}</option>
+						<option value="HOME"{{if $email.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+						<option value="WORK"{{if $email.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+						<option value="OTHER"{{if $email.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
 					</select>
 					<input type="text" name="email[]" value="{{$email.address}}" size="{{$email.address|count_characters:true}}">
 				</div>
@@ -228,11 +227,10 @@ $(document).ready(function() {
 				{{foreach $card.impps as $impp}}
 				<div class="form-group">
 					<select name="impp_type[]">
-						<option value=""{{if $impp.type.0 != 'home' && $impp.type.0 != 'work' && $impp.type.0 != 'cell' && $impp.type.0 != 'x-other'}} selected="selected"{{/if}}>{{$impp.type.1}}</option>
-						<option value="cell"{{if $impp.type.0 == 'cell'}} selected="selected"{{/if}}>Mobile</option>
-						<option value="home"{{if $impp.type.0 == 'home'}} selected="selected"{{/if}}>Home</option>
-						<option value="work"{{if $impp.type.0 == 'work'}} selected="selected"{{/if}}>Work</option>
-						<option value="x-other"{{if $impp.type.0 == 'other'}} selected="selected"{{/if}}>Other</option>
+						<option value=""{{if $impp.type.0 != 'HOME' && $impp.type.0 != 'WORK' && $impp.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$impp.type.1}}</option>
+						<option value="HOME"{{if $impp.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+						<option value="WORK"{{if $impp.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+						<option value="OTHER"{{if $impp.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
 					</select>
 					<input type="text" name="impp[]" value="{{$impp.address}}" size="{{$impp.address|count_characters:true}}">
 				</div>
@@ -245,10 +243,10 @@ $(document).ready(function() {
 				{{foreach $card.urls as $url}}
 				<div class="form-group">
 					<select name="url_type[]">
-						<option value=""{{if $url.type.0 != 'home' && $url.type.0 != 'work' && $url.type.0 != 'x-other'}} selected="selected"{{/if}}>{{$url.type.1}}</option>
-						<option value="home"{{if $url.type.0 == 'home'}} selected="selected"{{/if}}>Home</option>
-						<option value="work"{{if $url.type.0 == 'work'}} selected="selected"{{/if}}>Work</option>
-						<option value="x-other"{{if $url.type.0 == 'other'}} selected="selected"{{/if}}>Other</option>
+						<option value=""{{if $url.type.0 != 'HOME' && $url.type.0 != 'WORK' && $url.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$url.type.1}}</option>
+						<option value="HOME"{{if $url.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+						<option value="WORK"{{if $url.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+						<option value="OTHER"{{if $url.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
 					</select>
 					<input type="text" name="url[]" value="{{$url.address}}" size="{{$url.address|count_characters:true}}">
 				</div>
@@ -261,10 +259,10 @@ $(document).ready(function() {
 				<div class="form-group">
 					<label>{{$adr_label}}:</label>
 					<select name="adr_type[]">
-						<option value=""{{if $adr.type.0 != 'home' && $adr.type.0 != 'work' && $adr.type.0 != 'x-other'}} selected="selected"{{/if}}>{{$adr.type.1}}</option>
-						<option value="home"{{if $adr.type.0 == 'home'}} selected="selected"{{/if}}>Home</option>
-						<option value="work"{{if $adr.type.0 == 'work'}} selected="selected"{{/if}}>Work</option>
-						<option value="x-other"{{if $adr.type.0 == 'other'}} selected="selected"{{/if}}>Other</option>
+						<option value=""{{if $adr.type.0 != 'HOME' && $adr.type.0 != 'WORK' && $adr.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$adr.type.1}}</option>
+						<option value="HOME"{{if $adr.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+						<option value="WORK"{{if $adr.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+						<option value="OTHER"{{if $adr.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
 					</select>
 				</div>
 				{{if $adr.address.0}}
