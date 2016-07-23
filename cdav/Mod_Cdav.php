@@ -991,7 +991,15 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					$photo = '';
 					if($vcard->PHOTO) {
-						$photo = (string)$vcard->PHOTO;
+						$photo_value = strtolower($vcard->PHOTO->getValueType()); // binary or uri
+						if($photo_value === 'binary') {
+							$photo_type = strtolower($vcard->PHOTO['TYPE']); // mime jpeg, png or gif
+							$photo = 'data:image/' . $photo_type . ';base64,' . base64_encode((string)$vcard->PHOTO);
+						}
+						else {
+							$url = parse_url((string)$vcard->PHOTO);
+							$photo = 'data:' . $url['path'];
+						}
 					}
 
 					$fn = '';
