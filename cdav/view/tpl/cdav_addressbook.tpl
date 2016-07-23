@@ -265,48 +265,34 @@ $(document).ready(function() {
 						<option value="OTHER"{{if $adr.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
 					</select>
 				</div>
-				{{if $adr.address.0}}
 				<div class="form-group">
 					<label>P.O. Box:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.0}}" size="{{$adr.address.0|count_characters:true}}">
 				</div>
-				{{/if}}
-				{{if $adr.address.1}}
 				<div class="form-group">
 					<label>Additional:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.1}}" size="{{$adr.address.1|count_characters:true}}">
 				</div>
-				{{/if}}
-				{{if $adr.address.2}}
 				<div class="form-group">
 					<label>Street:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.2}}" size="{{$adr.address.2|count_characters:true}}">
 				</div>
-				{{/if}}
-				{{if $adr.address.3}}
 				<div class="form-group">
 					<label>Locality:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.3}}" size="{{$adr.address.3|count_characters:true}}">
 				</div>
-				{{/if}}
-				{{if $adr.address.4}}
 				<div class="form-group">
 					<label>Region:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.4}}" size="{{$adr.address.4|count_characters:true}}">
 				</div>
-				{{/if}}
-				{{if $adr.address.5}}
 				<div class="form-group">
 					<label>ZIP Code:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.5}}" size="{{$adr.address.5|count_characters:true}}">
 				</div>
-				{{/if}}
-				{{if $adr.address.6}}
 				<div class="form-group">
 					<label>Country:</label>
 					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.6}}" size="{{$adr.address.6|count_characters:true}}">
 				</div>
-				{{/if}}
 				{{/foreach}}
 			</div>
 			{{/if}}
