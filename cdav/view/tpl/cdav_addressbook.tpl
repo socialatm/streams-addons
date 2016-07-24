@@ -2,12 +2,15 @@
 $(document).ready(function() {
 
 	$(document).on('click', '.vcard-header, .vcard-cancel', updateView);
+	$(document).on('click', '.add-field', doAdd);
+	$(document).on('click', '.remove-field', doRemove);
 
 	function updateView() {
 		var id = $(this).data('id');
 		var action = $(this).data('action');
 		var header = $('#vcard-header-' + id);
 		var cancel = $('#vcard-cancel-' + id);
+		var addField = $('#vcard-add-field-' + id);
 		var info = $('#vcard-info-' + id);
 		var vcardPreview = $('#vcard-preview-' + id);
 		var fn = $('#vcard-fn-' + id);
@@ -15,6 +18,7 @@ $(document).ready(function() {
 		if(action === 'open') {
 			$(header).addClass('active');
 			$(cancel).show();
+			$(addField).show();
 			$(info).show();
 			$(fn).show();
 			$(vcardPreview).hide();
@@ -22,14 +26,142 @@ $(document).ready(function() {
 		else {
 			$(header).removeClass('active');
 			$(cancel).hide();
+			$(addField).hide();
 			$(info).hide();
 			$(fn).hide();
 			$(vcardPreview).show();
 		}
 	}
 
+	function doAdd() {
+		var what = $(this).data('add');
+		var element = '#template-form-' + what;
+		var where = $(this).parents('form').attr('id');
+
+		console.log(where);
+
+		if(what === 'vcard-adr') {
+			var adrCount = $('#' + where + ' .form-' + what).length;
+			var attrName = 'adr[' + adrCount + '][]';
+			$(element + ' input').attr('name', attrName);
+		}
+
+		if(what === 'vcard-org' || what === 'vcard-title' || what === 'vcard-note') {
+			$('#' + where + ' .add-' + what).hide()
+		}
+
+		$(element).clone().removeAttr('id').appendTo('#' + where + ' .form-' + what + '-wrapper');
+	}
+
+	function doRemove() {
+		var what = $(this).data('remove');
+		var element = $(this).parents('div.form-' + what);
+		var where = $(this).parents('form').attr('id');
+
+		console.log(where);
+
+		if(what === 'vcard-org' || what === 'vcard-title' || what === 'vcard-note') {
+			$('#' + where + ' .add-' + what).show()
+		}
+
+		$(element).remove();
+	}
+
 });
 </script>
+<div id="template-form-vcard-org" class="form-group form-vcard-org">
+	<div class="form-group form-vcard-org">
+		<input type="text" name="org" value="" placeholder="{{$org_label}}">
+		<i data-remove="vcard-org" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+	</div>
+</div>
+
+<div id="template-form-vcard-title" class="form-group form-vcard-title">
+	<div class="form-group form-vcard-title">
+		<input type="text" name="title" value="" placeholder="{{$title_label}}">
+		<i data-remove="vcard-title" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+	</div>
+</div>
+
+<div id="template-form-vcard-tel" class="form-group form-vcard-tel">
+	<select name="tel_type[]">
+		<option value="CELL">Mobile</option>
+		<option value="HOME">Home</option>
+		<option value="WORK">Work</option>
+		<option value="OTHER">Other</option>
+	</select>
+	<input type="text" name="tel[]" value="" placeholder="{{$tel_label}}">
+	<i data-remove="vcard-tel" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+</div>
+
+<div id="template-form-vcard-email" class="form-group form-vcard-email">
+	<select name="email_type[]">
+		<option value="HOME">Home</option>
+		<option value="WORK">Work</option>
+		<option value="OTHER">Other</option>
+	</select>
+	<input type="text" name="email[]" value="" placeholder="{{$email_label}}">
+	<i data-remove="vcard-email" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+</div>
+
+<div id="template-form-vcard-impp" class="form-group form-vcard-impp">
+	<select name="impp_type[]">
+		<option value="HOME">Home</option>
+		<option value="WORK">Work</option>
+		<option value="OTHER">Other</option>
+	</select>
+	<input type="text" name="impp[]" value="" placeholder="{{$impp_label}}">
+	<i data-remove="vcard-impp" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+</div>
+
+<div id="template-form-vcard-url" class="form-group form-vcard-url">
+	<select name="url_type[]">
+		<option value="HOME">Home</option>
+		<option value="WORK">Work</option>
+		<option value="OTHER">Other</option>
+	</select>
+	<input type="text" name="url[]" value="" placeholder="{{$url_label}}">
+	<i data-remove="vcard-url" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+</div>
+
+<div id="template-form-vcard-adr" class="form-group form-vcard-adr">
+	<div class="form-group">
+		<select name="adr_type[]">
+			<option value="HOME">Home</option>
+			<option value="WORK">Work</option>
+			<option value="OTHER">Other</option>
+		</select>
+		<label>{{$adr_label}}:</label>
+		<i data-remove="vcard-adr" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="P.O. Box">
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="Additional">
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="Street">
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="Locality">
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="Region">
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="ZIP Code">
+	</div>
+	<div class="form-group">
+		<input type="text" name="" value="" placeholder="Country">
+	</div>
+</div>
+
+<div id="template-form-vcard-note" class="form-group form-vcard-note">
+	<label>{{$note_label}}:</label>
+	<i data-remove="vcard-note" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+	<textarea name="note" class="form-control"></textarea>
+</div>
 
 <div class="generic-content-wrapper">
 	<div class="section-title-wrapper">
@@ -39,132 +171,121 @@ $(document).ready(function() {
 	<div id="create_form" class="section-content-tools-wrapper">
 		<form id="new_card_form" method="post" action="">
 			<input type="hidden" name="target" value="{{$id}}">
+			<div class="dropdown pull-right">
+				<button data-toggle="dropdown" type="button" class="btn btn-default btn-sm dropdown-toggle">Add field</button>
+				<ul class="dropdown-menu">
+					<li class="add-vcard-org" style="display: none"><a href="#" data-add="vcard-org" class="add-field" onclick="return false;">{{$org_label}}</a></li>
+					<li class="add-vcard-title" style="display: none"><a href="#" data-add="vcard-title" class="add-field" onclick="return false;">{{$title_label}}</a></li>
+					<li class="add-vcard-tel"><a href="#" data-add="vcard-tel" class="add-field" onclick="return false;">{{$tel_label}}</a></li>
+					<li class="add-vcard-email"><a href="#" data-add="vcard-email" class="add-field" onclick="return false;">{{$email_label}}</a></li>
+					<li class="add-vcard-impp"><a href="#" data-add="vcard-impp" class="add-field" onclick="return false;">{{$impp_label}}</a></li>
+					<li class="add-vcard-url"><a href="#" data-add="vcard-url" class="add-field" onclick="return false;">{{$url_label}}</a></li>
+					<li class="add-vcard-adr"><a href="#" data-add="vcard-adr" class="add-field" onclick="return false;">{{$adr_label}}</a></li>
+					<li class="add-vcard-note"><a href="#" data-add="vcard-note" class="add-field" onclick="return false;">{{$note_label}}</a></li>
+				</ul>
+			</div>
 
 			<div class="vcard-fn-create form-group">
-				<label>Name:</label>
-				<input type="text" name="fn" value="">
+				<div class="form-vcard-fn-wrapper">
+					<div class="form-group form-vcard-fn">
+						<div class="vcard-nophoto"><i class="fa fa-user"></i></div><input type="text" name="fn" value="" placeholder="Name">
+					</div>
+				</div>
 			</div>
 
 			<div class="vcard-org form-group">
-				<label>{{$org_label}}:</label>
-				<input type="text" name="org" value="">
+				<div class="form-vcard-org-wrapper">
+					<div class="form-group form-vcard-org">
+						<input type="text" name="org" value="" placeholder="{{$org_label}}">
+						<i data-remove="vcard-org" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+				</div>
 			</div>
 
 			<div class="vcard-title form-group">
-				<label>{{$title_label}}:</label>
-				<input type="text" name="title" value="">
+				<div class="form-vcard-title-wrapper">
+					<div class="form-group form-vcard-title">
+						<input type="text" name="title" value="" placeholder="{{$title_label}}">
+						<i data-remove="vcard-title" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+				</div>
 			</div>
 
 			<div class="vcard-tel form-group">
-				<label>{{$tel_label}}:</label><br>
-				<div class="form-group">
-					<select name="tel_type[]">
-						<option value="">Type</option>
-						<option value="CELL">Mobile</option>
-						<option value="HOME">Home</option>
-						<option value="WORK">Work</option>
-						<option value="OTHER">Other</option>
-					</select>
-					<input type="text" name="tel[]" value="">
+				<div class="form-vcard-tel-wrapper">
+					<div class="form-group form-vcard-tel">
+						<select name="tel_type[]">
+							<option value="CELL">Mobile</option>
+							<option value="HOME">Home</option>
+							<option value="WORK">Work</option>
+							<option value="OTHER">Other</option>
+						</select>
+						<input type="text" name="tel[]" value="" placeholder="{{$tel_label}}">
+						<i data-remove="vcard-tel" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
 				</div>
 			</div>
 
 
 			<div class="vcard-email form-group">
-				<label>{{$email_label}}:</label><br>
-				<div class="form-group">
-					<select name="email_type[]">
-						<option value="">Type</option>
-						<option value="HOME">Home</option>
-						<option value="WORK">Work</option>
-						<option value="OTHER">Other</option>
-					</select>
-					<input type="text" name="email[]" value="">
+				<div class="form-vcard-email-wrapper">
+					<div class="form-group form-vcard-email">
+						<select name="email_type[]">
+							<option value="HOME">Home</option>
+							<option value="WORK">Work</option>
+							<option value="OTHER">Other</option>
+						</select>
+						<input type="text" name="email[]" value="" placeholder="{{$email_label}}">
+						<i data-remove="vcard-email" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
 				</div>
 			</div>
 
 			<div class="vcard-impp form-group">
-				<label>{{$impp_label}}:</label><br>
-				<div class="form-group">
-					<select name="impp_type[]">
-						<option value="">Type</option>
-						<option value="HOME">Home</option>
-						<option value="WORK">Work</option>
-						<option value="OTHER">Other</option>
-					</select>
-					<input type="text" name="impp[]" value="">
+				<div class="form-vcard-impp-wrapper">
 				</div>
 			</div>
 
 			<div class="vcard-url form-group">
-				<label>{{$url_label}}:</label><br>
-				<div class="form-group">
-					<select name="url_type[]">
-						<option value="">Type</option>
-						<option value="HOME">Home</option>
-						<option value="WORK">Work</option>
-						<option value="OTHER">Other</option>
-					</select>
-					<input type="text" name="url[]" value="">
+				<div class="form-vcard-url-wrapper">
 				</div>
 			</div>
 
-			<div class="vcard-url form-group">
-				<div class="form-group">
-					<label>{{$adr_label}}:</label>
-					<select name="adr_type[]">
-						<option value="">Type</option>
-						<option value="HOME">Home</option>
-						<option value="WORK">Work</option>
-						<option value="OTHER">Other</option>
-					</select>
-				</div>
-				<div class="form-group">
-					<label>P.O. Box:</label>
-					<input type="text" name="adr[0][]" value="">
-				</div>
-				<div class="form-group">
-					<label>Additional:</label>
-					<input type="text" name="adr[0][]" value="">
-				</div>
-				<div class="form-group">
-					<label>Street:</label>
-					<input type="text" name="adr[0][]" value="">
-				</div>
-				<div class="form-group">
-					<label>Locality:</label>
-					<input type="text" name="adr[0][]" value="">
-				</div>
-				<div class="form-group">
-					<label>Region:</label>
-					<input type="text" name="adr[0][]" value="">
-				</div>
-				<div class="form-group">
-					<label>ZIP Code:</label>
-					<input type="text" name="adr[0][]" value="">
-				</div>
-				<div class="form-group">
-					<label>Country:</label>
-					<input type="text" name="adr[0][]" value="">
+			<div class="vcard-adr form-group">
+				<div class="form-vcard-adr-wrapper">
 				</div>
 			</div>
 
 			<div class="vcard-note form-group">
-				<label>{{$note_label}}:</label>
-				<textarea name="note" class="form-control"></textarea>
+				<div class="form-vcard-note-wrapper">
+				</div>
 			</div>
 
 			<button type="submit" name="create" value="create_card" class="btn btn-primary btn-sm pull-right">Create</button>
+			<button type="button" class="btn btn-default btn-sm" onclick="openClose('create_form')">Cancel</button>
 			<div class="clear"></div>
 		</form>
 	</div>
 
 	{{foreach $cards as $card}}
-	<form id="card_form" method="post" action="">
+	<form id="card_form_{{$card.id}}" method="post" action="">
 		<input type="hidden" name="target" value="{{$id}}">
 		<input type="hidden" name="uri" value="{{$card.uri}}">
 		<div class="section-content-wrapper-np">
 			<div id="vcard-cancel-{{$card.id}}" class="vcard-cancel" data-id="{{$card.id}}" data-action="cancel"><i class="fa fa-close"></i></div>
+			<div id="vcard-add-field-{{$card.id}}" class="dropdown pull-right vcard-add-field">
+				<button data-toggle="dropdown" type="button" class="btn btn-default btn-sm dropdown-toggle">Add field</button>
+				<ul class="dropdown-menu">
+					<li class="add-vcard-org"{{if $card.org}} style="display: none"{{/if}}><a href="#" data-add="vcard-org" class="add-field" onclick="return false;">{{$org_label}}</a></li>
+					<li class="add-vcard-title"{{if $card.title}} style="display: none"{{/if}}><a href="#" data-add="vcard-title" class="add-field" onclick="return false;">{{$title_label}}</a></li>
+					<li class="add-vcard-tel"><a href="#" data-add="vcard-tel" class="add-field" onclick="return false;">{{$tel_label}}</a></li>
+					<li class="add-vcard-email"><a href="#" data-add="vcard-email" class="add-field" onclick="return false;">{{$email_label}}</a></li>
+					<li class="add-vcard-impp"><a href="#" data-add="vcard-impp" class="add-field" onclick="return false;">{{$impp_label}}</a></li>
+					<li class="add-vcard-url"><a href="#" data-add="vcard-url" class="add-field" onclick="return false;">{{$url_label}}</a></li>
+					<li class="add-vcard-adr"><a href="#" data-add="vcard-adr" class="add-field" onclick="return false;">{{$adr_label}}</a></li>
+					<li class="add-vcard-note"{{if $card.note}} style="display: none"{{/if}}><a href="#" data-add="vcard-note" class="add-field" onclick="return false;">{{$note_label}}</a></li>
+				</ul>
+			</div>
 			<div id="vcard-header-{{$card.id}}" class="vcard-header" data-id="{{$card.id}}" data-action="open">
 				{{if $card.photo}}<img class="vcard-photo" src="{{$card.photo}}" width="32px" height="32px">{{else}}<div class="vcard-nophoto"><i class="fa fa-user"></i></div>{{/if}}
 				<span id="vcard-preview-{{$card.id}}" class="vcard-preview">
@@ -176,133 +297,160 @@ $(document).ready(function() {
 			</div>
 		</div>
 		<div id="vcard-info-{{$card.id}}" class="vcard-info section-content-wrapper">
-			{{if $card.org}}
-			<div class="vcard-org form-group">
-				<label>{{$org_label}}:</label>
-				<input type="text" name="org" value="{{$card.org}}" size="{{$card.org|count_characters:true}}">
-			</div>
-			{{/if}}
-			{{if $card.title}}
-			<div class="vcard-title form-group">
-				<label>{{$title_label}}:</label>
-				<input type="text" name="title" value="{{$card.title}}" size="{{$card.title|count_characters:true}}">
-			</div>
-			{{/if}}
-			{{if $card.tels}}
-			<div class="vcard-tel form-group">
-				<label>{{$tel_label}}:</label><br>
-				{{foreach $card.tels as $tel}}
-				<div class="form-group">
-					<select name="tel_type[]">
-						<option value=""{{if $tel.type.0 != 'CELL' && $tel.type.0 != 'HOME' && $tel.type.0 != 'WORK' && $tel.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$tel.type.1}}</option>
-						<option value="CELL"{{if $tel.type.0 == 'CELL'}} selected="selected"{{/if}}>Mobile</option>
-						<option value="HOME"{{if $tel.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
-						<option value="WORK"{{if $tel.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
-						<option value="OTHER"{{if $tel.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
-					</select>
-					<input type="text" name="tel[]" value="{{$tel.nr}}" size="{{$tel.nr|count_characters:true}}">
-				</div>
-				{{/foreach}}
-			</div>
-			{{/if}}
-			{{if $card.emails}}
-			<div class="vcard-email form-group">
-				<label>{{$email_label}}:</label><br>
-				{{foreach $card.emails as $email}}
-				<div class="form-group">
-					<select name="email_type[]">
-						<option value=""{{if $email.type.0 != 'HOME' && $email.type.0 != 'WORK' && $email.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$email.type.1}}</option>
-						<option value="HOME"{{if $email.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
-						<option value="WORK"{{if $email.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
-						<option value="OTHER"{{if $email.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
-					</select>
-					<input type="text" name="email[]" value="{{$email.address}}" size="{{$email.address|count_characters:true}}">
-				</div>
-				{{/foreach}}
-			</div>
-			{{/if}}
-			{{if $card.impps}}
-			<div class="vcard-impp form-group">
-				<label>{{$impp_label}}:</label><br>
-				{{foreach $card.impps as $impp}}
-				<div class="form-group">
-					<select name="impp_type[]">
-						<option value=""{{if $impp.type.0 != 'HOME' && $impp.type.0 != 'WORK' && $impp.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$impp.type.1}}</option>
-						<option value="HOME"{{if $impp.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
-						<option value="WORK"{{if $impp.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
-						<option value="OTHER"{{if $impp.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
-					</select>
-					<input type="text" name="impp[]" value="{{$impp.address}}" size="{{$impp.address|count_characters:true}}">
-				</div>
-				{{/foreach}}
-			</div>
-			{{/if}}
-			{{if $card.urls}}
-			<div class="vcard-url form-group">
-				<label>{{$url_label}}:</label><br>
-				{{foreach $card.urls as $url}}
-				<div class="form-group">
-					<select name="url_type[]">
-						<option value=""{{if $url.type.0 != 'HOME' && $url.type.0 != 'WORK' && $url.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$url.type.1}}</option>
-						<option value="HOME"{{if $url.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
-						<option value="WORK"{{if $url.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
-						<option value="OTHER"{{if $url.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
-					</select>
-					<input type="text" name="url[]" value="{{$url.address}}" size="{{$url.address|count_characters:true}}">
-				</div>
-				{{/foreach}}
-			</div>
-			{{/if}}
-			{{if $card.adrs}}
-			<div class="vcard-url form-group">
-				{{foreach $card.adrs as $adr}}
-				<div class="form-group">
-					<label>{{$adr_label}}:</label>
-					<select name="adr_type[]">
-						<option value=""{{if $adr.type.0 != 'HOME' && $adr.type.0 != 'WORK' && $adr.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$adr.type.1}}</option>
-						<option value="HOME"{{if $adr.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
-						<option value="WORK"{{if $adr.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
-						<option value="OTHER"{{if $adr.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
-					</select>
-				</div>
-				<div class="form-group">
-					<label>P.O. Box:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.0}}" size="{{$adr.address.0|count_characters:true}}">
-				</div>
-				<div class="form-group">
-					<label>Additional:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.1}}" size="{{$adr.address.1|count_characters:true}}">
-				</div>
-				<div class="form-group">
-					<label>Street:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.2}}" size="{{$adr.address.2|count_characters:true}}">
-				</div>
-				<div class="form-group">
-					<label>Locality:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.3}}" size="{{$adr.address.3|count_characters:true}}">
-				</div>
-				<div class="form-group">
-					<label>Region:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.4}}" size="{{$adr.address.4|count_characters:true}}">
-				</div>
-				<div class="form-group">
-					<label>ZIP Code:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.5}}" size="{{$adr.address.5|count_characters:true}}">
-				</div>
-				<div class="form-group">
-					<label>Country:</label>
-					<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.6}}" size="{{$adr.address.6|count_characters:true}}">
-				</div>
-				{{/foreach}}
-			</div>
-			{{/if}}
 
-			{{if $card.note}}
-			<div class="vcard-note form-group">
-				<label>{{$note_label}}:</label>
-				<textarea name="note" class="form-control">{{$card.note}}</textarea>
+			<div class="vcard-org form-group">
+				<div class="form-vcard-org-wrapper">
+					{{if $card.org}}
+					<div class="form-group form-vcard-org">
+						<input type="text" name="org" value="{{$card.org}}" size="{{$card.org|count_characters:true}}" placeholder="{{$org_label}}">
+						<i data-remove="vcard-org" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+					{{/if}}
+				</div>
 			</div>
-			{{/if}}
+
+			<div class="vcard-title form-group">
+				<div class="form-vcard-title-wrapper">
+					{{if $card.title}}
+					<div class="form-group form-vcard-title">
+						<input type="text" name="title" value="{{$card.title}}" size="{{$card.title|count_characters:true}}" placeholder="{{$title_label}}">
+						<i data-remove="vcard-title" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+					{{/if}}
+				</div>
+			</div>
+
+
+			<div class="vcard-tel form-group">
+				<div class="form-vcard-tel-wrapper">
+					{{if $card.tels}}
+					{{foreach $card.tels as $tel}}
+					<div class="form-group form-vcard-tel">
+						<select name="tel_type[]">
+							<option value=""{{if $tel.type.0 != 'CELL' && $tel.type.0 != 'HOME' && $tel.type.0 != 'WORK' && $tel.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$tel.type.1}}</option>
+							<option value="CELL"{{if $tel.type.0 == 'CELL'}} selected="selected"{{/if}}>Mobile</option>
+							<option value="HOME"{{if $tel.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+							<option value="WORK"{{if $tel.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+							<option value="OTHER"{{if $tel.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
+						</select>
+						<input type="text" name="tel[]" value="{{$tel.nr}}" size="{{$tel.nr|count_characters:true}}" placeholder="{{$tel_label}}">
+						<i data-remove="vcard-tel" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+					{{/foreach}}
+					{{/if}}
+				</div>
+			</div>
+
+
+			<div class="vcard-email form-group">
+				<div class="form-vcard-email-wrapper">
+					{{if $card.emails}}
+					{{foreach $card.emails as $email}}
+					<div class="form-group form-vcard-email">
+						<select name="email_type[]">
+							<option value=""{{if $email.type.0 != 'HOME' && $email.type.0 != 'WORK' && $email.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$email.type.1}}</option>
+							<option value="HOME"{{if $email.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+							<option value="WORK"{{if $email.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+							<option value="OTHER"{{if $email.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
+						</select>
+						<input type="text" name="email[]" value="{{$email.address}}" size="{{$email.address|count_characters:true}} placeholder="{{$email_label}}">
+						<i data-remove="vcard-email" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+					{{/foreach}}
+					{{/if}}
+				</div>
+			</div>
+
+			<div class="vcard-impp form-group">
+				<div class="form-vcard-impp-wrapper">
+					{{if $card.impps}}
+					{{foreach $card.impps as $impp}}
+					<div class="form-group form-vcard-impp">
+						<select name="impp_type[]">
+							<option value=""{{if $impp.type.0 != 'HOME' && $impp.type.0 != 'WORK' && $impp.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$impp.type.1}}</option>
+							<option value="HOME"{{if $impp.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+							<option value="WORK"{{if $impp.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+							<option value="OTHER"{{if $impp.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
+						</select>
+						<input type="text" name="impp[]" value="{{$impp.address}}" size="{{$impp.address|count_characters:true}} placeholder="{{$impp_label}}">
+						<i data-remove="vcard-impp" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+					{{/foreach}}
+					{{/if}}
+				</div>
+			</div>
+
+			<div class="vcard-url form-group">
+				<div class="form-vcard-url-wrapper">
+					{{if $card.urls}}
+					{{foreach $card.urls as $url}}
+					<div class="form-group form-vcard-url">
+						<select name="url_type[]">
+							<option value=""{{if $url.type.0 != 'HOME' && $url.type.0 != 'WORK' && $url.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$url.type.1}}</option>
+							<option value="HOME"{{if $url.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+							<option value="WORK"{{if $url.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+							<option value="OTHER"{{if $url.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
+						</select>
+						<input type="text" name="url[]" value="{{$url.address}}" size="{{$url.address|count_characters:true}}" placeholder="{{$url_label}}">
+						<i data-remove="vcard-url" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					</div>
+					{{/foreach}}
+					{{/if}}
+				</div>
+			</div>
+
+			<div class="vcard-adr form-group">
+				<div class="form-vcard-adr-wrapper">
+					{{if $card.adrs}}
+					{{foreach $card.adrs as $adr}}
+					<div class="form-group form-vcard-adr">
+						<div class="form-group">
+							<label>{{$adr_label}}:</label>
+							<select name="adr_type[]">
+								<option value=""{{if $adr.type.0 != 'HOME' && $adr.type.0 != 'WORK' && $adr.type.0 != 'OTHER'}} selected="selected"{{/if}}>{{$adr.type.1}}</option>
+								<option value="HOME"{{if $adr.type.0 == 'HOME'}} selected="selected"{{/if}}>Home</option>
+								<option value="WORK"{{if $adr.type.0 == 'WORK'}} selected="selected"{{/if}}>Work</option>
+								<option value="OTHER"{{if $adr.type.0 == 'OTHER'}} selected="selected"{{/if}}>Other</option>
+							</select>
+							<i data-remove="vcard-adr" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.0}}" size="{{$adr.address.0|count_characters:true}}" placeholder="P.O. Box">
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.1}}" size="{{$adr.address.1|count_characters:true}}" placeholder="Additional">
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.2}}" size="{{$adr.address.2|count_characters:true}}" placeholder="Street">
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.3}}" size="{{$adr.address.3|count_characters:true}}" placeholder="Locality">
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.4}}" size="{{$adr.address.4|count_characters:true}}" placeholder="Region">
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.5}}" size="{{$adr.address.5|count_characters:true}}" placeholder="ZIP Code">
+						</div>
+						<div class="form-group">
+							<input type="text" name="adr[{{$adr@index}}][]" value="{{$adr.address.6}}" size="{{$adr.address.6|count_characters:true}}" placeholder="Country">
+						</div>
+					</div>
+					{{/foreach}}
+					{{/if}}
+				</div>
+			</div>
+
+			<div class="vcard-note form-group form-vcard-note">
+				<div class="form-vcard-note-wrapper">
+					{{if $card.note}}
+					<label>{{$note_label}}:</label>
+					<i data-remove="vcard-note" class="fa fa-trash-o remove-field drop-icons fakelink"></i>
+					<textarea name="note" class="form-control">{{$card.note}}</textarea>
+					{{/if}}
+				</div>
+			</div>
+
 			<button type="submit" name="delete" value="delete_card" class="btn btn-danger btn-sm pull-left">Delete</button>
 			<button type="submit" name="update" value="update_card" class="btn btn-primary btn-sm pull-right">Update</button>
 			<div class="clear"></div>
