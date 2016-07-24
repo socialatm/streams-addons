@@ -516,6 +516,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				$adr = $_REQUEST['adr'];
 				$adr_type = $_REQUEST['adr_type'];
+
 				if($adr) {
 					$i = 0;
 					foreach($adr as $arr_item) {
@@ -588,6 +589,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$i++;
 					}
 				}
+				else {
+					unset($vcard->TEL);
+				}
 
 				$email = $_REQUEST['email'];
 				$email_type = $_REQUEST['email_type'];
@@ -600,6 +604,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 						}
 						$i++;
 					}
+				}
+				else {
+					unset($vcard->EMAIL);
 				}
 
 				$impp = $_REQUEST['impp'];
@@ -614,6 +621,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$i++;
 					}
 				}
+				else {
+					unset($vcard->IMPP);
+				}
 
 				$url = $_REQUEST['url'];
 				$url_type = $_REQUEST['url_type'];
@@ -626,6 +636,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 						}
 						$i++;
 					}
+				}
+				else {
+					unset($vcard->URL);
 				}
 
 				$adr = $_REQUEST['adr'];
@@ -643,6 +656,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 						}
 						$i++;
 					}
+				}
+				else {
+					unset($vcard->ADR);
 				}
 
 				$note = dbesc($_REQUEST['note']);

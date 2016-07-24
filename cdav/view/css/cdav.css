@@ -20,6 +20,11 @@
 	cursor: initial;
 }
 
+.vcard-add-field {
+	margin-top: 8px;
+	display: none;
+}
+
 .vcard-cancel {
 	margin: 6px 10px;
 	height: 32px;
@@ -67,8 +72,10 @@ input.vcard-fn {
 	color: #999;
 }
 
+
 .vcard-fn,
-#create_form {
+#create_form,
+#more_block {
 	display: none;
 }
 
@@ -88,4 +95,15 @@ input.vcard-fn,
 	border-radius: 0px;
 	background-color: transparent;
 	min-width: 160px;
+}
+
+#template-form-vcard-org,
+#template-form-vcard-title,
+#template-form-vcard-tel,
+#template-form-vcard-email,
+#template-form-vcard-impp,
+#template-form-vcard-url,
+#template-form-vcard-adr,
+#template-form-vcard-note {
+	display: none;
 }
