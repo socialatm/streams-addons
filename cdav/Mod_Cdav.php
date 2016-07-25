@@ -1092,7 +1092,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					$note = '';
 					if($vcard->NOTE) {
-						$note = (string)$vcard->NOTE;
+						$note = str_replace(array('\r\n', '\r', '\n'), array("\r\n", "\r", "\n"), (string)$vcard->NOTE);
 					}
 
 					$cards[] = [
