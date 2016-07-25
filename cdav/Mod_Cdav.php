@@ -193,8 +193,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 				} while ($duplicate == true);
 
 				$properties = [
-					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
-					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color']),
+					'{DAV:}displayname' => $_REQUEST['{DAV:}displayname'],
+					'{http://apple.com/ns/ical/}calendar-color' => $_REQUEST['color'],
 					'{urn:ietf:params:xml:ns:caldav}calendar-description' => $channel['channel_name']
 				];
 
@@ -207,17 +207,17 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//create new calendar object via ajax request
 			if($_REQUEST['submit'] === 'create_event' && $_REQUEST['title'] && $_REQUEST['target'] && $_REQUEST['dtstart']) {
 
-				$id = explode(':', dbesc($_REQUEST['target']));
+				$id = explode(':', $_REQUEST['target']);
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
 
-				$title = dbesc($_REQUEST['title']);
-				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
+				$title = $_REQUEST['title'];
+				$dtstart = new \DateTime($_REQUEST['dtstart']);
 				if($_REQUEST['dtend'])
-					$dtend = new \DateTime(dbesc($_REQUEST['dtend']));
-				$description = dbesc($_REQUEST['description']);
-				$location = dbesc($_REQUEST['location']);
+					$dtend = new \DateTime($_REQUEST['dtend']);
+				$description = $_REQUEST['description'];
+				$location = $_REQUEST['location'];
 
 				do {
 					$duplicate = false;
@@ -256,14 +256,14 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//edit calendar name and color
 			if($_REQUEST['{DAV:}displayname'] && $_REQUEST['edit'] && $_REQUEST['id']) {
 
-				$id = explode(':', dbesc($_REQUEST['id']));
+				$id = explode(':', $_REQUEST['id']);
 
 				if(! cdav_perms($id[0],$calendars))
 					return;
 
 				$mutations = [
-					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname']),
-					'{http://apple.com/ns/ical/}calendar-color' => dbesc($_REQUEST['color'])
+					'{DAV:}displayname' => $_REQUEST['{DAV:}displayname'],
+					'{http://apple.com/ns/ical/}calendar-color' => $_REQUEST['color']
 				];
 
 				$patch = new \Sabre\DAV\PropPatch($mutations);
@@ -277,17 +277,17 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//edit calendar object via ajax request
 			if($_REQUEST['submit'] === 'update_event' && $_REQUEST['uri'] && $_REQUEST['title'] && $_REQUEST['target'] && $_REQUEST['dtstart']) {
 
-				$id = explode(':', dbesc($_REQUEST['target']));
+				$id = explode(':', $_REQUEST['target']);
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
 
-				$uri = dbesc($_REQUEST['uri']);
-				$title = dbesc($_REQUEST['title']);
-				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
-				$dtend = $_REQUEST['dtend'] ? new \DateTime(dbesc($_REQUEST['dtend'])) : '';
-				$description = dbesc($_REQUEST['description']);
-				$location = dbesc($_REQUEST['location']);
+				$uri = $_REQUEST['uri'];
+				$title = $_REQUEST['title'];
+				$dtstart = new \DateTime($_REQUEST['dtstart']);
+				$dtend = $_REQUEST['dtend'] ? new \DateTime($_REQUEST['dtend']) : '';
+				$description = $_REQUEST['description'];
+				$location = $_REQUEST['location'];
 
 				$object = $caldavBackend->getCalendarObject($id, $uri);
 
@@ -316,12 +316,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//delete calendar object via ajax request
 			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['target']) {
 
-				$id = explode(':', dbesc($_REQUEST['target']));
+				$id = explode(':', $_REQUEST['target']);
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
 
-				$uri = dbesc($_REQUEST['uri']);
+				$uri = $_REQUEST['uri'];
 
 				$caldavBackend->deleteCalendarObject($id, $uri);
 
@@ -331,14 +331,14 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//edit calendar object date/timeme via ajax request (drag and drop)
 			if($_REQUEST['update'] && $_REQUEST['id'] && $_REQUEST['uri']) {
 
-				$id = [dbesc($_REQUEST['id'][0]), dbesc($_REQUEST['id'][1])];
+				$id = [$_REQUEST['id'][0], $_REQUEST['id'][1]];
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
 
-				$uri = dbesc($_REQUEST['uri']);
-				$dtstart = new \DateTime(dbesc($_REQUEST['dtstart']));
-				$dtend = $_REQUEST['dtend'] ? new \DateTime(dbesc($_REQUEST['dtend'])) : '';
+				$uri = $_REQUEST['uri'];
+				$dtstart = new \DateTime($_REQUEST['dtstart']);
+				$dtend = $_REQUEST['dtend'] ? new \DateTime($_REQUEST['dtend']) : '';
 
 				if(!cdav_perms($id[0],$calendars,true))
 					return;
@@ -407,7 +407,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$duplicate = true;
 				} while ($duplicate == true);
 
-				$properties = ['{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname'])];
+				$properties = ['{DAV:}displayname' => $_REQUEST['{DAV:}displayname']];
 
 				$carddavBackend->createAddressBook($principalUri, $addressbookUri, $properties);
 			}
@@ -421,7 +421,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					return;
 
 				$mutations = [
-					'{DAV:}displayname' => dbesc($_REQUEST['{DAV:}displayname'])
+					'{DAV:}displayname' => $_REQUEST['{DAV:}displayname']
 				];
 
 				$patch = new \Sabre\DAV\PropPatch($mutations);
@@ -433,7 +433,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			//create addressbook card
 			if($_REQUEST['create'] && $_REQUEST['target'] && $_REQUEST['fn']) {
-				$id = dbesc($_REQUEST['target']);
+				$id = $_REQUEST['target'];
 
 				do {
 					$duplicate = false;
@@ -449,19 +449,19 @@ class Cdav extends \Zotlabs\Web\Controller {
 				} while ($duplicate == true);
 
 				//TODO: this mostly duplictes the procedure in update addressbook card. should move this part to a function to avoid duplication
-				$fn = dbesc($_REQUEST['fn']);
+				$fn = $_REQUEST['fn'];
 
 				$vcard = new \Sabre\VObject\Component\VCard([
 					'FN' => $fn,
 					'N' => array_reverse(explode(' ', $fn))
 				]);
 
-				$org = dbesc($_REQUEST['org']);
+				$org = $_REQUEST['org'];
 				if($org) {
 					$vcard->ORG = $org;
 				}
 
-				$title = dbesc($_REQUEST['title']);
+				$title = $_REQUEST['title'];
 				if($title) {
 					$vcard->TITLE = $title;
 				}
@@ -472,7 +472,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$i = 0;
 					foreach($tel as $item) {
 						if($item) {
-							$vcard->add('TEL', dbesc($item), ['type' => dbesc($tel_type[$i])]);
+							$vcard->add('TEL', $item, ['type' => $tel_type[$i]]);
 						}
 						$i++;
 					}
@@ -484,7 +484,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$i = 0;
 					foreach($email as $item) {
 						if($item) {
-							$vcard->add('EMAIL', dbesc($item), ['type' => dbesc($email_type[$i])]);
+							$vcard->add('EMAIL', $item, ['type' => $email_type[$i]]);
 						}
 						$i++;
 					}
@@ -496,7 +496,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$i = 0;
 					foreach($impp as $item) {
 						if($item) {
-							$vcard->add('IMPP', dbesc($item), ['type' => dbesc($impp_type[$i])]);
+							$vcard->add('IMPP', $item, ['type' => $impp_type[$i]]);
 						}
 						$i++;
 					}
@@ -508,7 +508,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$i = 0;
 					foreach($url as $item) {
 						if($item) {
-							$vcard->add('URL', dbesc($item), ['type' => dbesc($url_type[$i])]);
+							$vcard->add('URL', $item, ['type' => $url_type[$i]]);
 						}
 						$i++;
 					}
@@ -519,19 +519,15 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 				if($adr) {
 					$i = 0;
-					foreach($adr as $arr_item) {
-						if($arr_item) {
-							$esc_arr_item = [];
-							foreach($arr_item as $item) {
-								$esc_arr_item[] = dbesc($item);
-							}
-							$vcard->add('ADR', $esc_arr_item, ['type' => dbesc($adr_type[$i])]);
+					foreach($adr as $item) {
+						if($item) {
+							$vcard->add('ADR', $item, ['type' => $adr_type[$i]]);
 						}
 						$i++;
 					}
 				}
 
-				$note = dbesc($_REQUEST['note']);
+				$note = $_REQUEST['note'];
 				if($note) {
 					$vcard->NOTE = $note;
 				}
@@ -545,23 +541,23 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//edit addressbook card
 			if($_REQUEST['update'] && $_REQUEST['uri'] && $_REQUEST['target']) {
 
-				$id = dbesc($_REQUEST['target']);
+				$id = $_REQUEST['target'];
 
 				if(!cdav_perms($id,$addressbooks))
 					return;
 
-				$uri = dbesc($_REQUEST['uri']);
+				$uri = $_REQUEST['uri'];
 
 				$object = $carddavBackend->getCard($id, $uri);
 				$vcard = \Sabre\VObject\Reader::read($object['carddata']);
 
-				$fn = dbesc($_REQUEST['fn']);
+				$fn = $_REQUEST['fn'];
 				if($fn) {
 					$vcard->FN = $fn;
 					$vcard->N = array_reverse(explode(' ', $fn));
 				}
 
-				$org = dbesc($_REQUEST['org']);
+				$org = $_REQUEST['org'];
 				if($org) {
 					$vcard->ORG = $org;
 				}
@@ -569,7 +565,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					unset($vcard->ORG);
 				}
 
-				$title = dbesc($_REQUEST['title']);
+				$title = $_REQUEST['title'];
 				if($title) {
 					$vcard->TITLE = $title;
 				}
@@ -584,7 +580,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					unset($vcard->TEL);
 					foreach($tel as $item) {
 						if($item) {
-							$vcard->add('TEL', dbesc($item), ['type' => dbesc($tel_type[$i])]);
+							$vcard->add('TEL', $item, ['type' => $tel_type[$i]]);
 						}
 						$i++;
 					}
@@ -600,7 +596,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					unset($vcard->EMAIL);
 					foreach($email as $item) {
 						if($item) {
-							$vcard->add('EMAIL', dbesc($item), ['type' => dbesc($email_type[$i])]);
+							$vcard->add('EMAIL', $item, ['type' => $email_type[$i]]);
 						}
 						$i++;
 					}
@@ -616,7 +612,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					unset($vcard->IMPP);
 					foreach($impp as $item) {
 						if($item) {
-							$vcard->add('IMPP', dbesc($item), ['type' => dbesc($impp_type[$i])]);
+							$vcard->add('IMPP', $item, ['type' => $impp_type[$i]]);
 						}
 						$i++;
 					}
@@ -632,7 +628,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					unset($vcard->URL);
 					foreach($url as $item) {
 						if($item) {
-							$vcard->add('URL', dbesc($item), ['type' => dbesc($url_type[$i])]);
+							$vcard->add('URL', $item, ['type' => $url_type[$i]]);
 						}
 						$i++;
 					}
@@ -646,13 +642,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 				if($adr) {
 					$i = 0;
 					unset($vcard->ADR);
-					foreach($adr as $arr_item) {
-						if($arr_item) {
-							$esc_arr_item = [];
-							foreach($arr_item as $item) {
-								$esc_arr_item[] = dbesc($item);
-							}
-							$vcard->add('ADR', $esc_arr_item, ['type' => dbesc($adr_type[$i])]);
+					foreach($adr as $item) {
+						if($item) {
+							$vcard->add('ADR', $item, ['type' => $adr_type[$i]]);
 						}
 						$i++;
 					}
@@ -661,7 +653,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 					unset($vcard->ADR);
 				}
 
-				$note = dbesc($_REQUEST['note']);
+				$note = $_REQUEST['note'];
 				if($note) {
 					$vcard->NOTE = $note;
 				}
@@ -677,12 +669,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 			//delete addressbook card
 			if($_REQUEST['delete'] && $_REQUEST['uri'] && $_REQUEST['target']) {
 
-				$id = dbesc($_REQUEST['target']);
+				$id = $_REQUEST['target'];
 
 				if(!cdav_perms($id,$addressbooks))
 					return;
 
-				$uri = dbesc($_REQUEST['uri']);
+				$uri = $_REQUEST['uri'];
 
 				$carddavBackend->deleteCard($id, $uri);
 			}
@@ -696,7 +688,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if($src) {
 
 				if($_REQUEST['c_upload']) {
-					$id = explode(':', dbesc($_REQUEST['target']));
+					$id = explode(':', $_REQUEST['target']);
 					$ext = 'ics';
 					$table = 'calendarobjects';
 					$column = 'calendarid';
@@ -1092,7 +1084,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					$note = '';
 					if($vcard->NOTE) {
-						$note = str_replace(array('\r\n', '\r', '\n'), array("\r\n", "\r", "\n"), (string)$vcard->NOTE);
+						$note = (string)$vcard->NOTE;
 					}
 
 					$cards[] = [
