@@ -992,6 +992,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 			if(!$displayname)
 				return;
 
+			head_add_css('addon/cdav/view/css/cdav_addressbook.css');
+
 			$o = '';
 
 			$sabrecards = $carddavBackend->getCards($id);
@@ -1117,14 +1119,32 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$id' => $id,
 				'$cards' => $cards,
 				'$displayname' => $displayname,
+				'$name_label' => t('Name'),
 				'$org_label' => t('Organisation'),
 				'$title_label' => t('Title'),
 				'$tel_label' => t('Phone'),
 				'$email_label' => t('Email'),
-				'$impp_label' => t('Instant message'),
+				'$impp_label' => t('Instant messenger'),
 				'$url_label' => t('Website'),
 				'$adr_label' => t('Address'),
 				'$note_label' => t('Note'),
+				'$mobile' => t('Mobile'),
+				'$home' => t('Home'),
+				'$work' => t('Work'),
+				'$other' => t('Other'),
+				'$add_card' => t('Add Contact'),
+				'$add_field' => t('Add Field'),
+				'$create' => t('Create'),
+				'$update' => t('Update'),
+				'$delete' => t('Delete'),
+				'$cancel' => t('Cancel'),
+				'$po_box' => t('P.O. Box'),
+				'$extra' => t('Additional'),
+				'$street' => t('Street'),
+				'$locality' => t('Locality'),
+				'$region' => t('Region'),
+				'$zip_code' => t('ZIP Code'),
+				'$country' => t('Country')
 			]);
 
 			return $o;
