@@ -2,7 +2,6 @@
 
 require_once('library/openid/openid.php');
 
-
 	/**
 	 *
 	 * Name: Openid
