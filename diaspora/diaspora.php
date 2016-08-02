@@ -739,14 +739,27 @@ function diaspora_post_local(&$a,&$item) {
 
 		$handle = $author['channel_address'] . '@' . App::get_hostname();
 
-		$body = bb2diaspora_itembody($item,true,true);
+		if($item['verb'] === ACTIVITY_LIKE) {
+			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
+				$meta = [
+					'positive'        => 'true',
+					'guid'            => $item['mid'],
+					'target_type'     => 'Post',
+					'parent_guid'     => $item['parent_mid'],
+					'diaspora_handle' => $handle
+				];
+			}
+		}
+		else {
+			$body = bb2diaspora_itembody($item,true,true);
 
-		$meta = array(
-			'guid' => $item['mid'],
-			'parent_guid' => $item['parent_mid'],
-			'text' => $body,
-			'diaspora_handle' => $handle
-		);
+			$meta = [
+				'guid'            => $item['mid'],
+				'parent_guid'     => $item['parent_mid'],
+				'text'            => $body,
+				'diaspora_handle' => $handle
+			];
+		}
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
 		if($item['author_xchan'] === $item['owner_xchan'])
@@ -772,14 +785,26 @@ function diaspora_post_local(&$a,&$item) {
 
 		$handle = $owner['channel_address'] . '@' . App::get_hostname();
 
-		$body = bb2diaspora_itembody($item,true,false);
-
-		$meta = array(
-			'guid' => $item['mid'],
-			'parent_guid' => $item['parent_mid'],
-			'text' => $body,
-			'diaspora_handle' => $handle
-		);
+		if($item['verb'] === ACTIVITY_LIKE) {
+			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
+				$meta = [
+					'positive'        => 'true',
+					'guid'            => $item['mid'],
+					'target_type'     => 'Post',
+					'parent_guid'     => $item['parent_mid'],
+					'diaspora_handle' => $handle
+				];
+			}
+		}
+		else {
+			$body = bb2diaspora_itembody($item,true,false);
+			$meta = [
+				'guid'            => $item['mid'],
+				'parent_guid'     => $item['parent_mid'],
+				'text'            => $body,
+				'diaspora_handle' => $handle
+			];
+		}
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $owner['channel_prvkey']);
 		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$owner['channel_prvkey']);
