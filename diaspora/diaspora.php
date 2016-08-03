@@ -334,7 +334,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			return;
 		}
 		elseif($arr['top_level_post']) {
-			if(perm_is_allowed($arr['channel'],'','view_stream')) {
+			if(perm_is_allowed($arr['channel']['channel_id'],'','view_stream')) {
 				logger('delivery: diaspora status: ' . $loc);
 				$qi = diaspora_send_status($target_item,$arr['channel'],$contact,true);
 				if($qi) {
