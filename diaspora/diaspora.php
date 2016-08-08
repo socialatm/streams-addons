@@ -33,6 +33,7 @@ function diaspora_load() {
 	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
+	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 
 	if(! get_config('diaspora','relay_handle')) {
 		$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
@@ -57,6 +58,7 @@ function diaspora_unload() {
 	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
+	unregister_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 }
 
 
@@ -818,5 +820,14 @@ function diaspora_post_local(&$a,&$item) {
 
 
 // 	logger('ditem: ' . print_r($item,true));
+
+}
+
+
+function diaspora_create_identity($a,$b) {
+
+	if(get_config('system','server_role') === 'basic') {
+		set_pconfig($b,'system','diaspora_allowed','1');
+	}
 
 }
