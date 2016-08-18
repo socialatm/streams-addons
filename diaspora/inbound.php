@@ -1629,6 +1629,7 @@ function diaspora_like($importer,$xml,$msg) {
 		return;
 	}
 
+	xchan_query($r);
 	$parent_item = $r[0];
 
 	if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
@@ -1807,8 +1808,8 @@ function diaspora_like($importer,$xml,$msg) {
 	$arr['owner_xchan'] = $parent_item['owner_xchan'];
 	$arr['author_xchan'] = $person['xchan_hash'];
 
-	$ulink = '[url=' . $contact['url'] . ']' . $contact['name'] . '[/url]';
-	$alink = '[url=' . $parent_item['author-link'] . ']' . $parent_item['author-name'] . '[/url]';
+	$ulink = '[url=' . $item_author['xchan_url'] . ']' . $item_author['xchan_name'] . '[/url]';
+	$alink = '[url=' . $parent_item['author']['xchan_url'] . ']' . $parent_item['author']['xchan_name'] . '[/url]';
 	$plink = '[url='. z_root() .'/display/'.$guid.']'.$post_type.'[/url]';
 	$arr['body'] =  sprintf( $bodyverb, $ulink, $alink, $plink );
 
