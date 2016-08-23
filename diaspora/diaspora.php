@@ -33,7 +33,6 @@ function diaspora_load() {
 	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
-	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 
 	if(! get_config('diaspora','relay_handle')) {
 		$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
@@ -58,7 +57,6 @@ function diaspora_unload() {
 	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
 	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
-	unregister_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 }
 
 
@@ -741,27 +739,14 @@ function diaspora_post_local(&$a,&$item) {
 
 		$handle = $author['channel_address'] . '@' . App::get_hostname();
 
-		if($item['verb'] === ACTIVITY_LIKE) {
-			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
-				$meta = [
-					'positive'        => 'true',
-					'guid'            => $item['mid'],
-					'target_type'     => 'Post',
-					'parent_guid'     => $item['parent_mid'],
-					'diaspora_handle' => $handle
-				];
-			}
-		}
-		else {
-			$body = bb2diaspora_itembody($item,true,true);
+		$body = bb2diaspora_itembody($item,true,true);
 
-			$meta = [
-				'guid'            => $item['mid'],
-				'parent_guid'     => $item['parent_mid'],
-				'text'            => $body,
-				'diaspora_handle' => $handle
-			];
-		}
+		$meta = array(
+			'guid' => $item['mid'],
+			'parent_guid' => $item['parent_mid'],
+			'text' => $body,
+			'diaspora_handle' => $handle
+		);
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
 		if($item['author_xchan'] === $item['owner_xchan'])
@@ -787,26 +772,14 @@ function diaspora_post_local(&$a,&$item) {
 
 		$handle = $owner['channel_address'] . '@' . App::get_hostname();
 
-		if($item['verb'] === ACTIVITY_LIKE) {
-			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
-				$meta = [
-					'positive'        => 'true',
-					'guid'            => $item['mid'],
-					'target_type'     => 'Post',
-					'parent_guid'     => $item['parent_mid'],
-					'diaspora_handle' => $handle
-				];
-			}
-		}
-		else {
-			$body = bb2diaspora_itembody($item,true,false);
-			$meta = [
-				'guid'            => $item['mid'],
-				'parent_guid'     => $item['parent_mid'],
-				'text'            => $body,
-				'diaspora_handle' => $handle
-			];
-		}
+		$body = bb2diaspora_itembody($item,true,false);
+
+		$meta = array(
+			'guid' => $item['mid'],
+			'parent_guid' => $item['parent_mid'],
+			'text' => $body,
+			'diaspora_handle' => $handle
+		);
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $owner['channel_prvkey']);
 		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$owner['channel_prvkey']);
@@ -820,14 +793,5 @@ function diaspora_post_local(&$a,&$item) {
 
 
 // 	logger('ditem: ' . print_r($item,true));
-
-}
-
-
-function diaspora_create_identity($a,$b) {
-
-	if(get_config('system','server_role') === 'basic') {
-		set_pconfig($b,'system','diaspora_allowed','1');
-	}
 
 }

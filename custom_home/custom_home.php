@@ -25,7 +25,7 @@ function custom_home_home(&$a, &$o){
     if($x) {
 	if ($x == "random") {
 		$rand = db_getfunc('rand');
-		$r = q("select channel_address from channel left join pconfig on channel_id = pconfig.uid where pconfig.cat = 'perm_limits' and pconfig.k = 'view_stream' and pconfig.v = 1 and channel_address != 'sys' order by $rand limit 1");
+		$r = q("select channel_address from channel where channel_r_stream = 1 and channel_address != 'sys' order by $rand limit 1");
 		$x = z_root() . '/channel/' . $r[0]['channel_address'];
 		}
 	else {

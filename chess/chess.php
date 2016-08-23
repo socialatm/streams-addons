@@ -408,10 +408,6 @@ function chess_content($a) {
                 $channel = App::get_channel();
                 $o = replace_macros(get_markup_template('chess_new.tpl', 'addon/chess'), array(
                     '$acl' => populate_acl($channel_acl, false),
-		    '$allow_cid' => acl2json($channel_acl['allow_cid']),
-		    '$allow_gid' => acl2json($channel_acl['allow_gid']),
-		    '$deny_cid' => acl2json($channel_acl['deny_cid']),
-		    '$deny_gid' => acl2json($channel_acl['deny_gid']),
                     '$channel' => $channel['channel_address']
                 ));
                 return $o;
@@ -763,7 +759,7 @@ function chess_get_games($observer, $owner_address) {
         // Determine opponent's name
         $opponent_name = (($observer['xchan_hash'] === $gameobj['players'][0]) ? $info['players'][1] : $info['players'][0]);
         $active = (($observer['xchan_hash'] === $gameobj['active']) ? true : false);
-        $date = array_shift(explode(' ',$game['created']));
+        $date = array_shift(split(' ',$game['created']));
         if($game['owner_xchan'] === $observer['xchan_hash']) {
             if(!x($gameobj,'ended') || $gameobj['ended'] === 0) {
                 $g['owner_active'][] = array('plink' => $game['plink'], 'game_id' => $game['resource_id'], 'date' => $date, 'opponent' => $opponent_name, 'active' => $active, 'obj' => $gameobj);

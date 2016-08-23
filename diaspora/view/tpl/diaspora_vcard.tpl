@@ -5,7 +5,7 @@
 			<a class="nickname url uid" href="{{$diaspora.podloc}}/" rel="me">{{$diaspora.fullname}}</a>
 		</dd>
 	</dl>
-	<dl class='entity_full_name'>
+	<dl class='entity_fn'>
 		<dt>Full name</dt>
 		<dd>
 			<span class='fn'>{{$diaspora.fullname}}</span>

@@ -5,7 +5,7 @@
 <div class="generic-content-wrapper-styled">
 <h1>New Game</h1>
 <hr>
-<form id="chess-new-form" action="chess/{{$channel}}/new/" method="post" class="acl-form" data-form_id="chess-new-form" data-allow_cid='{{$allow_cid}}' data-allow_gid='{{$allow_gid}}' data-deny_cid='{{$deny_cid}}' data-deny_gid='{{$deny_gid}}'>
+<form action="chess/{{$channel}}/new/" method="post" >
     
 <div>
 <input type="radio" name="color" id='id_chess_color1' value="white" class="radio" checked/>
@@ -22,7 +22,7 @@
 
 <hr>
 <button id="dbtn-acl" class="btn btn-default pull-left" data-toggle="modal" data-target="#aclModal" onclick="return false;" >Permissions</button>
+{{$acl}}
 <input class="pull-right" id="dbtn-submit" type="submit" name="submit" value="Create Game" />
 </form>
-{{$acl}}
 </div>
