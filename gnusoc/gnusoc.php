@@ -433,6 +433,7 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 
 		logger('follow activity received');
 
+
 		if(($author) && (! $xchan)) {
 
 			$r = q("select * from xchan where xchan_guid = '%s' limit 1",
@@ -451,6 +452,9 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 			$xchan = $r[0];
 		}
 
+		$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
+		$their_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
+
 		$r = q("select * from abook where abook_channel = %d and abook_xchan = '%s' limit 1",
 			intval($importer['channel_id']),
 			dbesc($xchan['xchan_hash'])
@@ -458,7 +462,6 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 
 		if($r) {
 			$contact = $r[0];
-			$newperms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
 
 			$abook_instance = $contact['abook_instance'];
 			if($abook_instance)
@@ -466,46 +469,52 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 			$abook_instance .= z_root();
 
 
-			$r = q("update abook set abook_their_perms = %d, abook_instance = '%s' where abook_id = %d and abook_channel = %d",
-				intval($newperms),
+			$r = q("update abook set abook_instance = '%s' where abook_id = %d and abook_channel = %d",
 				dbesc($abook_instance),
 				intval($contact['abook_id']),
 				intval($importer['channel_id'])
 			);
+
+			foreach($their_perms as $k => $v)
+				set_abconfig($importer['channel_id'],$contact['abook_xchan'],'their_perms',$k,$v);
 		}
 		else {
 			$role = get_pconfig($importer['channel_id'],'system','permissions_role');
 			if($role) {
-				$x = get_role_perms($role);
+				$x = \Zotlabs\Access\PermissionRoles::role_perms($role);
 				if($x['perms_auto'])
-					$default_perms = $x['perms_accept'];
+					$my_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
 			}
-			if(! $default_perms)
-				$default_perms = intval(get_pconfig($importer['channel_id'],'system','autoperms'));
-
-			$their_perms = PERMS_R_STREAM|PERMS_R_PROFILE|PERMS_R_PHOTOS|PERMS_R_ABOOK|PERMS_W_STREAM|PERMS_W_COMMENT|PERMS_W_MAIL|PERMS_W_CHAT|PERMS_R_STORAGE|PERMS_R_PAGES;
-
+			if(! $my_perms)
+				$my_perms = \Zotlabs\Access\Permissions::FilledAutoperms($importer['channel_id']);
 
 			$closeness = get_pconfig($importer['channel_id'],'system','new_abook_closeness');
 			if($closeness === false)
 				$closeness = 80;
 		
 
-			$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_my_perms, abook_their_perms, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending, abook_instance ) values ( %d, %d, '%s', %d, %d, %d, '%s', '%s', '%s', '%s', %d, '%s' )",
+			$r = q("insert into abook ( abook_account, abook_channel, abook_xchan, abook_closeness, abook_created, abook_updated, abook_connected, abook_dob, abook_pending, abook_instance ) values ( %d, %d, '%s', %d, '%s', '%s', '%s', '%s', %d, '%s' )",
 				intval($importer['channel_account_id']),
 				intval($importer['channel_id']),
 				dbesc($xchan['xchan_hash']),
-				intval($default_perms),
-				intval($their_perms),
 				intval($closeness),
 				dbesc(datetime_convert()),
 				dbesc(datetime_convert()),
 				dbesc(datetime_convert()),
 				dbesc(NULL_DATE),
-				intval(($default_perms) ? 0 : 1),
+				intval(($my_perms) ? 0 : 1),
 				dbesc(z_root())
 			);
 			if($r) {
+
+   				if($my_perms)
+					foreach($my_perms as $k => $v)
+						set_abconfig($importer['channel_id'],$xchan['xchan_hash'],'my_perms',$k,$v);
+
+				if($their_perms)
+					foreach($their_perms as $k => $v)
+						set_abconfig($importer['channel_id'],$xchan['xchan_hash'],'their_perms',$k,$v);
+
 				logger("New GNU-Social follower received for {$importer['channel_name']}");
 
 				$new_connection = q("select * from abook left join xchan on abook_xchan = xchan_hash left join hubloc on hubloc_hash = xchan_hash where abook_channel = %d and abook_xchan = '%s' order by abook_created desc limit 1",
