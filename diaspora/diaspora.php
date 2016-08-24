@@ -688,7 +688,7 @@ function diaspora_feature_settings(&$a,&$s) {
 
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
-		'$addon' 	=> array('diaspora', '<img src="addon/diaspost/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
+		'$addon' 	=> array('diaspora', '<img src="addon/diaspora/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
 		'$content'	=> $sc
 	));
 
