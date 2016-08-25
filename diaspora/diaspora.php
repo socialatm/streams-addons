@@ -3,7 +3,7 @@
 
 /**
  * Name: Diaspora Protocol
- * Description: Diaspora Protocol (Experimental, Unsupported)
+ * Description: Diaspora Protocol
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
@@ -672,7 +672,7 @@ function diaspora_feature_settings(&$a,&$s) {
 		$hashtags = '';
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('dspr_allowed', t('Enable the (experimental) Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
+		'$field'	=> array('dspr_allowed', t('Enable the Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
