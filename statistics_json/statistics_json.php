@@ -6,6 +6,7 @@
  * Version: 0.1
  * Author: Michael Vogel <https://pirati.ca/profile/heluecht>
  * Maintainer: none
+ * ServerRoles: basic, standard
  */
 
 function statistics_json_load() {

@@ -7,6 +7,7 @@
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
+ * ServerRoles: basic, standard
  */
 
 
