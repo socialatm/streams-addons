@@ -2,7 +2,10 @@
 
 <div>{{$desc}}</div>
 
-<br /><br />
+<br />
+{{$text}}
+
+<br />
 <form action="chords" method="post">
 {{include file="field_input.tpl" field=$chord}}
 {{include file="field_select.tpl" field=$tuning}}
