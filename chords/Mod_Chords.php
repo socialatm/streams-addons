@@ -41,24 +41,18 @@ class Chords extends \Zotlabs\Web\Controller {
 		  $chords .=  '</pre>';
 		}
 
-		$text .=  <<< EOT
+		$p1 = t('This is a fairly comprehensive and complete guitar chord dictionary which will list most of the available ways to play a certain chord, starting from the base of the fingerboard up to a few frets beyond the twelfth fret (beyond which everything repeats). A couple of non-standard tunings are provided for the benefit of slide players, etc.');
+ 
+		$p2 = t('Chord names start with a root note (A-G) and may include sharps (#) and flats (b). This software will parse most of the standard naming conventions such as maj, min, dim, sus(2 or 4), aug, with optional repeating elements.');
 
-<p class="descriptive-text">
-This is a fairly comprehensive and complete guitar chord dictionary which will list most of the available ways to play a certain chord, starting from the base of the fingerboard up to a few frets beyond the twelfth fret (beyond which everything repeats). A couple of non-standard tunings are provided for the benefit of slide players, etc. 
-<p />
-<p class="descriptive-text">
-Chord names start with a root note (A-G) and may include sharps (#) and flats (b). This software will parse most of the standard naming conventions such as maj, min, dim, sus(2 or 4), aug, with optional repeating elements.
-</p>
-<p class="descriptive-text">
-Valid examples include  A, A7, Am7, Amaj7, Amaj9, Ammaj7, Aadd4, Asus2Add4, E7b13b11 ...
-</p>
-EOT;
-
+		$p3 = t('Valid examples include  A, A7, Am7, Amaj7, Amaj9, Ammaj7, Aadd4, Asus2Add4, E7b13b11 ...');
 
 		$o .= replace_macros(get_markup_template('chords.tpl','addon/chords'), [
 			'$header' => t('Guitar Chords'),
 			'$desc'   => t('The complete online chord dictionary'),
-			'$text'   => $text,
+			'$p1'     => $p1,
+			'$p2'     => $p2,
+			'$p3'     => $p3,
 			'$chords' => $chords,
 			'$tuning' => [ 'tuning', t('Tuning'), $_POST['tuning'], '', $tunings ],
 			'$chord'  => [ 'chord', t('Chord name: example: Em7'), $_REQUEST['chord'], '' ],

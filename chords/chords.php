@@ -11,7 +11,7 @@
 require_once('addon/chords/Mod_Chords.php');
 
 function chords_load() {
-	Zotlabs\Extend\Hook::register('load_pdl', 'addon/chords/chords.php', 'chords_pdl');
+	Zotlabs\Extend\Hook::register('load_pdl', 'addon/chords/chords.php', '\\Chords::chords_pdl');
 }
 
 function chords_unload() {
@@ -19,9 +19,11 @@ function chords_unload() {
 
 }
 
-function chords_pdl(&$x) {
-	if($x['module'] === 'chords')
-		$x['layout'] = '[region=aside][widget=chords][/widget][/region]';
+class Chords {
+	static public function chords_pdl(&$x) {
+		if($x['module'] === 'chords')
+			$x['layout'] = '[region=aside][widget=chords][/widget][/region]';
+	}
 }
 
 function widget_chords($args) {
