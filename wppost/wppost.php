@@ -225,6 +225,8 @@ function wppost_send(&$a,&$b) {
 	$wp_username = get_pconfig($b['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['uid'],'wppost','wp_password'));
 
+logger('pass: ' . $wp_password);
+
 	if($wp_username && $wp_password && $wp_blog) {
 
 		require_once('include/bbcode.php');
@@ -240,6 +242,11 @@ function wppost_send(&$a,&$b) {
 		if($terms_names)
 			$data['terms_names'] = $terms_names;
 
+		// We currently have Incutio set to produce debugging output, which goes to stdout.
+		// We'll catch the stdout buffer contents and direct them to the logfile at LOGGER_ALL 
+		// level if a failure is encountered.
+
+		ob_start();
 
 		$client = new IXR_Client($wp_blog);
 
@@ -249,8 +256,12 @@ function wppost_send(&$a,&$b) {
 		else
 			$res = $client->query('wp.newPost',1,$wp_username,$wp_password,$data);
 
+		$output = ob_get_contents();
+		ob_end_clean();
+
 		if(! $res) {
 			logger('wppost: failed.');
+			logger('incutio debug: ' . $output, LOGGER_ALL);
 			wppost_dreport($DR,'connection or authentication failure');
 			return;
 		}
