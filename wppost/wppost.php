@@ -270,7 +270,7 @@ function wppost_send(&$a,&$b) {
 
 		if(! $res) {
 			logger('wppost: failed.');
-			logger('incutio debug: ' . $output, LOGGER_ALL);
+			logger('incutio debug: ' . $output, LOGGER_DATA);
 			wppost_dreport($DR,'connection or authentication failure');
 			return;
 		}
