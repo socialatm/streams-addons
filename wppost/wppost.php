@@ -73,6 +73,7 @@ function wppost_settings(&$a,&$s) {
 	$wp_username = get_pconfig(local_channel(), 'wppost', 'wp_username');
 	$wp_password = z_unobscure(get_pconfig(local_channel(), 'wppost', 'wp_password'));
 	$wp_blog = get_pconfig(local_channel(), 'wppost', 'wp_blog');
+	$wp_blogid = get_pconfig(local_channel(), 'wppost', 'wp_blogid');
 
 
 	/* Add some HTML to the existing form */
@@ -93,6 +94,12 @@ function wppost_settings(&$a,&$s) {
 		'$field'	=> array('wp_blog', t('WordPress API URL'), $wp_blog, 
 					 t('Typically https://your-blog.tld/xmlrpc.php'))
 	));
+	$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
+		'$field'	=> array('wp_blogid', t('WordPress blogid'), $wp_blogid, 
+					 t('For multi-user sites such as wordpress.com, otherwise leave blank'))
+	));
+
+
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'	=> array('wp_bydefault', t('Post to WordPress by default'), $def_checked, '', array(t('No'),t('Yes'))),
@@ -114,6 +121,7 @@ function wppost_settings_post(&$a,&$b) {
 	if(x($_POST,'wppost-submit')) {
 		set_pconfig(local_channel(),'wppost','post',intval($_POST['wppost']));
 		set_pconfig(local_channel(),'wppost','post_by_default',intval($_POST['wp_bydefault']));
+		set_pconfig(local_channel(),'wppost','wp_blogid',intval($_POST['wp_blogid']));
 		set_pconfig(local_channel(),'wppost','wp_username',trim($_POST['wp_username']));
 		set_pconfig(local_channel(),'wppost','wp_password',z_obscure(trim($_POST['wp_password'])));
 		set_pconfig(local_channel(),'wppost','wp_blog',trim($_POST['wp_blog']));
@@ -224,6 +232,9 @@ function wppost_send(&$a,&$b) {
 
 	$wp_username = get_pconfig($b['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['uid'],'wppost','wp_password'));
+	$wp_blogid   = get_pconfig($b['uid'],'wppost','wp_blogid');
+	if(! $wp_blogid)
+		$wp_blogid = 1;
 
 	if($wp_username && $wp_password && $wp_blog) {
 
@@ -250,9 +261,9 @@ function wppost_send(&$a,&$b) {
 
 
 		if($edited)
-			$res = $client->query('wp.editPost',1,$wp_username,$wp_password,$wp_post_id,$data);
+			$res = $client->query('wp.editPost',$wp_blogid,$wp_username,$wp_password,$wp_post_id,$data);
 		else
-			$res = $client->query('wp.newPost',1,$wp_username,$wp_password,$data);
+			$res = $client->query('wp.newPost',$wp_blogid,$wp_username,$wp_password,$data);
 
 		$output = ob_get_contents();
 		ob_end_clean();
@@ -350,6 +361,9 @@ function wppost_post_remote_end(&$a,&$b) {
 	$wp_username = get_pconfig($b['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['uid'],'wppost','wp_password'));
 	$wp_blog     = get_pconfig($b['uid'],'wppost','wp_blog');
+	$wp_blogid   = get_pconfig($b['uid'],'wppost','wp_blogid');
+	if(! $wp_blogid)
+		$wp_blogid = 1;
 
 	if($wp_username && $wp_password && $wp_blog) {
 
@@ -371,7 +385,7 @@ function wppost_post_remote_end(&$a,&$b) {
 
 		// this will fail if the post_to_red plugin isn't installed on the wordpress site
 
-		$res = $client->query('red.Comment',1,$wp_username,$wp_password,$wp_parent_id,$data);
+		$res = $client->query('red.Comment',$wp_blogid,$wp_username,$wp_password,$wp_parent_id,$data);
 
 		if(! $res) {
 			logger('wppost: comment failed.');
@@ -420,15 +434,18 @@ function wppost_drop_item(&$a,&$b) {
 	$wp_username = get_pconfig($b['item']['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['item']['uid'],'wppost','wp_password'));
 	$wp_blog     = get_pconfig($b['item']['uid'],'wppost','wp_blog');
+	$wp_blogid   = get_pconfig($b['uid'],'wppost','wp_blogid');
+	if(! $wp_blogid)
+		$wp_blogid = 1;
 
 	if($post_id && $wp_username && $wp_password && $wp_blog) {
 
 		$client = new IXR_Client($wp_blog);
 
 		if($b['item']['id'] == $b['item']['parent']) 
-			$res = $client->query('wp.deletePost',1,$wp_username,$wp_password,$post_id);
+			$res = $client->query('wp.deletePost',$wp_blogid,$wp_username,$wp_password,$post_id);
 		else	
-			$res = $client->query('wp.deleteComment',1,$wp_username,$wp_password,$post_id);
+			$res = $client->query('wp.deleteComment',$wp_blogid,$wp_username,$wp_password,$post_id);
 
 		if(! $res) {
 			logger('wppost: delete failed.');
