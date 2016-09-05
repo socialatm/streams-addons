@@ -24,6 +24,8 @@ function diaspora_dispatch_public($msg) {
 		
 	// @FIXME we should also enumerate channels that allow postings by anybody
 
+	$msg['public'] = 1;
+
 	if($r) {
 		foreach($r as $rr) {
 			logger('diaspora_public: delivering to: ' . $rr['channel_name'] . ' (' . $rr['channel_address'] . ') ');
@@ -38,6 +40,7 @@ function diaspora_dispatch_public($msg) {
 	if($sys) {
 		$sys['system'] = true;
 		logger('diaspora_public: delivering to sys.');
+		
 		diaspora_dispatch($sys,$msg);
 	}
 }
@@ -50,6 +53,9 @@ function diaspora_dispatch($importer,$msg) {
 
 	if(! array_key_exists('system',$importer))
 		$importer['system'] = false;
+
+	if(! array_key_exists('public',$msg))
+		$msg['public'] = 0;
 
 	$host = substr($msg['author'],strpos($msg['author'],'@')+1);
 	$ssl = ((array_key_exists('HTTPS',$_SERVER) && strtolower($_SERVER['HTTPS']) === 'on') ? true : false);
@@ -654,7 +660,7 @@ function diaspora_post($importer,$xml,$msg) {
 		return 202;
 	}
 
-	if($importer['system']) {
+	if($importer['system'] || $msg['public']) {
 		$datarray['comment_policy'] = 'network: diaspora';
 	}
 
