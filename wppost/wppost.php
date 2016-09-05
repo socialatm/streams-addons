@@ -225,8 +225,6 @@ function wppost_send(&$a,&$b) {
 	$wp_username = get_pconfig($b['uid'],'wppost','wp_username');
 	$wp_password = z_unobscure(get_pconfig($b['uid'],'wppost','wp_password'));
 
-logger('pass: ' . $wp_password);
-
 	if($wp_username && $wp_password && $wp_blog) {
 
 		require_once('include/bbcode.php');
