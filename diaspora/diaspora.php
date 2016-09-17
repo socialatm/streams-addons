@@ -740,7 +740,7 @@ function diaspora_post_local(&$a,&$item) {
 		if(! $dspr_allowed)
 			return;
 
-		$handle = $author['channel_address'] . '@' . App::get_hostname();
+		$handle = channel_reddress($author);
 
 		if($item['verb'] === ACTIVITY_LIKE) {
 			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
@@ -786,7 +786,7 @@ function diaspora_post_local(&$a,&$item) {
 		if(! $dspr_allowed)
 			return;
 
-		$handle = $owner['channel_address'] . '@' . App::get_hostname();
+		$handle = channel_reddress($owner);
 
 		if($item['verb'] === ACTIVITY_LIKE) {
 			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
