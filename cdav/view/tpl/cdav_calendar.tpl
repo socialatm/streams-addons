@@ -2,7 +2,7 @@
 
 var new_event = [];
 var new_event_id = Math.random().toString(36).substring(7);
-var views = {'month' : '{{$month}}', 'agendaWeek' : '{{$week}}', 'agendaDay' : '{{$day}}'};
+var views = {'month' : '{{$month}}', 'agendaWeek' : '{{$week}}', 'agendaDay' : '{{$day}}', 'listMonth' : '{{$list_month}}', 'listWeek' : '{{$list_week}}', 'listDay' : '{{$list_day}}'};
 
 $(document).ready(function() {
 	$('#calendar').fullCalendar({
@@ -275,6 +275,10 @@ function on_more() {
 					<li><a href="#" onclick="changeView('changeView', 'month'); return false;">{{$month}}</a></li>
 					<li><a href="#" onclick="changeView('changeView', 'agendaWeek'); return false;">{{$week}}</a></li>
 					<li><a href="#" onclick="changeView('changeView', 'agendaDay'); return false;">{{$day}}</a></li>
+					<li class="divider"></li>
+					<li><a href="#" onclick="changeView('changeView', 'listMonth'); return false;">{{$list_month}}</a></li>
+					<li><a href="#" onclick="changeView('changeView', 'listWeek'); return false;">{{$list_week}}</a></li>
+					<li><a href="#" onclick="changeView('changeView', 'listDay'); return false;">{{$list_day}}</a></li>
 				</ul>
 				<div class="btn-group">
 					<button class="btn btn-default btn-xs" onclick="changeView('prev', false);" title="{{$prev}}"><i class="fa fa-backward"></i></button>

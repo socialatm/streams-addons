@@ -221,7 +221,7 @@ function cdav_feature_settings(&$b) {
 	$sc .= '<div class="settings-block">';
 	$sc .= '<div id="cdav-wrapper">';
 
-	$sc .= '<div class="section-content-warning-wrapper">' . t('<strong>WARNING:</strong> Please note that this plugin is in early alpha state and highly experimental. You will likely loose your data at some point!') . '</div>';
+	//$sc .= '<div class="section-content-warning-wrapper">' . t('<strong>WARNING:</strong> Please note that this plugin is in early alpha state and highly experimental. You will likely loose your data at some point!') . '</div>';
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'    => array('cdav_enabled', t('Enable CalDAV/CardDAV Server for this channel'), $enabled, '', array(t('No'),t('Yes'))),
