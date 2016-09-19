@@ -1174,7 +1174,18 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$tgroup = tgroup_check($importer['channel_id'],$datarray);
 
-	if((! $importer['system']) && (! $pubcomment) && (! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments')) && (! $tgroup)) {
+
+	// If it's a comment to one of our own posts, check if the commenter has permission to comment.
+	// We should probably check send_stream permission if the stream owner isn't us,
+	// but we did import the parent post so at least at that time we did allow it and
+	// the check would nearly always be superfluous and redundant.
+
+	if($parent_item['owner_xchan'] == $importer['channel_hash']) 
+		$allowed = perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments');
+	else
+		$allowed = true;
+
+	if((! $importer['system']) && (! $pubcomment) && (! $allowed) && (! $tgroup)) {
 		logger('diaspora_comment: Ignoring this author.');
 		return 202;
 	}
