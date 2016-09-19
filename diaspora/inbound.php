@@ -931,7 +931,7 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$xchan = find_diaspora_person_by_handle($diaspora_handle);
 
-	if((! $xchan) || (! strstr($xchan['xchan_network'],'diaspora'))) {
+	if(! $xchan) {
 		logger('Cannot resolve diaspora handle ' . $diaspora_handle);
 		return;
 	}

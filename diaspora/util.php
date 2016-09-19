@@ -44,7 +44,7 @@ function find_diaspora_person_by_handle($handle) {
 	if(diaspora_is_blacklisted($handle))
 		return false;
 
-	$r = q("select * from xchan where xchan_addr = '%s' limit 1",
+	$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_addr = '%s' limit 1",
 		dbesc($handle)
 	);
 	if($r) {
@@ -63,7 +63,7 @@ function find_diaspora_person_by_handle($handle) {
 
 		$result = discover_by_webbie($handle);
 		if($result) {
-			$r = q("select * from xchan where xchan_addr = '%s' limit 1",
+			$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_addr = '%s' limit 1",
 				dbesc(str_replace('acct:','',$handle))
 			);
 			if($r) {
