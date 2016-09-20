@@ -1158,7 +1158,11 @@ function diaspora_comment($importer,$xml,$msg) {
 	else
 		$app = 'Diaspora';
 
-	$datarray['app']  = $app;
+	$r = q("select xchan_network from xchan where xchan_addr = '%s' and xchan_network = 'zot' limit 1",
+		dbesc($person['xchan_addr'])
+	);
+
+	$datarray['app']  = (($r) ? '' : $app);
 	
 	if(! $parent_author_signature) {
 		$key = get_config('system','pubkey');
