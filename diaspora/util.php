@@ -165,7 +165,7 @@ function diaspora_build_relay_tags() {
 function diaspora_magic_env($channel,$msg) {
 
 	$data        = preg_replace('/s+/','', base64url_encode($msg));
-	$keyhash     = base64url_encode($channel['channel_address'] . '@' . App::get_hostname());
+	$keyhash     = base64url_encode(channel_reddress($channel));
 	$type        = 'application/xml';
 	$encoding    = 'base64url';
 	$algorithm   = 'RSA-SHA256';
@@ -186,7 +186,7 @@ function diaspora_magic_env($channel,$msg) {
 
 function diaspora_build_status($item,$owner) {
 
-	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
+	$myaddr = channel_reddress($owner);
 
 	if(intval($item['id']) != intval($item['parent'])) {
 		logger('attempted to send a comment as a top-level post');
