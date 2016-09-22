@@ -803,7 +803,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 			head_add_js('library/moment/moment.min.js', 1);
 			head_add_js('library/fullcalendar/fullcalendar.min.js', 1);
-			head_add_js('library/fullcalendar/lang-all.js', 1);
+			head_add_js('library/fullcalendar/locale-all.js', 1);
 
 			foreach($calendars as $calendar) {
 				$editable = (($calendar['share-access'] == 2) ? 'false' : 'true');  // false/true must be string since we're passing it to javascript
