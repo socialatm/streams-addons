@@ -284,7 +284,7 @@ function salmon_post(&$a) {
 			$parent_item = $r[0];
 
 			if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
-				|| ($parent_item['comments_closed'] !== NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+				|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
 				logger('mod_salmon: comments disabled for post ' . $parent_item['mid']);
 				$status = 202;
 				continue;

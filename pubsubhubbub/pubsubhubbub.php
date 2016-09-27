@@ -15,7 +15,7 @@ function pubsubhubbub_install() {
 	  `id` int(11) NOT NULL AUTO_INCREMENT,
 	  `callback_url` varchar(255) NOT NULL DEFAULT '',
 	  `topic` varchar(255) NOT NULL DEFAULT '',
-	  `last_update` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+	  `last_update` datetime NOT NULL DEFAULT '0001-01-01 00:00:00',
 	  `secret` varchar(255) NOT NULL DEFAULT '',
 	  PRIMARY KEY (`id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");

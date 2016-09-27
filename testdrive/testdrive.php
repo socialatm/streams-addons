@@ -47,7 +47,7 @@ function testdrive_register_account($a,$b) {
 function testdrive_cron($a,$b) {
 
 	$r = q("select * from account where account_expires_on < %s + INTERVAL %s and
-		account_expire_notified = '%s' ",
+		account_expire_notified <= '%s' ",
 		db_utcnow(), 
 		db_quoteinterval('5 DAY'),
 		dbesc(NULL_DATE)	
