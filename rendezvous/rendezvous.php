@@ -10,30 +10,30 @@
  *
  */
 
-function rv_module() {}
+function rendezvous_module() {}
 
 /**
  * @brief Return the current plugin version
  *
  * @return string Current plugin version
  */
-function rv_get_version() {
+function rendezvous_get_version() {
     return '0.1.0';
 }
 
-function rv_load() {
-    register_hook('load_pdl', 'addon/rendezvous/rendezvous.php', 'rv_load_pdl');
+function rendezvous_load() {
+    register_hook('load_pdl', 'addon/rendezvous/rendezvous.php', 'rendezvous_load_pdl');
     logger("Load Rendezvous", LOGGER_DEBUG);
 }
 
-function rv_unload() {
-    unregister_hook('feature_settings_post', 'addon/rendezvous/rendezvous.php', 'rv_settings_post');    
+function rendezvous_unload() {
+    unregister_hook('load_pdl', 'addon/rendezvous/rendezvous.php', 'rendezvous_load_pdl');    
     logger("Unload Rendezvous", LOGGER_DEBUG);
 }
 
-function rv_install() {
+function rendezvous_install() {
     set_config('rendezvous', 'dropTablesOnUninstall', 0);
-    $errors = rv_create_database_tables();
+    $errors = rendezvous_create_database_tables();
     
     if ($errors) {
         notice('Error creating the database tables');
@@ -45,7 +45,7 @@ function rv_install() {
     return;
 }
 
-function rv_uninstall() {
+function rendezvous_uninstall() {
     $errors = false;
     $dropTablesOnUninstall = intval(get_config('rendezvous', 'dropTablesOnUninstall'));
     logger('Rendezvous uninstall drop tables admin setting: ' . $dropTablesOnUninstall, LOGGER_DEBUG);
@@ -71,14 +71,14 @@ function rv_uninstall() {
     return;
 }
 
-function rv_plugin_admin_post(&$a) {
+function rendezvous_plugin_admin_post(&$a) {
     $dropTablesOnUninstall = ((x($_POST, 'dropTablesOnUninstall')) ? intval($_POST['dropTablesOnUninstall']) : 0);
     logger('Rendezvous drop tables admin setting: ' . $dropTablesOnUninstall, LOGGER_DEBUG);
     set_config('rendezvous', 'dropTablesOnUninstall', $dropTablesOnUninstall);
     info(t('Settings updated.') . EOL);
 }
 
-function rv_plugin_admin(&$a, &$o) {
+function rendezvous_plugin_admin(&$a, &$o) {
     $t = get_markup_template("admin.tpl", "addon/rendezvous/");
 
     $dropTablesOnUninstall = get_config('rendezvous', 'dropTablesOnUninstall');
@@ -90,9 +90,9 @@ function rv_plugin_admin(&$a, &$o) {
     ));
 }
 
-function rv_init($a) {}
+function rendezvous_init($a) {}
 
-function rv_load_pdl($a, &$b) {
+function rendezvous_load_pdl($a, &$b) {
     if ($b['module'] === 'rendezvous') {
         $b['layout'] = '
 						[template]none[/template]
@@ -100,16 +100,16 @@ function rv_load_pdl($a, &$b) {
     }
 }
 
-function rv_content($a) {
+function rendezvous_content($a) {
     $o .= replace_macros(get_markup_template('rendezvous.tpl', 'addon/rendezvous'), array(
         '$pagetitle' => t('Rendezvous')
     ));
     return $o;
 }
 
-function rv_post($a) {}
+function rendezvous_post($a) {}
 
-function rv_create_database_tables() {
+function rendezvous_create_database_tables() {
     $str = file_get_contents('addon/rendezvous/rendezvous_schema_mysql.sql');
     $arr = explode(';', $str);
     $errors = false;
@@ -131,7 +131,7 @@ function rv_create_database_tables() {
  * @param boolean $success
  * @param string $errmsg
  */
-function rv_api_return($ret = array(), $success = true, $errmsg = '') {
+function rendezvous_api_return($ret = array(), $success = true, $errmsg = '') {
 		$ret = array_merge($ret, array('success' => $success));
 		if ($success) {
 				$ret = array_merge($ret, array('message' => ''));

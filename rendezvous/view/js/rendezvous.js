@@ -1,38 +1,61 @@
+// Declare the rendezvous namespace
+var rv = rv || {};
 
-/**
-* Create the map.
-*/
-
-var sharedMarker = new ol.Feature({
+// Marker feature
+rv.sharedMarker = new ol.Feature({
 		geometry: new ol.geom.Point(ol.proj.fromLonLat([0,0]))
 });
-sharedMarker.setStyle(new ol.style.Style({
-		image: new ol.style.Icon(/** @type {olx.style.IconOptions} */ ({
-		anchor: [0.5, 30],
-				anchorXUnits: 'fraction',
-				anchorYUnits: 'pixels',
-				opacity: 0.75,
-				src: '/addon/map/view/img/marker_red_30px.png'
-		}))
-}));
-var vectorSource = new ol.source.Vector({
-		features: [sharedMarker]
+rv.sharedMarker.setStyle(new ol.style.Style({
+                image: new ol.style.Circle({
+                    radius: 6,
+                    fill: new ol.style.Fill({
+                        color: '#FF0000'
+                    }),
+                    stroke: new ol.style.Stroke({
+                        color: '#fff',
+                        width: 2
+                    })
+                })
+            }));
+rv.vectorSource = new ol.source.Vector({
+		features: [rv.sharedMarker]
 });
-var vectorLayer = new ol.layer.Vector({
-		source: vectorSource
+rv.vectorLayer = new ol.layer.Vector({
+		source: rv.vectorSource
 });
-var map = new ol.Map({
+// Create the map
+rv.map = new ol.Map({
 		layers: [
 				new ol.layer.Tile({
 						source: new ol.source.OSM()
 				}),
-				vectorLayer
+				rv.vectorLayer
 		],
-		overlays: [overlay],
 		target: 'map',
 		view: new ol.View({
-		center: ol.proj.fromLonLat([0,0]),
+				center: ol.proj.fromLonLat([0,0]),
 				zoom: 5
 		})
 });
-map.addControl(new ol.control.ZoomSlider());
+rv.map.addControl(new ol.control.ZoomSlider());
+
+// Map click handler
+rv.map.on('singleclick', function (evt) {
+	var coordinate = evt.coordinate;
+	window.console.log('coordinate: ' + coordinate);
+});
+
+rv.showDialog = function () {
+	$( "#dialog-message" ).dialog({
+      modal: true,
+      buttons: {
+        Ok: function() {
+          $( this ).dialog( "close" );
+        }
+      }
+    });
+}
+
+$(window).load(function (){   
+    rv.showDialog();
+});
