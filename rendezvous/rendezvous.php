@@ -101,8 +101,12 @@ function rendezvous_load_pdl($a, &$b) {
 }
 
 function rendezvous_content($a) {
+		
+		$isowner = ((local_channel()) ? true : false);
+		
     $o .= replace_macros(get_markup_template('rendezvous.tpl', 'addon/rendezvous'), array(
-        '$pagetitle' => t('Rendezvous')
+        '$pagetitle' => t('Rendezvous'),
+				//'$isowner' => $isowner,
     ));
     return $o;
 }

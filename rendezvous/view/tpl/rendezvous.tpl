@@ -11,13 +11,22 @@
 				<script src="/addon/rendezvous/view/js/ol.js?v=0.1" ></script>
 		</head>
 		<body>
-				<div id="map" class="map"></div>
+				<div id="map" class="map">
+						<div id="recenter-control" class="ol-control"><img src='addon/map/view/img/center-control.png' width="20px"></div>
+				</div>
 				
+				<div id="popup" class="ol-popup">
+						<a href="#" id="popup-closer" class="ol-popup-closer"></a>
+						<div id="marker-popup-content">
+								<div id="add-marker" class="btn btn-default"><a href="">Create marker</a></div>
+						</div>
+						<div id="popup-content"></div>
+				</div>
 				 
-				<div id="dialog-message" title="Download complete">
+				<div id="add-marker-dialog" title="Add marker">
 					<p>
 						<span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"></span>
-						Popup dialog test
+						Create a new marker!
 					</p>
 				</div>
 				
