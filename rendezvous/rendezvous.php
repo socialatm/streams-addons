@@ -102,6 +102,13 @@ function rendezvous_load_pdl($a, &$b) {
 
 function rendezvous_content($a) {
 		
+		if (argc() === 2 && argv(1) === 'leaflet') {
+				
+				$o .= replace_macros(get_markup_template('leaflet.tpl', 'addon/rendezvous'), array(
+				));
+				return $o;
+		}
+		
 		$isowner = ((local_channel()) ? true : false);
 		
     $o .= replace_macros(get_markup_template('rendezvous.tpl', 'addon/rendezvous'), array(

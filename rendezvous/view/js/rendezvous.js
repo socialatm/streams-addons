@@ -66,7 +66,11 @@ rv.map = new ol.Map({
 	overlays: [rv.overlay],
 	layers: [
 		new ol.layer.Tile({
-			source: new ol.source.OSM()
+			source: new ol.source.TileWMS({
+				url: 'https://wms.jpl.nasa.gov/wms.cgi',
+				layers: 'modis'
+				
+			})
 		})
 	],
 	target: 'map',
