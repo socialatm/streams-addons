@@ -878,15 +878,15 @@ class Cdav extends \Zotlabs\Web\Controller {
 				killme();
 
 			if (x($_GET,'start'))
-				$start = $_GET['start'];
+				$start = new \DateTime($_GET['start']);
 			if (x($_GET,'end'))
-				$end = $_GET['end'];
+				$end = new \DateTime($_GET['end']);
 
 			$filters['name'] = 'VCALENDAR';
 			$filters['prop-filters'][0]['name'] = 'VEVENT';
 			$filters['comp-filters'][0]['name'] = 'VEVENT';
-			$filters['comp-filters'][0]['time-range']['start'] = new \DateTime($start);
-			$filters['comp-filters'][0]['time-range']['end'] = new \DateTime($end);
+			$filters['comp-filters'][0]['time-range']['start'] = $start;
+			$filters['comp-filters'][0]['time-range']['end'] = $end;
 
 			$uris = $caldavBackend->calendarQuery($id, $filters);
 			if($uris) {
@@ -896,6 +896,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				foreach($objects as $object) {
 
 					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
+					$vcalendar = $vcalendar->expand($start, $end);
 
 					$title = (string)$vcalendar->VEVENT->SUMMARY;
 					$dtstart = (string)$vcalendar->VEVENT->DTSTART;
