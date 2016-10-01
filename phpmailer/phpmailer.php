@@ -48,10 +48,17 @@ function phpmailer_enotify_send(&$x) {
 	$mail->setFrom($x['fromEmail'],$x['fromName']);
 	$mail->addReplyTo($x['replyTo']);
 	$mail->addAddress($x['toEmail']);
-	$mail->isHTML(true);
 	$mail->Subject = $x['messageSubject'];
-	$mail->Body = $x['htmlVersion'];
-	$mail->AltBody = $x['textVersion'];
+
+	if($x['htmlVersion']) {
+		$mail->isHTML(true);
+		$mail->Body = $x['htmlVersion'];
+		$mail->AltBody = $x['textVersion'];
+	}
+	else {
+		$mail->isHTML(false);
+		$mail->Body = $x['textVersion'];
+	}
 
 	$result = $mail->send();
 
