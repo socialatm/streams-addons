@@ -11,7 +11,7 @@
 
 
 function phpmailer_install() {
-	\Zotlabs\Extend\Hook::register('enotify_send','addon/phpmailer/phpmailer.php','phpmailer_enotify_send');
+	\Zotlabs\Extend\Hook::register('email_send','addon/phpmailer/phpmailer.php','phpmailer_email_send');
 }
 
 
@@ -21,9 +21,8 @@ function phpmailer_uninstall() {
 
 
 
-function phpmailer_enotify_send(&$x) {
+function phpmailer_email_send(&$x) {
 
-	logger('test');
 
 	/**
 	 * @brief Send a multipart/alternative message with Text and HTML versions.
