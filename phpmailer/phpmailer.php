@@ -42,7 +42,7 @@ function phpmailer_email_send(&$x) {
 
 	$mail = new PHPMailer;
 
-	if(get_config('phpmailer','smtp')) {
+	if(get_config('phpmailer','mailer') === 'smtp') {
 		$mail->IsSMTP();
 		$mail->Mailer = "smtp";
 
