@@ -20,6 +20,7 @@ $(document).ready(function() {
 		allDayText: aStr['allday'],
 
 		timeFormat: 'HH:mm',
+		timezone: 'local',
 
 		defaultTimedEventDuration: '01:00:00',
 		snapDuration: '00:15:00',
