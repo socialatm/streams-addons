@@ -42,7 +42,45 @@ function phpmailer_email_send(&$x) {
 
 	$mail = new PHPMailer;
 
-	$mail->isSendmail();
+	if(get_config('phpmailer','smtp')) {
+		$mail->IsSMTP();
+		$mail->Mailer = "smtp";
+
+		$s = get_config('phpmailer','host');
+		if($s) 
+			$mail->Host = $s;
+		else
+			$mail->Host = 'localhost';
+
+		$s = get_config('phpmailer','port');
+		if($s) 
+			$mail->Port = $s;
+		else
+			$mail->Port = '25';
+
+		$s = get_config('phpmailer','smtpsecure');
+		if($s) 
+			$mail->SMTPSecure = $s;
+
+		$s = get_config('phpmailer','smtpauth');
+		if($s) 
+			$mail->SMTPAuth = (boolean) $s;
+
+		$s = get_config('phpmailer','username');
+		if($s) 
+			$mail->Username = $s;
+
+		$s = get_config('phpmailer','password');
+		if($s) 
+			$mail->Password = $s;
+
+	}
+	else {    
+
+		$mail->isSendmail();
+
+	}
+
 
 	$mail->setFrom($x['fromEmail'],$x['fromName']);
 	$mail->addReplyTo($x['replyTo']);
