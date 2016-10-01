@@ -898,30 +898,33 @@ class Cdav extends \Zotlabs\Web\Controller {
 					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 					$vcalendar = $vcalendar->expand($start, $end);
 
-					$title = (string)$vcalendar->VEVENT->SUMMARY;
-					$dtstart = (string)$vcalendar->VEVENT->DTSTART;
-					$dtend = (string)$vcalendar->VEVENT->DTEND;
+					foreach($vcalendar->VEVENT as $vevent) {
+						$title = (string)$vevent->SUMMARY;
+						$dtstart = (string)$vevent->DTSTART;
+						$dtend = (string)$vevent->DTEND;
+						$description = (string)$vevent->DESCRIPTION;
+						$location = (string)$vevent->LOCATION;
 
-					$allDay = false;
+						$allDay = false;
 
-					// allDay event rules
-					if(!strpos($dtstart, 'T') && !strpos($dtend, 'T'))
-						$allDay = true;
-					if(strpos($dtstart, 'T000000') && strpos($dtend, 'T000000'))
-						$allDay = true;
+						// allDay event rules
+						if(!strpos($dtstart, 'T') && !strpos($dtend, 'T'))
+							$allDay = true;
+						if(strpos($dtstart, 'T000000') && strpos($dtend, 'T000000'))
+							$allDay = true;
 
-					$events[] = [
-						'calendar_id' => $id,
-						'uri' => $object['uri'],
-						'title' => (string)$vcalendar->VEVENT->SUMMARY,
-						'start' => (string)$vcalendar->VEVENT->DTSTART,
-						'end' => (string)$vcalendar->VEVENT->DTEND,
-						'description' => (string)$vcalendar->VEVENT->DESCRIPTION,
-						'location' => (string)$vcalendar->VEVENT->LOCATION,
-						'allDay' => $allDay
-					];
+						$events[] = [
+							'calendar_id' => $id,
+							'uri' => $object['uri'],
+							'title' => $title,
+							'start' => $dtstart,
+							'end' => $dtend,
+							'description' => $description,
+							'location' => $location,
+							'allDay' => $allDay
+						];
+					}
 				}
-
 				json_return_and_die($events);
 			}
 			else {
