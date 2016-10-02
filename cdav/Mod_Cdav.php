@@ -340,9 +340,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$dtstart = new \DateTime($_REQUEST['dtstart']);
 				$dtend = $_REQUEST['dtend'] ? new \DateTime($_REQUEST['dtend']) : '';
 
-				if(!cdav_perms($id[0],$calendars,true))
-					return;
-
 				$object = $caldavBackend->getCalendarObject($id, $uri);
 
 				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
