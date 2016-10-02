@@ -103,7 +103,8 @@ L.Control.Gps = L.Control.extend({
 		this._map.locate({
 			enableHighAccuracy: true,
 			watch: true,
-			//maximumAge:s
+			maximumAge: 600000,
+			timeout: 120000,
 			setView: this.options.setView,	//automatically sets the map view to the user location
 			maxZoom: this.options.maxZoom
 		});

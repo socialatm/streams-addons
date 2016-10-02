@@ -45,17 +45,23 @@ CREATE TABLE IF NOT EXISTS `rendezvous_groups` (
 
 CREATE TABLE IF NOT EXISTS `rendezvous_members` (
 	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
-	`rid` int(10) unsigned NOT NULL DEFAULT '0',
+	`rid` char(255) NOT NULL DEFAULT '',
 	`mid` char(255) NOT NULL DEFAULT '',
 	`name` char(255) NOT NULL DEFAULT '',
 	`secret` char(255) NOT NULL DEFAULT '',
 	`deleted` int(1) unsigned NOT NULL DEFAULT '0',
+	`lat` decimal(32,16),
+	`lng` decimal(32,16),
+	`updated` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
 	PRIMARY KEY (`id`),
 	KEY `rid` (`rid`),
 	KEY `mid` (`mid`),
 	KEY `name` (`name`),
 	KEY `secret` (`secret`),
-	KEY `deleted` (`deleted`)
+	KEY `deleted` (`deleted`),
+	KEY `lat` (`lat`),
+	KEY `lng` (`lng`),
+	KEY `updated` (`updated`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------

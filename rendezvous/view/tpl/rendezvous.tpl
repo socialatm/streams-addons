@@ -1,42 +1,71 @@
-<!DOCTYPE html>
-<html>
-		<head>
-				<title>{{$pagetitle}}</title>
-				<link href="/addon/rendezvous/view/css/jquery-ui.css" rel='stylesheet' type='text/css'>
-				<link href="/addon/rendezvous/view/css/rendezvous.css" rel='stylesheet' type='text/css'>
-				<link href="/library/bootstrap/css/bootstrap.min.css?v=1.13.3" rel='stylesheet' type='text/css'>
-				<link href="/library/font_awesome/css/font-awesome.min.css?v=1.13.3" rel='stylesheet' type='text/css'>
-				
-				<meta name="viewport" content="width=device-width, initial-scale=1.0">
-				<link href="/addon/rendezvous/view/css/leaflet.css" rel='stylesheet' type='text/css'>
-				<link href="/addon/rendezvous/view/css/leaflet-gps.css" rel='stylesheet' type='text/css'>
-				<script src="/addon/rendezvous/view/js/jquery-1.12.4.js"></script>
-				<script src="/addon/rendezvous/view/js/jquery-ui.js"></script>
-
-		</head>
-		<body>
-				<div id="map" class="map"></div>
-				
-				<div id="add-marker-button-wrapper" style="display: none;">
-						<div><button class="add-marker btn btn-default"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
-				</div>
-				
-				<div id="edit-marker-button-wrapper" style="display: none;">
-						<div>
-								<button class="edit-marker btn btn-default btn-sm" title="Edit marker"><span><i class="fa fa-pencil"></i></span></button>
-								<button class="delete-marker btn btn-danger btn-sm" title="Delete marker"><span><i class="fa fa-trash-o"></i></span></button>
-						</div>
-				</div>
-
-				 
-<div id="edit-marker-form" title="Edit Marker">
-  <p>
-    Edit marker info here.
-  </p>
+<div class="map-setting-block">
+		<div class="descriptive-text">
+				Create a new map that people can join to share their locations and
+				markers.
+		</div>
+		<h3>Rendezvous
+				<span class="pull-right">
+						<button id="add-new-group" class="btn btn-default btn-xs" title="Add new rendezvous">
+								<i class="fa fa-plus"></i><span>&nbsp;Add new rendezvous</span>
+						</button>
+				</span>
+		</h3>
+		<div class="clear" ></div>
+		<div id="group-list" class="list-group" style="margin-top: 20px;margin-bottom: 20px;"></div>
 </div>
-				
-				<script src="/addon/rendezvous/view/js/leaflet.js"></script>
-				<script src="/addon/rendezvous/view/js/leaflet-gps.js"></script>
-				<script src="/addon/rendezvous/view/js/rendezvous.js"></script>
-		</body>
-</html>
+
+<script>
+	$(document).ready(function () {
+		
+		$(document).on('click', '#add-new-group', function (event) {
+			rv.createGroup(event);
+			return false;
+		});
+		
+		rv.getGroups();
+	});
+
+	var rv = rv || {};
+	
+	rv.groups = [];
+
+	rv.createGroup = function(e) {
+
+		$.post("rendezvous/v1/new/group", {},
+				function (data) {
+					if (data['success']) {
+//						rv.groups.push({
+//								id: data['id']
+//						});
+					rv.getGroups();
+					} else {
+						window.console.log(data['message']);
+					}
+					return false;
+				},
+				'json');
+
+	};
+
+	rv.getGroups = function() {
+
+		$.post("rendezvous/v1/get/groups", {},
+				function (data) {
+					if (data['success']) {
+							$('#group-list').html(data['html']);
+							var groups = data['groups'];
+							rv.groups = [];							
+							for(var i = 0; i < groups.length; i++) {	
+								rv.groups.push({
+										id: groups[i].guid
+								});
+							}
+					} else {
+						window.console.log(data['message']);
+					}
+					return false;
+				},
+				'json');
+
+	};
+</script>
