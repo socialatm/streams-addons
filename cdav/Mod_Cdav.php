@@ -902,8 +902,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$description = (string)$vevent->DESCRIPTION;
 						$location = (string)$vevent->LOCATION;
 
-						$editable = ((cdav_perms($id[0],$calendars,true)) ? true : false);
+						$rw = ((cdav_perms($id[0],$calendars,true)) ? true : false);
 						$recurrent = ((isset($vevent->{'RECURRENCE-ID'})) ? true : false);
+
+						$editable = $rw ? true : false;
 
 						if($recurrent)
 							$editable = false;
@@ -926,7 +928,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 							'location' => $location,
 							'allDay' => $allDay,
 							'editable' => $editable,
-							'recurrent' => $recurrent
+							'recurrent' => $recurrent,
+							'rw' => $rw
 						];
 					}
 				}

@@ -53,14 +53,14 @@ $(document).ready(function() {
 				return false;
 			}
 
-			if($('main').hasClass('fullscreen') && view.type !== 'month' && event.editable)
+			if($('main').hasClass('fullscreen') && view.type !== 'month' && event.rw)
 				$('#calendar').fullCalendar('option', 'height', 'auto');
 
-			if(new_event.length && event.editable) {
+			if(new_event.length && event.rw) {
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 			}
 
-			if(event.editable) {
+			if(!event.recurrent && event.rw) {
 				var start_clone = moment(event.start);
 				var noend_allday = start_clone.add(1, 'day').format('YYYY-MM-DD');
 
@@ -79,9 +79,11 @@ $(document).ready(function() {
 				$('#event_submit').val('update_event').html('Update');
 				$('#event_delete').show();
 			}
-			else if(event.recurrent) {
+			else if(event.recurrent && event.rw) {
 				$('.section-content-tools-wrapper, #recurrence_warning').show();
 				$('#event_form_wrapper').hide();
+				$('#event_uri').val(event.uri);
+				$('#calendar_select').val(event.calendar_id[0] + ':' + event.calendar_id[1]).attr('disabled', true);
 			}
 		},
 
@@ -148,8 +150,8 @@ $(document).ready(function() {
 
 	$(document).on('click','#event_submit', on_submit);
 	$(document).on('click','#event_more', on_more);
-	$(document).on('click','#event_cancel, #recurrence_warning', reset_form);
-	$(document).on('click','#event_delete', on_delete);
+	$(document).on('click','#event_cancel, #event_cancel_recurrent', reset_form);
+	$(document).on('click','#event_delete, #event_delete_recurrent', on_delete);
 
 });
 
@@ -302,6 +304,10 @@ function on_more() {
 		<div id="recurrence_warning" style="display: none">
 			<div class="section-content-warning-wrapper">
 				{{$recurrence_warning}}
+			</div>
+			<div>
+				<button id="event_delete_recurrent" type="button" class="btn btn-danger btn-sm">{{$delete}}</button>
+				<button id="event_cancel_recurrent" type="button" class="btn btn-default btn-sm">{{$cancel}}</button>
 			</div>
 		</div>
 		<div id="event_form_wrapper" style="display: none">
