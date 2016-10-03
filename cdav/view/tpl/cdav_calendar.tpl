@@ -48,7 +48,8 @@ $(document).ready(function() {
 
 			if(event.id == new_event_id) {
 				$(window).scrollTop(0);
-				$('.section-content-tools-wrapper').show();
+				$('.section-content-tools-wrapper, #event_form_wrapper').show();
+				$('#recurrence_warning').hide();
 				$('#id_title').focus().val('');
 				return false;
 			}
@@ -242,7 +243,7 @@ function on_delete() {
 }
 
 function reset_form() {
-	$('.section-content-tools-wrapper').hide();
+	$('.section-content-tools-wrapper, #event_form_wrapper, #recurrence_warning').hide();
 
 	$('#event_submit').val('');
 	$('#calendar_select').val('');
