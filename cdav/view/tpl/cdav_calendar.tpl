@@ -53,19 +53,20 @@ $(document).ready(function() {
 				return false;
 			}
 
-			if($('main').hasClass('fullscreen') && view.type !== 'month' && event.source.editable)
+			if($('main').hasClass('fullscreen') && view.type !== 'month' && event.editable)
 				$('#calendar').fullCalendar('option', 'height', 'auto');
 
-			if(new_event.length && event.source.editable) {
+			if(new_event.length && event.editable) {
 				$('#calendar').fullCalendar( 'removeEventSource', new_event);
 			}
 
-			if(event.source.editable) {
+			if(event.editable) {
 				var start_clone = moment(event.start);
 				var noend_allday = start_clone.add(1, 'day').format('YYYY-MM-DD');
 
 				$(window).scrollTop(0);
-				$('.section-content-tools-wrapper').show();
+				$('.section-content-tools-wrapper, #event_form_wrapper').show();
+				$('#recurrence_warning').hide();
 				$('#id_title').focus();
 
 				$('#event_uri').val(event.uri);
@@ -77,6 +78,10 @@ $(document).ready(function() {
 				$('#id_location').val(event.location);
 				$('#event_submit').val('update_event').html('Update');
 				$('#event_delete').show();
+			}
+			else if(event.recurrent) {
+				$('.section-content-tools-wrapper, #recurrence_warning').show();
+				$('#event_form_wrapper').hide();
 			}
 		},
 
@@ -143,7 +148,7 @@ $(document).ready(function() {
 
 	$(document).on('click','#event_submit', on_submit);
 	$(document).on('click','#event_more', on_more);
-	$(document).on('click','#event_cancel', reset_form);
+	$(document).on('click','#event_cancel, #recurrence_warning', reset_form);
 	$(document).on('click','#event_delete', on_delete);
 
 });
@@ -294,34 +299,41 @@ function on_more() {
 		<div class="clear"></div>
 	</div>
 	<div class="section-content-tools-wrapper" style="display: none">
-		<form id="event_form" method="post" action="">
-			<input id="event_uri" type="hidden" name="uri" value="">
-			{{include file="field_input.tpl" field=$title}}
-			<label for="calendar_select">{{$calendar_select_label}}</label>
-			<select id="calendar_select" name="target" class="form-control form-group">
-				{{foreach $writable_calendars as $writable_calendar}}
-				<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}{{if $writable_calendar.sharer}} ({{$writable_calendar.sharer}}){{/if}}</option>
-				{{/foreach}}
-			</select>
-			<div id="more_block" style="display: none;">
-				{{include file="field_input.tpl" field=$dtstart}}
-				{{include file="field_input.tpl" field=$dtend}}
-				{{include file="field_textarea.tpl" field=$description}}
-				{{include file="field_textarea.tpl" field=$location}}
+		<div id="recurrence_warning" style="display: none">
+			<div class="section-content-warning-wrapper">
+				{{$recurrence_warning}}
 			</div>
-			<div class="form-group">
-				<div class="pull-right">
-					<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> {{$more}}</button>
-					<button id="event_submit" type="button" value="" class="btn btn-primary btn-sm"></button>
+		</div>
+		<div id="event_form_wrapper" style="display: none">
+			<form id="event_form" method="post" action="">
+				<input id="event_uri" type="hidden" name="uri" value="">
+				{{include file="field_input.tpl" field=$title}}
+				<label for="calendar_select">{{$calendar_select_label}}</label>
+				<select id="calendar_select" name="target" class="form-control form-group">
+					{{foreach $writable_calendars as $writable_calendar}}
+					<option value="{{$writable_calendar.id.0}}:{{$writable_calendar.id.1}}">{{$writable_calendar.displayname}}{{if $writable_calendar.sharer}} ({{$writable_calendar.sharer}}){{/if}}</option>
+					{{/foreach}}
+				</select>
+				<div id="more_block" style="display: none;">
+					{{include file="field_input.tpl" field=$dtstart}}
+					{{include file="field_input.tpl" field=$dtend}}
+					{{include file="field_textarea.tpl" field=$description}}
+					{{include file="field_textarea.tpl" field=$location}}
+				</div>
+				<div class="form-group">
+					<div class="pull-right">
+						<button id="event_more" type="button" class="btn btn-default btn-sm"><i class="fa fa-caret-down"></i> {{$more}}</button>
+						<button id="event_submit" type="button" value="" class="btn btn-primary btn-sm"></button>
 
+					</div>
+					<div>
+						<button id="event_delete" type="button" class="btn btn-danger btn-sm">{{$delete}}</button>
+						<button id="event_cancel" type="button" class="btn btn-default btn-sm">{{$cancel}}</button>
+					</div>
+					<div class="clear"></div>
 				</div>
-				<div>
-					<button id="event_delete" type="button" class="btn btn-danger btn-sm">{{$delete}}</button>
-					<button id="event_cancel" type="button" class="btn btn-default btn-sm">{{$cancel}}</button>
-				</div>
-				<div class="clear"></div>
-			</div>
-		</form>
+			</form>
+		</div>
 	</div>
 	<div class="section-content-wrapper-np">
 		<div id="calendar"></div>

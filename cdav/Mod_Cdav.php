@@ -810,8 +810,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				if($switch) {
 					$sources .= '{
 						url: \'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\',
-						color: \'' . $color . '\',
-						editable: ' . $editable . '
+						color: \'' . $color . '\'
 					 }, ';
 				}
 
@@ -859,7 +858,8 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$less' => t('Less'),
 				'$calendar_select_label' => t('Select calendar'),
 				'$delete' => t('Delete'),
-				'$cancel' => t('Cancel')
+				'$cancel' => t('Cancel'),
+				'$recurrence_warning' => t('Sorry! Editing of recurrent events is not yet implemented.')
 			]);
 
 			return $o;
@@ -902,6 +902,12 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$description = (string)$vevent->DESCRIPTION;
 						$location = (string)$vevent->LOCATION;
 
+						$editable = ((cdav_perms($id[0],$calendars,true)) ? true : false);
+						$recurrent = ((isset($vevent->{'RECURRENCE-ID'})) ? true : false);
+
+						if($recurrent)
+							$editable = false;
+
 						$allDay = false;
 
 						// allDay event rules
@@ -918,7 +924,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 							'end' => $dtend,
 							'description' => $description,
 							'location' => $location,
-							'allDay' => $allDay
+							'allDay' => $allDay,
+							'editable' => $editable,
+							'recurrent' => $recurrent
 						];
 					}
 				}
