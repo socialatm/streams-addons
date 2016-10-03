@@ -894,7 +894,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 				foreach($objects as $object) {
 
 					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
-					$vcalendar = $vcalendar->expand($start, $end);
+
+					if(isset($vcalendar->VEVENT->RRULE))
+						$vcalendar = $vcalendar->expand($start, $end);
 
 					foreach($vcalendar->VEVENT as $vevent) {
 						$title = (string)$vevent->SUMMARY;
