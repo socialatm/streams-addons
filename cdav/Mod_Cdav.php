@@ -858,6 +858,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$less' => t('Less'),
 				'$calendar_select_label' => t('Select calendar'),
 				'$delete' => t('Delete'),
+				'$delete_all' => t('Delete all'),
 				'$cancel' => t('Cancel'),
 				'$recurrence_warning' => t('Sorry! Editing of recurrent events is not yet implemented.')
 			]);
