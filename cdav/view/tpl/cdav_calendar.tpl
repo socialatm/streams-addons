@@ -307,7 +307,7 @@ function on_more() {
 				{{$recurrence_warning}}
 			</div>
 			<div>
-				<button id="event_delete_recurrent" type="button" class="btn btn-danger btn-sm">{{$delete}}</button>
+				<button id="event_delete_recurrent" type="button" class="btn btn-danger btn-sm">{{$delete_all}}</button>
 				<button id="event_cancel_recurrent" type="button" class="btn btn-default btn-sm">{{$cancel}}</button>
 			</div>
 		</div>
