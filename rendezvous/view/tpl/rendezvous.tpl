@@ -16,20 +16,24 @@
 
 <script>
 	$(document).ready(function () {
-		
+
 		$(document).on('click', '#add-new-group', function (event) {
 			rv.createGroup(event);
 			return false;
 		});
-		
+
+		$(document).on('click', '.delete-group-button', function (event) {
+			rv.deleteGroup(event);
+		});
+
 		rv.getGroups();
 	});
 
 	var rv = rv || {};
-	
+
 	rv.groups = [];
 
-	rv.createGroup = function(e) {
+	rv.createGroup = function (e) {
 
 		$.post("rendezvous/v1/new/group", {},
 				function (data) {
@@ -37,7 +41,7 @@
 //						rv.groups.push({
 //								id: data['id']
 //						});
-					rv.getGroups();
+						rv.getGroups();
 					} else {
 						window.console.log(data['message']);
 					}
@@ -47,24 +51,45 @@
 
 	};
 
-	rv.getGroups = function() {
+	rv.getGroups = function () {
 
 		$.post("rendezvous/v1/get/groups", {},
 				function (data) {
 					if (data['success']) {
-							$('#group-list').html(data['html']);
-							var groups = data['groups'];
-							rv.groups = [];							
-							for(var i = 0; i < groups.length; i++) {	
-								rv.groups.push({
-										id: groups[i].guid
-								});
-							}
+						$('#group-list').html(data['html']);
+						var groups = data['groups'];
+						rv.groups = [];
+						for (var i = 0; i < groups.length; i++) {
+							rv.groups.push({
+								id: groups[i].guid
+							});
+						}
 					} else {
 						window.console.log(data['message']);
 					}
 					return false;
 				},
+				'json');
+
+	};
+
+	rv.deleteGroup = function (e) {
+		var clickedEl = $(e.currentTarget);
+		var group = clickedEl.find(".delete-group-id").html();
+		var answer = confirm("Delete rendezvous (" + group + ") ?");
+		if (!answer) {
+			return false;
+		}
+		$.post("rendezvous/v1/delete/group", {group: group},
+		function (data) {
+			if (data['success']) {
+				//window.location = rv.zroot + '/rendezvous/';
+				rv.getGroups();
+			} else {
+				window.console.log('Error deleting group:' + data['message']);
+			}
+			return false;
+		},
 				'json');
 
 	};

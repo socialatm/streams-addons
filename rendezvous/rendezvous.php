@@ -110,7 +110,8 @@ function rendezvous_content($a) {
 						$o .= replace_macros(get_markup_template('rendezvous_group.tpl', 'addon/rendezvous'), array(
 								'$pagetitle' => t('Rendezvous'),
 								'$group' => $group,
-								'$name' => autoname(6)
+								'$name' => autoname(6),
+								'$zroot' => z_root()
 								//'$isowner' => $isowner,
 						));
 						return $o;
@@ -143,10 +144,19 @@ function rendezvous_post($a) {
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'get' && argv(3) === 'groups') {
 				$x = rendezvous_get_groups($channel);
 				if ($x['success']) {
+						$html = '';
 						foreach ($x['groups'] as $group) {
 								$html .= replace_macros(get_markup_template('rendezvous_groups_list.tpl', 'addon/rendezvous'), array(
-										'$shareLink' => z_root() . '/rendezvous/' . $group['guid'] . '/'
+										'$shareLink' => z_root() . '/rendezvous/' . $group['guid'] . '/',
+										'$group' => $group['guid']
 								));
+						}
+						if($html === '') {
+								$html = '
+										<div class="descriptive-text">
+										Press the button above to create a rendezvous!
+										</div>
+								';
 						}
 						rendezvous_api_return(array('groups' => $x['groups'], 'html' => $html));
 				} else {
@@ -164,9 +174,23 @@ function rendezvous_post($a) {
 				} else {
 						$name = '';
 				}
+				if (isset($_POST['currentTime'])) {
+						$currentTime = $_POST['currentTime'];
+						logger('$currentTime: ' . $currentTime, LOGGER_DEBUG);
+						$date1 = new DateTime($currentTime);
+						logger('date1: ' . $date1->format('Y-m-d H:i:sP'), LOGGER_DEBUG);
+						$date2 = new DateTime();
+						logger('date2: ' . $date2->format('Y-m-d H:i:sP'), LOGGER_DEBUG);
+						$interval = $date1->diff($date2);				
+						logger('seconds different: ' . $interval->s, LOGGER_DEBUG);
+						$timeOffset = round(floatval($interval->s)/60);
+						logger('hours different: ' . $timeOffset, LOGGER_DEBUG);
+				} else {
+						$timeOffset = 0;
+				}
 				$x = rendezvous_new_identity($group, $name);
 				if ($x['success']) {
-						rendezvous_api_return(array('id' => $x['id'], 'secret' => $x['secret'], 'name' => $name));
+						rendezvous_api_return(array('id' => $x['id'], 'secret' => $x['secret'], 'name' => $name, 'timeOffset' => $timeOffset));
 				} else {
 						rendezvous_api_return(array(), false, 'Error adding new member');
 				}
@@ -191,12 +215,41 @@ function rendezvous_post($a) {
 						rendezvous_api_return(array(), false, 'Valid member secret is required');
 				}
 				$x = rendezvous_get_members($id, $secret);
-				logger(json_encode($x), LOGGER_DEBUG);
 				if ($x['success']) {
 						rendezvous_api_return(array('members' => $x['members']));
 				} else {
 						rendezvous_api_return(array(), false, $x['message']);
 				}
+		}
+		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'delete' && argv(3) === 'group') {
+				if (isset($_POST['group'])) {
+						$group = $_POST['group'];
+				} else {
+						rendezvous_api_return(array(), false, 'Valid rendezvous ID is required');
+				}
+				$x = rendezvous_delete_group($group, $channel);
+				if ($x['success']) {
+						rendezvous_api_return(array());
+				} else {
+						rendezvous_api_return(array(), false, $x['message']);
+				}
+		}
+		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'create' && argv(3) === 'marker') {
+				if (isset($_POST['name'])) {
+						$name = $_POST['name'];
+				} else {
+						rendezvous_api_return(array(), false, 'Marker name required');
+				}
+				$description = ((isset($_POST['description'])) ? $_POST['description'] : '');
+				$x = rendezvous_create_marker($name, $description, $channel);
+				if ($x['success']) {
+						rendezvous_api_return(array('id' => $x['id']));
+				} else {
+						rendezvous_api_return(array(), false, $x['message']);
+				}
+		}
+		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'update' && argv(3) === 'marker') {
+				
 		}
 }
 
@@ -243,6 +296,23 @@ function rendezvous_valid_group($group) {
 		}
 }
 
+function rendezvous_valid_member($mid, $group, $secret = '') {
+		if($secret !== '') {
+				$secretsql = " and secret = " . dbesc($secret) . " ";
+		} else {
+				$secretsql = '';
+		}
+		$r = q("SELECT name from rendezvous_members where mid = '%s' and rid = '%s' and deleted = 0 " . $secretsql . " LIMIT 1", 
+						dbesc($mid),
+						dbesc($group)
+		);
+		if ($r) {
+				return true;
+		} else {
+				return false;
+		}
+}
+
 function rendezvous_create_group($channel) {
 		if (!local_channel())
 				return array('success' => false, 'message' => 'Must be local authenticated channel');
@@ -269,6 +339,8 @@ function rendezvous_get_groups($channel) {
 		);
 		if ($r) {
 				return array('success' => true, 'message' => '', 'groups' => $r);
+		} elseif (count($r) === 0) {
+				return array('success' => true, 'message' => '', 'groups' => array());
 		} else {
 				return array('success' => false, 'message' => 'Error fetching groups');
 		}
@@ -298,9 +370,10 @@ function rendezvous_new_identity($rid, $name) {
 }
 
 function rendezvous_update_location($lat, $lng, $updated, $mid, $secret) {
-
+		//logger(date("Y-m-d H:i:s"), LOGGER_DEBUG);
 		$updateTime = date("Y-m-d H:i:s", strtotime($updated)); 
-		$r = q("UPDATE rendezvous_members SET lat = %f, lng = %f, updated = '%s' where mid = '%s' and secret = '%s'", 
+		//logger($updateTime, LOGGER_DEBUG);
+		$r = q("UPDATE rendezvous_members SET lat = %f, lng = %f, updated = '%s' where mid = '%s' and secret = '%s' and deleted = 0", 
 						floatval($lat),
 						floatval($lng),
 						dbesc($updateTime),
@@ -316,7 +389,7 @@ function rendezvous_update_location($lat, $lng, $updated, $mid, $secret) {
 }
 
 function rendezvous_get_members($mid, $secret) {
-		$m = q("SELECT rid from rendezvous_members where mid = '%s' and secret = '%s' LIMIT 1", 
+		$m = q("SELECT rid from rendezvous_members where mid = '%s' and secret = '%s' and deleted = 0 LIMIT 1", 
 						dbesc($mid),
 						dbesc($secret)
 		);
@@ -324,7 +397,7 @@ function rendezvous_get_members($mid, $secret) {
 				return array('success' => false, 'message' => 'Invalid member ID and secret');
 		}
 		$rid = $m[0]['rid'];
-		$r = q("SELECT lat,lng,updated,mid,name from rendezvous_members where rid = '%s' and mid != '%s'", 
+		$r = q("SELECT lat,lng,updated,mid,name from rendezvous_members where rid = '%s' and mid != '%s' and deleted = 0", 
 						dbesc($rid),
 						dbesc($mid)
 		);
@@ -332,5 +405,58 @@ function rendezvous_get_members($mid, $secret) {
 				return array('success' => true, 'message' => '', 'members' => $r);
 		} else {
 				return array('success' => false, 'message' => 'Error getting group member data');
+		}
+}
+
+function rendezvous_delete_group($group, $channel) {
+		//logger($group,LOGGER_DEBUG);
+		$g = q("UPDATE rendezvous_groups set deleted = 1 where guid = '%s' and uid = %d and deleted = 0", 
+						dbesc($group),
+						dbesc($channel['channel_id'])
+		);
+		if($g){
+				
+				$m = q("UPDATE rendezvous_members set deleted = 1 where rid = '%s' and deleted = 0", 
+								dbesc($group),
+								dbesc($channel['channel_id'])
+				);
+				if($m){
+						return array('success' => true, 'message' => '');
+				} else {
+						return array('success' => false, 'message' => 'Error deleting group members');
+				}
+		} else {
+				return array('success' => false, 'message' => 'Error deleting group and members');
+		}		
+		
+}
+
+function rendezvous_get_marker($id, $rid) {
+		$r = q("SELECT * from rendezvous_markers where id = %d and rid = '%s' LIMIT 1", 
+						intval($id),
+						dbesc($rid)			
+		);
+		if($r[0]) {
+				return $r[0];
+		} else {
+				return null;
+		}
+}
+
+function rendezvous_create_marker($name, $description, $rid, $mid, $secret) {
+		if(!rendezvous_valid_member($mid, $rid, $secret)) {
+				return array('success' => false, 'message' => 'Invalid group member');
+		}
+		$r = q("INSERT INTO rendezvous_markers ( rid, mid, description, name ) VALUES ( '%s', '%s', '%s', '%s' ) ", 
+						dbesc($rid),
+						dbesc($mid),
+						dbesc($description),
+						dbesc($name)
+						
+		);
+		if($r) {
+						return array('success' => true, 'message' => '', 'marker' => $r);
+		} else {
+				return array('success' => false, 'message' => 'Error creating marker');
 		}
 }

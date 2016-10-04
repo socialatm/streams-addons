@@ -1,6 +1,9 @@
 // Declare the rendezvous namespace
 var rv = rv || {};
 
+rv.options = {
+	autoFitMembers: true
+};
 rv.selectedLatLon = {};
 rv.markers = [];
 rv.members = [];
@@ -45,8 +48,9 @@ rv.gps = {
 rv.identity = {
 	id: null,
 	name: '',
-	secret: null
-}
+	secret: null,
+	timeOffset: 0
+};
 
 rv.map = L.map('map').setView([0, 0], 13);
 
@@ -95,14 +99,13 @@ rv.myLocationMarker = new L.CircleMarker([0, 0], {
 rv.gpsControl = new L.Control.Gps({
 	marker: rv.myLocationMarker,
 	autoActive: true
-})
+});
 rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	if (rv.gps.updated !== null) {
 		rv.gps.secondsSinceUpdated = rv.gps.secondsSinceUpdated + Math.ceil(((new Date()).getTime() - rv.gps.updated.getTime()) / 1000);
 		//window.console.log('since updated: ' + Math.ceil(((new Date()).getTime()-rv.gps.updated.getTime())/1000) + ' sec');
 		if (rv.gps.secondsSinceUpdated >= rv.gps.options.updateInterval) {
-			// TODO: send updated location to server
-			//window.console.log('sending location: ' + rv.gps.secondsSinceUpdated + ' sec');
+
 			rv.gps.secondsSinceUpdated = 0;
 			rv.gps.sendLocationUpdate();
 		}
@@ -110,14 +113,14 @@ rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	rv.gps.lat = latlng.latlng.lat;
 	rv.gps.lng = latlng.latlng.lng;
 	rv.gps.updated = new Date();
-	var date = rv.gps.updated.toISOString().substring(0, 10)
-	var time = rv.gps.updated.toISOString().substring(11, 16)
+	var date = rv.gps.updated.toLocaleDateString(); //.substring(0, 10)
+	var time = rv.gps.updated.toLocaleTimeString(); //.substring(11, 16)
 	rv.myLocationMarker.bindPopup('<center><b>You</b><br>' + date + ' ' + time + '<center>');
 	//window.console.log('Location updated: (' + rv.gps.lat + ', ' + rv.gps.lng + ') at ' + rv.gps.updated.toString());
 });
 rv.map.addControl(rv.gpsControl);//inizialize control
 
-
+L.control.scale().addTo(rv.map);
 
 rv.createMarker = function (e) {
 	var marker = L.marker([rv.selectedLatLon.lat, rv.selectedLatLon.lng]);
@@ -127,12 +130,14 @@ rv.createMarker = function (e) {
 			.bindPopup(rv.editMarkerHTML)
 			.openPopup();
 	marker.on('click', function () {
-		window.console.log('you clicked marker: ' + id);
+		//window.console.log('you clicked marker: ' + id);
 		rv.currentMarkerID = id; // global tracker of currently selected marker ID
 	});
 	rv.markers.push({
 		marker: marker,
-		id: id
+		id: id,
+		name: '',
+		description: ''
 	});
 
 };
@@ -143,25 +148,28 @@ rv.guid = function (prefix) {
 		return v.toString(16);
 	});
 }
-rv.editMarkerHTML = function (id) {
+rv.editMarkerHTML = function () {
 	setTimeout(function () {
-		$('.edit-marker').on('click', rv.editMarker);
+		$('.edit-marker').on('click', rv.openEditMarkerDialog);
 		$('.delete-marker').on('click', rv.deleteMarker);
 	}, 300);
 	return $('#edit-marker-button-wrapper').html();
 };
+rv.openEditMarkerDialog = function (e) {
+	rv.editMarkerDialog.dialog('open');
+}
 
-rv.editMarker = function (e) {
-	window.console.log('edit marker: ' + rv.currentMarkerID);
-	$("#edit-marker-form").dialog({
-		modal: true,
-		buttons: {
-			Ok: function () {
-				$(this).dialog("close");
-			}
-		}
-	});
-};
+//rv.editMarker = function (e) {
+//	window.console.log('edit marker: ' + rv.currentMarkerID);
+//	$("#edit-marker-form").dialog({
+//		modal: true,
+//		buttons: {
+//			Ok: function () {
+//				$(this).dialog("close");
+//			}
+//		}
+//	});
+//};
 
 rv.deleteMarker = function (e) {
 	window.console.log('delete marker');
@@ -190,12 +198,13 @@ rv.getIdentity = function () {
 		if (name === null) {
 			name = rv.identity.name;
 		}
-		$.post("/rendezvous/v1/get/identity", {group: rv.group.id, name: name},
+		$.post("/rendezvous/v1/get/identity", {group: rv.group.id, name: name, currentTime: (new Date()).toISOString()},
 		function (data) {
 			if (data['success']) {
 				rv.identity.secret = data['secret'];
 				rv.identity.id = data['id'];
 				rv.identity.name = data['name'];
+				rv.identity.timeOffset = parseFloat(data['timeOffset']);
 
 				Cookies.set('identity', rv.identity, {expires: 365, path: ''});
 				Cookies.set('group', rv.group.id, {expires: 365, path: ''});
@@ -220,10 +229,10 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-			rv.members = [];
 			for (var i = 0; i < rv.members.length; i++) {
 				rv.map.removeLayer(rv.members[i].marker);
 			}
+			rv.members = [];
 			for (var i = 0; i < members.length; i++) {
 
 				var marker = L.marker([members[i].lat, members[i].lng]);
@@ -244,8 +253,6 @@ rv.getMembers = function () {
 					marker: marker
 				});
 			}
-			// TODO: Create markers for each member on the map.
-			//window.console.log('members: ' + JSON.stringify(rv.members));
 			rv.zoomToFitMembers();
 		} else {
 			window.console.log(data['message']);
@@ -256,15 +263,46 @@ rv.getMembers = function () {
 };
 
 rv.zoomToFitMembers = function () {
-	var markers = [];
-	for (var i = 0; i < rv.members.length; i++) {
-		markers.push(rv.members[i].marker);
+	if(rv.options.autoFitMembers === true) { 
+		var markers = [];
+		for (var i = 0; i < rv.members.length; i++) {
+			markers.push(rv.members[i].marker);
+		}
+		var group = new L.featureGroup(markers).addLayer(rv.myLocationMarker);
+		rv.map.fitBounds(group.getBounds());
+		return true;
 	}
-
-	var group = new L.featureGroup(markers);
-
-	rv.map.fitBounds(group.getBounds());
 };
+
+    rv.editMarkerDialog = $( "#edit-marker-form" ).dialog({
+      autoOpen: false,
+      height: 400,
+      width: 350,
+      modal: true,
+      buttons: {
+        "Save changes": function() {rv.editMarker();},
+        Cancel: function() {
+          rv.editMarkerDialog.dialog( "close" );
+        }
+      },
+      close: function() {
+		  return false;
+      }
+    });
+ 
+    rv.form = rv.editMarkerDialog.find( "form" ).on( "submit", function( event ) {
+      event.preventDefault();
+      rv.editMarker();
+    });
+
+rv.editMarker = function () {
+	window.console.log($('#marker-name').val());
+	var name = $('#marker-name').val();
+	var description = $('#marker-description').val();
+	
+	return false;
+};
+
 
 $(window).load(function () {
 

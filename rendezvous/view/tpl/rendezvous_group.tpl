@@ -30,11 +30,22 @@
 				</div>
 
 				 
-<div id="edit-marker-form" title="Edit Marker">
-  <p>
-    Edit marker info here.
-  </p>
-</div>
+				<div id="edit-marker-form" title="Edit marker">
+						
+						<form>
+							<fieldset style='width: 100px;'>
+								<label for="name">Name</label>
+								<input type="text" name="marker-name" id="marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<br>
+								<label for="description">Description</label>
+								<br>
+								<textarea rows="5" cols="30" name="marker-description" id="marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+
+								<!-- Allow form submission with keyboard without duplicating the dialog button -->
+								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+							</fieldset>
+						</form>
+				</div>
 				
 				<script src="/addon/rendezvous/view/js/leaflet.js"></script>
 				<script src="/addon/rendezvous/view/js/leaflet-gps.js"></script>
@@ -44,6 +55,7 @@
 								id: '{{$group}}'
 						};
 						rv.identity.name = '{{$name}}';
+						rv.zroot = '{{$zroot}}';
 				</script>
 		</body>
 </html>

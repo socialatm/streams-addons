@@ -65,3 +65,33 @@ CREATE TABLE IF NOT EXISTS `rendezvous_members` (
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
+
+
+--
+-- Table structure for table `rendezvous_markers`
+--
+
+CREATE TABLE IF NOT EXISTS `rendezvous_markers` (
+	`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+	`rid` char(255) NOT NULL DEFAULT '',
+	`mid` char(255) NOT NULL DEFAULT '',
+	`name` char(255) NOT NULL DEFAULT '',
+	`description` mediumtext NOT NULL DEFAULT '',
+	`deleted` int(1) unsigned NOT NULL DEFAULT '0',
+	`lat` decimal(32,16),
+	`lng` decimal(32,16),
+	`created` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+	`edited` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+	PRIMARY KEY (`id`),
+	KEY `rid` (`rid`),
+	KEY `mid` (`mid`),
+	KEY `name` (`name`),
+	FULLTEXT KEY `description` (`description`),
+	KEY `deleted` (`deleted`),
+	KEY `lat` (`lat`),
+	KEY `lng` (`lng`),
+	KEY `created` (`created`),
+	KEY `edited` (`edited`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
