@@ -27,6 +27,8 @@ function pubsubhubbub_install() {
 }
 
 function pubsubhubbub_uninstall() {
+// commenting for now as this will destroy your current PuSH subscriber list, even if you're just
+// trying to reset the plugin to catch hook changes.   
 //	$r = q("drop table push_subscriber");
 }
 
@@ -62,17 +64,20 @@ function push_module_loaded(&$a,&$b) {
 
 function push_notifier_process(&$a,&$b) {
 
-logger('push_notifier_process');
+	logger('push_notifier',LOGGER_DEBUG,LOG_INFO);
 
 	if(! $b['normal_mode']) {
+		logger('not normal mode');
 		return;
 	}
 
 	if($b['private'] || $b['packet_type'] !== 'undefined' || $b['mail']) {
+		logger('packet unsuitable for forwarding via PuSH');
 		return;
 	}
 
 	if(! $b['top_level_post']) {
+		logger('Not a top-level post. Not suitable for PuSH forwarding.');
 		return;
 	}
 
@@ -88,8 +93,10 @@ logger('push_notifier_process');
 		dbesc('%://' . App::get_hostname() . '/feed/' . $channel['channel_address'])
 	);
 
-	if(! $r)
+	if(! $r) {
+		logger('No PuSH subscribers to this channel.');
 		return;
+	}
 
 	foreach($r as $rr) {
 
@@ -98,10 +105,6 @@ logger('push_notifier_process');
 		$hmac_sig = hash_hmac("sha1", $feed, $rr['secret']);
 
 		$slap = array('sig' => $hmac_sig, 'topic' => $rr['topic'], 'body' => $feed);
-
-		// Check for public post and create atom wrapper and stick in queue	
-
-		// also need queue driver for 'push' since we need to set some extra headers
 
 		$hash = random_string();
 		queue_insert(array(
@@ -113,8 +116,28 @@ logger('push_notifier_process');
 			'notify'     => '',
 			'msg'        => json_encode($slap)
 		));
+
+		// only create delivery reports for normal undeleted items
+        if(is_array($b['target_item']) && array_key_exists('postopts',$b['target_item']) 
+			&& (! $b['target_item']['item_deleted']) && (! get_config('system','disable_dreport'))) {
+			$m = parse_url($rr['callback_url']);
+			if($m) {
+				q("insert into dreport ( dreport_mid, dreport_site, dreport_recip, dreport_result, dreport_time, dreport_xchan, dreport_queue ) values ( '%s','%s','%s','%s','%s','%s','%s' ) ",
+					dbesc($b['target_item']['mid']),
+					dbesc($m['host']),
+					dbesc($rr['callback_url']),
+					dbesc('queued'),
+					dbesc(datetime_convert()),
+					dbesc($channel['channel_hash']),
+					dbesc($hash)
+				);
+			}
+		}
+
 		$b['queued'][] = $hash;
 	}
+
+
 }
 
 function push_queue_deliver(&$a,&$b) {
