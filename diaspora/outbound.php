@@ -155,9 +155,7 @@ function diaspora_share($owner,$contact) {
 		return;
 	}
 
-
-
-	$myaddr = channel_reddress($channel);
+	$myaddr = channel_reddress($owner);
 
 	if(! array_key_exists('hubloc_hash',$contact)) {
 		$c = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where xchan_hash = '%s' limit 1",

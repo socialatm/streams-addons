@@ -340,9 +340,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$dtstart = new \DateTime($_REQUEST['dtstart']);
 				$dtend = $_REQUEST['dtend'] ? new \DateTime($_REQUEST['dtend']) : '';
 
-				if(!cdav_perms($id[0],$calendars,true))
-					return;
-
 				$object = $caldavBackend->getCalendarObject($id, $uri);
 
 				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
@@ -813,8 +810,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				if($switch) {
 					$sources .= '{
 						url: \'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\',
-						color: \'' . $color . '\',
-						editable: ' . $editable . '
+						color: \'' . $color . '\'
 					 }, ';
 				}
 
@@ -862,7 +858,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$less' => t('Less'),
 				'$calendar_select_label' => t('Select calendar'),
 				'$delete' => t('Delete'),
-				'$cancel' => t('Cancel')
+				'$delete_all' => t('Delete all'),
+				'$cancel' => t('Cancel'),
+				'$recurrence_warning' => t('Sorry! Editing of recurrent events is not yet implemented.')
 			]);
 
 			return $o;
@@ -896,7 +894,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 				foreach($objects as $object) {
 
 					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
-					$vcalendar = $vcalendar->expand($start, $end);
+
+					if(isset($vcalendar->VEVENT->RRULE))
+						$vcalendar = $vcalendar->expand($start, $end);
 
 					foreach($vcalendar->VEVENT as $vevent) {
 						$title = (string)$vevent->SUMMARY;
@@ -904,6 +904,14 @@ class Cdav extends \Zotlabs\Web\Controller {
 						$dtend = (string)$vevent->DTEND;
 						$description = (string)$vevent->DESCRIPTION;
 						$location = (string)$vevent->LOCATION;
+
+						$rw = ((cdav_perms($id[0],$calendars,true)) ? true : false);
+						$recurrent = ((isset($vevent->{'RECURRENCE-ID'})) ? true : false);
+
+						$editable = $rw ? true : false;
+
+						if($recurrent)
+							$editable = false;
 
 						$allDay = false;
 
@@ -921,7 +929,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 							'end' => $dtend,
 							'description' => $description,
 							'location' => $location,
-							'allDay' => $allDay
+							'allDay' => $allDay,
+							'editable' => $editable,
+							'recurrent' => $recurrent,
+							'rw' => $rw
 						];
 					}
 				}
