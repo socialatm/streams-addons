@@ -5,7 +5,6 @@
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: Mike Macgirvin
- * ServerRoles: pro
  */
  
 /**
