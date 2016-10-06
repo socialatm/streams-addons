@@ -50,7 +50,7 @@ function std_embeds_action(&$arr) {
 	}
 
 	if($realurl) {
-		$arr['url'] = $realurl . (($m['path']) ? '/' . $m['path'] : '') . (($m['query']) ? '?' . $m['query'] : '') . (($m['fragment']) ? '#' . $m['fragment'] : ''); 
+		$arr['url'] = $realurl . (($m['path']) ? $m['path'] : '') . (($m['query']) ? '?' . $m['query'] : '') . (($m['fragment']) ? '#' . $m['fragment'] : ''); 
 		$arr['action'] = 'allow';
 		logger('allowed');
 	}
