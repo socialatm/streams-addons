@@ -13,6 +13,7 @@ function std_embeds_load() {
 	Zotlabs\Extend\Hook::register('oembed_action','addon/std_embeds/std_embeds.php','std_embeds_action');
 	Zotlabs\Extend\Hook::register('html2bb_video','addon/std_embeds/std_embeds.php','std_embeds_html2bb_video');
 	Zotlabs\Extend\Hook::register('bb_translate_video','addon/std_embeds/std_embeds.php','std_embeds_bb_translate_video');
+	Zotlabs\Extend\Hook::register('bbcode_filter','addon/std_embeds/std_embeds.php','std_embeds_bbcode_filter');
 }
 
 function std_embeds_unload() {
@@ -90,5 +91,33 @@ function std_embeds_bb_translate_video(&$x) {
 	}
 
 	$x['string'] = $s;
+
+}
+
+function std_embeds_bbcode_filter(&$x) {
+
+
+	$matches = null;
+	$r = preg_match_all("/\[youtube\](.*?)\[\/youtube\]/ism",$x,$matches,PREG_SET_ORDER);
+	if($r) {
+		foreach($matches as $mtch) {
+			if(! stristr($mtch[1],'://'))
+				$x = str_replace($mtch[0],'[embed]' . 'https://www.youtube.com/watch?v=' . $mtch[1] . '[/embed]',$x);
+			else
+				$x = str_replace($mtch[0],'[embed]' . $mtch[1] . '[/embed]',$x);
+		}
+	}
+
+	$matches = null;
+	$r = preg_match_all("/\[vimeo\](.*?)\[\/vimeo\]/ism",$x,$matches,PREG_SET_ORDER);
+	if($r) {
+		foreach($matches as $mtch) {
+			if(! stristr($mtch[1],'://'))
+				$x = str_replace($mtch[0],'[embed]' . 'https://player.vimeo.com/video/' . $mtch[1] . '[/embed]',$x);
+			else
+				$x = str_replace($mtch[0],'[embed]' . $mtch[1] . '[/embed]',$x);
+		}
+	}
+
 
 }
