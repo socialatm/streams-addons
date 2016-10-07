@@ -17,7 +17,7 @@
 		</head>
 		<body>
 				<div id="map" class="map"></div>
-				
+<!--				<div id="spinner" style="position: relative; width: 20px; z-index: 10000;"></div>-->
 				<div id="add-marker-button-wrapper" style="display: none;">
 						<div><button class="add-marker btn btn-default"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
 				</div>
@@ -30,16 +30,32 @@
 				</div>
 
 				 
+				<div id="new-marker-form" title="New marker">
+						
+						<form>
+							<fieldset style='width: 100px;'>
+								<label for="name">Name</label>
+								<input type="text" name="marker-name" id="new-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<br>
+								<label for="description">Description</label>
+								<br>
+								<textarea rows="5" cols="30" name="marker-description" id="new-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+
+								<!-- Allow form submission with keyboard without duplicating the dialog button -->
+								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+							</fieldset>
+						</form>
+				</div>
 				<div id="edit-marker-form" title="Edit marker">
 						
 						<form>
 							<fieldset style='width: 100px;'>
 								<label for="name">Name</label>
-								<input type="text" name="marker-name" id="marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<input type="text" name="marker-name" id="edit-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
 								<br>
 								<label for="description">Description</label>
 								<br>
-								<textarea rows="5" cols="30" name="marker-description" id="marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+								<textarea rows="5" cols="30" name="marker-description" id="edit-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
 
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
@@ -49,6 +65,7 @@
 				
 				<script src="/addon/rendezvous/view/js/leaflet.js"></script>
 				<script src="/addon/rendezvous/view/js/leaflet-gps.js"></script>
+				<!--<script src="/addon/rendezvous/view/js/spin.js"></script>-->
 				<script src="/addon/rendezvous/view/js/rendezvous.js"></script>
 				<script>
 						rv.group = {

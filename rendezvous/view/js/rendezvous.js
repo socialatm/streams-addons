@@ -1,15 +1,17 @@
 // Declare the rendezvous namespace
-var rv = rv || {};
+var rv = {};
 
 rv.options = {
-	autoFitMembers: true
+	fitMembers: true,
+	fitMarkers: true
 };
 rv.selectedLatLon = {};
 rv.markers = [];
 rv.members = [];
 rv.currentMemberID = null;
 rv.memberUpdateID = null;
-rv.memberUpdateInterval = 20000;
+rv.markerUpdateID = null;
+rv.memberUpdateInterval = 5000;
 // Data object for local GPS tracking
 rv.gps = {
 	lat: null,
@@ -52,7 +54,7 @@ rv.identity = {
 	timeOffset: 0
 };
 
-rv.map = L.map('map').setView([0, 0], 13);
+rv.map = L.map('map').setView([0, 0], 2);
 
 
 L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpandmbXliNDBjZWd2M2x6bDk3c2ZtOTkifQ._QA7i5Mpkd_m30IGElHziw', {
@@ -70,6 +72,19 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=p
  */
 rv.popup = L.popup();
 
+//rv.spinner = new Spinner().spin($('#spinner'));
+
+rv.icons = {
+	greenIcon: new L.Icon({
+		iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+		shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+		iconSize: [25, 41],
+		iconAnchor: [12, 41],
+		popupAnchor: [1, -34],
+		shadowSize: [41, 41]
+	})
+}
+
 rv.onMapClick = function (e) {
 	rv.selectedLatLon = e.latlng;
 	window.console.log(e.latlng.toString());
@@ -81,7 +96,7 @@ rv.onMapClick = function (e) {
 					)
 			.openOn(rv.map);
 
-	$('.add-marker').on('click', rv.createMarker);
+	$('.add-marker').on('click', rv.openNewMarkerDialog);
 }
 
 rv.map.on('click', rv.onMapClick);
@@ -98,7 +113,7 @@ rv.myLocationMarker = new L.CircleMarker([0, 0], {
 });
 rv.gpsControl = new L.Control.Gps({
 	marker: rv.myLocationMarker,
-	autoActive: true
+	autoActive: false
 });
 rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	if (rv.gps.updated !== null) {
@@ -122,23 +137,117 @@ rv.map.addControl(rv.gpsControl);//inizialize control
 
 L.control.scale().addTo(rv.map);
 
-rv.createMarker = function (e) {
-	var marker = L.marker([rv.selectedLatLon.lat, rv.selectedLatLon.lng]);
-	var id = rv.guid('marker');
+rv.getMarkers = function () {
+	if (rv.newMarkerDialog.dialog("isOpen") || rv.editMarkerDialog.dialog("isOpen") || rv.isMarkerPopupOpen()) {
+		return false;
+	}
+	$.post("/rendezvous/v1/get/markers", {
+		group: rv.group.id,
+		mid: rv.identity.id
+	},
+	function (data) {
+		if (data['success']) {
+			var markers = data['markers'];
+			if (markers.length !== Object.keys(rv.markers).length) {
+				rv.options.fitMarkers = true;
+			}
+			for (var id in rv.markers) {
+				rv.map.removeLayer(rv.markers[id].marker);
+			}
+			rv.markers = [];
+			for (var i = 0; i < markers.length; i++) {
+				var id = markers[i].id;
+				var marker = L.marker([markers[i].lat, markers[i].lng], {icon: rv.icons.greenIcon});
 
-	marker.addTo(rv.map)
-			.bindPopup(rv.editMarkerHTML)
-			.openPopup();
-	marker.on('click', function () {
-		//window.console.log('you clicked marker: ' + id);
-		rv.currentMarkerID = id; // global tracker of currently selected marker ID
-	});
-	rv.markers.push({
-		marker: marker,
-		id: id,
-		name: '',
-		description: ''
-	});
+				var name = markers[i].name;
+				var description = markers[i].description;
+				(function (id) {
+					marker.addTo(rv.map)
+							.bindPopup(function () {
+
+								rv.currentMarkerID = id; // global tracker of currently selected marker ID
+								return rv.markerMenu();
+							}
+							);
+				})(id);
+				//.openPopup();
+				(function (id) {
+					marker.on('click', function () {
+						//window.console.log('you clicked marker: ' + id);
+						rv.currentMarkerID = id; // global tracker of currently selected marker ID
+					});
+				})(id);
+
+				rv.markers[id] = {
+					marker: marker,
+					id: id,
+					name: name,
+					description: description
+				};
+			}
+
+		} else {
+			//alert('Error fetching markers');
+			window.console.log(data['message']);
+		}
+		return false;
+	},
+			'json');
+
+};
+
+rv.createMarker = function (e) {
+	var name = $('#new-marker-name').val();
+	var description = $('#new-marker-description').val();
+	var markerID = null;
+
+	$.post("/rendezvous/v1/create/marker", {
+		group: rv.group.id,
+		name: name,
+		description: description,
+		created: (new Date()).toISOString(),
+		lat: rv.selectedLatLon.lat,
+		lng: rv.selectedLatLon.lng,
+		secret: rv.identity.secret,
+		mid: rv.identity.id
+	},
+	function (data) {
+		if (data['success']) {
+			var marker = L.marker([rv.selectedLatLon.lat, rv.selectedLatLon.lng], {icon: rv.icons.greenIcon});
+			var id = data['id'];
+			(function (id) {
+				marker.addTo(rv.map)
+						.bindPopup(function () {
+
+							rv.currentMarkerID = id; // global tracker of currently selected marker ID
+							return rv.markerMenu();
+						}
+						);
+			})(id)
+					.openPopup();
+			(function (id) {
+				marker.on('click', function () {
+					//window.console.log('you clicked marker: ' + id);
+					rv.currentMarkerID = id; // global tracker of currently selected marker ID
+				});
+			})(id);
+			rv.markers[id] = {
+				marker: marker,
+				id: id,
+				name: name,
+				description: description
+			};
+
+			rv.newMarkerDialog.dialog('close');
+
+		} else {
+			alert('Error creating marker');
+			window.console.log(data['message']);
+		}
+		return false;
+	},
+			'json');
+
 
 };
 
@@ -148,28 +257,35 @@ rv.guid = function (prefix) {
 		return v.toString(16);
 	});
 }
-rv.editMarkerHTML = function () {
+rv.markerMenu = function () {
 	setTimeout(function () {
 		$('.edit-marker').on('click', rv.openEditMarkerDialog);
 		$('.delete-marker').on('click', rv.deleteMarker);
 	}, 300);
-	return $('#edit-marker-button-wrapper').html();
+	var markerInfo = '';
+//	for (var i = 0; i < rv.markers.length; i++) {
+//		if(rv.markers[i].id === rv.currentMarkerID) {
+//			markerInfo = '<b>' + rv.markers[i].name + '</b><br>' + rv.markers[i].description + '<br>';
+//		}
+//	}
+	window.console.log('currentMarkerID: ' + rv.currentMarkerID);
+	if (rv.markers[rv.currentMarkerID]) {
+		markerInfo = '<b>' + rv.markers[rv.currentMarkerID].name + '</b><br>' + rv.markers[rv.currentMarkerID].description + '<br>';
+	}
+
+	return markerInfo + $('#edit-marker-button-wrapper').html();
 };
 rv.openEditMarkerDialog = function (e) {
-	rv.editMarkerDialog.dialog('open');
-}
+	var name = rv.markers[rv.currentMarkerID].name;
+	var description = rv.markers[rv.currentMarkerID].description;
+	$('#edit-marker-name').val(name);
+	$('#edit-marker-description').val(description);
 
-//rv.editMarker = function (e) {
-//	window.console.log('edit marker: ' + rv.currentMarkerID);
-//	$("#edit-marker-form").dialog({
-//		modal: true,
-//		buttons: {
-//			Ok: function () {
-//				$(this).dialog("close");
-//			}
-//		}
-//	});
-//};
+	rv.editMarkerDialog.dialog('open');
+};
+rv.openNewMarkerDialog = function (e) {
+	rv.newMarkerDialog.dialog('open');
+};
 
 rv.deleteMarker = function (e) {
 	window.console.log('delete marker');
@@ -189,8 +305,13 @@ rv.getIdentity = function () {
 	var group = Cookies.getJSON('group');
 	if (typeof (group) !== 'undefined' && group === rv.group.id && typeof (identity) !== 'undefined' && typeof (identity.id) !== 'undefined' && identity.id !== null) {
 		rv.identity = identity;
+		rv.getMembers();
+		rv.getMarkers();
 		if (rv.memberUpdateID === null) {
 			rv.memberUpdateID = window.setInterval(rv.getMembers, rv.memberUpdateInterval);
+		}
+		if (rv.markerUpdateID === null) {
+			rv.markerUpdateID = window.setInterval(rv.getMarkers, rv.memberUpdateInterval);
 		}
 		return true;
 	} else {
@@ -209,8 +330,13 @@ rv.getIdentity = function () {
 				Cookies.set('identity', rv.identity, {expires: 365, path: ''});
 				Cookies.set('group', rv.group.id, {expires: 365, path: ''});
 
+				rv.getMembers();
+				rv.getMarkers();
 				if (rv.memberUpdateID === null) {
 					rv.memberUpdateID = window.setInterval(rv.getMembers, rv.memberUpdateInterval);
+				}
+				if (rv.markerUpdateID === null) {
+					rv.markerUpdateID = window.setInterval(rv.getMarkers, rv.memberUpdateInterval);
 				}
 			} else {
 				window.console.log(data['message']);
@@ -229,6 +355,10 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
+
+			if (members.length !== rv.members.length) {
+				rv.options.fitMembers = true;
+			}
 			for (var i = 0; i < rv.members.length; i++) {
 				rv.map.removeLayer(rv.members[i].marker);
 			}
@@ -263,49 +393,98 @@ rv.getMembers = function () {
 };
 
 rv.zoomToFitMembers = function () {
-	if(rv.options.autoFitMembers === true) { 
-		var markers = [];
+	var markers = [];
+	if (rv.options.fitMembers === true) {
+		rv.options.fitMembers = false;
 		for (var i = 0; i < rv.members.length; i++) {
 			markers.push(rv.members[i].marker);
 		}
-		var group = new L.featureGroup(markers).addLayer(rv.myLocationMarker);
-		rv.map.fitBounds(group.getBounds());
-		return true;
 	}
+	if (rv.options.fitMarkers === true) {
+		rv.options.fitMarkers = false;
+		for (var id in rv.markers) {
+			markers.push(rv.markers[id].marker);
+		}
+	}
+	var group = new L.featureGroup();
+	if (markers.length > 0) {
+		group.addLayer(markers);
+	}
+	if (rv.gps.updated !== null) {
+		group.addLayer(rv.myLocationMarker);
+	}
+	rv.map.fitBounds(group.getBounds());
+	return true;
+
 };
 
-    rv.editMarkerDialog = $( "#edit-marker-form" ).dialog({
-      autoOpen: false,
-      height: 400,
-      width: 350,
-      modal: true,
-      buttons: {
-        "Save changes": function() {rv.editMarker();},
-        Cancel: function() {
-          rv.editMarkerDialog.dialog( "close" );
-        }
-      },
-      close: function() {
-		  return false;
-      }
-    });
- 
-    rv.form = rv.editMarkerDialog.find( "form" ).on( "submit", function( event ) {
-      event.preventDefault();
-      rv.editMarker();
-    });
+rv.editMarkerDialog = $("#edit-marker-form").dialog({
+	autoOpen: false,
+	height: 400,
+	width: 350,
+	modal: true,
+	buttons: {
+		"Save changes": function () {
+			rv.editMarker();
+		},
+		Cancel: function () {
+			rv.editMarkerDialog.dialog("close");
+		}
+	},
+	close: function () {
+		return false;
+	}
+});
+
+rv.editMarkerDialog.find("form").on("submit", function (event) {
+	event.preventDefault();
+	rv.editMarker();
+});
+
+
+rv.newMarkerDialog = $("#new-marker-form").dialog({
+	autoOpen: false,
+	height: 400,
+	width: 350,
+	modal: true,
+	buttons: {
+		"Create marker": function () {
+			rv.createMarker();
+		},
+		Cancel: function () {
+			rv.newMarkerDialog.dialog("close");
+		}
+	},
+	close: function () {
+		return false;
+	}
+});
+
+rv.newMarkerDialog.find("form").on("submit", function (event) {
+	event.preventDefault();
+	rv.createMarker();
+});
 
 rv.editMarker = function () {
 	window.console.log($('#marker-name').val());
 	var name = $('#marker-name').val();
 	var description = $('#marker-description').val();
-	
+	// TODO: send updated values to server
 	return false;
+};
+
+rv.isMarkerPopupOpen = function () {
+	var isOpen = false;
+	for (var id in rv.markers) {
+		isOpen = rv.markers[id].marker._popup.isOpen() || isOpen;
+	}
+	return isOpen;
 };
 
 
 $(window).load(function () {
 
+	// Start the background updates by obtaining an identity and joining the group
 	rv.getIdentity();
 
 });
