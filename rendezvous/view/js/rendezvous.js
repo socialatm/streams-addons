@@ -352,8 +352,8 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-			//window.console.log('members: ' + JSON.stringify(members));
-			if (members.length !== Object.keys(rv.members).length) {
+			window.console.log('members length: ' + Object.keys(rv.members).length + ', ' + members.length);
+			if (members.length !== (Object.keys(rv.members).length+1)) {
 				rv.options.fitMembers = true;
 			}
 			for (var id in rv.members) {
@@ -410,21 +410,23 @@ rv.zoomToFitMembers = function () {
 			markers.push(rv.markers[id].marker);
 		}
 	}
-	var group = new L.featureGroup();
-	//window.console.log('markers: ' + markers.length);
+	var group = null;
+	window.console.log('markers: ' + markers.length);
 	//rv.zoomMarkers = markers;
 	if (markers.length > 1) {
-		group.addLayer(markers);
+		group = new L.featureGroup(markers);
 	}
-	if (rv.gps.updated !== null) {
-		group.addLayer([rv.myLocationMarker]);
+	if (group && rv.gps.updated !== null) {
+		group.addLayer(rv.myLocationMarker);
 	}
-	//window.console.log('group: ' + group.getLayers().length);
-	if(group.getLayers().length !== 0) {
-		rv.map.fitBounds(group.getBounds());
-	}
+	//if (rv.options.fitMarkers === true || rv.options.fitMembers === true) {
+		if(group.getLayers().length > 1 ) {
+			rv.map.fitBounds(group.getBounds());
+		}
+	//}
+	group = null;
+	markers = null;
 	return true;
-
 };
 
 rv.editMarkerDialog = $("#edit-marker-form").dialog({
