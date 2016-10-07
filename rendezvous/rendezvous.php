@@ -208,13 +208,12 @@ function rendezvous_post($a) {
 				}
 		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'get' && argv(3) === 'members') {
-				if (isset($_POST['secret']) && isset($_POST['id'])) {
-						$secret = $_POST['secret'];
-						$id = $_POST['id'];
+				if (isset($_POST['group'])) {
+						$group = $_POST['group'];
 				} else {
-						rendezvous_api_return(array(), false, 'Valid member secret is required');
+						rendezvous_api_return(array(), false, 'Valid rendezvous ID is required');
 				}
-				$x = rendezvous_get_members($id, $secret);
+				$x = rendezvous_get_members($group);
 				if ($x['success']) {
 						rendezvous_api_return(array('members' => $x['members']));
 				} else {
@@ -255,18 +254,31 @@ function rendezvous_post($a) {
 				}
 		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'get' && argv(3) === 'markers') {
-				if (isset($_POST['mid']) && isset($_POST['group'])) {
+				if (isset($_POST['group'])) {
 						$group = $_POST['group'];
-						$mid = $_POST['mid'];
 				} else {
-						rendezvous_api_return(array(), false, 'Group name and member ID are required');
+						rendezvous_api_return(array(), false, 'Rendezvous ID is required');
 				}
-				if(!rendezvous_valid_member($mid, $group)) {
-						rendezvous_api_return(array(), false, 'Invalid group name or member ID');
-				}
-				$x = rendezvous_get_markers($group, $mid);
+				$x = rendezvous_get_markers($group);
 				if ($x['success']) {
 						rendezvous_api_return(array('markers' => $x['markers']));
+				} else {
+						rendezvous_api_return(array(), false, $x['message']);
+				}
+				
+		}
+		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'delete' && argv(3) === 'marker') {
+				if (isset($_POST['id']) && isset($_POST['secret']) && isset($_POST['mid']) && isset($_POST['group'])) {
+						$id = $_POST['id'];
+						$group = $_POST['group'];
+						$secret = $_POST['secret'];
+						$mid = $_POST['mid'];
+				} else {
+						rendezvous_api_return(array(), false, 'Rendezvous ID, member ID, secret and marker ID are required');
+				}
+				$x = rendezvous_delete_marker($id, $group, $mid, $secret);
+				if ($x['success']) {
+						rendezvous_api_return(array());
 				} else {
 						rendezvous_api_return(array(), false, $x['message']);
 				}
@@ -409,18 +421,9 @@ function rendezvous_update_location($lat, $lng, $updated, $mid, $secret) {
 		
 }
 
-function rendezvous_get_members($mid, $secret) {
-		$m = q("SELECT rid from rendezvous_members where mid = '%s' and secret = '%s' and deleted = 0 LIMIT 1", 
-						dbesc($mid),
-						dbesc($secret)
-		);
-		if(!$m) {
-				return array('success' => false, 'message' => 'Invalid member ID and secret');
-		}
-		$rid = $m[0]['rid'];
-		$r = q("SELECT lat,lng,updated,mid,name from rendezvous_members where rid = '%s' and mid != '%s' and deleted = 0", 
-						dbesc($rid),
-						dbesc($mid)
+function rendezvous_get_members($group) {
+		$r = q("SELECT lat,lng,updated,mid,name from rendezvous_members where rid = '%s' and deleted = 0", 
+						dbesc($group)
 		);
 		if ($r) {
 				return array('success' => true, 'message' => '', 'members' => $r);
@@ -490,7 +493,7 @@ function rendezvous_create_marker($name, $description, $rid, $mid, $secret, $cre
 		}
 }
 
-function rendezvous_get_markers($group, $mid) {
+function rendezvous_get_markers($group) {
 		$r = q("SELECT * from rendezvous_markers where rid = '%s' and deleted = 0", 
 						dbesc($group)			
 		);
@@ -500,5 +503,20 @@ function rendezvous_get_markers($group, $mid) {
 				return array('success' => true, 'message' => '', 'markers' => array());
 		} else {
 				return array('success' => false, 'message' => 'Error fetching markers');
+		}
+}
+
+function rendezvous_delete_marker($id, $group, $mid, $secret) {
+		if(!rendezvous_valid_member($mid, $group, $secret)) {
+				return array('success' => false, 'message' => 'Invalid group member');
+		}
+		$r = q("UPDATE rendezvous_markers set deleted = 1 where rid = '%s' and id = %d and deleted = 0", 
+						dbesc($group),
+						intval($id)
+		);
+		if ($r) {
+				return array('success' => true, 'message' => '');
+		} else {
+				return array('success' => false, 'message' => 'Error deleting marker');
 		}
 }

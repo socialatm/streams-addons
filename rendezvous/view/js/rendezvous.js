@@ -87,7 +87,7 @@ rv.icons = {
 
 rv.onMapClick = function (e) {
 	rv.selectedLatLon = e.latlng;
-	window.console.log(e.latlng.toString());
+	//window.console.log(e.latlng.toString());
 	rv.popup
 			.setLatLng(e.latlng)
 			//.setContent("You clicked the map at " + e.latlng.toString())
@@ -142,8 +142,7 @@ rv.getMarkers = function () {
 		return false;
 	}
 	$.post("/rendezvous/v1/get/markers", {
-		group: rv.group.id,
-		mid: rv.identity.id
+		group: rv.group.id
 	},
 	function (data) {
 		if (data['success']) {
@@ -160,24 +159,10 @@ rv.getMarkers = function () {
 				var marker = L.marker([markers[i].lat, markers[i].lng], {icon: rv.icons.greenIcon});
 
 				var name = markers[i].name;
+				//window.console.log('marker: ' + JSON.stringify(markers[i]));
 				var description = markers[i].description;
-				(function (id) {
-					marker.addTo(rv.map)
-							.bindPopup(function () {
-
-								rv.currentMarkerID = id; // global tracker of currently selected marker ID
-								return rv.markerMenu();
-							}
-							);
-				})(id);
-				//.openPopup();
-				(function (id) {
-					marker.on('click', function () {
-						//window.console.log('you clicked marker: ' + id);
-						rv.currentMarkerID = id; // global tracker of currently selected marker ID
-					});
-				})(id);
-
+				rv.addMarkerToMap(marker, id);
+				
 				rv.markers[id] = {
 					marker: marker,
 					id: id,
@@ -196,10 +181,25 @@ rv.getMarkers = function () {
 
 };
 
+rv.addMarkerToMap = function (marker, id) {
+	marker.addTo(rv.map)
+			.bindPopup(function () {
+
+				rv.currentMarkerID = id; // global tracker of currently selected marker ID
+				return rv.markerMenu();
+			}
+			);
+	
+	marker.on('click', function () {
+		//window.console.log('you clicked marker: ' + id);
+		rv.currentMarkerID = id; // global tracker of currently selected marker ID
+	});
+
+};
+				
 rv.createMarker = function (e) {
 	var name = $('#new-marker-name').val();
 	var description = $('#new-marker-description').val();
-	var markerID = null;
 
 	$.post("/rendezvous/v1/create/marker", {
 		group: rv.group.id,
@@ -215,35 +215,18 @@ rv.createMarker = function (e) {
 		if (data['success']) {
 			var marker = L.marker([rv.selectedLatLon.lat, rv.selectedLatLon.lng], {icon: rv.icons.greenIcon});
 			var id = data['id'];
-			(function (id) {
-				marker.addTo(rv.map)
-						.bindPopup(function () {
-
-							rv.currentMarkerID = id; // global tracker of currently selected marker ID
-							return rv.markerMenu();
-						}
-						);
-			})(id)
-					.openPopup();
-			(function (id) {
-				marker.on('click', function () {
-					//window.console.log('you clicked marker: ' + id);
-					rv.currentMarkerID = id; // global tracker of currently selected marker ID
-				});
-			})(id);
+			rv.addMarkerToMap(marker, id);
 			rv.markers[id] = {
 				marker: marker,
 				id: id,
 				name: name,
 				description: description
 			};
-
-			rv.newMarkerDialog.dialog('close');
-
 		} else {
 			alert('Error creating marker');
 			window.console.log(data['message']);
 		}
+		rv.newMarkerDialog.dialog('close');
 		return false;
 	},
 			'json');
@@ -268,7 +251,7 @@ rv.markerMenu = function () {
 //			markerInfo = '<b>' + rv.markers[i].name + '</b><br>' + rv.markers[i].description + '<br>';
 //		}
 //	}
-	window.console.log('currentMarkerID: ' + rv.currentMarkerID);
+	//window.console.log('currentMarkerID: ' + rv.currentMarkerID);
 	if (rv.markers[rv.currentMarkerID]) {
 		markerInfo = '<b>' + rv.markers[rv.currentMarkerID].name + '</b><br>' + rv.markers[rv.currentMarkerID].description + '<br>';
 	}
@@ -288,15 +271,29 @@ rv.openNewMarkerDialog = function (e) {
 };
 
 rv.deleteMarker = function (e) {
-	window.console.log('delete marker');
-	rv.markers.forEach(function (f) {
-		window.console.log(f.marker._latlng.toString());
-		window.console.log(f.id);
-		if (f.id === rv.currentMarkerID) {
-			window.console.log('Deleting marker!');
-			rv.map.removeLayer(f.marker);
+	//window.console.log('delete marker');
+	var answer = confirm("Delete marker (" + rv.markers[rv.currentMarkerID].name + ") ?");
+		if (!answer) {
+			return false;
 		}
-	});
+	
+	$.post("/rendezvous/v1/delete/marker", {
+		group: rv.group.id,
+		id: rv.currentMarkerID,
+		mid: rv.identity.id,
+		secret: rv.identity.secret
+	},
+	function (data) {
+		if (data['success']) {
+			rv.map.removeLayer(rv.markers[rv.currentMarkerID].marker);
+		} else {
+			alert('Error deleting marker');
+			window.console.log(data['message']);
+		}
+		return false;
+	},
+			'json');
+
 
 };
 
@@ -351,37 +348,44 @@ rv.getMembers = function () {
 	if (rv.identity.id === null || rv.identity.secret === null) {
 		return false;
 	}
-	$.post("/rendezvous/v1/get/members", {id: rv.identity.id, secret: rv.identity.secret},
+	$.post("/rendezvous/v1/get/members", {group: rv.group.id},
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-
-			if (members.length !== rv.members.length) {
+			//window.console.log('members: ' + JSON.stringify(members));
+			if (members.length !== Object.keys(rv.members).length) {
 				rv.options.fitMembers = true;
 			}
-			for (var i = 0; i < rv.members.length; i++) {
-				rv.map.removeLayer(rv.members[i].marker);
+			for (var id in rv.members) {
+				rv.map.removeLayer(rv.members[id].marker);
 			}
 			rv.members = [];
 			for (var i = 0; i < members.length; i++) {
 
-				var marker = L.marker([members[i].lat, members[i].lng]);
 				var mid = members[i].mid;
+				// Skip the member if it is self
+				if (mid !== rv.identity.id) {
+					
+				
+				if (members[i].lat !== null && members[i].lng !== null) {
+					var marker = L.marker([members[i].lat, members[i].lng]);
 
-				marker.addTo(rv.map)
-						.bindPopup('<b>' + members[i].name + '</b><br>' + members[i].updated);
-				marker.on('click', function () {
-					rv.currentMemberID = mid; // global tracker of currently selected member
-				});
+					marker.addTo(rv.map)
+							.bindPopup('<b>' + members[i].name + '</b><br>' + members[i].updated);
+					marker.on('click', function () {
+						rv.currentMemberID = mid; // global tracker of currently selected member
+					});
+				}
 
-				rv.members.push({
+				rv.members[mid] = {
 					name: members[i].name,
 					id: members[i].mid,
 					lat: members[i].lat,
 					lng: members[i].lng,
 					updated: members[i].updated,
 					marker: marker
-				});
+				};
+				}
 			}
 			rv.zoomToFitMembers();
 		} else {
@@ -396,8 +400,8 @@ rv.zoomToFitMembers = function () {
 	var markers = [];
 	if (rv.options.fitMembers === true) {
 		rv.options.fitMembers = false;
-		for (var i = 0; i < rv.members.length; i++) {
-			markers.push(rv.members[i].marker);
+		for (var id in rv.members) {
+			markers.push(rv.members[id].marker);
 		}
 	}
 	if (rv.options.fitMarkers === true) {
@@ -407,13 +411,18 @@ rv.zoomToFitMembers = function () {
 		}
 	}
 	var group = new L.featureGroup();
-	if (markers.length > 0) {
+	//window.console.log('markers: ' + markers.length);
+	//rv.zoomMarkers = markers;
+	if (markers.length > 1) {
 		group.addLayer(markers);
 	}
 	if (rv.gps.updated !== null) {
-		group.addLayer(rv.myLocationMarker);
+		group.addLayer([rv.myLocationMarker]);
 	}
-	rv.map.fitBounds(group.getBounds());
+	//window.console.log('group: ' + group.getLayers().length);
+	if(group.getLayers().length !== 0) {
+		rv.map.fitBounds(group.getBounds());
+	}
 	return true;
 
 };
@@ -449,6 +458,7 @@ rv.newMarkerDialog = $("#new-marker-form").dialog({
 	modal: true,
 	buttons: {
 		"Create marker": function () {
+			$(".leaflet-popup-close-button")[0].click();
 			rv.createMarker();
 		},
 		Cancel: function () {
@@ -466,7 +476,7 @@ rv.newMarkerDialog.find("form").on("submit", function (event) {
 });
 
 rv.editMarker = function () {
-	window.console.log($('#marker-name').val());
+	//window.console.log($('#marker-name').val());
 	var name = $('#marker-name').val();
 	var description = $('#marker-description').val();
 	// TODO: send updated values to server

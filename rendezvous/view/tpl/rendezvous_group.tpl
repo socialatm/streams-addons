@@ -34,12 +34,12 @@
 						
 						<form>
 							<fieldset style='width: 100px;'>
-								<label for="name">Name</label>
-								<input type="text" name="marker-name" id="new-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<label for="new-marker-name">Name</label>
+								<input type="text" name="new-marker-name" id="new-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
 								<br>
-								<label for="description">Description</label>
+								<label for="new-marker-description">Description</label>
 								<br>
-								<textarea rows="5" cols="30" name="marker-description" id="new-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+								<textarea rows="5" cols="30" name="new-marker-description" id="new-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
 
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
@@ -50,12 +50,12 @@
 						
 						<form>
 							<fieldset style='width: 100px;'>
-								<label for="name">Name</label>
-								<input type="text" name="marker-name" id="edit-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<label for="edit-marker-name">Name</label>
+								<input type="text" name="edit-marker-name" id="edit-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
 								<br>
-								<label for="description">Description</label>
+								<label for="edit-marker-description">Description</label>
 								<br>
-								<textarea rows="5" cols="30" name="marker-description" id="edit-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+								<textarea rows="5" cols="30" name="edit-marker-description" id="edit-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
 
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
