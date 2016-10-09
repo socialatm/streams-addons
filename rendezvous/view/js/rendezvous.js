@@ -19,7 +19,9 @@ rv.gps = {
 	updated: null,
 	secondsSinceUpdated: 0, // Track time since last server update
 	options: {
-		updateInterval: 5	// Minimum number of seconds between location updates sent to server
+		updateInterval: 5, // Minimum number of seconds between location updates sent to server
+		initialZoom: 16,
+		firstZoom: true
 	},
 	sendLocationUpdate: function () {
 		var lat = this.lat;
@@ -112,10 +114,13 @@ rv.myLocationMarker = new L.CircleMarker([0, 0], {
 	fillOpacity: 1
 });
 rv.gpsControl = new L.Control.Gps({
-	marker: rv.myLocationMarker,
-	autoActive: false
+	marker: rv.myLocationMarker
+});
+rv.gpsControl.on('gpsactivated', function (timeout) {
+	$('#gps-discovery').show();
 });
 rv.gpsControl.on('gpslocated', function (latlng, marker) {
+	$('#gps-discovery').hide();
 	if (rv.gps.updated !== null) {
 		rv.gps.secondsSinceUpdated = rv.gps.secondsSinceUpdated + Math.ceil(((new Date()).getTime() - rv.gps.updated.getTime()) / 1000);
 		//window.console.log('since updated: ' + Math.ceil(((new Date()).getTime()-rv.gps.updated.getTime())/1000) + ' sec');
@@ -130,7 +135,12 @@ rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	rv.gps.updated = new Date();
 	var date = rv.gps.updated.toLocaleDateString(); //.substring(0, 10)
 	var time = rv.gps.updated.toLocaleTimeString(); //.substring(11, 16)
-	rv.myLocationMarker.bindPopup('<center><b>You</b><br>' + date + ' ' + time + '<center>');
+	rv.myLocationMarker.bindPopup('<center><b>' + rv.identity.name + '</b><br>' + date + ' ' + time + '<center>');
+	if (rv.gps.options.firstZoom) {
+		rv.gps.options.firstZoom = false;
+		//rv.map.setView([rv.gps.lat, rv.gps.lng], rv.gps.options.initialZoom);
+		rv.zoomToFitMembers();
+	}
 	//window.console.log('Location updated: (' + rv.gps.lat + ', ' + rv.gps.lng + ') at ' + rv.gps.updated.toString());
 });
 rv.map.addControl(rv.gpsControl);//inizialize control
@@ -162,7 +172,7 @@ rv.getMarkers = function () {
 				//window.console.log('marker: ' + JSON.stringify(markers[i]));
 				var description = markers[i].description;
 				rv.addMarkerToMap(marker, id);
-				
+
 				rv.markers[id] = {
 					marker: marker,
 					id: id,
@@ -189,14 +199,14 @@ rv.addMarkerToMap = function (marker, id) {
 				return rv.markerMenu();
 			}
 			);
-	
+
 	marker.on('click', function () {
 		//window.console.log('you clicked marker: ' + id);
 		rv.currentMarkerID = id; // global tracker of currently selected marker ID
 	});
 
 };
-				
+
 rv.createMarker = function (e) {
 	var name = $('#new-marker-name').val();
 	var description = $('#new-marker-description').val();
@@ -273,10 +283,10 @@ rv.openNewMarkerDialog = function (e) {
 rv.deleteMarker = function (e) {
 	//window.console.log('delete marker');
 	var answer = confirm("Delete marker (" + rv.markers[rv.currentMarkerID].name + ") ?");
-		if (!answer) {
-			return false;
-		}
-	
+	if (!answer) {
+		return false;
+	}
+
 	$.post("/rendezvous/v1/delete/marker", {
 		group: rv.group.id,
 		id: rv.currentMarkerID,
@@ -312,11 +322,13 @@ rv.getIdentity = function () {
 		}
 		return true;
 	} else {
-		var name = window.prompt("Please enter your name", rv.identity.name);
-		if (name === null) {
-			name = rv.identity.name;
+
+		//var name = window.prompt("Please enter your name", rv.identity.name);
+		if (rv.identity.name === null || rv.identity.name === '') {
+			rv.newMemberDialog.dialog("open");
+			return false;
 		}
-		$.post("/rendezvous/v1/get/identity", {group: rv.group.id, name: name, currentTime: (new Date()).toISOString()},
+		$.post("/rendezvous/v1/get/identity", {group: rv.group.id, name: rv.identity.name, currentTime: (new Date()).toISOString()},
 		function (data) {
 			if (data['success']) {
 				rv.identity.secret = data['secret'];
@@ -327,8 +339,8 @@ rv.getIdentity = function () {
 				Cookies.set('identity', rv.identity, {expires: 365, path: ''});
 				Cookies.set('group', rv.group.id, {expires: 365, path: ''});
 
-				rv.getMembers();
 				rv.getMarkers();
+				rv.getMembers();
 				if (rv.memberUpdateID === null) {
 					rv.memberUpdateID = window.setInterval(rv.getMembers, rv.memberUpdateInterval);
 				}
@@ -352,8 +364,8 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-			window.console.log('members length: ' + Object.keys(rv.members).length + ', ' + members.length);
-			if (members.length !== (Object.keys(rv.members).length+1)) {
+			//window.console.log('members length: ' + Object.keys(rv.members).length + ', ' + members.length);
+			if (members.length !== (Object.keys(rv.members).length + 1)) {
 				rv.options.fitMembers = true;
 			}
 			for (var id in rv.members) {
@@ -365,26 +377,35 @@ rv.getMembers = function () {
 				var mid = members[i].mid;
 				// Skip the member if it is self
 				if (mid !== rv.identity.id) {
-					
-				
-				if (members[i].lat !== null && members[i].lng !== null) {
-					var marker = L.marker([members[i].lat, members[i].lng]);
+					rv.members[mid] = {
+						name: members[i].name,
+						id: members[i].mid,
+						lat: members[i].lat,
+						lng: members[i].lng,
+						updated: members[i].updated
+					};
+					var marker = null;
+					if (members[i].lat !== null && members[i].lng !== null) {
 
-					marker.addTo(rv.map)
-							.bindPopup('<b>' + members[i].name + '</b><br>' + members[i].updated);
-					marker.on('click', function () {
-						rv.currentMemberID = mid; // global tracker of currently selected member
-					});
-				}
+						marker = new L.CircleMarker([members[i].lat, members[i].lng], {
+							radius: 10,
+							weight: 5,
+							color: '#FFF',
+							opacity: 1,
+							fillColor: '#00F',
+							fillOpacity: 1
+						});
+						(function (mid) {
+							marker.addTo(rv.map)
+									.bindPopup('<b>' + rv.members[mid].name + '</b><br>' + rv.members[mid].updated);
+							marker.on('click', function () {
+								rv.currentMemberID = mid; // global tracker of currently selected member
+							});
+						})(mid);
+					}
 
-				rv.members[mid] = {
-					name: members[i].name,
-					id: members[i].mid,
-					lat: members[i].lat,
-					lng: members[i].lng,
-					updated: members[i].updated,
-					marker: marker
-				};
+					rv.members[mid].marker = marker;
+
 				}
 			}
 			rv.zoomToFitMembers();
@@ -403,6 +424,9 @@ rv.zoomToFitMembers = function () {
 		for (var id in rv.members) {
 			markers.push(rv.members[id].marker);
 		}
+		if (rv.gps.updated !== null) {
+			markers.push(rv.myLocationMarker);
+		}
 	}
 	if (rv.options.fitMarkers === true) {
 		rv.options.fitMarkers = false;
@@ -411,18 +435,16 @@ rv.zoomToFitMembers = function () {
 		}
 	}
 	var group = null;
-	window.console.log('markers: ' + markers.length);
+	//window.console.log('markers: ' + markers.length);
 	//rv.zoomMarkers = markers;
-	if (markers.length > 1) {
+	if (markers.length > 0) {
 		group = new L.featureGroup(markers);
-	}
-	if (group && rv.gps.updated !== null) {
-		group.addLayer(rv.myLocationMarker);
-	}
-	//if (rv.options.fitMarkers === true || rv.options.fitMembers === true) {
-		if(group.getLayers().length > 1 ) {
+		if (group.getLayers().length > 0) {
 			rv.map.fitBounds(group.getBounds());
 		}
+	}
+	//if (rv.options.fitMarkers === true || rv.options.fitMembers === true) {
+
 	//}
 	group = null;
 	markers = null;
@@ -493,9 +515,39 @@ rv.isMarkerPopupOpen = function () {
 	return isOpen;
 };
 
+rv.newMemberDialog = $("#new-member-form").dialog({
+	autoOpen: false,
+	height: 400,
+	width: 350,
+	modal: true,
+	buttons: {
+		"Join": function () {
+			rv.identity.name = $('#new-member-name').val();
+			rv.getIdentity();
+			rv.newMemberDialog.dialog("close");
+		},
+		Cancel: function () {
+			rv.newMemberDialog.dialog("close");
+		}
+	},
+	close: function () {
+		return false;
+	}
+});
+
+rv.newMemberDialog.find("form").on("submit", function (event) {
+	event.preventDefault();
+	rv.identity.name = $('#new-member-name').val();
+	rv.getIdentity();
+	rv.newMemberDialog.dialog("close");
+});
 
 $(window).load(function () {
-
+	$("#new-member-name").focus(function () {
+		// Select input field contents
+		this.select();
+	});
+	//rv.newMemberDialog.dialog("open");
 	// Start the background updates by obtaining an identity and joining the group
 	rv.getIdentity();
 

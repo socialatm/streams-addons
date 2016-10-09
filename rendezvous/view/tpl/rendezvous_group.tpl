@@ -16,6 +16,7 @@
 
 		</head>
 		<body>
+				<div id="gps-discovery" style="display: none; color:white; font-weight:bolder; position:absolute; top: 80px; left: 50px; z-index: 1000;">Searching for location...</div>
 				<div id="map" class="map"></div>
 <!--				<div id="spinner" style="position: relative; width: 20px; z-index: 10000;"></div>-->
 				<div id="add-marker-button-wrapper" style="display: none;">
@@ -30,6 +31,23 @@
 				</div>
 
 				 
+				<div id="new-member-form" title="Welcome to Rendezvous!">
+						<p>
+								Enter your name to join this rendezvous. To begin sharing your location with the other
+								members, tap the GPS control. When your location is discovered, a red dot will appear
+								and others will be able to see you on the map.
+						</p>
+						<form>
+							<fieldset style='width: 100px;'>
+								<label for="new-member-name">Name</label>
+								<input type="text" name="new-member-name" id="new-member-name" placeholder="" value="{{$name}}" class="text ui-widget-content ui-corner-all">
+
+								<!-- Allow form submission with keyboard without duplicating the dialog button -->
+								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+							</fieldset>
+						</form>
+				</div>
+
 				<div id="new-marker-form" title="New marker">
 						
 						<form>
@@ -71,7 +89,7 @@
 						rv.group = {
 								id: '{{$group}}'
 						};
-						rv.identity.name = '{{$name}}';
+						rv.identity.name = null;
 						rv.zroot = '{{$zroot}}';
 				</script>
 		</body>

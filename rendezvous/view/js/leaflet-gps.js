@@ -108,6 +108,7 @@ L.Control.Gps = L.Control.extend({
 			setView: this.options.setView,	//automatically sets the map view to the user location
 			maxZoom: this.options.maxZoom
 		});
+		this.fire('gpsactivated', {timeout: 300000});
 	},
 
 	deactivate: function() {

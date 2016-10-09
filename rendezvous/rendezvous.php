@@ -110,7 +110,7 @@ function rendezvous_content($a) {
 						$o .= replace_macros(get_markup_template('rendezvous_group.tpl', 'addon/rendezvous'), array(
 								'$pagetitle' => t('Rendezvous'),
 								'$group' => $group,
-								'$name' => autoname(6),
+								'$name' => ucfirst(autoname(6)),
 								'$zroot' => z_root()
 								//'$isowner' => $isowner,
 						));
