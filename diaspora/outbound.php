@@ -306,7 +306,7 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 
 }
 
-function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$uplink = false) {
 
 	logger('diaspora_send_upstream');
 
@@ -337,7 +337,16 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 	else
 		return;
 
+	// if uplinking to Diaspora, ignore any existing signatures and create a wall-to-wall.
+	// unsetting $item['iconfig'] will destroy any signatures already attached
+	// to this item, but only for this outbound copy.
+
+	if($uplink)
+		unset($item['iconfig']);
+
 	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
+
+		
 
 	if(($item['verb'] === ACTIVITY_LIKE) && ($parent['mid'] === $parent['parent_mid'])) {
 		$tpl = get_markup_template('diaspora_like.tpl','addon/diaspora');
