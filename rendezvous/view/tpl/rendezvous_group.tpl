@@ -17,10 +17,14 @@
 		</head>
 		<body>
 				<div id="gps-discovery" style="display: none; color:white; font-weight:bolder; position:absolute; top: 80px; left: 50px; z-index: 1000;">Searching for location...</div>
+				<div class="zoom-fit" style="position:absolute; top: 120px; left: 10px; z-index: 1000;"><button class="btn btn-primary btn-sm" title="Auto fit"><span><i class="fa fa-arrows-alt"></i></span></button></div>
 				<div id="map" class="map"></div>
 <!--				<div id="spinner" style="position: relative; width: 20px; z-index: 10000;"></div>-->
 				<div id="add-marker-button-wrapper" style="display: none;">
-						<div><button class="add-marker btn btn-default"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
+<!--						<div><button class="add-marker btn btn-default" title="Add marker"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
+						<div><button class="zoom-fit btn btn-default" title="Auto fit"><span><i class="fa fa-arrows-alt">&nbsp;Auto fit</i></span></button></div>-->
+						<div><button class="add-marker btn btn-success btn-sm" title="Add marker"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
+						
 				</div>
 				
 				<div id="edit-marker-button-wrapper" style="display: none;">

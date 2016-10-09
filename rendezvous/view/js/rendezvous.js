@@ -11,7 +11,7 @@ rv.members = [];
 rv.currentMemberID = null;
 rv.memberUpdateID = null;
 rv.markerUpdateID = null;
-rv.memberUpdateInterval = 5000;
+rv.memberUpdateInterval = 10000;
 // Data object for local GPS tracking
 rv.gps = {
 	lat: null,
@@ -40,6 +40,7 @@ rv.gps = {
 		},
 		function (data) {
 			if (data['success']) {
+				window.console.log('location updated');
 			} else {
 				window.console.log(data['message']);
 			}
@@ -85,7 +86,7 @@ rv.icons = {
 		popupAnchor: [1, -34],
 		shadowSize: [41, 41]
 	})
-}
+};
 
 rv.onMapClick = function (e) {
 	rv.selectedLatLon = e.latlng;
@@ -99,10 +100,15 @@ rv.onMapClick = function (e) {
 			.openOn(rv.map);
 
 	$('.add-marker').on('click', rv.openNewMarkerDialog);
-}
+};
 
 rv.map.on('click', rv.onMapClick);
 
+$('.zoom-fit').on('click', function() {
+	rv.options.fitMarkers = true;
+	rv.options.fitMembers = true;
+	rv.zoomToFitMembers();
+});
 //rv.myLocationMarker = new L.Marker([0,0]).bindPopup("<b>Me</b><br />Current position.");
 rv.myLocationMarker = new L.CircleMarker([0, 0], {
 	stroke: true,
@@ -118,6 +124,9 @@ rv.gpsControl = new L.Control.Gps({
 });
 rv.gpsControl.on('gpsactivated', function (timeout) {
 	$('#gps-discovery').show();
+});
+rv.gpsControl.on('gpsdisabled', function () {
+	$('#gps-discovery').hide();
 });
 rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	$('#gps-discovery').hide();
@@ -364,12 +373,14 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-			//window.console.log('members length: ' + Object.keys(rv.members).length + ', ' + members.length);
+			//window.console.log('members: ' + JSON.stringify(members));
 			if (members.length !== (Object.keys(rv.members).length + 1)) {
 				rv.options.fitMembers = true;
 			}
 			for (var id in rv.members) {
-				rv.map.removeLayer(rv.members[id].marker);
+				if(rv.members[id].marker !== null) {
+					rv.map.removeLayer(rv.members[id].marker);
+				}
 			}
 			rv.members = [];
 			for (var i = 0; i < members.length; i++) {
@@ -382,7 +393,7 @@ rv.getMembers = function () {
 						id: members[i].mid,
 						lat: members[i].lat,
 						lng: members[i].lng,
-						updated: members[i].updated
+						updated: new Date(members[i].updated)
 					};
 					var marker = null;
 					if (members[i].lat !== null && members[i].lng !== null) {
@@ -396,8 +407,20 @@ rv.getMembers = function () {
 							fillOpacity: 1
 						});
 						(function (mid) {
+							var tDiff = Math.ceil(((new Date()).getTime()-rv.members[mid].updated.getTime())/60000);
+							var tUnit = 'minutes';
+							// TODO: This is a hack to handle times reported in the future, but there is a real solution to this problem.
+							while (tDiff < 0) {
+								tDiff = tDiff + 60;
+							}
+							if(tDiff > 120) {
+								tDiff = Math.floor(tDiff/60);
+								tUnit = 'hours';
+							}
 							marker.addTo(rv.map)
-									.bindPopup('<b>' + rv.members[mid].name + '</b><br>' + rv.members[mid].updated);
+									//.bindPopup('<b>' + rv.members[mid].name + '</b><br>' + rv.members[mid].updated.toLocaleDateString() + ' ' + rv.members[mid].updated.toLocaleTimeString());
+									.bindPopup('<b>' + rv.members[mid].name + '</b><br>about ' + tDiff + ' ' + tUnit + ' ago');
+									
 							marker.on('click', function () {
 								rv.currentMemberID = mid; // global tracker of currently selected member
 							});
@@ -422,7 +445,9 @@ rv.zoomToFitMembers = function () {
 	if (rv.options.fitMembers === true) {
 		rv.options.fitMembers = false;
 		for (var id in rv.members) {
-			markers.push(rv.members[id].marker);
+			if(rv.members[id].marker !== null) {
+				markers.push(rv.members[id].marker);
+			}
 		}
 		if (rv.gps.updated !== null) {
 			markers.push(rv.myLocationMarker);
@@ -431,7 +456,9 @@ rv.zoomToFitMembers = function () {
 	if (rv.options.fitMarkers === true) {
 		rv.options.fitMarkers = false;
 		for (var id in rv.markers) {
-			markers.push(rv.markers[id].marker);
+			if(rv.markers[id].marker !== null) {
+				markers.push(rv.markers[id].marker);
+			}
 		}
 	}
 	var group = null;
