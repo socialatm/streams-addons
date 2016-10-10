@@ -372,7 +372,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 		$text        = $meta['body'];
 	}
 	else {
-		$text = bb2diaspora_itembody($item);
+		$text = bb2diaspora_itembody($item,$uplink,false,$uplink);
 
 		// sign it
 
