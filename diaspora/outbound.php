@@ -403,7 +403,10 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 		'$handle' => xmlify($myaddr)
 	));
 
-	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
+	if($uplink)
+		logger('diaspora_send_upstream: uplink message: ' . $msg, LOGGER_DATA);
+	else
+		logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
