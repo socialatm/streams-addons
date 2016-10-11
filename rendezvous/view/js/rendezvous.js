@@ -34,7 +34,7 @@ rv.gps = {
 		$.post("/rendezvous/v1/update/location", {
 			lat: lat,
 			lng: lng,
-			updated: updated.toISOString(),
+			//updated: updated.toISOString(),
 			id: rv.identity.id,
 			secret: rv.identity.secret
 		},
@@ -343,7 +343,7 @@ rv.getIdentity = function () {
 				rv.identity.secret = data['secret'];
 				rv.identity.id = data['id'];
 				rv.identity.name = data['name'];
-				rv.identity.timeOffset = parseFloat(data['timeOffset']);
+				rv.identity.timeOffset = parseFloat(data['timeOffset']);	// time offset in minutes
 
 				Cookies.set('identity', rv.identity, {expires: 365, path: ''});
 				Cookies.set('group', rv.group.id, {expires: 365, path: ''});
@@ -384,16 +384,19 @@ rv.getMembers = function () {
 			}
 			rv.members = [];
 			for (var i = 0; i < members.length; i++) {
-
+				var updateTime = new Date(members[i].updated);
+				updateTime.setMinutes(updateTime.getMinutes() - rv.identity.timeOffset);
+				window.console.log('updateTime: '  + updateTime + ', ' + members[i].name);
 				var mid = members[i].mid;
 				// Skip the member if it is self
 				if (mid !== rv.identity.id) {
+					
 					rv.members[mid] = {
 						name: members[i].name,
 						id: members[i].mid,
 						lat: members[i].lat,
 						lng: members[i].lng,
-						updated: new Date(members[i].updated)
+						updated: updateTime
 					};
 					var marker = null;
 					if (members[i].lat !== null && members[i].lng !== null) {

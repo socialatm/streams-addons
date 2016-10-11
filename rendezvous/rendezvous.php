@@ -175,16 +175,10 @@ function rendezvous_post($a) {
 						$name = '';
 				}
 				if (isset($_POST['currentTime'])) {
-						$currentTime = $_POST['currentTime'];
-						logger('$currentTime: ' . $currentTime, LOGGER_DEBUG);
-						$date1 = new DateTime($currentTime);
-						logger('date1: ' . $date1->format('Y-m-d H:i:sP'), LOGGER_DEBUG);
+						$date1 = new DateTime($_POST['currentTime']);
 						$date2 = new DateTime();
-						logger('date2: ' . $date2->format('Y-m-d H:i:sP'), LOGGER_DEBUG);
 						$interval = $date1->diff($date2);				
-						logger('seconds different: ' . $interval->s, LOGGER_DEBUG);
-						$timeOffset = round(floatval($interval->s)/60);
-						logger('hours different: ' . $timeOffset, LOGGER_DEBUG);
+						$timeOffset = round(floatval($interval->i));		// time offset in minutes
 				} else {
 						$timeOffset = 0;
 				}
@@ -196,15 +190,15 @@ function rendezvous_post($a) {
 				}
 		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'update' && argv(3) === 'location') {
-				if (isset($_POST['lat']) && isset($_POST['lng']) && isset($_POST['updated']) && isset($_POST['id']) && isset($_POST['secret'])) {
-						$x = rendezvous_update_location($_POST['lat'], $_POST['lng'], $_POST['updated'], $_POST['id'], $_POST['secret']);
+				if (isset($_POST['lat']) && isset($_POST['lng']) && isset($_POST['id']) && isset($_POST['secret'])) {
+						$x = rendezvous_update_location($_POST['lat'], $_POST['lng'], $_POST['id'], $_POST['secret']);
 						if($x['success']) {
 								rendezvous_api_return(array());
 						} else {
 								rendezvous_api_return(array(), false, $x['message']);
 						}
 				} else {
-						rendezvous_api_return(array(), false, 'lat, lng, and updated time are required');
+						rendezvous_api_return(array(), false, 'lat, lng, are required');
 				}
 		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'get' && argv(3) === 'members') {
@@ -402,9 +396,9 @@ function rendezvous_new_identity($rid, $name) {
 		}
 }
 
-function rendezvous_update_location($lat, $lng, $updated, $mid, $secret) {
+function rendezvous_update_location($lat, $lng, $mid, $secret) {
 		//logger(date("Y-m-d H:i:s"), LOGGER_DEBUG);
-		$updateTime = date("Y-m-d H:i:s", strtotime($updated)); 
+		$updateTime = date("Y-m-d H:i:s"); 
 		//logger($updateTime, LOGGER_DEBUG);
 		$r = q("UPDATE rendezvous_members SET lat = %f, lng = %f, updated = '%s' where mid = '%s' and secret = '%s' and deleted = 0", 
 						floatval($lat),
