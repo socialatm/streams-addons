@@ -290,7 +290,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			}
 			elseif($arr['relay_to_owner'] || $arr['uplink']) {
 				// send comments and likes to owner to relay
-				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact,false,(($arr['uplink']) ? true : false));
+				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact,false,(($arr['uplink'] && !$arr['relay_to_owner']) ? true : false));
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
