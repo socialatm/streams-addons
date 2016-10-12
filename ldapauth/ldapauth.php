@@ -3,8 +3,8 @@
  * Name: LDAP Authenticate
  * Description: Authenticate an account against an LDAP directory
  * Version: 1.0
- * Author: Mike Macgirvin <zot:mike@zothub.com>
- * Maintainer: Mike Macgirvin <mike@macgirvin.com>
+ * Author: Mike Macgirvin
+ * Maintainer: Mike Macgirvin
  */
  
 /**
@@ -16,9 +16,6 @@
  * to maintain a single password across the organisation.
  *
  * Optionally authenticates only if a member of a given group in the directory.
- *
- * The person must have registered with Friendica using the normal registration 
- * procedures in order to have a Friendica user record, contact, and profile.
  *
  * Note when using with Windows Active Directory: you may need to set TLS_CACERT in your site
  * ldap.conf file to the signing cert for your LDAP server. 

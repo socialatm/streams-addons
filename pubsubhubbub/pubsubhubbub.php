@@ -15,7 +15,7 @@ function pubsubhubbub_install() {
 	  `id` int(11) NOT NULL AUTO_INCREMENT,
 	  `callback_url` varchar(255) NOT NULL DEFAULT '',
 	  `topic` varchar(255) NOT NULL DEFAULT '',
-	  `last_update` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+	  `last_update` datetime NOT NULL DEFAULT '0001-01-01 00:00:00',
 	  `secret` varchar(255) NOT NULL DEFAULT '',
 	  PRIMARY KEY (`id`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
@@ -27,7 +27,7 @@ function pubsubhubbub_install() {
 }
 
 function pubsubhubbub_uninstall() {
-	$r = q("drop table push_subscriber");
+//	$r = q("drop table push_subscriber");
 }
 
 
@@ -62,25 +62,34 @@ function push_module_loaded(&$a,&$b) {
 
 function push_notifier_process(&$a,&$b) {
 
-	if(! $b['normal_mode'])
-		return;
+logger('push_notifier_process');
 
-	if($b['private'] || $b['packet_type'] || $b['mail'])
+	if(! $b['normal_mode']) {
 		return;
+	}
 
-	if(! $b['top_level_post'])
+	if($b['private'] || $b['packet_type'] !== 'undefined' || $b['mail']) {
 		return;
+	}
+
+	if(! $b['top_level_post']) {
+		return;
+	}
+
 
 	// find push_subscribers following this $owner
 
 	$channel = $b['channel'];
 
-	$r = q("select * from push_subscriber where topic = '%s'",
-		dbesc(z_root() . '/feed/' . $channel['channel_address'])
+	// allow subscriptions either by http or https, as gnu-social has been known to subscribe
+	// to the wrong one.
+
+	$r = q("select * from push_subscriber where topic like '%s'",
+		dbesc('%://' . App::get_hostname() . '/feed/' . $channel['channel_address'])
 	);
+
 	if(! $r)
 		return;
-
 
 	foreach($r as $rr) {
 

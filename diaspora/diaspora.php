@@ -3,10 +3,11 @@
 
 /**
  * Name: Diaspora Protocol
- * Description: Diaspora Protocol (Experimental, Unsupported)
+ * Description: Diaspora Protocol
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
+ * ServerRoles: basic, standard
  */
 
 
@@ -287,9 +288,9 @@ function diaspora_process_outbound(&$a, &$arr) {
 					$arr['queued'][] = $qi;
 				continue;
 			}
-			elseif($arr['relay_to_owner']) {
+			elseif($arr['relay_to_owner'] || $arr['uplink']) {
 				// send comments and likes to owner to relay
-				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact);
+				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact,false,(($arr['uplink'] && !$arr['relay_to_owner']) ? true : false));
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
@@ -671,7 +672,7 @@ function diaspora_feature_settings(&$a,&$s) {
 		$hashtags = '';
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('dspr_allowed', t('Enable the (experimental) Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
+		'$field'	=> array('dspr_allowed', t('Enable the Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
 	));
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
@@ -688,7 +689,7 @@ function diaspora_feature_settings(&$a,&$s) {
 
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
-		'$addon' 	=> array('diaspora', '<img src="addon/diaspost/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
+		'$addon' 	=> array('diaspora', '<img src="addon/diaspora/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
 		'$content'	=> $sc
 	));
 
@@ -739,7 +740,7 @@ function diaspora_post_local(&$a,&$item) {
 		if(! $dspr_allowed)
 			return;
 
-		$handle = $author['channel_address'] . '@' . App::get_hostname();
+		$handle = channel_reddress($author);
 
 		if($item['verb'] === ACTIVITY_LIKE) {
 			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
@@ -785,7 +786,7 @@ function diaspora_post_local(&$a,&$item) {
 		if(! $dspr_allowed)
 			return;
 
-		$handle = $owner['channel_address'] . '@' . App::get_hostname();
+		$handle = channel_reddress($owner);
 
 		if($item['verb'] === ACTIVITY_LIKE) {
 			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {

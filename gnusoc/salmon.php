@@ -252,21 +252,6 @@ function salmon_post(&$a) {
 		}
 
 
-		// Otherwise check general permissions
-
-		if((! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'send_stream')) && (! $importer['system'])) { 
-
-			// check for and process ostatus autofriend
-
-
-			// ... fixme
-
-			// otherwise 
-
-			logger('mod-salmon: Ignoring this author.');
-			$status = 202;
-			continue;
-		}
 
 
 		$parent_item = null;
@@ -282,8 +267,47 @@ function salmon_post(&$a) {
 				continue;
 			}
 			$parent_item = $r[0];
+
+			if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
+				|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+				logger('mod_salmon: comments disabled for post ' . $parent_item['mid']);
+				$status = 202;
+				continue;
+			}
 		}
 	
+		$allowed = false;
+
+		if($parent_item) {
+			if($parent_item['owner_xchan'] == $importer['channel_hash']) 
+				$allowed = perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments');
+			else
+				$allowed = true;
+
+			if(! $allowed) {
+				logger('mod-salmon: Ignoring this comment author.');
+				$status = 202;
+				continue;
+			}
+		}
+		else {
+			if((! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'send_stream')) && (! $importer['system'])) { 
+			// check for and process ostatus autofriend
+
+
+			// ... fixme
+
+			// otherwise 
+
+			logger('mod-salmon: Ignoring this author.');
+			$status = 202;
+			continue;
+		}
+
+
+
+
+
 
 		if(! $item['author_xchan'])
 			$item['author_xchan'] = $xchan['xchan_hash'];

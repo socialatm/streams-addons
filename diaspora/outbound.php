@@ -6,7 +6,7 @@ function diaspora_pubmsg_build($msg,$channel,$contact,$prvkey,$pubkey) {
 
 	logger('diaspora_pubmsg_build: ' . $msg, LOGGER_DATA, LOG_DEBUG);
 
-    $handle = $channel['channel_address'] . '@' . App::get_hostname();
+    $handle = channel_reddress($channel);
 
 	$b64url_data = base64url_encode($msg,false);
 
@@ -70,7 +70,7 @@ function diaspora_msg_build($msg,$channel,$contact,$prvkey,$pubkey,$public = fal
 	$outer_iv = random_string(16);
 	$b_outer_iv = base64_encode($outer_iv);
 
-    $handle = $channel['channel_address'] . '@' . App::get_hostname();
+    $handle = channel_reddress($channel);
 
 
 	$inner_encrypted = AES256CBC_encrypt($msg,$inner_aes_key,$inner_iv);
@@ -155,9 +155,7 @@ function diaspora_share($owner,$contact) {
 		return;
 	}
 
-
-
-	$myaddr = $owner['channel_address'] . '@' . substr(z_root(), strpos(z_root(),'://') + 3);
+	$myaddr = channel_reddress($owner);
 
 	if(! array_key_exists('hubloc_hash',$contact)) {
 		$c = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where xchan_hash = '%s' limit 1",
@@ -185,7 +183,7 @@ function diaspora_share($owner,$contact) {
 function diaspora_unshare($owner,$contact) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' .  substr(z_root(), strpos(z_root(),'://') + 3);
+	$myaddr = channel_reddress($owner);
 
 	$tpl = get_markup_template('diaspora_retract.tpl','addon/diaspora');
 	$msg = replace_macros($tpl, array(
@@ -308,12 +306,12 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 
 }
 
-function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$uplink = false) {
 
 	logger('diaspora_send_upstream');
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
+	$myaddr = channel_reddress($owner);
 	$theiraddr = $contact['xchan_addr'];
 
 	// Diaspora doesn't support threaded comments, but some
@@ -339,7 +337,9 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 	else
 		return;
 
-	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
+	// if uplinking to Diaspora, ignore any existing signatures and create a wall-to-wall.
+
+	$xmlout = (($uplink) ? '' : diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields')));
 
 	if(($item['verb'] === ACTIVITY_LIKE) && ($parent['mid'] === $parent['parent_mid'])) {
 		$tpl = get_markup_template('diaspora_like.tpl','addon/diaspora');
@@ -372,7 +372,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 		$text        = $meta['body'];
 	}
 	else {
-		$text = bb2diaspora_itembody($item);
+		$text = bb2diaspora_itembody($item,$uplink,false,$uplink);
 
 		// sign it
 
@@ -396,7 +396,10 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 		'$handle' => xmlify($myaddr)
 	));
 
-	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
+	if($uplink)
+		logger('diaspora_send_upstream: uplink message: ' . $msg, LOGGER_DATA);
+	else
+		logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
@@ -409,9 +412,11 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' . App::get_hostname();
+	$myaddr = channel_reddress($owner);
 
 	$text = bb2diaspora_itembody($item);
+
+	$parentauthorsig = '';
 
 	$body = $text;
 
@@ -447,8 +452,11 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 		return;
 	}
 
-	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
-
+	$diaspora_fields = get_iconfig($item,'diaspora','fields');
+	if($diaspora_fields) {
+		$xmlout = diaspora_fields_to_xml($diaspora_fields);
+		$parentauthorsig = diaspora_sign_fields($diaspora_fields,$owner['channel_prvkey']);
+	}
 
 	$like = false;
 	$relay_retract = false;
@@ -507,7 +515,7 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 	// bug - nomadic identity may/will affect diaspora_handle_from_contact
 
 	if(! $handle)
-		$handle = $owner['channel_address'] . '@' . App::get_hostname();
+		$handle = channel_reddress($owner);
 
 	if(! $sender_signed_text) {
 		if($relay_retract)
@@ -529,7 +537,8 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 		
 	// Sign the relayable with the top-level owner's signature
 
-	$parentauthorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
+	if(! $parentauthorsig)
+		$parentauthorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
 
 	if(! $text)
 		logger('diaspora_send_downstream: no text');
@@ -559,7 +568,7 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 function diaspora_send_retraction($item,$owner,$contact,$public_batch = false) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' .  App::get_hostname();
+	$myaddr = channel_reddress($owner);
 
 	// Check whether the retraction is for a top-level post or whether it's a relayable
 	if( $item['mid'] !== $item['parent_mid'] ) {
@@ -590,7 +599,7 @@ function diaspora_send_retraction($item,$owner,$contact,$public_batch = false) {
 function diaspora_send_mail($item,$owner,$contact) {
 
 	$a = get_app();
-	$myaddr = $owner['channel_address'] . '@' .  App::get_hostname();
+	$myaddr = channel_reddress($owner);
 
 	$r = q("select * from conv where guid = '%s' and uid = %d limit 1",
 		dbesc($item['conv_guid']),
@@ -689,7 +698,7 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 		return;
 	$profile = $r[0];
 
-	$handle = xmlify($channel['channel_address'] . '@' . App::get_hostname());
+	$handle = xmlify(channel_reddress($channel));
 	$first = xmlify(((strpos($profile['channel_name'],' '))
 		? trim(substr($profile['channel_name'],0,strpos($profile['channel_name'],' '))) : $profile['channel_name']));
 	$last = xmlify((($first === $profile['channel_name']) ? '' : trim(substr($profile['channel_name'],strlen($first)))));

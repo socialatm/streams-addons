@@ -3,11 +3,12 @@
 
 /**
  * Name: GNU-Social Protocol
- * Description: GNU-Social Protocol (Experimental, Unsupported)
+ * Description: GNU-Social Protocol
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
  * Requires: pubsubhubbub
+ * ServerRoles: basic, standard
  */
 
 
@@ -120,7 +121,7 @@ function gnusoc_feature_settings(&$a,&$s) {
 		$gnus_allowed = get_config('gnusoc','allowed');	
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-		'$field'	=> array('gnusoc_allowed', t('Enable the (experimental) GNU-Social protocol for this channel'), $gnusoc_allowed, '', $yes_no),
+		'$field'	=> array('gnusoc_allowed', t('Enable the GNU-Social protocol for this channel'), $gnusoc_allowed, '', $yes_no),
 	));
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
