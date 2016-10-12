@@ -33,6 +33,7 @@ function rendezvous_unload() {
 
 function rendezvous_install() {
     set_config('rendezvous', 'dropTablesOnUninstall', 0);
+    set_config('rendezvous', 'mapboxAccessToken', '');
     $errors = rendezvous_create_database_tables();
     
     if ($errors) {
@@ -68,13 +69,16 @@ function rendezvous_uninstall() {
         logger('Rendezvous uninstalled successfully.');
     }
     del_config('rendezvous', 'dropTablesOnUninstall');
+		del_config('rendezvous', 'mapboxAccessToken');
     return;
 }
 
 function rendezvous_plugin_admin_post(&$a) {
+    $mapboxAccessToken = ((x($_POST, 'mapboxAccessToken')) ? $_POST['mapboxAccessToken'] : '');
     $dropTablesOnUninstall = ((x($_POST, 'dropTablesOnUninstall')) ? intval($_POST['dropTablesOnUninstall']) : 0);
     logger('Rendezvous drop tables admin setting: ' . $dropTablesOnUninstall, LOGGER_DEBUG);
     set_config('rendezvous', 'dropTablesOnUninstall', $dropTablesOnUninstall);
+		set_config('rendezvous', 'mapboxAccessToken', $mapboxAccessToken);
     info(t('Settings updated.') . EOL);
 }
 
@@ -84,9 +88,13 @@ function rendezvous_plugin_admin(&$a, &$o) {
     $dropTablesOnUninstall = get_config('rendezvous', 'dropTablesOnUninstall');
     if (!$dropTablesOnUninstall)
         $dropTablesOnUninstall = 0;
+    $mapboxAccessToken = get_config('rendezvous', 'mapboxAccessToken');
+		if (!$mapboxAccessToken)
+        $mapboxAccessToken = '';
     $o = replace_macros($t, array(
         '$submit' => t('Submit Settings'),
-        '$dropTablesOnUninstall' => array('dropTablesOnUninstall', t('Drop tables when uninstalling?'), $dropTablesOnUninstall, t('If checked, the Map database tables will be deleted When the Map plugin is uninstalled.')),
+        '$dropTablesOnUninstall' => array('dropTablesOnUninstall', t('Drop tables when uninstalling?'), $dropTablesOnUninstall, t('If checked, the Rendezvous database tables will be deleted when the plugin is uninstalled.')),
+        '$mapboxAccessToken' => array('mapboxAccessToken', t('Mapbox Access Token'), $mapboxAccessToken, t('If you enter a Mapbox access token, it will be used to retrieve map tiles from Mapbox instead of the default OpenStreetMap tile server.')),
     ));
 }
 
@@ -111,8 +119,8 @@ function rendezvous_content($a) {
 								'$pagetitle' => t('Rendezvous'),
 								'$group' => $group,
 								'$name' => ucfirst(autoname(6)),
-								'$zroot' => z_root()
-								//'$isowner' => $isowner,
+								'$zroot' => z_root(),
+								'$mapboxAccessToken' => get_config('rendezvous', 'mapboxAccessToken'),
 						));
 						return $o;
 				} else {

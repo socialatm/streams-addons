@@ -87,7 +87,9 @@
 				
 				<script src="/addon/rendezvous/view/js/leaflet.js"></script>
 				<script src="/addon/rendezvous/view/js/leaflet-gps.js"></script>
-				<!--<script src="/addon/rendezvous/view/js/spin.js"></script>-->
+				<script>
+						var mapboxAccessToken = '{{$mapboxAccessToken}}';
+				</script>
 				<script src="/addon/rendezvous/view/js/rendezvous.js"></script>
 				<script>
 						rv.group = {

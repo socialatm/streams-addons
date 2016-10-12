@@ -1,4 +1,4 @@
-// Declare the rendezvous namespace
+// Declare and clear the rendezvous namespace
 var rv = {};
 
 rv.options = {
@@ -30,17 +30,15 @@ rv.gps = {
 		if (lat === null || lng === null || updated === null) {
 			return false;
 		}
-		//window.console.log('lat: ' + lat + ', lng: ' + lng + ', updated: ' + updated.toISOString());
 		$.post("/rendezvous/v1/update/location", {
 			lat: lat,
 			lng: lng,
-			//updated: updated.toISOString(),
 			id: rv.identity.id,
 			secret: rv.identity.secret
 		},
 		function (data) {
 			if (data['success']) {
-				window.console.log('location updated');
+
 			} else {
 				window.console.log(data['message']);
 			}
@@ -59,20 +57,23 @@ rv.identity = {
 
 rv.map = L.map('map').setView([0, 0], 2);
 
+if (mapboxAccessToken !== '') {
+	
+	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
+		maxZoom: 18,
+		attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+				'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+				'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+		id: 'mapbox.streets'
+	}).addTo(rv.map);
+	
+} else {
 
-L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpandmbXliNDBjZWd2M2x6bDk3c2ZtOTkifQ._QA7i5Mpkd_m30IGElHziw', {
-	maxZoom: 18,
-	attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-			'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-			'Imagery © <a href="http://mapbox.com">Mapbox</a>',
-	id: 'mapbox.streets'
-}).addTo(rv.map);
+	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+		attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+	}).addTo(rv.map);
 
-/*
- L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
- attribution: '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
- }).addTo(rv.map);
- */
+}
 rv.popup = L.popup();
 
 //rv.spinner = new Spinner().spin($('#spinner'));
@@ -90,10 +91,8 @@ rv.icons = {
 
 rv.onMapClick = function (e) {
 	rv.selectedLatLon = e.latlng;
-	//window.console.log(e.latlng.toString());
 	rv.popup
 			.setLatLng(e.latlng)
-			//.setContent("You clicked the map at " + e.latlng.toString())
 			.setContent(
 					$('#add-marker-button-wrapper').html()
 					)
@@ -132,7 +131,6 @@ rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	$('#gps-discovery').hide();
 	if (rv.gps.updated !== null) {
 		rv.gps.secondsSinceUpdated = rv.gps.secondsSinceUpdated + Math.ceil(((new Date()).getTime() - rv.gps.updated.getTime()) / 1000);
-		//window.console.log('since updated: ' + Math.ceil(((new Date()).getTime()-rv.gps.updated.getTime())/1000) + ' sec');
 		if (rv.gps.secondsSinceUpdated >= rv.gps.options.updateInterval) {
 
 			rv.gps.secondsSinceUpdated = 0;
@@ -147,10 +145,8 @@ rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	rv.myLocationMarker.bindPopup('<center><b>' + rv.identity.name + '</b><br>' + date + ' ' + time + '<center>');
 	if (rv.gps.options.firstZoom) {
 		rv.gps.options.firstZoom = false;
-		//rv.map.setView([rv.gps.lat, rv.gps.lng], rv.gps.options.initialZoom);
 		rv.zoomToFitMembers();
 	}
-	//window.console.log('Location updated: (' + rv.gps.lat + ', ' + rv.gps.lng + ') at ' + rv.gps.updated.toString());
 });
 rv.map.addControl(rv.gpsControl);//inizialize control
 
@@ -178,7 +174,6 @@ rv.getMarkers = function () {
 				var marker = L.marker([markers[i].lat, markers[i].lng], {icon: rv.icons.greenIcon});
 
 				var name = markers[i].name;
-				//window.console.log('marker: ' + JSON.stringify(markers[i]));
 				var description = markers[i].description;
 				rv.addMarkerToMap(marker, id);
 
@@ -191,7 +186,6 @@ rv.getMarkers = function () {
 			}
 
 		} else {
-			//alert('Error fetching markers');
 			window.console.log(data['message']);
 		}
 		return false;
@@ -210,7 +204,6 @@ rv.addMarkerToMap = function (marker, id) {
 			);
 
 	marker.on('click', function () {
-		//window.console.log('you clicked marker: ' + id);
 		rv.currentMarkerID = id; // global tracker of currently selected marker ID
 	});
 
@@ -265,12 +258,6 @@ rv.markerMenu = function () {
 		$('.delete-marker').on('click', rv.deleteMarker);
 	}, 300);
 	var markerInfo = '';
-//	for (var i = 0; i < rv.markers.length; i++) {
-//		if(rv.markers[i].id === rv.currentMarkerID) {
-//			markerInfo = '<b>' + rv.markers[i].name + '</b><br>' + rv.markers[i].description + '<br>';
-//		}
-//	}
-	//window.console.log('currentMarkerID: ' + rv.currentMarkerID);
 	if (rv.markers[rv.currentMarkerID]) {
 		markerInfo = '<b>' + rv.markers[rv.currentMarkerID].name + '</b><br>' + rv.markers[rv.currentMarkerID].description + '<br>';
 	}
@@ -290,7 +277,6 @@ rv.openNewMarkerDialog = function (e) {
 };
 
 rv.deleteMarker = function (e) {
-	//window.console.log('delete marker');
 	var answer = confirm("Delete marker (" + rv.markers[rv.currentMarkerID].name + ") ?");
 	if (!answer) {
 		return false;
@@ -373,7 +359,6 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-			//window.console.log('members: ' + JSON.stringify(members));
 			if (members.length !== (Object.keys(rv.members).length + 1)) {
 				rv.options.fitMembers = true;
 			}
@@ -386,11 +371,10 @@ rv.getMembers = function () {
 			for (var i = 0; i < members.length; i++) {
 				var updateTime = new Date(members[i].updated);
 				updateTime.setMinutes(updateTime.getMinutes() - rv.identity.timeOffset);
-				window.console.log('updateTime: '  + updateTime + ', ' + members[i].name);
 				var mid = members[i].mid;
 				// Skip the member if it is self
 				if (mid !== rv.identity.id) {
-					
+
 					rv.members[mid] = {
 						name: members[i].name,
 						id: members[i].mid,
@@ -404,9 +388,6 @@ rv.getMembers = function () {
 
 						(function (mid) {
 							var tDiff = Math.ceil(((new Date()).getTime() - rv.members[mid].updated.getTime()) / 60000);
-							//window.console.log('now: '  + (new Date()).toISOString());
-							//window.console.log('updated: '  + rv.members[mid].updated.toISOString());
-							//window.console.log('tDiff: '  + tDiff);
 							var tUnit = 'minutes';
 							// TODO: This is a hack to handle times reported in the future, but there is a real solution to this problem.
 							while (tDiff < 0) {
@@ -442,7 +423,6 @@ rv.getMembers = function () {
 								fillOpacity: 1
 							});
 							marker.addTo(rv.map)
-									//.bindPopup('<b>' + rv.members[mid].name + '</b><br>' + rv.members[mid].updated.toLocaleDateString() + ' ' + rv.members[mid].updated.toLocaleTimeString());
 									.bindPopup('<b>' + rv.members[mid].name + '</b><br>about ' + tDiff + ' ' + tUnit + ' ago');
 
 							marker.on('click', function () {
@@ -486,17 +466,12 @@ rv.zoomToFitMembers = function () {
 		}
 	}
 	var group = null;
-	//window.console.log('markers: ' + markers.length);
-	//rv.zoomMarkers = markers;
 	if (markers.length > 0) {
 		group = new L.featureGroup(markers);
 		if (group.getLayers().length > 0) {
 			rv.map.fitBounds(group.getBounds());
 		}
 	}
-	//if (rv.options.fitMarkers === true || rv.options.fitMembers === true) {
-
-	//}
 	group = null;
 	markers = null;
 	return true;
@@ -551,7 +526,6 @@ rv.newMarkerDialog.find("form").on("submit", function (event) {
 });
 
 rv.editMarker = function () {
-	//window.console.log($('#marker-name').val());
 	var name = $('#marker-name').val();
 	var description = $('#marker-description').val();
 	// TODO: send updated values to server
@@ -598,7 +572,6 @@ $(window).load(function () {
 		// Select input field contents
 		this.select();
 	});
-	//rv.newMemberDialog.dialog("open");
 	// Start the background updates by obtaining an identity and joining the group
 	rv.getIdentity();
 
