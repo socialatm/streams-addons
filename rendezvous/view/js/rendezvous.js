@@ -91,13 +91,16 @@ rv.icons = {
 
 rv.onMapClick = function (e) {
 	rv.selectedLatLon = e.latlng;
-	rv.popup
+	if ($('.leaflet-popup-content').is(":visible")) {
+		rv.popup._closeButton.click();
+	} else {
+		rv.popup
 			.setLatLng(e.latlng)
 			.setContent(
 					$('#add-marker-button-wrapper').html()
 					)
 			.openOn(rv.map);
-
+	}
 	$('.add-marker').on('click', rv.openNewMarkerDialog);
 };
 
@@ -108,7 +111,6 @@ $('.zoom-fit').on('click', function () {
 	rv.options.fitMembers = true;
 	rv.zoomToFitMembers();
 });
-//rv.myLocationMarker = new L.Marker([0,0]).bindPopup("<b>Me</b><br />Current position.");
 rv.myLocationMarker = new L.CircleMarker([0, 0], {
 	stroke: true,
 	radius: 10,
@@ -239,6 +241,8 @@ rv.createMarker = function (e) {
 			window.console.log(data['message']);
 		}
 		rv.newMarkerDialog.dialog('close');
+		$('#new-marker-description').val('');
+		$('#new-marker-name').val('');
 		return false;
 	},
 			'json');
@@ -259,10 +263,10 @@ rv.markerMenu = function () {
 	}, 300);
 	var markerInfo = '';
 	if (rv.markers[rv.currentMarkerID]) {
-		markerInfo = '<b>' + rv.markers[rv.currentMarkerID].name + '</b><br>' + rv.markers[rv.currentMarkerID].description + '<br>';
+		markerInfo = '<center><b>' + rv.markers[rv.currentMarkerID].name + '</b><br>' + rv.markers[rv.currentMarkerID].description + '<br><br>';
 	}
 
-	return markerInfo + $('#edit-marker-button-wrapper').html();
+	return markerInfo + $('#edit-marker-button-wrapper').html() + '</center>';
 };
 rv.openEditMarkerDialog = function (e) {
 	var name = rv.markers[rv.currentMarkerID].name;
@@ -509,6 +513,7 @@ rv.newMarkerDialog = $("#new-marker-form").dialog({
 	buttons: {
 		"Create marker": function () {
 			$(".leaflet-popup-close-button")[0].click();
+			rv.popup._closeButton.click();
 			rv.createMarker();
 		},
 		Cancel: function () {
@@ -526,10 +531,30 @@ rv.newMarkerDialog.find("form").on("submit", function (event) {
 });
 
 rv.editMarker = function () {
-	var name = $('#marker-name').val();
-	var description = $('#marker-description').val();
-	// TODO: send updated values to server
-	return false;
+	var name = $('#edit-marker-name').val();
+	var description = $('#edit-marker-description').val();
+	var id = rv.currentMarkerID;
+	$.post("/rendezvous/v1/update/marker", {
+		id: id,
+		group: rv.group.id,
+		name: name,
+		description: description,
+		secret: rv.identity.secret,
+		mid: rv.identity.id
+	},
+	function (data) {
+		if (data['success']) {
+			rv.markers[id].name = name;
+			rv.markers[id].description = description;
+		} else {
+			window.console.log(data['message']);
+		}
+		rv.editMarkerDialog.dialog('close');
+		$('#edit-marker-description').val('');
+		$('#edit-marker-name').val('');
+		return false;
+	},
+			'json');
 };
 
 rv.isMarkerPopupOpen = function () {

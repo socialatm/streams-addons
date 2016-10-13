@@ -255,6 +255,24 @@ function rendezvous_post($a) {
 						rendezvous_api_return(array(), false, $x['message']);
 				}
 		}
+		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'update' && argv(3) === 'marker') {
+				if (isset($_POST['name']) && isset($_POST['secret']) && isset($_POST['mid']) && isset($_POST['group']) && isset($_POST['id'])) {
+						$name = $_POST['name'];
+						$group = $_POST['group'];
+						$secret = $_POST['secret'];
+						$mid = $_POST['mid'];
+						$id = $_POST['id'];
+				} else {
+						rendezvous_api_return(array(), false, 'Marker name, member ID, group and secret are required');
+				}
+				$description = ((isset($_POST['description'])) ? $_POST['description'] : '');
+				$x = rendezvous_edit_marker($id, $name, $description, $group, $mid, $secret);
+				if ($x['success']) {
+						rendezvous_api_return(array());
+				} else {
+						rendezvous_api_return(array(), false, $x['message']);
+				}
+		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'get' && argv(3) === 'markers') {
 				if (isset($_POST['group'])) {
 						$group = $_POST['group'];
@@ -521,4 +539,22 @@ function rendezvous_delete_marker($id, $group, $mid, $secret) {
 		} else {
 				return array('success' => false, 'message' => 'Error deleting marker');
 		}
+}
+
+function rendezvous_edit_marker($id, $name, $description, $group, $mid, $secret) {
+		if(!rendezvous_valid_member($mid, $group, $secret)) {
+				return array('success' => false, 'message' => 'Invalid group member');
+		}
+		$r = q("UPDATE rendezvous_markers set name = '%s', description = '%s' where rid = '%s' and id = %d and deleted = 0", 
+						dbesc($name),
+						dbesc($description),
+						dbesc($group),
+						intval($id)
+		);
+		if ($r) {
+				return array('success' => true, 'message' => '');
+		} else {
+				return array('success' => false, 'message' => 'Error editing marker');
+		}
+		
 }
