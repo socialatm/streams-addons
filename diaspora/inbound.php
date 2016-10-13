@@ -597,10 +597,6 @@ function diaspora_post($importer,$xml,$msg) {
 		}
 	}
 
-	if((! $found_tags) && (! $contact)) {
-		logger('Author is not a connection and no followed tags.');
-		return;
-	}
 
 	$cnt = preg_match_all('/@\[url=(.*?)\](.*?)\[\/url\]/ism',$body,$matches,PREG_SET_ORDER);
 	if($cnt) {
