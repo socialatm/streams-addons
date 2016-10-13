@@ -122,7 +122,8 @@ $photo_tmp = 'store/[data]/redphoto_data_' . $channel_address . $rand;
 			$item = $r[0];
 			item_url_replace($channel,$item,$fr_server,z_root(),$fr_username);
 
-			dbesc_array($item);
+			if(! dbesc_array($item))
+				return;
 			$item_id = $item['id'];
 			unset($item['id']);
 			$str = '';
