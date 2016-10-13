@@ -37,9 +37,6 @@
 		$.post("rendezvous/v1/new/group", {},
 				function (data) {
 					if (data['success']) {
-//						rv.groups.push({
-//								id: data['id']
-//						});
 						rv.getGroups();
 					} else {
 						window.console.log(data['message']);
@@ -82,7 +79,6 @@
 		$.post("rendezvous/v1/delete/group", {group: group},
 		function (data) {
 			if (data['success']) {
-				//window.location = rv.zroot + '/rendezvous/';
 				rv.getGroups();
 			} else {
 				window.console.log('Error deleting group:' + data['message']);

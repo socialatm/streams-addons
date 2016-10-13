@@ -3,7 +3,7 @@
 		<head>
 				<title>{{$pagetitle}}</title>
 				<link href="/addon/rendezvous/view/css/jquery-ui.css" rel='stylesheet' type='text/css'>
-				<link href="/addon/rendezvous/view/css/rendezvous.css" rel='stylesheet' type='text/css'>
+				<link href="/addon/rendezvous/view/css/rendezvous.css?v=0.1.0" rel='stylesheet' type='text/css'>
 				<link href="/library/bootstrap/css/bootstrap.min.css?v=1.13.3" rel='stylesheet' type='text/css'>
 				<link href="/library/font_awesome/css/font-awesome.min.css?v=1.13.3" rel='stylesheet' type='text/css'>
 				
@@ -90,7 +90,7 @@
 				<script>
 						var mapboxAccessToken = '{{$mapboxAccessToken}}';
 				</script>
-				<script src="/addon/rendezvous/view/js/rendezvous.js"></script>
+				<script src="/addon/rendezvous/view/js/rendezvous.js?v=0.1.0"></script>
 				<script>
 						rv.group = {
 								id: '{{$group}}'
