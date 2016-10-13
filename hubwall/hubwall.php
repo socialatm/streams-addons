@@ -51,10 +51,13 @@ function hubwall_post(&$a) {
 		return;
 	}
 
+	$total_recips = count($recips);
+	$total_delivered = 0;
+
 	foreach($recips as $recip) {
 
 
-		\Zotlabs\Lib\Enotify::send(array(
+		$x = \Zotlabs\Lib\Enotify::send(array(
 			'fromName'             => $sender_name,
 			'fromEmail'            => $sender_email,
 			'replyTo'              => $sender_email,
@@ -63,7 +66,11 @@ function hubwall_post(&$a) {
 			'htmlVersion'          => $htmlversion,
 			'textVersion'          => $textversion
 		));
+		if($x)
+			$total_delivered ++;
 	}
+
+	info( sprintf( t('%1$d of %2$d messages sent.'), $total_delivered, $total_recips) . EOL );
 
 }
 
@@ -83,8 +90,8 @@ function hubwall_content(&$a) {
 		'$title' => $title,
 		'$text' => htmlspecialchars($_REQUEST['text']),
 		'$subject' => array('subject',t('Message subject'),$_REQUEST['subject'],''),
-		'$sender' => array('sender',t('Sender Email address'), 'noreply@' . \App::get_hostname(), '' , $senders),
-		'$test' => array('test',t('Test mode (only send to hub administrator)'), 0,''),
+		'$sender' => array('sender',t('Sender Email address'), (($_REQUEST['sender']) ? $_REQUEST['sender'] : 'noreply@' . \App::get_hostname()), '' , $senders),
+		'$test' => array('test',t('Test mode (only send to hub administrator)'), ((array_key_exists('test',$_REQUEST)) ? intval($_REQUEST['test']) : 0),''),
 		'$submit' => t('Submit')
 	));
 
