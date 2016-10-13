@@ -128,9 +128,13 @@ function rendezvous_content($a) {
 						goaway('/');
 				}
 		}
-		//$isowner = ((local_channel()) ? true : false);
-		if(local_channel()) {
+		if (local_channel()) {
 				$o .= replace_macros(get_markup_template('rendezvous.tpl', 'addon/rendezvous'), array(
+						'$addnewrendezvous' => t('Add new rendezvous'),
+						'$instructions' => t('Create a new rendezvous and share the access link with those you wish 
+																to invite to the group. Those who open the link become members of the 
+																rendezvous. They can view other member locations, add markers to the map,
+																or share their own locations with the group.')
 				));
 				return $o;
 		} else {

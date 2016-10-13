@@ -1,15 +1,14 @@
 <div class="map-setting-block">
-		<div class="descriptive-text">
-				Create a new map that people can join to share their locations and
-				markers.
-		</div>
 		<h3>Rendezvous
 				<span class="pull-right">
-						<button id="add-new-group" class="btn btn-default btn-xs" title="Add new rendezvous">
-								<i class="fa fa-plus"></i><span>&nbsp;Add new rendezvous</span>
+						<button id="add-new-group" class="btn btn-success btn-xs" title="{{$addnewrendezvous}}">
+								<i class="fa fa-plus"></i><span>&nbsp;{{$addnewrendezvous}}</span>
 						</button>
 				</span>
 		</h3>
+		<div class="descriptive-text">
+				{{$instructions}}
+		</div>
 		<div class="clear" ></div>
 		<div id="group-list" class="list-group" style="margin-top: 20px;margin-bottom: 20px;"></div>
 </div>
