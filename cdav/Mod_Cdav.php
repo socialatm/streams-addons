@@ -340,9 +340,6 @@ class Cdav extends \Zotlabs\Web\Controller {
 				$dtstart = new \DateTime($_REQUEST['dtstart']);
 				$dtend = $_REQUEST['dtend'] ? new \DateTime($_REQUEST['dtend']) : '';
 
-				if(!cdav_perms($id[0],$calendars,true))
-					return;
-
 				$object = $caldavBackend->getCalendarObject($id, $uri);
 
 				$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
@@ -813,8 +810,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 				if($switch) {
 					$sources .= '{
 						url: \'/cdav/calendar/json/' . $calendar['id'][0] . '/' . $calendar['id'][1] . '\',
-						color: \'' . $color . '\',
-						editable: ' . $editable . '
+						color: \'' . $color . '\'
 					 }, ';
 				}
 
@@ -862,7 +858,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 				'$less' => t('Less'),
 				'$calendar_select_label' => t('Select calendar'),
 				'$delete' => t('Delete'),
-				'$cancel' => t('Cancel')
+				'$delete_all' => t('Delete all'),
+				'$cancel' => t('Cancel'),
+				'$recurrence_warning' => t('Sorry! Editing of recurrent events is not yet implemented.')
 			]);
 
 			return $o;
@@ -878,15 +876,15 @@ class Cdav extends \Zotlabs\Web\Controller {
 				killme();
 
 			if (x($_GET,'start'))
-				$start = $_GET['start'];
+				$start = new \DateTime($_GET['start']);
 			if (x($_GET,'end'))
-				$end = $_GET['end'];
+				$end = new \DateTime($_GET['end']);
 
 			$filters['name'] = 'VCALENDAR';
 			$filters['prop-filters'][0]['name'] = 'VEVENT';
 			$filters['comp-filters'][0]['name'] = 'VEVENT';
-			$filters['comp-filters'][0]['time-range']['start'] = new \DateTime($start);
-			$filters['comp-filters'][0]['time-range']['end'] = new \DateTime($end);
+			$filters['comp-filters'][0]['time-range']['start'] = $start;
+			$filters['comp-filters'][0]['time-range']['end'] = $end;
 
 			$uris = $caldavBackend->calendarQuery($id, $filters);
 			if($uris) {
@@ -897,30 +895,47 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 					$vcalendar = \Sabre\VObject\Reader::read($object['calendardata']);
 
-					$title = (string)$vcalendar->VEVENT->SUMMARY;
-					$dtstart = (string)$vcalendar->VEVENT->DTSTART;
-					$dtend = (string)$vcalendar->VEVENT->DTEND;
+					if(isset($vcalendar->VEVENT->RRULE))
+						$vcalendar = $vcalendar->expand($start, $end);
 
-					$allDay = false;
+					foreach($vcalendar->VEVENT as $vevent) {
+						$title = (string)$vevent->SUMMARY;
+						$dtstart = (string)$vevent->DTSTART;
+						$dtend = (string)$vevent->DTEND;
+						$description = (string)$vevent->DESCRIPTION;
+						$location = (string)$vevent->LOCATION;
 
-					// allDay event rules
-					if(!strpos($dtstart, 'T') && !strpos($dtend, 'T'))
-						$allDay = true;
-					if(strpos($dtstart, 'T000000') && strpos($dtend, 'T000000'))
-						$allDay = true;
+						$rw = ((cdav_perms($id[0],$calendars,true)) ? true : false);
+						$recurrent = ((isset($vevent->{'RECURRENCE-ID'})) ? true : false);
 
-					$events[] = [
-						'calendar_id' => $id,
-						'uri' => $object['uri'],
-						'title' => (string)$vcalendar->VEVENT->SUMMARY,
-						'start' => (string)$vcalendar->VEVENT->DTSTART,
-						'end' => (string)$vcalendar->VEVENT->DTEND,
-						'description' => (string)$vcalendar->VEVENT->DESCRIPTION,
-						'location' => (string)$vcalendar->VEVENT->LOCATION,
-						'allDay' => $allDay
-					];
+						$editable = $rw ? true : false;
+
+						if($recurrent)
+							$editable = false;
+
+						$allDay = false;
+
+						// allDay event rules
+						if(!strpos($dtstart, 'T') && !strpos($dtend, 'T'))
+							$allDay = true;
+						if(strpos($dtstart, 'T000000') && strpos($dtend, 'T000000'))
+							$allDay = true;
+
+						$events[] = [
+							'calendar_id' => $id,
+							'uri' => $object['uri'],
+							'title' => $title,
+							'start' => $dtstart,
+							'end' => $dtend,
+							'description' => $description,
+							'location' => $location,
+							'allDay' => $allDay,
+							'editable' => $editable,
+							'recurrent' => $recurrent,
+							'rw' => $rw
+						];
+					}
 				}
-
 				json_return_and_die($events);
 			}
 			else {

@@ -964,7 +964,7 @@ function diaspora_comment($importer,$xml,$msg) {
 	$parent_item = $r[0];
 
 	if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
-		|| ($parent_item['comments_closed'] !== NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+		|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
 		logger('diaspora_comment: comments disabled for post ' . $parent_item['mid']);
 		return;
 	}
@@ -1652,7 +1652,7 @@ function diaspora_like($importer,$xml,$msg) {
 	$parent_item = $r[0];
 
 	if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
-		|| ($parent_item['comments_closed'] !== NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+		|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
 		logger('diaspora_like: comments disabled for post ' . $parent_item['mid']);
 		return;
 	}

@@ -155,9 +155,7 @@ function diaspora_share($owner,$contact) {
 		return;
 	}
 
-
-
-	$myaddr = channel_reddress($channel);
+	$myaddr = channel_reddress($owner);
 
 	if(! array_key_exists('hubloc_hash',$contact)) {
 		$c = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where xchan_hash = '%s' limit 1",
@@ -308,7 +306,7 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 
 }
 
-function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
+function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$uplink = false) {
 
 	logger('diaspora_send_upstream');
 
@@ -339,7 +337,9 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 	else
 		return;
 
-	$xmlout = diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields'));
+	// if uplinking to Diaspora, ignore any existing signatures and create a wall-to-wall.
+
+	$xmlout = (($uplink) ? '' : diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields')));
 
 	if(($item['verb'] === ACTIVITY_LIKE) && ($parent['mid'] === $parent['parent_mid'])) {
 		$tpl = get_markup_template('diaspora_like.tpl','addon/diaspora');
@@ -372,7 +372,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 		$text        = $meta['body'];
 	}
 	else {
-		$text = bb2diaspora_itembody($item);
+		$text = bb2diaspora_itembody($item,$uplink,false,$uplink);
 
 		// sign it
 
@@ -396,7 +396,10 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false) {
 		'$handle' => xmlify($myaddr)
 	));
 
-	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
+	if($uplink)
+		logger('diaspora_send_upstream: uplink message: ' . $msg, LOGGER_DATA);
+	else
+		logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
 	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 
