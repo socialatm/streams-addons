@@ -14,6 +14,7 @@ function std_embeds_load() {
 	Zotlabs\Extend\Hook::register('html2bb_video','addon/std_embeds/std_embeds.php','std_embeds_html2bb_video');
 	Zotlabs\Extend\Hook::register('bb_translate_video','addon/std_embeds/std_embeds.php','std_embeds_bb_translate_video');
 	Zotlabs\Extend\Hook::register('bbcode_filter','addon/std_embeds/std_embeds.php','std_embeds_bbcode_filter');
+	Zotlabs\Extend\Hook::register('markdown_to_bb','addon/std_embeds/std_embeds.php','std_embeds_markdown_to_bb');
 }
 
 function std_embeds_unload() {
@@ -118,6 +119,23 @@ function std_embeds_bbcode_filter(&$x) {
 				$x = str_replace($mtch[0],'[embed]' . $mtch[1] . '[/embed]',$x);
 		}
 	}
+
+
+}
+
+
+function std_embeds_markdown_to_bb(&$s) {
+
+	//$s = preg_replace("/([^\]\=]|^)(https?\:\/\/)(vimeo|youtu|www\.youtube|soundcloud)([a-zA-Z0-9\:\/\-\?\&\;\.\=\_\~\#\%\$\!\+\,]+)/ism", '$1[url=$2$3$4]$2$3$4[/url]',$s);
+	$s = bb_tag_preg_replace("/\[url\=?(.*?)\]https?:\/\/youtu.be\/(.*?)\[\/url\]/ism",'[embed]https://youtu.be/$2[/embed]','url',$s);
+	$s = bb_tag_preg_replace("/\[url\=https?:\/\/youtu.be/(.*?)\].*?\[\/url\]/ism",'[embed]https://www.youtu.be/$1[/embed]','url',$s);
+
+	$s = bb_tag_preg_replace("/\[url\=?(.*?)\]https?:\/\/www.youtube.com\/watch\?v\=(.*?)\[\/url\]/ism",'[embed]https://www.youtube.com/watch?v=$2[/embed]','url',$s);
+	$s = bb_tag_preg_replace("/\[url\=https?:\/\/www.youtube.com\/watch\?v\=(.*?)\].*?\[\/url\]/ism",'[embed]https://www.youtube.com/watch?v=$1[/embed]','url',$s);
+
+	$s = bb_tag_preg_replace("/\[url\=?(.*?)\]https?:\/\/vimeo.com\/([0-9]+)(.*?)\[\/url\]/ism",'[embed]https://vimeo.com/$2[/embed]','url',$s);
+	$s = bb_tag_preg_replace("/\[url\=https?:\/\/vimeo.com\/([0-9]+)\](.*?)\[\/url\]/ism",'[embed]https://vimeo.com/$1[/embed]','url',$s);
+
 
 
 }
