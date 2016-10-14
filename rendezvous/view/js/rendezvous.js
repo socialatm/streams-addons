@@ -389,50 +389,43 @@ rv.getMembers = function () {
 					var marker = null;
 					if (members[i].lat !== null && members[i].lng !== null) {
 
-
-						(function (mid) {
-							var tDiff = Math.ceil(((new Date()).getTime() - rv.members[mid].updated.getTime()) / 60000);
-							var tUnit = 'minutes';
-							// TODO: This is a hack to handle times reported in the future, but there is a real solution to this problem.
-							while (tDiff < 0) {
-								tDiff = tDiff + 60;
-							}
-							if (tDiff > 120) {
-								tDiff = Math.floor(tDiff / 60);
-								tUnit = 'hours';
-							}
-							var fillColor = '#FFF';
-							var color = '#FFF';
-							if (tUnit === 'minutes' && tDiff > 14) {
-								if (tDiff < 30) {
-									fillColor = '#FFA600';
-								} else {
-									fillColor = '#C4C4C4';
-									color = '#F00';
-								}
+						var tDiff = Math.ceil(((new Date()).getTime() - rv.members[mid].updated.getTime()) / 60000);
+						var tUnit = 'minutes';
+						// TODO: This is a hack to handle times reported in the future, but there is a real solution to this problem.
+						while (tDiff < 0) {
+							tDiff = tDiff + 60;
+						}
+						if (tDiff > 120) {
+							tDiff = Math.floor(tDiff / 60);
+							tUnit = 'hours';
+						}
+						var fillColor = '#FFF';
+						var color = '#FFF';
+						if (tUnit === 'minutes' && tDiff > 14) {
+							if (tDiff < 30) {
+								fillColor = '#FFA600';
 							} else {
-								if (tUnit === 'minutes') {
-									fillColor = '#00F';
-								} else {
-									fillColor = '#C4C4C4';
-									color = '#F00';
-								}
+								fillColor = '#C4C4C4';
+								color = '#F00';
 							}
-							marker = new L.CircleMarker([members[i].lat, members[i].lng], {
-								radius: 10,
-								weight: 5,
-								color: color,
-								opacity: 1,
-								fillColor: fillColor,
-								fillOpacity: 1
-							});
-							marker.addTo(rv.map)
-									.bindPopup('<b>' + rv.members[mid].name + '</b><br>about ' + tDiff + ' ' + tUnit + ' ago');
+						} else {
+							if (tUnit === 'minutes') {
+								fillColor = '#00F';
+							} else {
+								fillColor = '#C4C4C4';
+								color = '#F00';
+							}
+						}
+						marker = new L.CircleMarker([members[i].lat, members[i].lng], {
+							radius: 10,
+							weight: 5,
+							color: color,
+							opacity: 1,
+							fillColor: fillColor,
+							fillOpacity: 1
+						});
+						rv.addMemberToMap(marker, mid);
 
-							marker.on('click', function () {
-								rv.currentMemberID = mid; // global tracker of currently selected member
-							});
-						})(mid);
 					}
 
 					rv.members[mid].marker = marker;
@@ -446,6 +439,44 @@ rv.getMembers = function () {
 		return false;
 	},
 			'json');
+};
+
+rv.addMemberToMap = function (marker, id) {
+	marker.addTo(rv.map)
+			.bindPopup(function () {
+				rv.currentMemberID = id; // global tracker of currently selected marker ID
+				return rv.memberMenu();
+			});
+
+	marker.on('click', function () {
+		rv.currentMemberID = id; // global tracker of currently selected marker ID
+	});
+
+};
+
+rv.memberMenu = function () {
+	setTimeout(function () {
+		$('.delete-member').on('click', rv.deleteMember);
+	}, 300);
+	var memberInfo = '';
+	if (rv.members[rv.currentMemberID]) {
+		memberInfo = '<center><b>' + rv.members[rv.currentMemberID].name + '</b><br><br>';
+		var tDiff = Math.ceil(((new Date()).getTime() - rv.members[rv.currentMemberID].updated.getTime()) / 60000);
+		if (tDiff > 14) {
+			memberInfo += $('#delete-member-button-wrapper').html();
+		}
+	}
+
+	return memberInfo + '</center>';
+};
+
+rv.deleteMember = function () {
+	if (rv.members[rv.currentMemberID]) {
+		window.console.log('Deleting member: ' + rv.members[rv.currentMemberID].name);
+	}
+	
+	// TODO: remove the member
+
 };
 
 rv.zoomToFitMembers = function () {

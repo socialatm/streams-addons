@@ -34,6 +34,11 @@
 						</div>
 				</div>
 
+				<div id="delete-member-button-wrapper" style="display: none;">
+						<div>
+								<button class="delete-member btn btn-danger btn-sm" title="Delete member"><span><i class="fa fa-trash-o"></i></span></button>
+						</div>
+				</div>
 				 
 				<div id="new-member-form" title="Welcome to Rendezvous!">
 						<p>
