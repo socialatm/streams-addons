@@ -58,7 +58,7 @@ rv.identity = {
 rv.map = L.map('map').setView([0, 0], 2);
 
 if (mapboxAccessToken !== '') {
-	
+
 	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=' + mapboxAccessToken, {
 		maxZoom: 18,
 		attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
@@ -66,7 +66,7 @@ if (mapboxAccessToken !== '') {
 				'Imagery © <a href="http://mapbox.com">Mapbox</a>',
 		id: 'mapbox.streets'
 	}).addTo(rv.map);
-	
+
 } else {
 
 	L.tileLayer('http://{s}.tile.osm.org/{z}/{x}/{y}.png', {
@@ -95,11 +95,11 @@ rv.onMapClick = function (e) {
 		rv.popup._closeButton.click();
 	} else {
 		rv.popup
-			.setLatLng(e.latlng)
-			.setContent(
-					$('#add-marker-button-wrapper').html()
-					)
-			.openOn(rv.map);
+				.setLatLng(e.latlng)
+				.setContent(
+						$('#add-marker-button-wrapper').html()
+						)
+				.openOn(rv.map);
 	}
 	$('.add-marker').on('click', rv.openNewMarkerDialog);
 };
@@ -124,13 +124,18 @@ rv.gpsControl = new L.Control.Gps({
 	marker: rv.myLocationMarker
 });
 rv.gpsControl.on('gpsactivated', function (timeout) {
-	$('#gps-discovery').show();
+	//$('#gps-discovery').show();
+	rv.gps.discoveryBlinkID = setInterval(function() {
+		$('.gps-button').toggleClass('active');
+	}, 1000);
 });
 rv.gpsControl.on('gpsdisabled', function () {
-	$('#gps-discovery').hide();
+	//$('#gps-discovery').hide();
+	clearInterval(rv.gps.discoveryBlinkID);
 });
 rv.gpsControl.on('gpslocated', function (latlng, marker) {
-	$('#gps-discovery').hide();
+	//$('#gps-discovery').hide();
+	clearInterval(rv.gps.discoveryBlinkID);
 	if (rv.gps.updated !== null) {
 		rv.gps.secondsSinceUpdated = rv.gps.secondsSinceUpdated + Math.ceil(((new Date()).getTime() - rv.gps.updated.getTime()) / 1000);
 		if (rv.gps.secondsSinceUpdated >= rv.gps.options.updateInterval) {
@@ -372,11 +377,13 @@ rv.getMembers = function () {
 				}
 			}
 			rv.members = [];
+			var selfDeleted = true;
 			for (var i = 0; i < members.length; i++) {
 				var updateTime = new Date(members[i].updated);
 				updateTime.setMinutes(updateTime.getMinutes() - rv.identity.timeOffset);
 				var mid = members[i].mid;
-				// Skip the member if it is self
+
+				// Skip the member marker if it is self
 				if (mid !== rv.identity.id) {
 
 					rv.members[mid] = {
@@ -424,13 +431,18 @@ rv.getMembers = function () {
 							fillColor: fillColor,
 							fillOpacity: 1
 						});
-						rv.addMemberToMap(marker, mid);
+						rv.addMemberToMap(marker, mid, tDiff, tUnit);
 
 					}
 
 					rv.members[mid].marker = marker;
 
+				} else {
+					selfDeleted = false;
 				}
+			}
+			if (selfDeleted) {
+				rv.identityDeletedDialog.dialog('open');
 			}
 			rv.zoomToFitMembers();
 		} else {
@@ -441,11 +453,37 @@ rv.getMembers = function () {
 			'json');
 };
 
-rv.addMemberToMap = function (marker, id) {
+rv.identityDeletedDialog = $('#identity-deleted-message').dialog({
+	autoOpen: false,
+	height: 300,
+	width: 300,
+	modal: true,
+	buttons: {
+		"New identity": function () {
+			Cookies.remove('identity', {path: ''});
+			Cookies.remove('group', {path: ''});
+			rv.identity = {
+				id: null,
+				name: '',
+				secret: null,
+				timeOffset: 0
+			};
+			rv.identityDeletedDialog.dialog("close");
+			rv.getIdentity();
+		},
+		Cancel: function () {
+			rv.identityDeletedDialog.dialog("close");
+		}
+	},
+	close: function () {
+		return false;
+	}
+});
+rv.addMemberToMap = function (marker, id, tDiff, tUnit) {
 	marker.addTo(rv.map)
 			.bindPopup(function () {
 				rv.currentMemberID = id; // global tracker of currently selected marker ID
-				return rv.memberMenu();
+				return rv.memberMenu(tDiff, tUnit);
 			});
 
 	marker.on('click', function () {
@@ -454,29 +492,46 @@ rv.addMemberToMap = function (marker, id) {
 
 };
 
-rv.memberMenu = function () {
+rv.memberMenu = function (tDiff, tUnit) {
 	setTimeout(function () {
 		$('.delete-member').on('click', rv.deleteMember);
 	}, 300);
 	var memberInfo = '';
 	if (rv.members[rv.currentMemberID]) {
-		memberInfo = '<center><b>' + rv.members[rv.currentMemberID].name + '</b><br><br>';
+		memberInfo = '<center><b>' + rv.members[rv.currentMemberID].name + '</b><br>about ' + tDiff + ' ' + tUnit + ' ago';
 		var tDiff = Math.ceil(((new Date()).getTime() - rv.members[rv.currentMemberID].updated.getTime()) / 60000);
 		if (tDiff > 14) {
-			memberInfo += $('#delete-member-button-wrapper').html();
+			memberInfo += '<br><br>' + $('#delete-member-button-wrapper').html();
 		}
 	}
 
 	return memberInfo + '</center>';
 };
 
-rv.deleteMember = function () {
+rv.deleteMember = function (e) {
+	var answer = confirm("Delete member (" + rv.members[rv.currentMemberID].name + ") ?");
+	if (!answer) {
+		return false;
+	}
 	if (rv.members[rv.currentMemberID]) {
 		window.console.log('Deleting member: ' + rv.members[rv.currentMemberID].name);
+		$.post("/rendezvous/v1/delete/member", {
+			id: rv.members[rv.currentMemberID].id,
+			group: rv.group.id,
+			secret: rv.identity.secret,
+			mid: rv.identity.id
+		},
+		function (data) {
+			if (data['success']) {
+				rv.getMembers();
+			} else {
+				window.console.log(data['message']);
+			}
+			return false;
+		},
+				'json');
 	}
-	
-	// TODO: remove the member
-
+	return false;
 };
 
 rv.zoomToFitMembers = function () {

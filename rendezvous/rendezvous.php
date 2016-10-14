@@ -308,6 +308,23 @@ function rendezvous_post($a) {
 				}
 				
 		}
+		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'delete' && argv(3) === 'member') {
+				if (isset($_POST['id']) && isset($_POST['secret']) && isset($_POST['mid']) && isset($_POST['group'])) {
+						$id = $_POST['id'];
+						$group = $_POST['group'];
+						$secret = $_POST['secret'];
+						$mid = $_POST['mid'];
+				} else {
+						rendezvous_api_return(array(), false, 'Rendezvous ID, member ID, secret and target member ID are required');
+				}
+				$x = rendezvous_delete_member($id, $group, $mid, $secret);
+				if ($x['success']) {
+						rendezvous_api_return(array());
+				} else {
+						rendezvous_api_return(array(), false, $x['message']);
+				}
+				
+		}
 }
 
 function rendezvous_create_database_tables() {
@@ -561,4 +578,19 @@ function rendezvous_edit_marker($id, $name, $description, $group, $mid, $secret)
 				return array('success' => false, 'message' => 'Error editing marker');
 		}
 		
+}
+
+function rendezvous_delete_member($id, $group, $mid, $secret) {
+		if(!rendezvous_valid_member($mid, $group, $secret)) {
+				return array('success' => false, 'message' => 'Invalid group member');
+		}
+		$r = q("UPDATE rendezvous_members set deleted = 1 where rid = '%s' and mid = '%s' and deleted = 0", 
+						dbesc($group),
+						dbesc($id)
+		);
+		if ($r) {
+				return array('success' => true, 'message' => '');
+		} else {
+				return array('success' => false, 'message' => 'Error deleting member');
+		}
 }

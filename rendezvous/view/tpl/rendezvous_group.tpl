@@ -17,7 +17,7 @@
 		</head>
 		<body>
 				<div id="gps-discovery" style="display: none; color:white; font-weight:bolder; position:absolute; top: 80px; left: 50px; z-index: 1000;">Searching for location...</div>
-				<div class="zoom-fit" style="position:absolute; top: 120px; left: 10px; z-index: 1000;"><button class="btn btn-primary btn-sm" title="Auto fit"><span><i class="fa fa-arrows-alt"></i></span></button></div>
+				<div class="zoom-fit" style="position:absolute; top: 130px; left: 10px; z-index: 1000;"><button class="btn btn-primary btn-md" title="Auto fit"><span><i class="fa fa-arrows-alt"></i></span></button></div>
 				<div id="map" class="map"></div>
 <!--				<div id="spinner" style="position: relative; width: 20px; z-index: 10000;"></div>-->
 				<div id="add-marker-button-wrapper" style="display: none;">
@@ -89,7 +89,12 @@
 							</fieldset>
 						</form>
 				</div>
-				
+				<div id="identity-deleted-message" title="New identity">
+						<p>This identity has been deleted by another member due to inactivity. 
+								Please press the "New identity" button or refresh the page to 
+								register a new identity. You may use the same name.
+						</p>
+				</div>
 				<script src="/addon/rendezvous/view/js/leaflet.js"></script>
 				<script src="/addon/rendezvous/view/js/leaflet-gps.js"></script>
 				<script>
