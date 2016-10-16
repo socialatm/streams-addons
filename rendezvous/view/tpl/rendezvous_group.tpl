@@ -23,32 +23,28 @@
 				<div id="add-marker-button-wrapper" style="display: none;">
 <!--						<div><button class="add-marker btn btn-default" title="Add marker"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
 						<div><button class="zoom-fit btn btn-default" title="Auto fit"><span><i class="fa fa-arrows-alt">&nbsp;Auto fit</i></span></button></div>-->
-						<div><button class="add-marker btn btn-success btn-sm" title="Add marker"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
+						<div><button class="add-marker btn btn-success btn-sm" title="{{$newMarker}}"><span><i class="fa fa-plus">&nbsp;Add marker</i></span></button></div>
 						
 				</div>
 				
 				<div id="edit-marker-button-wrapper" style="display: none;">
 						<div>
-								<button class="edit-marker btn btn-default btn-sm" title="Edit marker"><span><i class="fa fa-pencil"></i></span></button>
-								<button class="delete-marker btn btn-danger btn-sm" title="Delete marker"><span><i class="fa fa-trash-o"></i></span></button>
+								<button class="edit-marker btn btn-default btn-sm" title="{{$editMarker}}"><span><i class="fa fa-pencil"></i></span></button>
+								<button class="delete-marker btn btn-danger btn-sm" title="{{$deleteMarker}}"><span><i class="fa fa-trash-o"></i></span></button>
 						</div>
 				</div>
 
 				<div id="delete-member-button-wrapper" style="display: none;">
 						<div>
-								<button class="delete-member btn btn-danger btn-sm" title="Delete member"><span><i class="fa fa-trash-o"></i></span></button>
+								<button class="delete-member btn btn-danger btn-sm" title="{{$deleteMarker}}"><span><i class="fa fa-trash-o"></i></span></button>
 						</div>
 				</div>
 				 
-				<div id="new-member-form" title="Welcome to Rendezvous!">
-						<p>
-								Enter your name to join this rendezvous. To begin sharing your location with the other
-								members, tap the GPS control. When your location is discovered, a red dot will appear
-								and others will be able to see you on the map.
-						</p>
+				<div id="new-member-form" title="{{$welcomeMessageTitle}}">
+						<p>{{$welcomeMessage}}</p>
 						<form>
 							<fieldset style='width: 100px;'>
-								<label for="new-member-name">Name</label>
+								<label for="new-member-name">{{$nameText}}</label>
 								<input type="text" name="new-member-name" id="new-member-name" placeholder="" value="{{$name}}" class="text ui-widget-content ui-corner-all">
 
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
@@ -57,50 +53,47 @@
 						</form>
 				</div>
 
-				<div id="new-marker-form" title="New marker">
+				<div id="new-marker-form" title="{{$newMarker}}">
 						
 						<form>
 							<fieldset style='width: 100px;'>
-								<label for="new-marker-name">Name</label>
-								<input type="text" name="new-marker-name" id="new-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<label for="new-marker-name">{{$nameText}}</label>
+								<input type="text" name="new-marker-name" id="new-marker-name" placeholder="{{$myMarkerPlaceholder}}" value="" class="text ui-widget-content ui-corner-all">
 								<br>
-								<label for="new-marker-description">Description</label>
+								<label for="new-marker-description">{{$descriptionText}}</label>
 								<br>
-								<textarea rows="5" cols="30" name="new-marker-description" id="new-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+								<textarea rows="5" cols="30" name="new-marker-description" id="new-marker-description" placeholder="{{$myMarkerDescriptionPlaceholder}}" class="text ui-widget-content ui-corner-all"></textarea>
 
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
 							</fieldset>
 						</form>
 				</div>
-				<div id="edit-marker-form" title="Edit marker">
+				<div id="edit-marker-form" title="{{$editMarker}}">
 						
 						<form>
 							<fieldset style='width: 100px;'>
-								<label for="edit-marker-name">Name</label>
-								<input type="text" name="edit-marker-name" id="edit-marker-name" placeholder="My marker" value="" class="text ui-widget-content ui-corner-all">
+								<label for="edit-marker-name">{{$nameText}}</label>
+								<input type="text" name="edit-marker-name" id="edit-marker-name" placeholder="{{$myMarkerPlaceholder}}" value="" class="text ui-widget-content ui-corner-all">
 								<br>
-								<label for="edit-marker-description">Description</label>
+								<label for="edit-marker-description">{{$descriptionText}}</label>
 								<br>
-								<textarea rows="5" cols="30" name="edit-marker-description" id="edit-marker-description" placeholder="Let's meet here" class="text ui-widget-content ui-corner-all"></textarea>
+								<textarea rows="5" cols="30" name="edit-marker-description" id="edit-marker-description" placeholder="{{$myMarkerDescriptionPlaceholder}}" class="text ui-widget-content ui-corner-all"></textarea>
 
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
 							</fieldset>
 						</form>
 				</div>
-				<div id="identity-deleted-message" title="New identity">
-						<p>This identity has been deleted by another member due to inactivity. 
-								Please press the "New identity" button or refresh the page to 
-								register a new identity. You may use the same name.
-						</p>
+				<div id="identity-deleted-message" title="{{$newIdentity}}">
+						<p>{{$identityDeletedMessage}}</p>
 				</div>
 				<script src="/addon/rendezvous/view/js/leaflet.js"></script>
 				<script src="/addon/rendezvous/view/js/leaflet-gps.js"></script>
 				<script>
 						var mapboxAccessToken = '{{$mapboxAccessToken}}';
 				</script>
-				<script src="/addon/rendezvous/view/js/rendezvous.js?v=0.1.0"></script>
+				<script src="{{$version}}"></script>
 				<script>
 						rv.group = {
 								id: '{{$group}}'

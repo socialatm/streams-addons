@@ -4,9 +4,9 @@
  *
  * Name: Rendezvous
  * Description: Group sharing of real-time location on a dynamic map
- * Version: 0.1.0
+ * Version: 1.0.0
  * Author: Andrew Manning <andrew@reticu.li>
- * MinVersion: 1.12
+ * MinVersion: 1.14
  *
  */
 
@@ -18,7 +18,7 @@ function rendezvous_module() {}
  * @return string Current plugin version
  */
 function rendezvous_get_version() {
-    return '0.1.0';
+    return '1.0.0';
 }
 
 function rendezvous_load() {
@@ -116,11 +116,28 @@ function rendezvous_content($a) {
 				$group = argv(1);
 				if(rendezvous_valid_group($group)) {
 						$o .= replace_macros(get_markup_template('rendezvous_group.tpl', 'addon/rendezvous'), array(
+								// Including the version in the script URL should avoid browser JavaScript caching issues
+								'$version' => '/addon/rendezvous/view/js/rendezvous.js?v=' . rendezvous_get_version(),
 								'$pagetitle' => t('Rendezvous'),
 								'$group' => $group,
 								'$name' => ucfirst(autoname(6)),
 								'$zroot' => z_root(),
 								'$mapboxAccessToken' => get_config('rendezvous', 'mapboxAccessToken'),
+								'$identityDeletedMessage' => t('This identity has been deleted by another member due to inactivity. 
+																						Please press the "New identity" button or refresh the page to 
+																						register a new identity. You may use the same name.'),
+								'$welcomeMessageTitle' => t('Welcome to Rendezvous!'),
+								'$welcomeMessage' => t('Enter your name to join this rendezvous. To begin sharing your location with the other
+																						members, tap the GPS control. When your location is discovered, a red dot will appear
+																						and others will be able to see you on the map.'),
+								'$myMarkerPlaceholder' => 'My marker',
+								'$myMarkerDescriptionPlaceholder' => t("Let's meet here"),
+								'$nameText' => t('Name'),
+								'$descriptionText' => t('Description'),
+								'$newMarker' => t('New marker'),
+								'$editMarker' => t('Edit marker'),
+								'$newIdentity' => t('New identity'),
+								'$deleteMarker' => t('Delete marker'),
 						));
 						return $o;
 				} else {
