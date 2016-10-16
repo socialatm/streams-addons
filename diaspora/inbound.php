@@ -550,7 +550,7 @@ function diaspora_post($importer,$xml,$msg) {
 	$created = unxmlify($xml['created_at']);
 	$private = ((unxmlify($xml['public']) == 'false') ? 1 : 0);
 
-	$body = diaspora2bb(diaspora_get_body($xml));
+	$body = markdown_to_bb(diaspora_get_body($xml));
 
 	if($xml['photo']) {
 		$body = '[img]' . $xml['photo']['remote_photo_path'] . $xml['photo']['remote_photo_name'] . '[/img]' . "\n\n" . $body;
@@ -763,7 +763,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 	$source_xml = get_diaspora_reshare_xml($source_url);
 
 	if($source_xml['status_message']) {
-		$body = diaspora2bb(diaspora_get_body($source_xml['status_message']));
+		$body = markdown_to_bb(diaspora_get_body($source_xml['status_message']));
 
 		
 		$orig_author = diaspora_get_author($source_xml['status_message']);
@@ -1072,7 +1072,7 @@ function diaspora_comment($importer,$xml,$msg) {
 	}
 
 
-	$body = diaspora2bb($text);
+	$body = markdown_to_bb($text);
 
 	$maxlen = get_max_import_size();
 
@@ -1305,7 +1305,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			continue;
 		}
 
-		$body = diaspora2bb($msg_text);
+		$body = markdown_to_bb($msg_text);
 
 
 		$maxlen = get_max_import_size();
@@ -1448,7 +1448,7 @@ function diaspora_message($importer,$xml,$msg) {
 	$reply = 0;
 
 	$subject = $conversation['subject']; //this is already encoded
-	$body = diaspora2bb($msg_text);
+	$body = markdown_to_bb($msg_text);
 
 
 	$maxlen = get_max_import_size();
