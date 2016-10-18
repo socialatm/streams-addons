@@ -111,6 +111,13 @@ $('.zoom-fit').on('click', function () {
 	rv.options.fitMembers = true;
 	rv.zoomToFitMembers();
 });
+
+$('#member-list-btn').on('click', function () {
+	$('#member-list-btn').find('button').toggleClass('btn-default');
+	$('#member-list-btn').find('button').toggleClass('btn-primary');
+	$('#member-list').toggle();
+});
+
 rv.myLocationMarker = new L.CircleMarker([0, 0], {
 	stroke: true,
 	radius: 10,
@@ -368,6 +375,8 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
+			$('#number-members').html(members.length);
+			$('#member-list').empty();
 			if (members.length !== (Object.keys(rv.members).length + 1)) {
 				rv.options.fitMembers = true;
 			}
@@ -378,13 +387,20 @@ rv.getMembers = function () {
 			}
 			rv.members = [];
 			var selfDeleted = true;
-			for (var i = 0; i < members.length; i++) {
+			var memberListEl = $('#member-list').append('<ul>').find('ul');
+			memberListEl.addClass('list-group');
+			for (var i = 0; i < members.length; i++) {	
+				var newLiEl = document.createElement( "button" );
 				var updateTime = new Date(members[i].updated);
 				updateTime.setMinutes(updateTime.getMinutes() - rv.identity.timeOffset);
 				var mid = members[i].mid;
 
 				// Skip the member marker if it is self
 				if (mid !== rv.identity.id) {
+					$(newLiEl).addClass('list-group-item');
+					$(newLiEl).attr('id', members[i].mid);
+					$(newLiEl).html(members[i].name);
+					memberListEl.append(newLiEl);
 
 					rv.members[mid] = {
 						name: members[i].name,
@@ -394,7 +410,13 @@ rv.getMembers = function () {
 						updated: updateTime
 					};
 					var marker = null;
-					if (members[i].lat !== null && members[i].lng !== null) {
+					if (members[i].lat !== null && members[i].lng !== null) {	
+						var gpsSpan = document.createElement( "span" );
+						$(gpsSpan).html('<i class="fa fa-crosshairs"></i>&nbsp;');
+						$(newLiEl).prepend(gpsSpan);
+						$(newLiEl).on('click', function (e) {
+							rv.map.setView([rv.members[e.target.id].lat, rv.members[e.target.id].lng], 13);
+						});
 
 						var tDiff = Math.ceil(((new Date()).getTime() - rv.members[mid].updated.getTime()) / 60000);
 						var tUnit = 'minutes';
@@ -441,9 +463,13 @@ rv.getMembers = function () {
 					selfDeleted = false;
 				}
 			}
+			var newLiEl = document.createElement( "li" );
+			$(newLiEl).addClass('list-group-item').html('<i class="fa fa-star"></i>'+'&nbsp;'+rv.identity.name);	
+			memberListEl.prepend(newLiEl);
 			if (selfDeleted) {
 				rv.identityDeletedDialog.dialog('open');
 			}
+			
 			rv.zoomToFitMembers();
 		} else {
 			window.console.log(data['message']);
