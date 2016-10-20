@@ -1795,17 +1795,17 @@ function diaspora_like($importer,$xml,$msg) {
 		'type'    => $post_type,
 		'id'	  => $parent_item['mid'],
 		'parent'  => (($parent_item['thr_parent']) ? $parent_item['thr_parent'] : $parent_item['parent_mid']),
-		'link'	=> $links,
+		'link'	  => $links,
 		'title'   => $parent_item['title'],
 		'content' => $parent_item['body'],
 		'created' => $parent_item['created'],
 		'edited'  => $parent_item['edited'],
 		'author'  => array(
-			'name'	 => $item_author['xchan_name'],
+			'name'     => $item_author['xchan_name'],
 			'address'  => $item_author['xchan_addr'],
-			'guid'	 => $item_author['xchan_guid'],
+			'guid'     => $item_author['xchan_guid'],
 			'guid_sig' => $item_author['xchan_guid_sig'],
-			'link'	 => array(
+			'link'     => array(
 				array('rel' => 'alternate', 'type' => 'text/html', 'href' => $item_author['xchan_url']),
 				array('rel' => 'photo', 'type' => $item_author['xchan_photo_mimetype'], 'href' => $item_author['xchan_photo_m'])),
 			),

@@ -828,7 +828,7 @@ function diaspora_post_local(&$a,&$item) {
 
 function diaspora_create_identity($a,$b) {
 
-	if(get_config('system','server_role') === 'basic') {
+	if(get_config('system','server_role') === 'basic' || get_config('system','diaspora_allowed')) {
 		set_pconfig($b,'system','diaspora_allowed','1');
 	}
 
