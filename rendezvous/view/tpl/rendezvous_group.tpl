@@ -22,8 +22,15 @@
 						<div id="member-list-btn" ><button class="btn btn-default btn-md" title="Members"><span><i class="fa fa-users">&nbsp;<span class="badge badge-success" id="number-members">1</span></i></span></button></div>
 						<div id="member-list" style="display: none;">
 								<ul class="list-group">
-										<li class="list-group-item">Andrew</li>
-										<li class="list-group-item">Emily</li>
+										<li class="list-group-item">Member</li>
+								</ul>
+						</div>
+				</div>
+				<div id="marker-list-container" style="position:absolute; top: 10px; left: 140px; z-index: 1000;"> 
+						<div id="marker-list-btn" ><button class="btn btn-default btn-md" title="Markers"><span><i class="fa fa-map-marker">&nbsp;<span class="badge badge-success" id="number-markers">1</span></i></span></button></div>
+						<div id="marker-list" style="display: none;">
+								<ul class="list-group">
+										<li class="list-group-item">Member</li>
 								</ul>
 						</div>
 				</div>
