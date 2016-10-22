@@ -111,6 +111,25 @@ $('.zoom-fit').on('click', function () {
 	rv.options.fitMembers = true;
 	rv.zoomToFitMembers();
 });
+
+$('#member-list-btn').on('click', function () {
+	$('#member-list-btn').find('button').toggleClass('btn-default');
+	$('#member-list-btn').find('button').toggleClass('btn-primary');
+	$('#member-list').toggle();
+	$('#marker-list').hide();
+	$('#marker-list-btn').find('button').removeClass('btn-primary');
+	$('#marker-list-btn').find('button').addClass('btn-default');
+});
+
+$('#marker-list-btn').on('click', function () {
+	$('#marker-list-btn').find('button').toggleClass('btn-default');
+	$('#marker-list-btn').find('button').toggleClass('btn-primary');
+	$('#marker-list').toggle();
+	$('#member-list').hide();
+	$('#member-list-btn').find('button').removeClass('btn-primary');
+	$('#member-list-btn').find('button').addClass('btn-default');
+});
+
 rv.myLocationMarker = new L.CircleMarker([0, 0], {
 	stroke: true,
 	radius: 10,
@@ -147,15 +166,15 @@ rv.gpsControl.on('gpslocated', function (latlng, marker) {
 	rv.gps.lat = latlng.latlng.lat;
 	rv.gps.lng = latlng.latlng.lng;
 	rv.gps.updated = new Date();
-	var date = rv.gps.updated.toLocaleDateString(); //.substring(0, 10)
-	var time = rv.gps.updated.toLocaleTimeString(); //.substring(11, 16)
+	var date = rv.gps.updated.toLocaleDateString();
+	var time = rv.gps.updated.toLocaleTimeString();
 	rv.myLocationMarker.bindPopup('<center><b>' + rv.identity.name + '</b><br>' + date + ' ' + time + '<center>');
 	if (rv.gps.options.firstZoom) {
 		rv.gps.options.firstZoom = false;
 		rv.zoomToFitMembers();
 	}
 });
-rv.map.addControl(rv.gpsControl);//inizialize control
+rv.map.addControl(rv.gpsControl);	//initialize control
 
 L.control.scale().addTo(rv.map);
 
@@ -176,9 +195,30 @@ rv.getMarkers = function () {
 				rv.map.removeLayer(rv.markers[id].marker);
 			}
 			rv.markers = [];
+			$('#marker-list').empty();
+			var markerListEl = $('#marker-list').append('<ul>').find('ul');
+			markerListEl.addClass('list-group');
+			var locatedMarkers = 0;
 			for (var i = 0; i < markers.length; i++) {
-				var id = markers[i].id;
+				
+				var newLiEl = document.createElement( "button" );
 				var marker = L.marker([markers[i].lat, markers[i].lng], {icon: rv.icons.greenIcon});
+				locatedMarkers += 1;
+				$(newLiEl).addClass('list-group-item');
+				$(newLiEl).attr('id', "marker-"+markers[i].id);
+				$(newLiEl).html(markers[i].name);
+				markerListEl.append(newLiEl);
+				
+				var span = document.createElement( "span" );
+				$(span).html('<i class="fa fa-map-marker"></i>&nbsp;');
+				$(newLiEl).prepend(span);
+				$(newLiEl).on('click', function (e) {
+					rv.map.panTo(new L.LatLng(rv.markers[e.target.id.substring(7)].lat, rv.markers[e.target.id.substring(7)].lng));
+					rv.markers[e.target.id.substring(7)].marker.openPopup();
+				});
+				
+				var id = markers[i].id;
+				
 
 				var name = markers[i].name;
 				var description = markers[i].description;
@@ -188,13 +228,16 @@ rv.getMarkers = function () {
 					marker: marker,
 					id: id,
 					name: name,
-					description: description
+					description: description,
+					lat: markers[i].lat,
+					lng: markers[i].lng
 				};
 			}
 
 		} else {
 			window.console.log(data['message']);
 		}
+		$('#number-markers').html(locatedMarkers);
 		return false;
 	},
 			'json');
@@ -368,6 +411,8 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
+			var locatedMembers = 1; // one for the current viewer
+			$('#member-list').empty();
 			if (members.length !== (Object.keys(rv.members).length + 1)) {
 				rv.options.fitMembers = true;
 			}
@@ -378,7 +423,10 @@ rv.getMembers = function () {
 			}
 			rv.members = [];
 			var selfDeleted = true;
-			for (var i = 0; i < members.length; i++) {
+			var memberListEl = $('#member-list').append('<ul>').find('ul');
+			memberListEl.addClass('list-group');
+			for (var i = 0; i < members.length; i++) {	
+				var newLiEl = document.createElement( "button" );
 				var updateTime = new Date(members[i].updated);
 				updateTime.setMinutes(updateTime.getMinutes() - rv.identity.timeOffset);
 				var mid = members[i].mid;
@@ -395,6 +443,17 @@ rv.getMembers = function () {
 					};
 					var marker = null;
 					if (members[i].lat !== null && members[i].lng !== null) {
+						locatedMembers += 1;
+						$(newLiEl).addClass('list-group-item');
+						$(newLiEl).attr('id', members[i].mid);
+						$(newLiEl).html(members[i].name);
+						memberListEl.append(newLiEl);	
+						var gpsSpan = document.createElement( "span" );
+						$(gpsSpan).html('<i class="fa fa-crosshairs"></i>&nbsp;');
+						$(newLiEl).prepend(gpsSpan);
+						$(newLiEl).on('click', function (e) {
+							rv.map.panTo(new L.LatLng(rv.members[e.target.id].lat, rv.members[e.target.id].lng));
+						});
 
 						var tDiff = Math.ceil(((new Date()).getTime() - rv.members[mid].updated.getTime()) / 60000);
 						var tUnit = 'minutes';
@@ -441,9 +500,19 @@ rv.getMembers = function () {
 					selfDeleted = false;
 				}
 			}
+			var newLiEl = document.createElement( "button" );
+			$(newLiEl).addClass('list-group-item').html('<i class="fa fa-star"></i>'+'&nbsp;'+rv.identity.name);
+			
+			$(newLiEl).on('click', function (e) {
+				if (rv.gps.lat !== null && rv.gps.lng !== null) {
+					rv.map.panTo(new L.LatLng(rv.gps.lat, rv.gps.lng));
+				}
+			});	
+			memberListEl.prepend(newLiEl);
 			if (selfDeleted) {
 				rv.identityDeletedDialog.dialog('open');
 			}
+			$('#number-members').html(locatedMembers);
 			rv.zoomToFitMembers();
 		} else {
 			window.console.log(data['message']);

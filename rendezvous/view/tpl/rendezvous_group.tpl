@@ -18,6 +18,22 @@
 		<body>
 				<div id="gps-discovery" style="display: none; color:white; font-weight:bolder; position:absolute; top: 80px; left: 50px; z-index: 1000;">Searching for location...</div>
 				<div class="zoom-fit" style="position:absolute; top: 130px; left: 10px; z-index: 1000;"><button class="btn btn-primary btn-md" title="Auto fit"><span><i class="fa fa-arrows-alt"></i></span></button></div>
+				<div id="member-list-container" style="position:absolute; top: 10px; left: 60px; z-index: 1000;"> 
+						<div id="member-list-btn" ><button class="btn btn-default btn-md" title="Members"><span><i class="fa fa-users">&nbsp;<span class="badge badge-success" id="number-members">1</span></i></span></button></div>
+						<div id="member-list" style="display: none;">
+								<ul class="list-group">
+										<li class="list-group-item">Member</li>
+								</ul>
+						</div>
+				</div>
+				<div id="marker-list-container" style="position:absolute; top: 10px; left: 140px; z-index: 1000;"> 
+						<div id="marker-list-btn" ><button class="btn btn-default btn-md" title="Markers"><span><i class="fa fa-map-marker">&nbsp;<span class="badge badge-success" id="number-markers">1</span></i></span></button></div>
+						<div id="marker-list" style="display: none;">
+								<ul class="list-group">
+										<li class="list-group-item">Member</li>
+								</ul>
+						</div>
+				</div>
 				<div id="map" class="map"></div>
 <!--				<div id="spinner" style="position: relative; width: 20px; z-index: 10000;"></div>-->
 				<div id="add-marker-button-wrapper" style="display: none;">

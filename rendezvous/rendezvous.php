@@ -4,7 +4,7 @@
  *
  * Name: Rendezvous
  * Description: Group sharing of real-time location on a dynamic map
- * Version: 1.0.0
+ * Version: 1.0.2
  * Author: Andrew Manning <andrew@reticu.li>
  * MinVersion: 1.14
  *
@@ -18,7 +18,7 @@ function rendezvous_module() {}
  * @return string Current plugin version
  */
 function rendezvous_get_version() {
-    return '1.0.0';
+    return '1.0.2';
 }
 
 function rendezvous_load() {
