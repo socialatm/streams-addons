@@ -128,7 +128,7 @@ function std_embeds_markdown_to_bb(&$s) {
 
 	//$s = preg_replace("/([^\]\=]|^)(https?\:\/\/)(vimeo|youtu|www\.youtube|soundcloud)([a-zA-Z0-9\:\/\-\?\&\;\.\=\_\~\#\%\$\!\+\,]+)/ism", '$1[url=$2$3$4]$2$3$4[/url]',$s);
 	$s = bb_tag_preg_replace("/\[url\=?(.*?)\]https?:\/\/youtu.be\/(.*?)\[\/url\]/ism",'[embed]https://youtu.be/$2[/embed]','url',$s);
-	$s = bb_tag_preg_replace("/\[url\=https?:\/\/youtu.be/(.*?)\].*?\[\/url\]/ism",'[embed]https://www.youtu.be/$1[/embed]','url',$s);
+	$s = bb_tag_preg_replace("/\[url\=https?:\/\/youtu.be\/(.*?)\].*?\[\/url\]/ism",'[embed]https://www.youtu.be/$1[/embed]','url',$s);
 
 	$s = bb_tag_preg_replace("/\[url\=?(.*?)\]https?:\/\/www.youtube.com\/watch\?v\=(.*?)\[\/url\]/ism",'[embed]https://www.youtube.com/watch?v=$2[/embed]','url',$s);
 	$s = bb_tag_preg_replace("/\[url\=https?:\/\/www.youtube.com\/watch\?v\=(.*?)\].*?\[\/url\]/ism",'[embed]https://www.youtube.com/watch?v=$1[/embed]','url',$s);
