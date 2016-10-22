@@ -375,7 +375,7 @@ rv.getMembers = function () {
 	function (data) {
 		if (data['success']) {
 			var members = data['members'];
-			$('#number-members').html(members.length);
+			var locatedMembers = 1; // one for the current viewer
 			$('#member-list').empty();
 			if (members.length !== (Object.keys(rv.members).length + 1)) {
 				rv.options.fitMembers = true;
@@ -397,10 +397,6 @@ rv.getMembers = function () {
 
 				// Skip the member marker if it is self
 				if (mid !== rv.identity.id) {
-					$(newLiEl).addClass('list-group-item');
-					$(newLiEl).attr('id', members[i].mid);
-					$(newLiEl).html(members[i].name);
-					memberListEl.append(newLiEl);
 
 					rv.members[mid] = {
 						name: members[i].name,
@@ -410,12 +406,17 @@ rv.getMembers = function () {
 						updated: updateTime
 					};
 					var marker = null;
-					if (members[i].lat !== null && members[i].lng !== null) {	
+					if (members[i].lat !== null && members[i].lng !== null) {
+						locatedMembers += 1;
+						$(newLiEl).addClass('list-group-item');
+						$(newLiEl).attr('id', members[i].mid);
+						$(newLiEl).html(members[i].name);
+						memberListEl.append(newLiEl);	
 						var gpsSpan = document.createElement( "span" );
 						$(gpsSpan).html('<i class="fa fa-crosshairs"></i>&nbsp;');
 						$(newLiEl).prepend(gpsSpan);
 						$(newLiEl).on('click', function (e) {
-							rv.map.setView([rv.members[e.target.id].lat, rv.members[e.target.id].lng], 13);
+							rv.map.panTo(new L.LatLng(rv.members[e.target.id].lat, rv.members[e.target.id].lng));
 						});
 
 						var tDiff = Math.ceil(((new Date()).getTime() - rv.members[mid].updated.getTime()) / 60000);
@@ -469,7 +470,7 @@ rv.getMembers = function () {
 			if (selfDeleted) {
 				rv.identityDeletedDialog.dialog('open');
 			}
-			
+			$('#number-members').html(locatedMembers);
 			rv.zoomToFitMembers();
 		} else {
 			window.console.log(data['message']);
