@@ -114,13 +114,14 @@ function rendezvous_content($a) {
 		
 		if (argc() > 1) {
 				$group = argv(1);
+				$observer = App::get_observer();
 				if(rendezvous_valid_group($group)) {
 						$o .= replace_macros(get_markup_template('rendezvous_group.tpl', 'addon/rendezvous'), array(
 								// Including the version in the script URL should avoid browser JavaScript caching issues
 								'$version' => '/addon/rendezvous/view/js/rendezvous.js?v=' . rendezvous_get_version(),
 								'$pagetitle' => t('Rendezvous'),
 								'$group' => $group,
-								'$name' => ucfirst(autoname(6)),
+								'$name' => (($observer) ? $observer['xchan_name']: ucfirst(autoname(6))),
 								'$zroot' => z_root(),
 								'$mapboxAccessToken' => get_config('rendezvous', 'mapboxAccessToken'),
 								'$identityDeletedMessage' => t('This identity has been deleted by another member due to inactivity. 
