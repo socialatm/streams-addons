@@ -1368,7 +1368,9 @@ function diaspora_conversation($importer,$xml,$msg) {
 		if($body)
 			$body  = str_rot47(base64url_encode($body));
 
-		q("insert into mail ( `account_id`, `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
+		$sig = ''; // placeholder
+
+		q("insert into mail ( account_id, channel_id, convid, conv_guid, from_xchan,to_xchan,title,body, sig, mail_obscured,mid,parent_mid,created) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
 			intval($importer['channel_account_id']),
 			intval($importer['channel_id']),
 			intval($conversation['id']),
@@ -1377,6 +1379,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			dbesc($importer['channel_hash']),
 			dbesc($subject),
 			dbesc($body),
+			dbesc($sig),
 			intval(1),
 			dbesc($msg_guid),
 			dbesc($stored_parent_mid),
@@ -1504,7 +1507,9 @@ function diaspora_message($importer,$xml,$msg) {
 	if($body)
 		$body  = str_rot47(base64url_encode($body));
 
-	q("insert into mail ( `account_id`, `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`, mail_isreply) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', %d)",
+	$sig = '';
+
+	q("insert into mail ( account_id, channel_id, convid, conv_guid, from_xchan,to_xchan,title,body, sig, mail_obscured,mid,parent_mid,created, mail_isreply) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', %d)",
 		intval($importer['channel_account_id']),
 		intval($importer['channel_id']),
 		intval($conversation['id']),
@@ -1513,6 +1518,7 @@ function diaspora_message($importer,$xml,$msg) {
 		dbesc($importer['xchan_hash']),
 		dbesc($subject),
 		dbesc($body),
+		dbesc($sig),
 		intval(1),
 		dbesc($msg_guid),
 		dbesc($parent_ptr),
@@ -1576,7 +1582,7 @@ function diaspora_photo($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
+	$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
 		intval($importer['channel_id']),
 		dbesc($status_message_guid)
 	);
@@ -1593,7 +1599,7 @@ function diaspora_photo($importer,$xml,$msg) {
 //									   array($remote_photo_name, 'scaled_full_' . $remote_photo_name));
 
 //	if(strpos($parent_item['body'],$link_text) === false) {
-//		$r = q("update item set `body` = '%s', `visible` = 1 where `id` = %d and `uid` = %d",
+//		$r = q("update item set body = '%s', visible = 1 where id = %d and uid = %d",
 //			dbesc($link_text . $parent_item['body']),
 //			intval($parent_item['id']),
 //			intval($parent_item['uid'])
@@ -1635,7 +1641,7 @@ function diaspora_like($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
+	$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
 		intval($importer['channel_id']),
 		dbesc($parent_guid)
 	);
@@ -1653,7 +1659,7 @@ function diaspora_like($importer,$xml,$msg) {
 		return;
 	}
 
-	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
+	$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
 		intval($importer['channel_id']),
 		dbesc($guid)
 	);
@@ -1962,9 +1968,9 @@ function diaspora_signed_retraction($importer,$xml,$msg) {
 
 				// Now check if the retraction needs to be relayed by us
 				//
-				// The first item in the `item` table with the parent id is the parent. However, MySQL doesn't always
-				// return the items ordered by `item`.`id`, in which case the wrong item is chosen as the parent.
-				// The only item with `parent` and `id` as the parent id is the parent item.
+				// The first item in the item table with the parent id is the parent. However, MySQL doesn't always
+				// return the items ordered by item.id, in which case the wrong item is chosen as the parent.
+				// The only item with parent and id as the parent id is the parent item.
 				$p = q("select item_flags from item where parent = %d and id = %d limit 1",
 					$r[0]['parent'],
 					$r[0]['parent']

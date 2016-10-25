@@ -721,7 +721,7 @@ function twitter_post_hook(&$a,&$b) {
 //				$image = "";
 //			} elseif ($iscomment) {
 //				logger('twitter_post: Update extid '.$result->id_str." for post id ".$b['id']);
-//				q("UPDATE `item` SET `extid` = '%s', `body` = '%s' WHERE `id` = %d",
+//				q("UPDATE item SET extid = '%s', body = '%s' WHERE id = %d",
 //					dbesc("twitter::".$result->id_str),
 //					dbesc($result->text),
 //					intval($b['id'])
@@ -744,11 +744,11 @@ function twitter_post_hook(&$a,&$b) {
 			} 
 //		elseif ($iscomment) {
 //				logger('twitter_post: Update extid '.$result->id_str." for post id ".$b['id']);
-//				q("UPDATE `item` SET `extid` = '%s' WHERE `id` = %d",
+//				q("UPDATE item SET extid = '%s' WHERE id = %d",
 //					dbesc("twitter::".$result->id_str),
 //					intval($b['id'])
 //				);
-				//q("UPDATE `item` SET `extid` = '%s', `body` = '%s' WHERE `id` = %d",
+				//q("UPDATE item SET extid = '%s', body = '%s' WHERE id = %d",
 				//	dbesc("twitter::".$result->id_str),
 				//	dbesc($result->text),
 				//	intval($b['id'])

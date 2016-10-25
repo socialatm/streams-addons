@@ -125,7 +125,7 @@ function statistics_json_cron($a,$b) {
 	set_config('statistics_json','active_users_monthly', $active_users_monthly);
 
 
-	$posts = q("SELECT COUNT(*) AS local_posts FROM `item` WHERE item_wall != 0 ");
+	$posts = q("SELECT COUNT(*) AS local_posts FROM item WHERE item_wall != 0 ");
 	if (!is_array($posts))
 		$local_posts = -1;
 	else
@@ -134,7 +134,7 @@ function statistics_json_cron($a,$b) {
 	set_config('statistics_json','local_posts', $local_posts);
 
 
-	$posts = q("SELECT COUNT(*) AS local_posts FROM `item` WHERE item_wall != 0 and id != parent");
+	$posts = q("SELECT COUNT(*) AS local_posts FROM item WHERE item_wall != 0 and id != parent");
 	if (!is_array($posts))
 		$local_posts = -1;
 	else
