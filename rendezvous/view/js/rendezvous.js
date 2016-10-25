@@ -143,13 +143,12 @@ rv.gpsControl = new L.Control.Gps({
 	marker: rv.myLocationMarker
 });
 rv.gpsControl.on('gpsactivated', function (timeout) {
-	//$('#gps-discovery').show();
+	$('.leaflet-control-gps').find('span').remove();
 	rv.gps.discoveryBlinkID = setInterval(function() {
 		$('.gps-button').toggleClass('active');
 	}, 1000);
 });
 rv.gpsControl.on('gpsdisabled', function () {
-	//$('#gps-discovery').hide();
 	clearInterval(rv.gps.discoveryBlinkID);
 });
 rv.gpsControl.on('gpslocated', function (latlng, marker) {
@@ -367,10 +366,10 @@ rv.getIdentity = function () {
 		if (rv.markerUpdateID === null) {
 			rv.markerUpdateID = window.setInterval(rv.getMarkers, rv.memberUpdateInterval);
 		}
+		rv.promptToShareLocation();
 		return true;
 	} else {
 
-		//var name = window.prompt("Please enter your name", rv.identity.name);
 		if (rv.identity.name === null || rv.identity.name === '') {
 			rv.newMemberDialog.dialog("open");
 			return false;
@@ -397,6 +396,7 @@ rv.getIdentity = function () {
 			} else {
 				window.console.log(data['message']);
 			}
+			rv.promptToShareLocation();
 			return false;
 		},
 				'json');
@@ -682,6 +682,7 @@ rv.newMarkerDialog = $("#new-marker-form").dialog({
 
 rv.newMarkerDialog.find("form").on("submit", function (event) {
 	event.preventDefault();
+	rv.popup._closeButton.click();
 	rv.createMarker();
 });
 
@@ -747,6 +748,17 @@ rv.newMemberDialog.find("form").on("submit", function (event) {
 	rv.newMemberDialog.dialog("close");
 });
 
+rv.promptToShareLocation = function () {
+	$('.leaflet-control-gps').append('<span class="tooltiptext">Click here to share your location.</span>');
+	for (var i = 0; i < 3; i++) {
+		$('.gps-button').fadeTo('slow', 0.1).fadeTo('slow', 1.0);
+	}
+	$('.leaflet-control-gps').find('span').on('click', function () {
+		$('.leaflet-control-gps').find('span').remove();
+		rv.map.openPopup()
+	});
+};
+
 $(window).load(function () {
 	$("#new-member-name").focus(function () {
 		// Select input field contents
@@ -754,5 +766,5 @@ $(window).load(function () {
 	});
 	// Start the background updates by obtaining an identity and joining the group
 	rv.getIdentity();
-
+	
 });
