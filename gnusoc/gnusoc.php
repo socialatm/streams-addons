@@ -359,7 +359,7 @@ function gnusoc_notifier_process(&$a,&$b) {
 
 	logger('notifier process gnusoc');
 
-    if(! ($b['normal_mode'] || $b['relay_to_owner']))
+    if(! ($b['normal_mode'] || $b['upstream']))
         return;
 
     if($b['private'] || $b['packet_type'] || $b['mail'])

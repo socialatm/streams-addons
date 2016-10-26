@@ -141,8 +141,7 @@ function diaspora_notifier_process(&$a,&$arr) {
 
 	if(! array_key_exists('item_wall',$arr['target_item']))
 		return;
-
-	if(($arr['normal_mode']) && (! $arr['env_recips']) && (! $arr['private']) && (! $arr['relay_to_owner'])) {
+	if(($arr['normal_mode']) && (! $arr['env_recips']) && (! $arr['private']) && (! $arr['upstream'])) {
 		$relay = get_config('diaspora','relay_handle');
 		if($relay) {
 			$arr['recipients'][] = "'" . $relay . "'";
