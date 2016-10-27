@@ -52,6 +52,13 @@ function diaspora_reconnect_post(&$a) {
 
 
 function diaspora_reconnect_content(&$a) {
+
+	if(! local_channel()) {
+		notice( t('Permission denied.') . EOL);
+		return;
+	}
+
+
 	$title = t('Diaspora Reconnect');
 
 	$info = t('Use this form to re-establish Diaspora connections which were initially made from a different hub.');
