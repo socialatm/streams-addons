@@ -158,6 +158,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 			$arr = array(
 				'channel' => $channel,
+				'upstream' => $upstream,
 				'env_recips' => $env_recips,
 				'packet_recips' => $packet_recips,
 				'recipients' => $recipients,

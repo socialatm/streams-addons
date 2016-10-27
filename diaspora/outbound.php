@@ -144,14 +144,13 @@ EOT;
 
 
 function diaspora_share($owner,$contact) {
-	$a = get_app();
 
 	$allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
 	if($allowed === false)
 		$allowed = 1;
 
 	if(! intval($allowed)) {
-		logger('diaspora_share: disallowed for channel ' . $importer['channel_name']);
+		logger('diaspora_share: disallowed for channel ' . $owner['channel_name']);
 		return;
 	}
 
@@ -162,7 +161,7 @@ function diaspora_share($owner,$contact) {
 			dbesc($contact['xchan_hash'])
 		);
 		if(! $c) {
-			logger('diaspora_share: ' . $contact['hubloc_hash']  . ' not found.');
+			logger('diaspora_share: ' . $contact['xchan_hash']  . ' not found.');
 			return;
 		}
 		$contact = $c[0];
