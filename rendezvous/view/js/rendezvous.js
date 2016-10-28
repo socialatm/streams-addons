@@ -55,6 +55,13 @@ rv.identity = {
 	timeOffset: 0
 };
 
+rv.proximity = [];
+
+rv.notify = {
+	granted: false,
+	enabled: true
+};
+
 rv.map = L.map('map').setView([0, 0], 2);
 
 if (mapboxAccessToken !== '') {
@@ -495,7 +502,8 @@ rv.getMembers = function () {
 					}
 
 					rv.members[mid].marker = marker;
-
+					// Check for proximity alerts
+					rv.checkProximity(mid);
 				} else {
 					selfDeleted = false;
 				}
@@ -520,6 +528,40 @@ rv.getMembers = function () {
 		return false;
 	},
 			'json');
+};
+
+rv.checkProximity = function (mid) {
+	
+	if(rv.proximity[mid] > 0) {
+		if (rv.gps.lat !== null && rv.gps.lng !== null) {
+			// Calculate the distance in meters between member mid and self
+			var distance = rv.distanceBetween(rv.members[mid], rv.gps);
+			if (distance < rv.proximity[mid]) {
+				rv.issue_notification('Proximity alert! ' + rv.members[mid].name  + 
+									' is within ' + rv.proximity[mid] + ' meters of your location.', 
+							'Rendezvous')
+				rv.proximity[mid] = null;
+			}
+		}
+	} else {
+		return false;
+	}
+	
+};
+
+rv.distanceBetween = function (latLng1, latLng2) {
+	var R = 6378137, // earth radius in meters
+			d2r = Math.PI/180,
+			dLat = (latLng1.lat - latLng2.lat) * d2r,
+			dLon = (latLng1.lng - latLng2.lng) * d2r,
+			lat1 = latLng2.lat * d2r,
+			lat2 = latLng1.lat * d2r,
+			sin1 = Math.sin(dLat / 2),
+			sin2 = Math.sin(dLon / 2);
+
+	var a = sin1 * sin1 + sin2 * sin2 * Math.cos(lat1) * Math.cos(lat2);
+
+	return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
 rv.identityDeletedDialog = $('#identity-deleted-message').dialog({
@@ -564,13 +606,17 @@ rv.addMemberToMap = function (marker, id, tDiff, tUnit) {
 rv.memberMenu = function (tDiff, tUnit) {
 	setTimeout(function () {
 		$('.delete-member').on('click', rv.deleteMember);
+		$('.member-proximity').on('click', function () {
+			rv.editProximityAlertDialog.dialog('open'); 
+		});
 	}, 300);
 	var memberInfo = '';
 	if (rv.members[rv.currentMemberID]) {
 		memberInfo = '<center><b>' + rv.members[rv.currentMemberID].name + '</b><br>about ' + tDiff + ' ' + tUnit + ' ago';
+		memberInfo += '<br><br><div>' + $('#member-proximity-button-wrapper').html();
 		var tDiff = Math.ceil(((new Date()).getTime() - rv.members[rv.currentMemberID].updated.getTime()) / 60000);
 		if (tDiff > 14) {
-			memberInfo += '<br><br>' + $('#delete-member-button-wrapper').html();
+			memberInfo += '&nbsp;' + $('#delete-member-button-wrapper').html() + '</div>';
 		}
 	}
 
@@ -600,6 +646,46 @@ rv.deleteMember = function (e) {
 		},
 				'json');
 	}
+	return false;
+};
+
+rv.editProximityAlertDialog = $("#member-proximity-form").dialog({
+	autoOpen: false,
+	height: 400,
+	width: 350,
+	modal: true,
+	buttons: {
+		"Set alert": function () {
+			rv.editProximityAlert();
+			rv.editProximityAlertDialog.dialog("close");
+		},
+		Cancel: function () {
+			rv.editProximityAlertDialog.dialog("close");
+		}
+	},
+	close: function () {
+		return false;
+	}
+});
+
+rv.editProximityAlertDialog.find("form").on("submit", function (event) {
+	event.preventDefault();
+	rv.editProximityAlert();
+	rv.editProximityAlertDialog.dialog("close");
+});
+
+rv.editProximityAlert = function () {
+	
+	if (rv.members[rv.currentMemberID]) {
+		var distance = parseInt($('#member-proximity-distance').val());
+		// Verify that distance is an integer
+		if (Number(distance) === distance && distance % 1 === 0) {
+			rv.proximity[rv.currentMemberID] = distance;
+		} else {
+			alert('Distance value must be an integer');
+		}
+	}
+	rv.editProximityAlertDialog.dialog("close");
 	return false;
 };
 
@@ -759,11 +845,58 @@ rv.promptToShareLocation = function () {
 	});
 };
 
+
+rv.notification_init = function () {
+	if (!rv.notify.enabled) {
+		return false;
+	}
+	if (!("Notification" in window)) {
+		window.console.log("This browser does not support system notifications");
+	}
+	// Let's check whether notification permissions have already been granted
+	else if (Notification.permission === "granted") {
+		// If it's okay let's create a notification
+		rv.notify.granted = true; 
+	}
+
+	// Otherwise, we need to ask the user for permission
+	else if (Notification.permission !== 'denied') {
+		Notification.requestPermission(function (permission) {
+			// If the user accepts, let's create a notification
+			if (permission === "granted") {
+				rv.notify.granted = true; 
+			}
+		});
+	}
+
+        // Encode a wav audio file in base64 and create the audio object for alerts
+        var base64string = 'UklGRr4VAABXQVZFZm10IBAAAAABAAEAIlYAACJWAAABAAgAZGF0YZkVAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIBxcnJycoGNjY2NjYyMjIyMg3FxcXFxcXJycnJ0jY2NjY2NjIyMjIx1cXFxcXFxcnJycoKNjY2NjY2MjIyMgXFxcXFxcXJycnJ2jY2NjY2NjIyMjIxzcXFxcXFxcnJycoSNjY2NjY2MjIyMgHFxcXFxcXJycnJ4jY2NjY2NjIyMjIxycXFxcXFycnJycoWNjY2NjY2MjIyMf3FxcXFxcXJycnJ5jY2NjY2NjIyMjIxxcXFxcXFycnJycoeNjY2NjY2MjIyMfnFxcXFxcXJycnJ7jY2NjY2NjIyMjIpxcXFxcXFycnJycomNjY2NjYyMjIyMfHFxcXFxcXJycnJ8jY2NjY2NjIyMjIhycnJycoyLi4uLi4uLioqKfHFxcXFxcnJycnJyc4yMjIuLi4uLi4uKin5xcXFxcnJycnJyc3OMjIyMi4uLi4uLi4p/cXFxcnJycnJyc3Nzi4yMjIyLi4uLi4uLgHBwcXFxcXFxcnJycouNjY2NjYyMjIyMjIBwcHFxcXFxcXJycnKLjY2NjY2MjIyMjIyBcHFxcXFxcXJycnJyio2NjY2NjIyMjIyMgnBxcXFxcXFycnJycomNjY2NjY2MjIyMjINwcXFxcXFxcnJycnKIjY2NjY2NjIyMjIyEcHFxcXFxcXJycnJyh42NjY2NjYyMjIyMhXBxcXFxcXFycnJycoaNjY2NjY2MjIyMjIZwcXFxcXFxcnJycnKFjY2NjY2NjIyMjIyHcHFxcXFxcXJycnJyhI2NjY2NjYyMjIyMiHBxcXFxcXFycnJycoONjY2NjY2MjIyMjIlwcXFxcXFxcnJycnKCjY2NjY2NjIyMjIyKcHFxcXFxcXJycnJygY2NjYyMjIyLi4uLi4uLioqKioqKdnBxcXFxcXFycnKAi4uLi4uLioqKioJxcXFxcXFycnJydIyMi4uLi4uLi4qKdXFxcXFycnJycnKBjIyLi4uLi4uLioFxcXFycnJycXFydY2NjYyMjIyMjIyLc3BwcXFxcXFxcnKDjY2NjIyMjIyMjIBwcHFxcXFxcXJyd42NjY2MjIyMjIyMcnBxcXFxcXFycnKFjY2NjYyMjIyMjH9wcXFxcXFxcnJyeY2NjY2NjIyMjIyMcHFxcXFxcXJycnKHjY2NjY2MjIyMjH5xcXFxcXFycnJyeo2NjY2NjIyMjIyKcHFxcXFxcXJycnKIjY2NjY2MjIyMjHxxcXFxcXFycnJyfI2NjY2NjYyMjIyJcXFxcXFxcXJycnKKjY2NjY2MjIyMjHtxcXFxcXFycnJyfo2NjY2NjYyMjIyHcXFxcXFxcnJycnKMjY2NjY2MjIuLi3lycnJycnJzc3Nzf4yMjIyMjIuLi4uFcnJycnJycnNzc3OMjIyMjIyMi4uLi3hycnJycnJzc3NzgIyMjIyMjIuLi4uDcnJycnJycnNzc3SMjIyMjIyMi4uLi3dycnJycnJzc3NzgYyMjIyMjIuLi4uCcnJycnJyc3Nzc3aMjIyMjIyMi4uLi3VycnJycnJzc3Nzg4yMjIyMjIuLi4uAcnJycnJyc3Nzc3eMjIyMjIyMi4uLi3RycnJycnJzc3NzhIyMjIyMjIuLi4uAcnJycnJyc3Nzc3mMjIyMjIyMi4uLi3JycnJycnJzc3NzhoyMjIyMjIuLi4t+cnJycnJyc3Nzc3qMjIyMjIyLi4uLinJycnNzc3N0dHR0h4uLi4uLi4qKiop9c3Nzc3Nzc3R0dHyLi4uLi4uLioqKiHNzc3Nzc3N0dHR0iIuLi4uLi4qKiop8c3Nzc3Nzc3R0dH2Li4uLi4uLioqKhnNzc3Nzc3N0dHR0iYuLi4uLi4qKiop6c3Nzc3Nzc3R0dH+Li4uLi4uLioqKhXNzc3Nzc3N0dHR0i4uLi4uLi4qKiop5c3Nzc3Nzc3R0dICLi4uLi4uLioqKhHNzc3Nzc3N0dHR1i4uLi4uLi4qKiop4c3Nzc3NzdHR0dIGLi4uLi4uLioqKgnNzc3Nzc3N0dHR2i4uLi4uLi4qKiop2c3Nzc3NzdHR0dIKLi4uLi4uLioqKgXNzc3Nzc3N0dHR3i4uLi4uLi4qKiol2dHR0dHR0dHV1dYOKioqKioqKiYmJgHR0dHR0dHR0dXV5ioqKioqKiomJiYl0dHR0dHR0dHV1dYSKioqKioqKiYmJf3R0dHR0dHR0dXV7ioqKioqKiomJiYl0dHR0dHR0dHV1dYaKioqKioqKiYmJfnR0dHR0dHR1dXV8ioqKioqKioqJiYd0dHR0dHR0dHV1dYeKioqKioqKiYmJfHR0dHR0dHR1dXV9ioqKioqKiomJiYZ0dHR0dHR0dHV1dYiKioqKioqKiYmJe3R0dHR0dHR1dXV+ioqKioqKiomJiYV0dHR0dHR0dHV1dYmKioqKioqKiYmJenR0dHR0dHR1dXWAioqKiYmJiYmIiIN1dXV1dXV1dXZ2domJiYmJiYmJiYiIeXV1dXV1dXV1dnaAiYmJiYmJiYmIiIJ1dXV1dXV1dXZ2d4mJiYmJiYmJiYiIeHV1dXV1dXV1dnaBiYmJiYmJiYmIiIF1dXV1dXV1dXZ2eImJiYmJiYmJiYiId3V1dXV1dXV1dnaCiYmJiYmJiYmIiIB1dXV1dXV1dXZ2eYmJiYmJiYmJiIiIdnV1dXV1dXV1dnaDiYmJiYmJiYmIiH91dXV1dXV1dXZ2e4mJiYmJiYmJiIiIdXV1dXV1dXV1dnaFiYmJiYmJiYmIiH51dXV1dXV1dXZ2fImJiYmJiYmJiIiHdXV1dXV1dXV1dnaGiYmJiYmJiYmIiH11dXV1dXV1dXZ2fYiIiIiIiIiIiIiFdnZ2dnZ2dnZ2d3eGiIiIiIiIiIiIh3x2dnZ2dnZ2dnd3foiIiIiIiIiIiIeEdnZ2dnZ2dnZ2d3eHiIiIiIiIiIiIh3t2dnZ2dnZ2dnZ3f4iIiIiIiIiIiIeDdnZ2dnZ2dnZ2d3eIiIiIiIiIiIiIh3p2dnZ2dnZ2dnZ3gIiIiIiIiIiIiIeCdnZ2dnZ2dnZ2d3iIiIiIiIiIiIiIh3l2dnZ2dnZ2dnZ3gIiIiIiIiIiIiIeBdnZ2dnZ2dnZ2d3mIiIiIiIiIiIiHh3h2dnZ2dnZ2dnZ3goiIiIiIiIiIiIeAdnZ2dnZ2dnZ2d3qIiIiIiIiIiIiHh3d2dnZ2dnZ2dnZ3g4iIiIiIh4eHh4eAd3d3d3d3d3d3d3uHh4eHh4eHh4eHhnd3d3d3d3d3d3d3g4eHh4eHh4eHh4d/d3d3d3d3d3d3d3yHh4eHh4eHh4eHhnd3d3d3d3d3d3d4hIeHh4eHh4eHh4d+d3d3d3d3d3d3d32Hh4eHh4eHh4eHhXd3d3d3d3d3d3d4hYeHh4eHh4eHh4d9d3d3d3d3d3d3d36Hh4eHh4eHh4eHhHd3d3d3d3d3d3d4hoeHh4eHh4eHh4d8d3d3d3d3d3d3d3+Hh4eHh4eHh4eHg3d3d3d3d3d3d3d4h4eHh4eHh4eHh4d7d3d3d3d3d3d3d4CHh4eHh4eHh4eHgnd3d3d3d3d3d3d5h4aGhoaGhoaGhoZ7eHh4eHh4eHh4eICGhoaGhoaGhoaGgXh4eHh4eHh4eHh6h4aGhoaGhoaGhoZ6eHh4eHh4eHh4eIGGhoaGhoaGhoaGgHh4eHh4eHh4eHh7hoaGhoaGhoaGhoZ5eHh4eHh4eHh4eIKGhoaGhoaGhoaGgHh4eHh4eHh4eHh7hoaGhoaGhoaGhoZ4eHh4eHh4eHh4eIKGhoaGhoaGhoaGf3h4eHh4eHh4eHh8hoaGhoaGhoaGhoV4eHh4eHh4eHh4eIOGhoaGhoaGhoaGfnh4eHh4eHh4eHh9hoaGhoaGhoaGhoR4eHh4eHh4eHh4eISGhoaGhoaGhoaGfXh4eHh4eHh4eHh+hoaGhoaGhoaGhoR4eHh4eHh5eXl5eYSFhYWFhYWFhYWFfXl5eXl5eXl5eXl/hYWFhYWFhYWFhYJ5eXl5eXl5eXl5eYWFhYWFhYWFhYWFfHl5eXl5eXl5eXmAhYWFhYWFhYWFhYF5eXl5eXl5eXl5eYWFhYWFhYWFhYWFe3l5eXl5eXl5eXmAhYWFhYWFhYWFhYF5eXl5eXl5eXl5eoWFhYWFhYWFhYWFe3l5eXl5eXl5eXmAhYWFhYWFhYWFhYB5eXl5eXl5eXl5e4WFhYWFhYWFhYWFenl5eXl5eXl5eXmBhYWFhYWFhYWFhYB5eXl5eXl5eXl5fIWFhYWFhYWFhYWFeXl5eXl5eXl5eXmChYWFhYWFhYWFhX95enp6f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f39/f4CAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAA';
+        rv.notify.audio = new Audio("data:audio/wav;base64," + base64string);
+};
+
+rv.issue_notification = function (theBody,theTitle) {
+	if (!rv.notify.enabled || !rv.notify.granted ) {
+		return;
+	}
+	var options = {
+		body: theBody,
+		silent: false
+	}
+	var n = new Notification(theTitle,options);
+	n.onclick = function (event) {
+		setTimeout(n.close.bind(n), 300); 
+	} 
+	rv.notify.audio.play();
+}
+
+
 $(window).load(function () {
 	$("#new-member-name").focus(function () {
 		// Select input field contents
 		this.select();
 	});
+	
+	rv.notification_init();
 	// Start the background updates by obtaining an identity and joining the group
 	rv.getIdentity();
 	
