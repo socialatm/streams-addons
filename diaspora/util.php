@@ -156,7 +156,7 @@ function diaspora_build_relay_tags() {
 	}
 	set_config('diaspora','relay_tags',$alltags);
 	// Now register to pick up any changes
-	$url = "http://the-federation.info/register/" . App::get_hostname();
+	$url = "https://the-federation.info/register/" . App::get_hostname();
 	$ret = z_fetch_url($url);
 
 }

@@ -158,7 +158,7 @@ function statistics_json_cron($a,$b) {
 	set_config('statistics_json','twitter', intval($twitter));
 
 	// Now trying to register
-	$url = "http://the-federation.info/register/" . App::get_hostname();
+	$url = "https://the-federation.info/register/" . App::get_hostname();
 
 	$ret = z_fetch_url($url);
 	logger('statistics_json_cron: registering answer: '. print_r($ret,true), LOGGER_DEBUG);
