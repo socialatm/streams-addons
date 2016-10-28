@@ -246,18 +246,16 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		foreach($r as $contact) {
 
-			if(! deliverable_singleton($arr['channel']['channel_id'],$contact)) {
-				logger('not deliverable from this hub');
-				continue;
-			}
+			// is $contact connected with this channel - and if the channel is cloned, also on this hub? 
+			$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
 	
-			if($arr['packet_type'] == 'refresh') {
+			if($arr['packet_type'] == 'refresh' && $single) {
 				$qi = diaspora_profile_change($arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				return;
 			}
-			if($arr['mail']) {
+			if($arr['mail'] && $single) {
 				$qi = diaspora_send_mail($arr['item'],$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
@@ -267,10 +265,10 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $arr['normal_mode'])
 				continue;
 
-			// special handling for send_upstream to public post
+			// special handling for send_upstream to public post, not checked for $single
 			// all other public posts processed as public batches further below
 
-			if((! $arr['private']) && ($arr['relay_to_owner'])) {
+			if((! $arr['private']) && ($arr['upstream'])) {
 				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact, true);
 				if($qi)
 					$arr['queued'][] = $qi;
@@ -280,16 +278,16 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $contact['xchan_pubkey'])
 				continue;
 
+			// singletons will be sent upstream regardless of $single state. They may be rejected.
 
-			if(intval($target_item['item_deleted']) 
-				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['relay_to_owner'])) {
-				// send both top-level retractions and relayable retractions for owner to relay
+			if(intval($target_item['item_deleted']) && ($arr['top_level_post'] || $arr['upstream'])) { 
 				$qi = diaspora_send_retraction($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
 			}
-			elseif($arr['relay_to_owner'] || $arr['uplink']) {
+
+			if($arr['upstream']) {
 				// send comments and likes to owner to relay
 				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact,false,(($arr['uplink'] && !$arr['relay_to_owner']) ? true : false));
 				if($qi)
@@ -297,20 +295,27 @@ function diaspora_process_outbound(&$a, &$arr) {
 				continue;
 			}
 
-			elseif($target_item['mid'] !== $target_item['parent_mid']) {
-				// we are the relay - send comments, likes and relayable_retractions
-				// (of comments and likes) to our conversants
-				$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact);
-				if($qi)
-					$arr['queued'][] = $qi;
+			// downstream (private) posts
+
+			if($single) {
+				logger('Singleton private delivery ignored on this site. Will attempt from connected site.');
 				continue;
 			}
-			elseif($arr['top_level_post']) {
+				
+			if($arr['top_level_post']) {
 				$qi = diaspora_send_status($target_item,$arr['channel'],$contact);
 				if($qi) {
 					foreach($qi as $q)
 						$arr['queued'][] = $q;
 				}
+				continue;
+			}
+			else {
+				// we are the relay - send comments, likes and relayable_retractions
+				// (of comments and likes) to our conversants
+				$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact);
+				if($qi)
+					$arr['queued'][] = $qi;
 				continue;
 			}
 		}
