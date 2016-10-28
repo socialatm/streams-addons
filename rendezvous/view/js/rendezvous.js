@@ -8,6 +8,7 @@ rv.options = {
 rv.selectedLatLon = {};
 rv.markers = [];
 rv.members = [];
+rv.proximity = {};
 rv.currentMemberID = null;
 rv.memberUpdateID = null;
 rv.markerUpdateID = null;
@@ -54,8 +55,6 @@ rv.identity = {
 	secret: null,
 	timeOffset: 0
 };
-
-rv.proximity = [];
 
 rv.notify = {
 	granted: false,
@@ -363,6 +362,7 @@ rv.deleteMarker = function (e) {
 rv.getIdentity = function () {
 	var identity = Cookies.getJSON('identity');
 	var group = Cookies.getJSON('group');
+	var proximity = Cookies.getJSON('proximity');
 	if (typeof (group) !== 'undefined' && group === rv.group.id && typeof (identity) !== 'undefined' && typeof (identity.id) !== 'undefined' && identity.id !== null) {
 		rv.identity = identity;
 		rv.getMembers();
@@ -372,6 +372,9 @@ rv.getIdentity = function () {
 		}
 		if (rv.markerUpdateID === null) {
 			rv.markerUpdateID = window.setInterval(rv.getMarkers, rv.memberUpdateInterval);
+		}		
+		if (typeof (proximity) !== 'undefined') {
+			rv.proximity = proximity;
 		}
 		rv.promptToShareLocation();
 		return true;
@@ -573,6 +576,7 @@ rv.identityDeletedDialog = $('#identity-deleted-message').dialog({
 		"New identity": function () {
 			Cookies.remove('identity', {path: ''});
 			Cookies.remove('group', {path: ''});
+			Cookies.remove('proximity', {path: ''});
 			rv.identity = {
 				id: null,
 				name: '',
@@ -607,6 +611,11 @@ rv.memberMenu = function (tDiff, tUnit) {
 	setTimeout(function () {
 		$('.delete-member').on('click', rv.deleteMember);
 		$('.member-proximity').on('click', function () {
+			if(typeof(rv.proximity[rv.currentMemberID]) !== 'undefined' && typeof(rv.proximity[rv.currentMemberID].distance) !== 'undefined' && rv.proximity[rv.currentMemberID].distance > 0) {
+				$('#member-proximity-distance').val(rv.proximity[rv.currentMemberID].distance);
+			} else {
+				$('#member-proximity-distance').val(0);
+			}
 			rv.editProximityAlertDialog.dialog('open'); 
 		});
 	}, 300);
@@ -680,7 +689,10 @@ rv.editProximityAlert = function () {
 		var distance = parseInt($('#member-proximity-distance').val());
 		// Verify that distance is an integer
 		if (Number(distance) === distance && distance % 1 === 0) {
-			rv.proximity[rv.currentMemberID] = distance;
+			rv.proximity[rv.currentMemberID] = { distance: distance } ;
+			if(rv.proximity[rv.currentMemberID]) {
+				Cookies.set('proximity', rv.proximity, {expires: 365, path: ''});
+			}
 		} else {
 			alert('Distance value must be an integer');
 		}
