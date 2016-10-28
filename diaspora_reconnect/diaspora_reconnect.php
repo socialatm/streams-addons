@@ -10,6 +10,7 @@
  *
  */
 
+require_once('addon/diaspora/diaspora.php');
 
 function diaspora_reconnect_module() {}
 
