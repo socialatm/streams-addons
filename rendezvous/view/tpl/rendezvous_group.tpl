@@ -50,11 +50,17 @@
 				</div>
 
 				<div id="delete-member-button-wrapper" style="display: none;">
-						<div>
-								<button class="delete-member btn btn-danger btn-sm" title="{{$deleteMarker}}"><span><i class="fa fa-trash-o"></i></span></button>
-						</div>
+
+								<button class="delete-member btn btn-danger btn-sm" title="{{$deleteMember}}"><span><i class="fa fa-trash-o"></i></span></button>
+
 				</div>
-				 
+
+				<div id="member-proximity-button-wrapper" style="display: none;">
+
+								<button class="member-proximity btn btn-success btn-sm" title="{{$memberProximity}}"><span><i class="fa fa-bell-o"></i></span></button>
+
+				</div>
+
 				<div id="new-member-form" title="{{$welcomeMessageTitle}}">
 						<p>{{$welcomeMessage}}</p>
 						<form>
@@ -95,6 +101,17 @@
 								<br>
 								<textarea rows="5" cols="30" name="edit-marker-description" id="edit-marker-description" placeholder="{{$myMarkerDescriptionPlaceholder}}" class="text ui-widget-content ui-corner-all"></textarea>
 
+								<!-- Allow form submission with keyboard without duplicating the dialog button -->
+								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+							</fieldset>
+						</form>
+				</div>
+				<div id="member-proximity-form" title="{{$memberProximity}}">
+						
+						<form>
+							<fieldset style='width: 300px;'>
+								<label for="member-proximity-distance">{{$proximityDialog.0}}</label>
+								<input type="number" size="10" min="1" step="1" name="member-proximity-distance" id="member-proximity-distance" placeholder="{{$proximityDialog.1}}" value="" class="text ui-widget-content ui-corner-all">
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
 							</fieldset>
