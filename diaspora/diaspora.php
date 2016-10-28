@@ -93,10 +93,9 @@ function diaspora_well_known(&$a,&$b) {
 
 		$arr = array(
 			'subscribe' => (($disabled) ? false : true),
-			'scope' => $scope
+			'scope' => $scope,
+			'tags' => (($tags) ? $tags : [])
 		);
-		if($tags)
-			$arr['tags'] = $tags;
 
 		header('Content-type: application/json');
 		echo json_encode($arr);
