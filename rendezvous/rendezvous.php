@@ -4,7 +4,7 @@
  *
  * Name: Rendezvous
  * Description: Group sharing of real-time location on a dynamic map
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Andrew Manning <andrew@reticu.li>
  * MinVersion: 1.14
  *
@@ -18,7 +18,7 @@ function rendezvous_module() {}
  * @return string Current plugin version
  */
 function rendezvous_get_version() {
-    return '1.0.3';
+    return '1.0.4';
 }
 
 function rendezvous_load() {
@@ -139,6 +139,9 @@ function rendezvous_content($a) {
 								'$editMarker' => t('Edit marker'),
 								'$newIdentity' => t('New identity'),
 								'$deleteMarker' => t('Delete marker'),
+								'$deleteMember' => t('Delete member'),
+								'$memberProximity' => t('Edit proximity alert'),
+								'$proximityDialog' => array(t('A proximity alert will be issued when this member is within a certain radius of you.<br><br>Enter a radius in meters:'), t('distance')),
 						));
 						return $o;
 				} else {
