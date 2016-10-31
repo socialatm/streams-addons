@@ -297,7 +297,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 			// downstream (private) posts
 
-			if($single) {
+			if(! $single) {
 				logger('Singleton private delivery ignored on this site. Will attempt from connected site.');
 				continue;
 			}
