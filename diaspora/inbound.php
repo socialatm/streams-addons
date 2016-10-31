@@ -2,10 +2,10 @@
 
 function diaspora_dispatch_public($msg) {
 
-	$sys_disabled = true;
+	$sys_disabled = false;
 
-	if(! get_config('system','disable_discover_tab')) {
-		$sys_disabled = get_config('system','disable_diaspora_discover_tab');
+	if(get_config('system','disable_discover_tab') || get_config('system','disable_diaspora_discover_tab')) {
+		$sys_disabled = true;
 	}
 	$sys = (($sys_disabled) ? null : get_sys_channel());
 
@@ -21,7 +21,7 @@ function diaspora_dispatch_public($msg) {
 
 	if(is_array($y) && is_array($r))
 		$r = array_merge($r,$y);
-		
+
 	// @FIXME we should also enumerate channels that allow postings by anybody
 
 	$msg['public'] = 1;
@@ -67,7 +67,7 @@ function diaspora_dispatch($importer,$msg) {
 		dbesc($url)
 	);
 
-	$allowed = get_pconfig($importer['channel_id'],'system','diaspora_allowed');
+	$allowed = (($importer['system']) ? 1 : get_pconfig($importer['channel_id'],'system','diaspora_allowed'));
 
 	if(! intval($allowed)) {
 		logger('mod-diaspora: disallowed for channel ' . $importer['channel_name']);

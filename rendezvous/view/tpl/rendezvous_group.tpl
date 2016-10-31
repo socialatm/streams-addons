@@ -111,7 +111,7 @@
 						<form>
 							<fieldset style='width: 300px;'>
 								<label for="member-proximity-distance">{{$proximityDialog.0}}</label>
-								<input type="number" size="10" min="1" step="1" name="member-proximity-distance" id="member-proximity-distance" placeholder="{{$proximityDialog.1}}" value="" class="text ui-widget-content ui-corner-all">
+								<input type="number" size="10" min="0" step="1" name="member-proximity-distance" id="member-proximity-distance" placeholder="{{$proximityDialog.1}}" value="" class="text ui-widget-content ui-corner-all">
 								<!-- Allow form submission with keyboard without duplicating the dialog button -->
 								<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
 							</fieldset>

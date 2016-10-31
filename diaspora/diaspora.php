@@ -8,6 +8,7 @@
  * Author: Mike Macgirvin
  * Maintainer: none
  * MinVersion: 1.15.1
+ * Requires: statistics_json
  * ServerRoles: basic, standard
  */
 
