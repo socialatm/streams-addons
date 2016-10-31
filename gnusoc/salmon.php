@@ -291,22 +291,19 @@ function salmon_post(&$a) {
 			}
 		}
 		else {
-			if((! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'send_stream')) && (! $importer['system'])) { 
-			// check for and process ostatus autofriend
+			if((! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'send_stream')) && (! $importer['system'])) {
+				// check for and process ostatus autofriend
 
 
-			// ... fixme
+				// ... fixme
+	
+				// otherwise 
 
-			// otherwise 
-
-			logger('mod-salmon: Ignoring this author.');
-			$status = 202;
-			continue;
+				logger('mod-salmon: Ignoring this author.');
+				$status = 202;
+				continue;
+			}
 		}
-
-
-
-
 
 
 		if(! $item['author_xchan'])
