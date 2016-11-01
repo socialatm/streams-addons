@@ -7,8 +7,8 @@
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
- * Requires: pubsubhubbub
- * ServerRoles: exp
+ * Requires: pubsubhubbub, system.experimental
+ * ServerRoles: basic, standard
  */
 
 
