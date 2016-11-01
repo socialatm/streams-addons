@@ -76,8 +76,8 @@ function push_notifier_process(&$a,&$b) {
 		return;
 	}
 
-	if(! $b['top_level_post']) {
-		logger('Not a top-level post. Not suitable for PuSH forwarding.');
+	if($b['upstream'])  {
+		logger('Not a downstream post. Not suitable for PuSH forwarding.');
 		return;
 	}
 

@@ -16,6 +16,7 @@ require_once('include/crypto.php');
 require_once('include/items.php');
 require_once('include/bb2diaspora.php');
 require_once('include/queue_fn.php');
+require_once('include/feedutils.php');
 
 
 function gnusoc_load() {
@@ -206,6 +207,7 @@ function get_salmon_key($uri,$keyhash) {
 
 function slapper($owner,$url,$slap) {
 
+
 	// does contact have a salmon endpoint?
 
 	if(! strlen($url))
@@ -359,10 +361,12 @@ function gnusoc_notifier_process(&$a,&$b) {
 
 	logger('notifier process gnusoc');
 
-    if(! ($b['normal_mode'] || $b['upstream']))
+//	logger('notifier data: ' . print_r($b,true));
+
+    if(! ($b['normal_mode']))
         return;
 
-    if($b['private'] || $b['packet_type'] || $b['mail'])
+    if($b['private'] || $b['mail'] || $b['packet_type'] !== 'undefined')
         return;
 
 	if($b['target_item']['public_policy']) {
@@ -376,31 +380,39 @@ function gnusoc_notifier_process(&$a,&$b) {
 		return;
 	}
 
-
     $channel = $b['channel'];
 
 	if(! perm_is_allowed($channel['channel_id'],'','view_stream'))
 		return;
 
-    // find gnusoc subscribers following this $owner
 
-	$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d",
-		intval($channel['channel_id'])
-	);
+	if($b['upstream']) {
+		$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d and hubloc_hash = '%s'",
+			intval($channel['channel_id']),
+			dbesc($b['recipients'][0])
+		);
+	}
+	else {
+	    // find gnusoc subscribers following this $owner
+		$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d",
+			intval($channel['channel_id'])
+		);
+	}
+
 	if(! $r)
 		return;
 
 	$recips = array();
 	foreach($r as $rr) {
 		if(perm_is_allowed($channel['channel_id'],$rr['hubloc_hash'],'view_stream'))
-			$recips[] = $rr['hubloc_hash'];
+			$recips[] = $rr;
 
 	}
 
 	if(! $recips)
 		return;
 
-	$slap = get_atom_entry($target_item,'html',null,null,false);
+	$slap = atom_entry($target_item,'html',null,null,false);
 
 	$slap = str_replace('<entry>','<entry xmlns="http://www.w3.org/2005/Atom"
       xmlns:thr="http://purl.org/syndication/thread/1.0"
