@@ -8,7 +8,7 @@
  * Author: Mike Macgirvin
  * Maintainer: none
  * Requires: pubsubhubbub
- * ServerRoles: basic, standard
+ * ServerRoles: exp
  */
 
 
