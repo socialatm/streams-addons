@@ -3,7 +3,7 @@
 
 /**
  * Name: GNU-Social Protocol
- * Description: GNU-Social Protocol
+ * Description: GNU-Social Protocol (Unsupported, Experimental)
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
