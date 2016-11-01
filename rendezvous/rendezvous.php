@@ -27,7 +27,7 @@ function rendezvous_load() {
 }
 
 function rendezvous_unload() {
-    unregister_hook('load_pdl', 'addon/rendezvous/rendezvous.php', 'rendezvous_load_pdl');    
+    unregister_hook('load_pdl', 'addon/rendezvous/rendezvous.php', 'rendezvous_load_pdl');
     logger("Unload Rendezvous", LOGGER_DEBUG);
 }
 
@@ -35,7 +35,7 @@ function rendezvous_install() {
     set_config('rendezvous', 'dropTablesOnUninstall', 0);
     set_config('rendezvous', 'mapboxAccessToken', '');
     $errors = rendezvous_create_database_tables();
-    
+
     if ($errors) {
         notice('Error creating the database tables');
         logger('Error creating the database tables: ' . $errors);
@@ -106,12 +106,12 @@ function rendezvous_load_pdl($a, &$b) {
         $b['layout'] = '
 						[template]none[/template]
         ';
-				} 
+				}
     }
 }
 
 function rendezvous_content($a) {
-		
+
 		if (argc() > 1) {
 				$group = argv(1);
 				$observer = App::get_observer();
@@ -124,13 +124,9 @@ function rendezvous_content($a) {
 								'$name' => (($observer) ? $observer['xchan_name']: ucfirst(autoname(6))),
 								'$zroot' => z_root(),
 								'$mapboxAccessToken' => get_config('rendezvous', 'mapboxAccessToken'),
-								'$identityDeletedMessage' => t('This identity has been deleted by another member due to inactivity. 
-																						Please press the "New identity" button or refresh the page to 
-																						register a new identity. You may use the same name.'),
+								'$identityDeletedMessage' => t('This identity has been deleted by another member due to inactivity. Please press the "New identity" button or refresh the page to register a new identity. You may use the same name.'),
 								'$welcomeMessageTitle' => t('Welcome to Rendezvous!'),
-								'$welcomeMessage' => t('Enter your name to join this rendezvous. To begin sharing your location with the other
-																						members, tap the GPS control. When your location is discovered, a red dot will appear
-																						and others will be able to see you on the map.'),
+								'$welcomeMessage' => t('Enter your name to join this rendezvous. To begin sharing your location with the other members, tap the GPS control. When your location is discovered, a red dot will appear and others will be able to see you on the map.'),
 								'$myMarkerPlaceholder' => 'My marker',
 								'$myMarkerDescriptionPlaceholder' => t("Let's meet here"),
 								'$nameText' => t('Name'),
@@ -152,10 +148,7 @@ function rendezvous_content($a) {
 		if (local_channel()) {
 				$o .= replace_macros(get_markup_template('rendezvous.tpl', 'addon/rendezvous'), array(
 						'$addnewrendezvous' => t('Add new rendezvous'),
-						'$instructions' => t('Create a new rendezvous and share the access link with those you wish 
-																to invite to the group. Those who open the link become members of the 
-																rendezvous. They can view other member locations, add markers to the map,
-																or share their own locations with the group.')
+						'$instructions' => t('Create a new rendezvous and share the access link with those you wish to invite to the group. Those who open the link become members of the rendezvous. They can view other member locations, add markers to the map, or share their own locations with the group.')
 				));
 				return $o;
 		} else {
@@ -210,7 +203,7 @@ function rendezvous_post($a) {
 				if (isset($_POST['currentTime'])) {
 						$date1 = new DateTime($_POST['currentTime']);
 						$date2 = new DateTime();
-						$interval = $date1->diff($date2);				
+						$interval = $date1->diff($date2);
 						$timeOffset = round(floatval($interval->i));		// time offset in minutes
 				} else {
 						$timeOffset = 0;
@@ -310,7 +303,7 @@ function rendezvous_post($a) {
 				} else {
 						rendezvous_api_return(array(), false, $x['message']);
 				}
-				
+
 		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'delete' && argv(3) === 'marker') {
 				if (isset($_POST['id']) && isset($_POST['secret']) && isset($_POST['mid']) && isset($_POST['group'])) {
@@ -327,7 +320,7 @@ function rendezvous_post($a) {
 				} else {
 						rendezvous_api_return(array(), false, $x['message']);
 				}
-				
+
 		}
 		if (argc() === 4 && argv(1) === 'v1' && argv(2) === 'delete' && argv(3) === 'member') {
 				if (isset($_POST['id']) && isset($_POST['secret']) && isset($_POST['mid']) && isset($_POST['group'])) {
@@ -344,7 +337,7 @@ function rendezvous_post($a) {
 				} else {
 						rendezvous_api_return(array(), false, $x['message']);
 				}
-				
+
 		}
 }
 
@@ -381,7 +374,7 @@ function rendezvous_api_return($ret = array(), $success = true, $errmsg = '') {
 }
 
 function rendezvous_valid_group($group) {
-		$r = q("SELECT guid from rendezvous_groups where guid = '%s' and deleted = 0", 
+		$r = q("SELECT guid from rendezvous_groups where guid = '%s' and deleted = 0",
 						dbesc($group)
 		);
 		if ($r) {
@@ -397,7 +390,7 @@ function rendezvous_valid_member($mid, $group, $secret = '') {
 		} else {
 				$secretsql = '';
 		}
-		$r = q("SELECT name from rendezvous_members where mid = '%s' and rid = '%s' and deleted = 0 " . $secretsql . " LIMIT 1", 
+		$r = q("SELECT name from rendezvous_members where mid = '%s' and rid = '%s' and deleted = 0 " . $secretsql . " LIMIT 1",
 						dbesc($mid),
 						dbesc($group)
 		);
@@ -411,9 +404,9 @@ function rendezvous_valid_member($mid, $group, $secret = '') {
 function rendezvous_create_group($channel) {
 		if (!local_channel())
 				return array('success' => false, 'message' => 'Must be local authenticated channel');
-		
+
 		$guid = autoname(12);
-		$r = q("INSERT INTO rendezvous_groups ( uid, guid, created ) VALUES ( %d, '%s', '%s' ) ", 
+		$r = q("INSERT INTO rendezvous_groups ( uid, guid, created ) VALUES ( %d, '%s', '%s' ) ",
 						dbesc($channel['channel_id']),
 						dbesc($guid),
 						dbesc(datetime_convert('UTC', date_default_timezone_get()))
@@ -428,7 +421,7 @@ function rendezvous_create_group($channel) {
 function rendezvous_get_groups($channel) {
 		if (!local_channel())
 				return array('success' => false, 'message' => 'Must be local authenticated channel');
-		$r = q("SELECT guid from rendezvous_groups where uid = %d and deleted = 0", 
+		$r = q("SELECT guid from rendezvous_groups where uid = %d and deleted = 0",
 						dbesc($channel['channel_id'])
 						//dbesc(datetime_convert('UTC', date_default_timezone_get()))
 		);
@@ -450,12 +443,12 @@ function rendezvous_new_identity($rid, $name) {
 		}
 		$secret = random_string(12);
 		$mid = random_string(5);
-		$r = q("INSERT INTO rendezvous_members ( rid, mid, secret, name ) VALUES ( '%s', '%s', '%s', '%s' ) ", 
+		$r = q("INSERT INTO rendezvous_members ( rid, mid, secret, name ) VALUES ( '%s', '%s', '%s', '%s' ) ",
 						dbesc($rid),
 						dbesc($mid),
 						dbesc($secret),
 						dbesc($name)
-						
+
 		);
 		if ($r) {
 				return array('success' => true, 'message' => '', 'id' => $mid, 'secret' => $secret);
@@ -466,9 +459,9 @@ function rendezvous_new_identity($rid, $name) {
 
 function rendezvous_update_location($lat, $lng, $mid, $secret) {
 		//logger(date("Y-m-d H:i:s"), LOGGER_DEBUG);
-		$updateTime = date("Y-m-d H:i:s"); 
+		$updateTime = date("Y-m-d H:i:s");
 		//logger($updateTime, LOGGER_DEBUG);
-		$r = q("UPDATE rendezvous_members SET lat = %f, lng = %f, updated = '%s' where mid = '%s' and secret = '%s' and deleted = 0", 
+		$r = q("UPDATE rendezvous_members SET lat = %f, lng = %f, updated = '%s' where mid = '%s' and secret = '%s' and deleted = 0",
 						floatval($lat),
 						floatval($lng),
 						dbesc($updateTime),
@@ -480,11 +473,11 @@ function rendezvous_update_location($lat, $lng, $mid, $secret) {
 		} else {
 				return array('success' => false, 'message' => 'Error updating location');
 		}
-		
+
 }
 
 function rendezvous_get_members($group) {
-		$r = q("SELECT lat,lng,updated,mid,name from rendezvous_members where rid = '%s' and deleted = 0", 
+		$r = q("SELECT lat,lng,updated,mid,name from rendezvous_members where rid = '%s' and deleted = 0",
 						dbesc($group)
 		);
 		if ($r) {
@@ -498,13 +491,13 @@ function rendezvous_get_members($group) {
 
 function rendezvous_delete_group($group, $channel) {
 		//logger($group,LOGGER_DEBUG);
-		$g = q("UPDATE rendezvous_groups set deleted = 1 where guid = '%s' and uid = %d and deleted = 0", 
+		$g = q("UPDATE rendezvous_groups set deleted = 1 where guid = '%s' and uid = %d and deleted = 0",
 						dbesc($group),
 						dbesc($channel['channel_id'])
 		);
 		if($g){
-				
-				$m = q("UPDATE rendezvous_members set deleted = 1 where rid = '%s' and deleted = 0", 
+
+				$m = q("UPDATE rendezvous_members set deleted = 1 where rid = '%s' and deleted = 0",
 								dbesc($group),
 								dbesc($channel['channel_id'])
 				);
@@ -515,14 +508,14 @@ function rendezvous_delete_group($group, $channel) {
 				}
 		} else {
 				return array('success' => false, 'message' => 'Error deleting group and members');
-		}		
-		
+		}
+
 }
 
 function rendezvous_get_marker($id, $rid) {
-		$r = q("SELECT * from rendezvous_markers where id = %d and rid = '%s' and deleted = 0 LIMIT 1", 
+		$r = q("SELECT * from rendezvous_markers where id = %d and rid = '%s' and deleted = 0 LIMIT 1",
 						intval($id),
-						dbesc($rid)			
+						dbesc($rid)
 		);
 		if($r[0]) {
 				return $r[0];
@@ -538,7 +531,7 @@ function rendezvous_create_marker($name, $description, $rid, $mid, $secret, $cre
 		if(!$created || $created === '') {
 				$created = date("Y-m-d H:i:s", 'now');
 		}
-		$r = q("INSERT INTO rendezvous_markers ( rid, mid, description, name, created, lat, lng ) VALUES ( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ) ", 
+		$r = q("INSERT INTO rendezvous_markers ( rid, mid, description, name, created, lat, lng ) VALUES ( '%s', '%s', '%s', '%s', '%s', '%s', '%s' ) ",
 						dbesc($rid),
 						dbesc($mid),
 						dbesc($description),
@@ -546,7 +539,7 @@ function rendezvous_create_marker($name, $description, $rid, $mid, $secret, $cre
 						dbesc($created),
 						dbesc($lat),
 						dbesc($lng)
-						
+
 		);
 		if($r) {
 				return array('success' => true, 'message' => '', 'marker' => $r);
@@ -556,8 +549,8 @@ function rendezvous_create_marker($name, $description, $rid, $mid, $secret, $cre
 }
 
 function rendezvous_get_markers($group) {
-		$r = q("SELECT * from rendezvous_markers where rid = '%s' and deleted = 0", 
-						dbesc($group)			
+		$r = q("SELECT * from rendezvous_markers where rid = '%s' and deleted = 0",
+						dbesc($group)
 		);
 		if ($r) {
 				return array('success' => true, 'message' => '', 'markers' => $r);
@@ -572,7 +565,7 @@ function rendezvous_delete_marker($id, $group, $mid, $secret) {
 		if(!rendezvous_valid_member($mid, $group, $secret)) {
 				return array('success' => false, 'message' => 'Invalid group member');
 		}
-		$r = q("UPDATE rendezvous_markers set deleted = 1 where rid = '%s' and id = %d and deleted = 0", 
+		$r = q("UPDATE rendezvous_markers set deleted = 1 where rid = '%s' and id = %d and deleted = 0",
 						dbesc($group),
 						intval($id)
 		);
@@ -587,7 +580,7 @@ function rendezvous_edit_marker($id, $name, $description, $group, $mid, $secret)
 		if(!rendezvous_valid_member($mid, $group, $secret)) {
 				return array('success' => false, 'message' => 'Invalid group member');
 		}
-		$r = q("UPDATE rendezvous_markers set name = '%s', description = '%s' where rid = '%s' and id = %d and deleted = 0", 
+		$r = q("UPDATE rendezvous_markers set name = '%s', description = '%s' where rid = '%s' and id = %d and deleted = 0",
 						dbesc($name),
 						dbesc($description),
 						dbesc($group),
@@ -598,14 +591,14 @@ function rendezvous_edit_marker($id, $name, $description, $group, $mid, $secret)
 		} else {
 				return array('success' => false, 'message' => 'Error editing marker');
 		}
-		
+
 }
 
 function rendezvous_delete_member($id, $group, $mid, $secret) {
 		if(!rendezvous_valid_member($mid, $group, $secret)) {
 				return array('success' => false, 'message' => 'Invalid group member');
 		}
-		$r = q("UPDATE rendezvous_members set deleted = 1 where rid = '%s' and mid = '%s' and deleted = 0", 
+		$r = q("UPDATE rendezvous_members set deleted = 1 where rid = '%s' and mid = '%s' and deleted = 0",
 						dbesc($group),
 						dbesc($id)
 		);
