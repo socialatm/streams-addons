@@ -62,6 +62,7 @@ function statistics_json_init() {
 		"active_users_halfyear" => get_config('statistics_json','active_users_halfyear'),
 		"active_users_monthly" => get_config('statistics_json','active_users_monthly'),
 		"local_posts" => get_config('statistics_json','local_posts'),
+		"local_comments" => get_config('statistics_json','local_comments'),
 		"twitter" => (bool) get_config('statistics_json','twitter'),
 		"wordpress" => (bool) get_config('statistics_json','wordpress')
 	);
