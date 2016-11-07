@@ -111,9 +111,9 @@ function show_button($a, &$b) {
 		'<img class="smiley" src="' . z_root() . '/images/emoticons/smiley-cool.gif" alt="8-)" />',
 		'<img class="smiley" src="' . z_root() . '/images/emoticons/beer_mug.gif" alt=":beer" />',
 		'<img class="smiley" src="' . z_root() . '/images/emoticons/coffee.gif" alt=":coffee" />',
-		'<img class="smiley" src="' . z_root() . '/images/emoticons/smiley-facepalm.gif" alt=":facepalm" />'
+		'<img class="smiley" src="' . z_root() . '/images/emoticons/smiley-facepalm.gif" alt=":facepalm" />',
 		'<img class="smiley" src="' . z_root() . '/images/emoticons/like.gif" alt=":like" />',
-		'<img class="smiley" src="' . z_root() . '/images/emoticons/dislike.gif" alt=":dislike" />',
+		'<img class="smiley" src="' . z_root() . '/images/emoticons/dislike.gif" alt=":dislike" />'
 	);
 	
 	/**
