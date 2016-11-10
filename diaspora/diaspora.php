@@ -39,12 +39,14 @@ function diaspora_load() {
 	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 
 	if(! get_config('diaspora','relay_handle')) {
-		$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
-		if($x) {
-			set_config('diaspora','relay_handle',$x);
-			// Now register
-			$url = "https://the-federation.info/register/" . App::get_hostname();
-			$ret = z_fetch_url($url);
+		if(plugin_is_installed('statistics_json')) {
+			$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
+			if($x) {
+				set_config('diaspora','relay_handle',$x);
+				// Now register
+				$url = "https://the-federation.info/register/" . App::get_hostname();
+				$ret = z_fetch_url($url);
+			}
 		}
 	}
 
@@ -658,7 +660,9 @@ function diaspora_feature_settings_post(&$a,&$b) {
 			}
 		}
 		set_pconfig(local_channel(),'diaspora','followed_tags',$ntags);
-		diaspora_build_relay_tags();
+
+		if(plugin_is_installed('statistics_json'))
+			diaspora_build_relay_tags();
 		
 		info( t('Diaspora Protocol Settings updated.') . EOL);
 	}
@@ -689,10 +693,11 @@ function diaspora_feature_settings(&$a,&$s) {
 		'$field'	=> array('dspr_hijack', t('Prevent your hashtags from being redirected to other sites'), $hijacking, '', $yes_no),
 	));
 
-	$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
-		'$field'	=> array('dspr_followed', t('Followed hashtags (comma separated, do not include the #)'), $hashtags, '')
-	));
-
+	if(plugin_is_installed('statistics_json')) {
+		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
+			'$field'	=> array('dspr_followed', t('Followed hashtags (comma separated, do not include the #)'), $hashtags, '')
+		));
+	}
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
 		'$addon' 	=> array('diaspora', '<img src="addon/diaspora/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
