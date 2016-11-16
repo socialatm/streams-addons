@@ -142,7 +142,7 @@ function rendezvous_content($a) {
 						return $o;
 				} else {
 						notice('Invalid rendezvous');
-						goaway('/');
+						goaway(z_root());
 				}
 		}
 		if (local_channel()) {
@@ -153,7 +153,7 @@ function rendezvous_content($a) {
 				return $o;
 		} else {
 				notice('Permission denied');
-				goaway('/');
+				goaway(z_root());
 		}
 }
 
