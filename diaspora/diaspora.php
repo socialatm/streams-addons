@@ -8,7 +8,6 @@
  * Author: Mike Macgirvin
  * Maintainer: none
  * MinVersion: 1.15.1
- * Requires: statistics_json
  * ServerRoles: basic, standard
  */
 
@@ -38,18 +37,7 @@ function diaspora_load() {
 	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 
-	if(! get_config('diaspora','relay_handle')) {
-		if(plugin_is_installed('statistics_json')) {
-			$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
-			if($x) {
-				set_config('diaspora','relay_handle',$x);
-				// Now register
-				$url = "https://the-federation.info/register/" . App::get_hostname();
-				$ret = z_fetch_url($url);
-			}
-		}
-	}
-
+	diaspora_init_relay();
 }
 
 function diaspora_unload() {
@@ -65,6 +53,22 @@ function diaspora_unload() {
 	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 	unregister_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 }
+
+
+function diaspora_init_relay() {
+	if(! get_config('diaspora','relay_handle')) {
+		if(plugin_is_installed('statistics_json')) {
+			$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
+			if($x) {
+				set_config('diaspora','relay_handle',$x);
+				// Now register
+				$url = "https://the-federation.info/register/" . App::get_hostname();
+				$ret = z_fetch_url($url);
+			}
+		}
+	}
+}
+
 
 
 function diaspora_load_module(&$a, &$b) {
@@ -670,6 +674,9 @@ function diaspora_feature_settings_post(&$a,&$b) {
 
 
 function diaspora_feature_settings(&$a,&$s) {
+
+	diaspora_init_relay();
+
 	$dspr_allowed = get_pconfig(local_channel(),'system','diaspora_allowed');
 	$pubcomments = get_pconfig(local_channel(),'system','diaspora_public_comments');
 	if($pubcomments === false)
