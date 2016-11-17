@@ -3,7 +3,7 @@
 
 /**
  * Name: Diaspora Protocol
- * Description: Diaspora Protocol
+ * Description: Diaspora Protocol (install statistics_json first if you wish to use public tag relays)
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
