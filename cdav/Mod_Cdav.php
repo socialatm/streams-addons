@@ -64,8 +64,11 @@ class Cdav extends \Zotlabs\Web\Controller {
 			 *
 			 */
 
-			$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
-			$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$pdo = \DBA::$dba->db;
+
+
+//			$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
+//			$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
 
 			// Autoloader

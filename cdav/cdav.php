@@ -4,6 +4,7 @@
  * Name: CalDAV,CardDAV server
  * Description: CalDAV and CardDAV sync server (experimental, unsupported)
  * Version: 1.1
+ * MinVersion 1.15.2
  * Author: Mike Macgirvin <mike@macgirvin.com>
  * 
  */
