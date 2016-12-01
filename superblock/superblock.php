@@ -23,6 +23,7 @@ function superblock_load() {
 	register_hook('conversation_start', 'addon/superblock/superblock.php', 'superblock_conversation_start');
 	register_hook('item_photo_menu', 'addon/superblock/superblock.php', 'superblock_item_photo_menu');
 	register_hook('enotify_store', 'addon/superblock/superblock.php', 'superblock_enotify_store');
+	register_hook('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
 	register_hook('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
 	register_hook('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
 
@@ -36,6 +37,7 @@ function superblock_unload() {
 	unregister_hook('conversation_start', 'addon/superblock/superblock.php', 'superblock_conversation_start');
 	unregister_hook('item_photo_menu', 'addon/superblock/superblock.php', 'superblock_item_photo_menu');
 	unregister_hook('enotify_store', 'addon/superblock/superblock.php', 'superblock_enotify_store');
+	unregister_hook('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
 	unregister_hook('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
 	unregister_hook('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
 
@@ -49,11 +51,6 @@ function superblock_addon_settings(&$a,&$s) {
 
 	if(! local_channel())
 		return;
-
-	/* Add our stylesheet to the page so we can make our settings look nice */
-	//if(! array_key_exists('htmlhead',App::$page))
-		//App::$page['htmlhead'] = '';
-	//App::$page['htmlhead'] .= '<link rel="stylesheet"  type="text/css" href="' . z_root() . '/addon/superblock/superblock.css' . '" media="all" />' . "\r\n";
 
 	$words = get_pconfig(local_channel(),'system','blocked');
 	if(! $words)
@@ -86,6 +83,44 @@ function superblock_addon_settings_post(&$a,&$b) {
 
 
 }
+
+
+function superblock_item_store(&$a,&$b) {
+
+	if(! $b['item']['item_wall'])
+		return;
+
+	$words = get_pconfig($b['item']['uid'],'system','blocked');
+	if(! $words)
+		return;
+
+	$arr = explode(',',$words);
+
+	$found = false;
+	if(count($arr)) {
+		foreach($arr as $word) {
+			if(! strlen(trim($word))) {
+				continue;
+			}
+
+			if(strpos($b['item']['owner_xchan'],$word) !== false) {
+				$found = true;
+				break;
+			}
+			if(strpos($b['item']['author_xchan'],$word) !== false) {
+				$found = true;
+				break;
+			}
+		}
+	}
+	if($found) {
+		$b['item']['cancel'] = true;
+	}
+	return;
+}
+
+
+
 
 function superblock_enotify_store(&$a,&$b) {
 
