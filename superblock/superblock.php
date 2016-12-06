@@ -14,9 +14,6 @@
  * This function uses some helper code in include/conversation; which handles filtering item authors. 
  * Those function should ultimately be moved to this plugin.
  *
- * @TODO the settings menu presents a somewhat obtuse text list of xchan hashes. These should probably be 
- * expanded and put in a human readable list with names and photos so you can more easily remove people 
- * from jail.  
  */
 
 
