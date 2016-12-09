@@ -65,7 +65,7 @@ class Superblock {
 		if(! $this->list)
 			return false;
 		foreach($this->list as $l) {
-			if(trim($n) === $trim($l)) {
+			if(trim($n) === trim($l)) {
 				return true;
 			}
 		}
