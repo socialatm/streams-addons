@@ -27,6 +27,7 @@ function superblock_load() {
 	register_hook('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
 	register_hook('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
 	register_hook('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
+	register_hook('stream_item', 'addon/superblock/superblock.php', 'superblock_stream_item');
 
 }
 
@@ -41,6 +42,7 @@ function superblock_unload() {
 	unregister_hook('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
 	unregister_hook('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
 	unregister_hook('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
+	unregister_hook('stream_item', 'addon/superblock/superblock.php', 'superblock_stream_item');
 
 }
 
@@ -134,6 +136,36 @@ function superblock_addon_settings_post(&$a,&$b) {
 
 }
 
+function superblock_stream_item(&$a,&$b) {
+	if(! local_channel())
+		return;
+
+	$sb = new Superblock(local_channel());
+
+	$found = false;
+
+	if(is_array($b['item']) && (! $found)) {
+		if($sb->match($b['item']['author_xchan']))
+			$found = true;
+		elseif($sb->match($b['item']['owner_xchan']))
+			$found = true;
+	}
+
+	if($b['item']['children']) {
+		for($d = 0; $d < count($b['item']['children']); $d ++) {
+			if($sb->match($b['item']['children'][$d]['owner_xchan']))
+				$b['item']['children'][$d]['blocked'] = true;
+			elseif($sb->match($b['item']['children'][$d]['author_xchan']))
+				$b['item']['children'][$d]['blocked'] = true;
+		}
+	}
+
+	if($found) {
+		$b['blocked'] = true;
+	}
+
+}
+
 
 function superblock_item_store(&$a,&$b) {
 
@@ -176,7 +208,7 @@ function superblock_enotify_store(&$a,&$b) {
 	if(is_array($b['parent_item']) && (! $found)) {
 		if($sb->match($b['parent_item']['owner_xchan']))
 			$found = true;
-		elseif($sb->match($b['parent_item']['owner_xchan']))
+		elseif($sb->match($b['parent_item']['author_xchan']))
 			$found = true;
 	}
 
