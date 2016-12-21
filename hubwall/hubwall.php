@@ -30,10 +30,9 @@ function hubwall_post(&$a) {
 	if(! $text)
 		return;
 
-	$sender_name = t('Hub Administrator');
-	$sender_email = 'sys@' . App::get_hostname();
-
-	$subject = $_REQUEST['subject'];
+	$sender_name  = sprintf( t('$1%s Administrator'), \Zotlabs\Lib\System::get_site_name());
+	$sender_email = $_REQUEST['sender'];
+	$subject      = $_REQUEST['subject'];
 
 
 	$textversion = strip_tags(html_entity_decode(bbcode(stripslashes(str_replace(array("\\r", "\\n"),array( "", "\n"), $text))),ENT_QUOTES,'UTF-8'));
@@ -52,10 +51,13 @@ function hubwall_post(&$a) {
 		return;
 	}
 
+	$total_recips = count($recips);
+	$total_delivered = 0;
+
 	foreach($recips as $recip) {
 
 
-		\Zotlabs\Lib\Enotify::send(array(
+		$x = \Zotlabs\Lib\Enotify::send(array(
 			'fromName'             => $sender_name,
 			'fromEmail'            => $sender_email,
 			'replyTo'              => $sender_email,
@@ -64,7 +66,11 @@ function hubwall_post(&$a) {
 			'htmlVersion'          => $htmlversion,
 			'textVersion'          => $textversion
 		));
+		if($x)
+			$total_delivered ++;
 	}
+
+	info( sprintf( t('%1$d of %2$d messages sent.'), $total_delivered, $total_recips) . EOL );
 
 }
 
@@ -74,11 +80,18 @@ function hubwall_content(&$a) {
 
 	$title = t('Send email to all hub members.');
 
+	$senders = [ 
+		'noreply@' . \App::get_hostname() => 'noreply@' . \App::get_hostname() ,
+		'postmaster@' . \App::get_hostname() => 'postmaster@' . \App::get_hostname() ,
+		get_config('system','admin_email') => get_config('system','admin_email'),
+	];
+
 	$o = replace_macros(get_markup_template('hubwall_form.tpl','addon/hubwall/'),array(
 		'$title' => $title,
 		'$text' => htmlspecialchars($_REQUEST['text']),
 		'$subject' => array('subject',t('Message subject'),$_REQUEST['subject'],''),
-		'$test' => array('test',t('Test mode (only send to hub administrator)'), 0,''),
+		'$sender' => array('sender',t('Sender Email address'), (($_REQUEST['sender']) ? $_REQUEST['sender'] : 'noreply@' . \App::get_hostname()), '' , $senders),
+		'$test' => array('test',t('Test mode (only send to hub administrator)'), ((array_key_exists('test',$_REQUEST)) ? intval($_REQUEST['test']) : 0),''),
 		'$submit' => t('Submit')
 	));
 

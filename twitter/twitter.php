@@ -802,18 +802,18 @@ function twitter_expand_entities($a, $body, $item, $no_tags = false, $dontinclud
 					$expanded_url = $url->url;
 
 				if ($type == "")
-					$type = $oembed_data->type;
+					$type = $oembed_data['type'];
 
-				if ($oembed_data->type == "video") {
+				if ($oembed_data['type'] == "video") {
 					$body = str_replace($url->url,
 							"[video]".$expanded_url."[/video]", $body);
 					$dontincludemedia = true;
-				} elseif (($oembed_data->type == "photo") AND isset($oembed_data->url) AND !$dontincludemedia) {
+				} elseif (($oembed_data['type'] == "photo") AND isset($oembed_data['url']) AND !$dontincludemedia) {
 					$body = str_replace($url->url,
-							"[url=".$expanded_url."][img]".$oembed_data->url."[/img][/url]",
+							"[url=".$expanded_url."][img]".$oembed_data['url']."[/img][/url]",
 							$body);
 					$dontincludemedia = true;
-				} elseif ($oembed_data->type != "link")
+				} elseif ($oembed_data['type'] != "link")
 					$body = str_replace($url->url,
 							"[url=".$expanded_url."]".$expanded_url."[/url]",
 							$body);

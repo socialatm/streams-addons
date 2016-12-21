@@ -24,6 +24,8 @@ function diaspora_dispatch_public($msg) {
 		
 	// @FIXME we should also enumerate channels that allow postings by anybody
 
+	$msg['public'] = 1;
+
 	if($r) {
 		foreach($r as $rr) {
 			logger('diaspora_public: delivering to: ' . $rr['channel_name'] . ' (' . $rr['channel_address'] . ') ');
@@ -38,6 +40,7 @@ function diaspora_dispatch_public($msg) {
 	if($sys) {
 		$sys['system'] = true;
 		logger('diaspora_public: delivering to sys.');
+		
 		diaspora_dispatch($sys,$msg);
 	}
 }
@@ -50,6 +53,9 @@ function diaspora_dispatch($importer,$msg) {
 
 	if(! array_key_exists('system',$importer))
 		$importer['system'] = false;
+
+	if(! array_key_exists('public',$msg))
+		$msg['public'] = 0;
 
 	$host = substr($msg['author'],strpos($msg['author'],'@')+1);
 	$ssl = ((array_key_exists('HTTPS',$_SERVER) && strtolower($_SERVER['HTTPS']) === 'on') ? true : false);
@@ -591,10 +597,6 @@ function diaspora_post($importer,$xml,$msg) {
 		}
 	}
 
-	if((! $found_tags) && (! $contact)) {
-		logger('Author is not a connection and no followed tags.');
-		return;
-	}
 
 	$cnt = preg_match_all('/@\[url=(.*?)\](.*?)\[\/url\]/ism',$body,$matches,PREG_SET_ORDER);
 	if($cnt) {
@@ -654,7 +656,7 @@ function diaspora_post($importer,$xml,$msg) {
 		return 202;
 	}
 
-	if($importer['system']) {
+	if($importer['system'] || $msg['public']) {
 		$datarray['comment_policy'] = 'network: diaspora';
 	}
 
@@ -925,7 +927,7 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$xchan = find_diaspora_person_by_handle($diaspora_handle);
 
-	if((! $xchan) || (! strstr($xchan['xchan_network'],'diaspora'))) {
+	if(! $xchan) {
 		logger('Cannot resolve diaspora handle ' . $diaspora_handle);
 		return;
 	}
@@ -956,6 +958,12 @@ function diaspora_comment($importer,$xml,$msg) {
 	}
 
 	$parent_item = $r[0];
+
+	if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
+		|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+		logger('diaspora_comment: comments disabled for post ' . $parent_item['mid']);
+		return;
+	}
 
 	if(intval($parent_item['item_private']))
 		$pubcomment = 0;	
@@ -1143,10 +1151,12 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	if(strstr($person['xchan_network'],'friendica'))
 		$app = 'Friendica';
-	else
+	elseif($person['xchan_network'] == 'diaspora')
 		$app = 'Diaspora';
+	else
+		$app = '';
 
-	$datarray['app']  = $app;
+	$datarray['app'] = $app;
 	
 	if(! $parent_author_signature) {
 		$key = get_config('system','pubkey');
@@ -1162,7 +1172,18 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	$tgroup = tgroup_check($importer['channel_id'],$datarray);
 
-	if((! $importer['system']) && (! $pubcomment) && (! perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments')) && (! $tgroup)) {
+
+	// If it's a comment to one of our own posts, check if the commenter has permission to comment.
+	// We should probably check send_stream permission if the stream owner isn't us,
+	// but we did import the parent post so at least at that time we did allow it and
+	// the check would nearly always be superfluous and redundant.
+
+	if($parent_item['owner_xchan'] == $importer['channel_hash']) 
+		$allowed = perm_is_allowed($importer['channel_id'],$xchan['xchan_hash'],'post_comments');
+	else
+		$allowed = true;
+
+	if((! $importer['system']) && (! $pubcomment) && (! $allowed) && (! $tgroup)) {
 		logger('diaspora_comment: Ignoring this author.');
 		return 202;
 	}
@@ -1623,7 +1644,14 @@ function diaspora_like($importer,$xml,$msg) {
 		return;
 	}
 
+	xchan_query($r);
 	$parent_item = $r[0];
+
+	if(intval($parent_item['item_nocomment']) || $parent_item['comment_policy'] === 'none' 
+		|| ($parent_item['comments_closed'] > NULL_DATE && $parent_item['comments_closed'] < datetime_convert())) {
+		logger('diaspora_like: comments disabled for post ' . $parent_item['mid']);
+		return;
+	}
 
 	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
 		intval($importer['channel_id']),
@@ -1795,8 +1823,8 @@ function diaspora_like($importer,$xml,$msg) {
 	$arr['owner_xchan'] = $parent_item['owner_xchan'];
 	$arr['author_xchan'] = $person['xchan_hash'];
 
-	$ulink = '[url=' . $contact['url'] . ']' . $contact['name'] . '[/url]';
-	$alink = '[url=' . $parent_item['author-link'] . ']' . $parent_item['author-name'] . '[/url]';
+	$ulink = '[url=' . $item_author['xchan_url'] . ']' . $item_author['xchan_name'] . '[/url]';
+	$alink = '[url=' . $parent_item['author']['xchan_url'] . ']' . $parent_item['author']['xchan_name'] . '[/url]';
 	$plink = '[url='. z_root() .'/display/'.$guid.']'.$post_type.'[/url]';
 	$arr['body'] =  sprintf( $bodyverb, $ulink, $alink, $plink );
 
