@@ -122,7 +122,7 @@ else {
 }
 function dirstats_cron(&$a, $b) {
     // Some hublocs are immortal and won't ever die - they all have null date for hubloc_connected and hubloc_updated
-	$r = q("SELECT count(distinct hubloc_host) as total FROM `hubloc` where not (hubloc_flags & %d) > 0 and not (hubloc_connected <= '%s' and hubloc_updated <= '%s')",
+	$r = q("SELECT count(distinct hubloc_host) as total FROM hubloc where not (hubloc_flags & %d) > 0 and not (hubloc_connected <= '%s' and hubloc_updated <= '%s')",
         intval(HUBLOC_FLAGS_DELETED),
         dbesc(NULL_DATE),
         dbesc(NULL_DATE)
@@ -132,7 +132,7 @@ function dirstats_cron(&$a, $b) {
 		set_config('dirstats','hubcount',$hubcount);
 		}
 
-		$r = q("SELECT count(distinct hubloc_host) as total FROM `hubloc` where hubloc_network = 'zot' and not (hubloc_flags & %d) > 0 and not (hubloc_connected <= '%s' and hubloc_updated <= '%s')",
+		$r = q("SELECT count(distinct hubloc_host) as total FROM hubloc where hubloc_network = 'zot' and not (hubloc_flags & %d) > 0 and not (hubloc_connected <= '%s' and hubloc_updated <= '%s')",
             intval(HUBLOC_FLAGS_DELETED),
             dbesc(NULL_DATE),
             dbesc(NULL_DATE)
@@ -142,39 +142,39 @@ function dirstats_cron(&$a, $b) {
 			$zotcount = $r[0]['total'];
 			set_config('dirstats','zotcount',$zotcount);
 			}
-		$r = q("SELECT count(distinct hubloc_host) as total FROM `hubloc` where hubloc_network = 'friendica-over-diaspora'");
+		$r = q("SELECT count(distinct hubloc_host) as total FROM hubloc where hubloc_network = 'friendica-over-diaspora'");
 		if ($r){
 			$friendicacount = $r[0]['total'];
 			set_config('dirstats','friendicacount',$friendicacount);
 		}
-		$r = q("SELECT count(distinct hubloc_host) as total FROM `hubloc` where hubloc_network = 'diaspora'");
+		$r = q("SELECT count(distinct hubloc_host) as total FROM hubloc where hubloc_network = 'diaspora'");
 		if ($r) {
 			$diasporacount = $r[0]['total'];
 			set_config('dirstats','diasporacount',$diasporacount);
 		}
-		$r = q("SELECT count(distinct xchan_hash) as total FROM `xchan` where xchan_network = 'zot' and not (xchan_flags & %d) > 0",
+		$r = q("SELECT count(distinct xchan_hash) as total FROM xchan where xchan_network = 'zot' and not (xchan_flags & %d) > 0",
             intval(XCHAN_FLAGS_DELETED)
         );
 		if ($r) {
 			$channelcount = $r[0]['total'];
 			set_config('dirstats','channelcount',$channelcount);
 		}
-		$r = q("SELECT count(distinct xchan_hash) as total FROM `xchan` where xchan_network = 'friendica-over-diaspora'");
+		$r = q("SELECT count(distinct xchan_hash) as total FROM xchan where xchan_network = 'friendica-over-diaspora'");
 		if ($r) {
 			$friendicachannelcount = $r[0]['total'];
 			set_config('dirstats','friendicachannelcount',$friendicachannelcount);
 		}
-		$r = q("SELECT count(distinct xchan_hash) as total FROM `xchan` where xchan_network = 'diaspora'");
+		$r = q("SELECT count(distinct xchan_hash) as total FROM xchan where xchan_network = 'diaspora'");
 		if ($r) {
 			$diasporachannelcount = $r[0]['total'];
 			set_config('dirstats','diasporachannelcount',$diasporachannelcount);
 		}
-		$r = q("select count(xprof_hash) as total from `xprof` where xprof_age >=35");
+		$r = q("select count(xprof_hash) as total from xprof where xprof_age >=35");
 		if ($r) {
 			$over35s = $r[0]['total'];
 			set_config('dirstats','over35s',$over35s);
 		}
-		$r = q("select count(xprof_hash) as total from `xprof` where xprof_age <=34 and xprof_age >=1");
+		$r = q("select count(xprof_hash) as total from xprof where xprof_age <=34 and xprof_age >=1");
 		if ($r) {
 			$under35s = $r[0]['total'];
 			set_config('dirstats','under35s',$under35s);
@@ -182,7 +182,7 @@ function dirstats_cron(&$a, $b) {
 
 		$r = q("select sum(xprof_age) as sum from xprof");
 			if ($r) {
-				$rr = q("select count(xprof_hash) as total from `xprof` where xprof_age >=1");
+				$rr = q("select count(xprof_hash) as total from xprof where xprof_age >=1");
 				$total = $r[0]['sum'];
 				$number = $rr[0]['total'];
 				if($number)
@@ -192,7 +192,7 @@ function dirstats_cron(&$a, $b) {
 				set_config('dirstats','averageage',$average);
 		}
 
-		$r = q("select count(distinct xchat_url) as total from `xchat`");
+		$r = q("select count(distinct xchat_url) as total from xchat");
 		if ($r) {
 			$chatrooms = $r[0]['total'];
 			set_config('dirstats','chatrooms',$chatrooms);

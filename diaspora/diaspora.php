@@ -3,10 +3,11 @@
 
 /**
  * Name: Diaspora Protocol
- * Description: Diaspora Protocol
+ * Description: Diaspora Protocol (install statistics_json first if you wish to use public tag relays)
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
+ * MinVersion: 1.15.1
  * ServerRoles: basic, standard
  */
 
@@ -36,16 +37,7 @@ function diaspora_load() {
 	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 
-	if(! get_config('diaspora','relay_handle')) {
-		$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
-		if($x) {
-			set_config('diaspora','relay_handle',$x);
-			// Now register
-			$url = "http://the-federation.info/register/" . App::get_hostname();
-			$ret = z_fetch_url($url);
-		}
-	}
-
+	diaspora_init_relay();
 }
 
 function diaspora_unload() {
@@ -61,6 +53,22 @@ function diaspora_unload() {
 	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 	unregister_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
 }
+
+
+function diaspora_init_relay() {
+	if(! get_config('diaspora','relay_handle')) {
+		if(plugin_is_installed('statistics_json')) {
+			$x = import_author_diaspora(array('address' => 'relay@relay.iliketoast.net'));
+			if($x) {
+				set_config('diaspora','relay_handle',$x);
+				// Now register
+				$url = "https://the-federation.info/register/" . App::get_hostname();
+				$ret = z_fetch_url($url);
+			}
+		}
+	}
+}
+
 
 
 function diaspora_load_module(&$a, &$b) {
@@ -92,10 +100,9 @@ function diaspora_well_known(&$a,&$b) {
 
 		$arr = array(
 			'subscribe' => (($disabled) ? false : true),
-			'scope' => $scope
+			'scope' => $scope,
+			'tags' => (($tags) ? $tags : [])
 		);
-		if($tags)
-			$arr['tags'] = $tags;
 
 		header('Content-type: application/json');
 		echo json_encode($arr);
@@ -140,8 +147,7 @@ function diaspora_notifier_process(&$a,&$arr) {
 
 	if(! array_key_exists('item_wall',$arr['target_item']))
 		return;
-
-	if(($arr['normal_mode']) && (! $arr['env_recips']) && (! $arr['private']) && (! $arr['relay_to_owner'])) {
+	if(($arr['normal_mode']) && (! $arr['env_recips']) && (! $arr['private']) && (! $arr['upstream'])) {
 		$relay = get_config('diaspora','relay_handle');
 		if($relay) {
 			$arr['recipients'][] = "'" . $relay . "'";
@@ -158,6 +164,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 			$arr = array(
 				'channel' => $channel,
+				'upstream' => $upstream,
 				'env_recips' => $env_recips,
 				'packet_recips' => $packet_recips,
 				'recipients' => $recipients,
@@ -245,18 +252,16 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 		foreach($r as $contact) {
 
-			if(! deliverable_singleton($arr['channel']['channel_id'],$contact)) {
-				logger('not deliverable from this hub');
-				continue;
-			}
+			// is $contact connected with this channel - and if the channel is cloned, also on this hub? 
+			$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
 	
-			if($arr['packet_type'] == 'refresh') {
+			if($arr['packet_type'] == 'refresh' && $single) {
 				$qi = diaspora_profile_change($arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				return;
 			}
-			if($arr['mail']) {
+			if($arr['mail'] && $single) {
 				$qi = diaspora_send_mail($arr['item'],$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
@@ -266,10 +271,10 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $arr['normal_mode'])
 				continue;
 
-			// special handling for send_upstream to public post
+			// special handling for send_upstream to public post, not checked for $single
 			// all other public posts processed as public batches further below
 
-			if((! $arr['private']) && ($arr['relay_to_owner'])) {
+			if((! $arr['private']) && ($arr['upstream'])) {
 				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact, true);
 				if($qi)
 					$arr['queued'][] = $qi;
@@ -279,16 +284,16 @@ function diaspora_process_outbound(&$a, &$arr) {
 			if(! $contact['xchan_pubkey'])
 				continue;
 
+			// singletons will be sent upstream regardless of $single state. They may be rejected.
 
-			if(intval($target_item['item_deleted']) 
-				&& (($target_item['mid'] === $target_item['parent_mid']) || $arr['relay_to_owner'])) {
-				// send both top-level retractions and relayable retractions for owner to relay
+			if(intval($target_item['item_deleted']) && ($arr['top_level_post'] || $arr['upstream'])) { 
 				$qi = diaspora_send_retraction($target_item,$arr['channel'],$contact);
 				if($qi)
 					$arr['queued'][] = $qi;
 				continue;
 			}
-			elseif($arr['relay_to_owner'] || $arr['uplink']) {
+
+			if($arr['upstream']) {
 				// send comments and likes to owner to relay
 				$qi = diaspora_send_upstream($target_item,$arr['channel'],$contact,false,(($arr['uplink'] && !$arr['relay_to_owner']) ? true : false));
 				if($qi)
@@ -296,20 +301,27 @@ function diaspora_process_outbound(&$a, &$arr) {
 				continue;
 			}
 
-			elseif($target_item['mid'] !== $target_item['parent_mid']) {
-				// we are the relay - send comments, likes and relayable_retractions
-				// (of comments and likes) to our conversants
-				$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact);
-				if($qi)
-					$arr['queued'][] = $qi;
+			// downstream (private) posts
+
+			if(! $single) {
+				logger('Singleton private delivery ignored on this site. Will attempt from connected site.');
 				continue;
 			}
-			elseif($arr['top_level_post']) {
+				
+			if($arr['top_level_post']) {
 				$qi = diaspora_send_status($target_item,$arr['channel'],$contact);
 				if($qi) {
 					foreach($qi as $q)
 						$arr['queued'][] = $q;
 				}
+				continue;
+			}
+			else {
+				// we are the relay - send comments, likes and relayable_retractions
+				// (of comments and likes) to our conversants
+				$qi = diaspora_send_downstream($target_item,$arr['channel'],$contact);
+				if($qi)
+					$arr['queued'][] = $qi;
 				continue;
 			}
 		}
@@ -508,7 +520,7 @@ function diaspora_discover(&$a,&$b) {
 			 */  			
 
 			if($r) {
-				$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s' limit 1",
+				$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
 					dbesc($vcard['fn']),
 					dbesc($network),
 					dbesc(datetime_convert()),
@@ -652,7 +664,9 @@ function diaspora_feature_settings_post(&$a,&$b) {
 			}
 		}
 		set_pconfig(local_channel(),'diaspora','followed_tags',$ntags);
-		diaspora_build_relay_tags();
+
+		if(plugin_is_installed('statistics_json'))
+			diaspora_build_relay_tags();
 		
 		info( t('Diaspora Protocol Settings updated.') . EOL);
 	}
@@ -660,6 +674,9 @@ function diaspora_feature_settings_post(&$a,&$b) {
 
 
 function diaspora_feature_settings(&$a,&$s) {
+
+	diaspora_init_relay();
+
 	$dspr_allowed = get_pconfig(local_channel(),'system','diaspora_allowed');
 	$pubcomments = get_pconfig(local_channel(),'system','diaspora_public_comments');
 	if($pubcomments === false)
@@ -683,10 +700,11 @@ function diaspora_feature_settings(&$a,&$s) {
 		'$field'	=> array('dspr_hijack', t('Prevent your hashtags from being redirected to other sites'), $hijacking, '', $yes_no),
 	));
 
-	$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
-		'$field'	=> array('dspr_followed', t('Followed hashtags (comma separated, do not include the #)'), $hashtags, '')
-	));
-
+	if(plugin_is_installed('statistics_json')) {
+		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
+			'$field'	=> array('dspr_followed', t('Followed hashtags (comma separated, do not include the #)'), $hashtags, '')
+		));
+	}
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
 		'$addon' 	=> array('diaspora', '<img src="addon/diaspora/diaspora.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('Diaspora Protocol Settings'), '', t('Submit')),
@@ -827,7 +845,7 @@ function diaspora_post_local(&$a,&$item) {
 
 function diaspora_create_identity($a,$b) {
 
-	if(get_config('system','server_role') === 'basic') {
+	if(get_config('system','server_role') === 'basic' || get_config('system','diaspora_allowed')) {
 		set_pconfig($b,'system','diaspora_allowed','1');
 	}
 

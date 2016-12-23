@@ -4,6 +4,7 @@
  * Name: CalDAV,CardDAV server
  * Description: CalDAV and CardDAV sync server (experimental, unsupported)
  * Version: 1.1
+ * MinVersion 1.15.2
  * Author: Mike Macgirvin <mike@macgirvin.com>
  * 
  */
@@ -159,6 +160,9 @@ function cdav_well_known(&$x) {
 
 function cdav_feature_settings_post(&$b) {
 
+	if(! local_channel())
+		return;
+
  	if($_POST['cdav-submit']) {
 
 		$channel = \App::get_channel();
@@ -213,6 +217,9 @@ function cdav_feature_settings_post(&$b) {
 }
 
 function cdav_feature_settings(&$b) {
+	
+	if(! local_channel())
+		return;
 
 	$channel = App::get_channel();
 	$enabled = get_pconfig(local_channel(),'cdav','enabled');
