@@ -5,13 +5,8 @@ namespace Zotlabs\Module;
 class Cdav extends \Zotlabs\Web\Controller {
 
 	function init() {
-	
-		if((argv(1) !== 'calendar') && (argv(1) !== 'addressbook')) {
 
-			if(\DBA::$dba && \DBA::$dba->connected)
-				$pdovars = \DBA::$dba->pdo_get();
-			else
-				killme();
+		if((argv(1) !== 'calendar') && (argv(1) !== 'addressbook')) {
 
 			// workaround for HTTP-auth in CGI mode
 			if (x($_SERVER, 'REDIRECT_REMOTE_USER')) {
@@ -64,8 +59,10 @@ class Cdav extends \Zotlabs\Web\Controller {
 			 *
 			 */
 
-			$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
-			$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$pdo = \DBA::$dba->db;
+
+//			$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
+//			$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
 
 			// Autoloader
@@ -162,6 +159,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(!cdav_principal($principalUri))
 			return;
 
+		$pdo = \DBA::$dba->db;
+
+/*
 		if(\DBA::$dba && \DBA::$dba->connected)
 			$pdovars = \DBA::$dba->pdo_get();
 		else
@@ -169,6 +169,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
 		$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+*/
 
 		require_once 'vendor/autoload.php';
 
@@ -775,6 +776,9 @@ class Cdav extends \Zotlabs\Web\Controller {
 		if(!cdav_principal($principalUri))
 			return;
 
+		$pdo = \DBA::$dba->db;
+
+/*
 		if(\DBA::$dba && \DBA::$dba->connected)
 			$pdovars = \DBA::$dba->pdo_get();
 		else
@@ -782,7 +786,7 @@ class Cdav extends \Zotlabs\Web\Controller {
 
 		$pdo = new \PDO($pdovars[0],$pdovars[1],$pdovars[2]);
 		$pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-
+*/
 		require_once 'vendor/autoload.php';
 
 		head_add_css('addon/cdav/view/css/cdav.css');

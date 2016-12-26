@@ -2,10 +2,10 @@
 
 function diaspora_dispatch_public($msg) {
 
-	$sys_disabled = true;
+	$sys_disabled = false;
 
-	if(! get_config('system','disable_discover_tab')) {
-		$sys_disabled = get_config('system','disable_diaspora_discover_tab');
+	if(get_config('system','disable_discover_tab') || get_config('system','disable_diaspora_discover_tab')) {
+		$sys_disabled = true;
 	}
 	$sys = (($sys_disabled) ? null : get_sys_channel());
 
@@ -21,7 +21,7 @@ function diaspora_dispatch_public($msg) {
 
 	if(is_array($y) && is_array($r))
 		$r = array_merge($r,$y);
-		
+
 	// @FIXME we should also enumerate channels that allow postings by anybody
 
 	$msg['public'] = 1;
@@ -67,7 +67,7 @@ function diaspora_dispatch($importer,$msg) {
 		dbesc($url)
 	);
 
-	$allowed = get_pconfig($importer['channel_id'],'system','diaspora_allowed');
+	$allowed = (($importer['system']) ? 1 : get_pconfig($importer['channel_id'],'system','diaspora_allowed'));
 
 	if(! intval($allowed)) {
 		logger('mod-diaspora: disallowed for channel ' . $importer['channel_name']);
@@ -550,7 +550,7 @@ function diaspora_post($importer,$xml,$msg) {
 	$created = unxmlify($xml['created_at']);
 	$private = ((unxmlify($xml['public']) == 'false') ? 1 : 0);
 
-	$body = diaspora2bb(diaspora_get_body($xml));
+	$body = markdown_to_bb(diaspora_get_body($xml));
 
 	if($xml['photo']) {
 		$body = '[img]' . $xml['photo']['remote_photo_path'] . $xml['photo']['remote_photo_name'] . '[/img]' . "\n\n" . $body;
@@ -763,7 +763,7 @@ function diaspora_reshare($importer,$xml,$msg) {
 	$source_xml = get_diaspora_reshare_xml($source_url);
 
 	if($source_xml['status_message']) {
-		$body = diaspora2bb(diaspora_get_body($source_xml['status_message']));
+		$body = markdown_to_bb(diaspora_get_body($source_xml['status_message']));
 
 		
 		$orig_author = diaspora_get_author($source_xml['status_message']);
@@ -943,6 +943,10 @@ function diaspora_comment($importer,$xml,$msg) {
 	if($pubcomment === false)
 		$pubcomment = 1;
 
+	if(($pubcomment) && (! $contact))
+		$contact = find_diaspora_person_by_handle($msg['author']);
+
+
 	// Friendica is currently truncating guids at 64 chars
 	$search_guid = $parent_guid;
 	if(strlen($parent_guid) == 64)
@@ -1062,17 +1066,15 @@ function diaspora_comment($importer,$xml,$msg) {
 
 	if(strcasecmp($diaspora_handle,$msg['author']) == 0)
 		$person = $contact;
-	else {
+	else
 		$person = $xchan;
 
-		if(! is_array($person)) {
-			logger('diaspora_comment: unable to find author details');
-			return;
-		}
+	if(! is_array($person)) {
+		logger('diaspora_comment: unable to find author details');
+		return;
 	}
 
-
-	$body = diaspora2bb($text);
+	$body = markdown_to_bb($text);
 
 	$maxlen = get_max_import_size();
 
@@ -1305,7 +1307,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			continue;
 		}
 
-		$body = diaspora2bb($msg_text);
+		$body = markdown_to_bb($msg_text);
 
 
 		$maxlen = get_max_import_size();
@@ -1368,7 +1370,9 @@ function diaspora_conversation($importer,$xml,$msg) {
 		if($body)
 			$body  = str_rot47(base64url_encode($body));
 
-		q("insert into mail ( `account_id`, `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
+		$sig = ''; // placeholder
+
+		q("insert into mail ( account_id, channel_id, convid, conv_guid, from_xchan,to_xchan,title,body, sig, mail_obscured,mid,parent_mid,created) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
 			intval($importer['channel_account_id']),
 			intval($importer['channel_id']),
 			intval($conversation['id']),
@@ -1377,6 +1381,7 @@ function diaspora_conversation($importer,$xml,$msg) {
 			dbesc($importer['channel_hash']),
 			dbesc($subject),
 			dbesc($body),
+			dbesc($sig),
 			intval(1),
 			dbesc($msg_guid),
 			dbesc($stored_parent_mid),
@@ -1448,7 +1453,7 @@ function diaspora_message($importer,$xml,$msg) {
 	$reply = 0;
 
 	$subject = $conversation['subject']; //this is already encoded
-	$body = diaspora2bb($msg_text);
+	$body = markdown_to_bb($msg_text);
 
 
 	$maxlen = get_max_import_size();
@@ -1504,7 +1509,9 @@ function diaspora_message($importer,$xml,$msg) {
 	if($body)
 		$body  = str_rot47(base64url_encode($body));
 
-	q("insert into mail ( `account_id`, `channel_id`, `convid`, `conv_guid`, `from_xchan`,`to_xchan`,`title`,`body`,`mail_obscured`,`mid`,`parent_mid`,`created`, mail_isreply) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', %d)",
+	$sig = '';
+
+	q("insert into mail ( account_id, channel_id, convid, conv_guid, from_xchan,to_xchan,title,body, sig, mail_obscured,mid,parent_mid,created, mail_isreply) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', %d)",
 		intval($importer['channel_account_id']),
 		intval($importer['channel_id']),
 		intval($conversation['id']),
@@ -1513,6 +1520,7 @@ function diaspora_message($importer,$xml,$msg) {
 		dbesc($importer['xchan_hash']),
 		dbesc($subject),
 		dbesc($body),
+		dbesc($sig),
 		intval(1),
 		dbesc($msg_guid),
 		dbesc($parent_ptr),
@@ -1576,7 +1584,7 @@ function diaspora_photo($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
+	$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
 		intval($importer['channel_id']),
 		dbesc($status_message_guid)
 	);
@@ -1593,7 +1601,7 @@ function diaspora_photo($importer,$xml,$msg) {
 //									   array($remote_photo_name, 'scaled_full_' . $remote_photo_name));
 
 //	if(strpos($parent_item['body'],$link_text) === false) {
-//		$r = q("update item set `body` = '%s', `visible` = 1 where `id` = %d and `uid` = %d",
+//		$r = q("update item set body = '%s', visible = 1 where id = %d and uid = %d",
 //			dbesc($link_text . $parent_item['body']),
 //			intval($parent_item['id']),
 //			intval($parent_item['uid'])
@@ -1635,7 +1643,7 @@ function diaspora_like($importer,$xml,$msg) {
 		return 202;
 	}
 
-	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
+	$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
 		intval($importer['channel_id']),
 		dbesc($parent_guid)
 	);
@@ -1653,7 +1661,7 @@ function diaspora_like($importer,$xml,$msg) {
 		return;
 	}
 
-	$r = q("SELECT * FROM `item` WHERE `uid` = %d AND `mid` = '%s' LIMIT 1",
+	$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
 		intval($importer['channel_id']),
 		dbesc($guid)
 	);
@@ -1795,17 +1803,17 @@ function diaspora_like($importer,$xml,$msg) {
 		'type'    => $post_type,
 		'id'	  => $parent_item['mid'],
 		'parent'  => (($parent_item['thr_parent']) ? $parent_item['thr_parent'] : $parent_item['parent_mid']),
-		'link'	=> $links,
+		'link'	  => $links,
 		'title'   => $parent_item['title'],
 		'content' => $parent_item['body'],
 		'created' => $parent_item['created'],
 		'edited'  => $parent_item['edited'],
 		'author'  => array(
-			'name'	 => $item_author['xchan_name'],
+			'name'     => $item_author['xchan_name'],
 			'address'  => $item_author['xchan_addr'],
-			'guid'	 => $item_author['xchan_guid'],
+			'guid'     => $item_author['xchan_guid'],
 			'guid_sig' => $item_author['xchan_guid_sig'],
-			'link'	 => array(
+			'link'     => array(
 				array('rel' => 'alternate', 'type' => 'text/html', 'href' => $item_author['xchan_url']),
 				array('rel' => 'photo', 'type' => $item_author['xchan_photo_mimetype'], 'href' => $item_author['xchan_photo_m'])),
 			),
@@ -1962,9 +1970,9 @@ function diaspora_signed_retraction($importer,$xml,$msg) {
 
 				// Now check if the retraction needs to be relayed by us
 				//
-				// The first item in the `item` table with the parent id is the parent. However, MySQL doesn't always
-				// return the items ordered by `item`.`id`, in which case the wrong item is chosen as the parent.
-				// The only item with `parent` and `id` as the parent id is the parent item.
+				// The first item in the item table with the parent id is the parent. However, MySQL doesn't always
+				// return the items ordered by item.id, in which case the wrong item is chosen as the parent.
+				// The only item with parent and id as the parent id is the parent item.
 				$p = q("select item_flags from item where parent = %d and id = %d limit 1",
 					$r[0]['parent'],
 					$r[0]['parent']

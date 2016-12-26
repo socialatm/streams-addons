@@ -393,7 +393,7 @@ function pumpio_cron($a,$b) {
 		}
 		logger('pumpio: cron_start');
 
-		$r = q("SELECT * FROM `pconfig` WHERE `cat` = 'pumpio' AND `k` = 'mirror' AND `v` = '1' ORDER BY RAND() ");
+		$r = q("SELECT * FROM pconfig WHERE cat = 'pumpio' AND k = 'mirror' AND v = '1' ORDER BY RAND() ");
 		if(count($r)) {
 				foreach($r as $rr) {
 						logger('pumpio: fetching for user '.$rr['uid']);

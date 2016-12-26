@@ -144,14 +144,13 @@ EOT;
 
 
 function diaspora_share($owner,$contact) {
-	$a = get_app();
 
 	$allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
 	if($allowed === false)
 		$allowed = 1;
 
 	if(! intval($allowed)) {
-		logger('diaspora_share: disallowed for channel ' . $importer['channel_name']);
+		logger('diaspora_share: disallowed for channel ' . $owner['channel_name']);
 		return;
 	}
 
@@ -162,7 +161,7 @@ function diaspora_share($owner,$contact) {
 			dbesc($contact['xchan_hash'])
 		);
 		if(! $c) {
-			logger('diaspora_share: ' . $contact['hubloc_hash']  . ' not found.');
+			logger('diaspora_share: ' . $contact['xchan_hash']  . ' not found.');
 			return;
 		}
 		$contact = $c[0];
@@ -279,7 +278,7 @@ function diaspora_send_images($item,$owner,$contact,$images,$public_batch = fals
 		$resource = str_replace('.jpg','',$image['file']);
 		$resource = substr($resource,0,strpos($resource,'-'));
 
-		$r = q("select * from photo where `resource_id` = '%s' and `uid` = %d limit 1",
+		$r = q("select * from photo where resource_id = '%s' and uid = %d limit 1",
 			dbesc($resource),
 			intval($owner['uid'])
 		);
@@ -324,9 +323,9 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 		);
 	}
 	else {
-		// The first item in the `item` table with the parent id is the parent. However, MySQL doesn't always
-		// return the items ordered by `item`.`id`, in which case the wrong item is chosen as the parent.
-		// The only item with `parent` and `id` as the parent id is the parent item.
+		// The first item in the item table with the parent id is the parent. However, MySQL doesn't always
+		// return the items ordered by item.id, in which case the wrong item is chosen as the parent.
+		// The only item with parent and id as the parent id is the parent item.
 		$p = q("select * from item where parent = %d and id = %d limit 1",
 			intval($item['parent']),
 			intval($item['parent'])
@@ -435,9 +434,9 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 		}
 	}
 
-	// The first item in the `item` table with the parent id is the parent. However, MySQL doesn't always
-	// return the items ordered by `item`.`id`, in which case the wrong item is chosen as the parent.
-	// The only item with `parent` and `id` as the parent id is the parent item.
+	// The first item in the item table with the parent id is the parent. However, MySQL doesn't always
+	// return the items ordered by item.id, in which case the wrong item is chosen as the parent.
+	// The only item with parent and id as the parent id is the parent item.
 
 	$p = q("select * from item where parent = %d and id = %d limit 1",
 		   intval($item['parent']),

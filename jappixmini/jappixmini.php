@@ -280,14 +280,14 @@ function jappixmini_settings(&$a, &$s) {
 	$info_text = str_replace("\n", "<br />", $info_text);
 
 	// count contacts
-	$r = q("SELECT COUNT(1) as `cnt` FROM `pconfig` WHERE `uid`=%d AND `cat`='jappixmini' AND `k` LIKE 'id:%%'", local_channel());
+	$r = q("SELECT COUNT(1) as cnt FROM pconfig WHERE uid=%d AND cat='jappixmini' AND k LIKE 'id:%%'", local_channel());
 	if (count($r))
 		$contact_cnt = $r[0]["cnt"];
 	else
 		$contact_cnt = 0;
 
 	// count jabber addresses
-	$r = q("SELECT COUNT(1) as `cnt` FROM `pconfig` WHERE `uid`=%d AND `cat`='jappixmini' AND `k` LIKE 'id:%%' AND `v` LIKE '%%@%%'", local_channel());
+	$r = q("SELECT COUNT(1) as cnt FROM pconfig WHERE uid=%d AND cat='jappixmini' AND k LIKE 'id:%%' AND v LIKE '%%@%%'", local_channel());
 
 	if (count($r))
 		$address_cnt = $r[0]["cnt"];
@@ -473,7 +473,7 @@ function jappixmini_settings_post(&$a,&$b) {
 		info( 'Jappix Mini settings saved.' );
 
 		if ($purge) {
-			q("DELETE FROM `pconfig` WHERE `uid`=$uid AND `cat`='jappixmini' AND `k` LIKE 'id:%%'");
+			q("DELETE FROM pconfig WHERE uid=$uid AND cat='jappixmini' AND k LIKE 'id:%%'");
 			info( 'List of addresses purged.' );
 		}
 	}
@@ -522,7 +522,7 @@ function jappixmini_script(&$a,&$s) {
     // get a list of jabber accounts of the contacts
     $contacts = Array();
     $uid = local_channel();
-    $rows = q("SELECT * FROM `pconfig` WHERE `uid`=$uid AND `cat`='jappixmini' AND `k` LIKE 'id:%%'");
+    $rows = q("SELECT * FROM pconfig WHERE uid=$uid AND cat='jappixmini' AND k LIKE 'id:%%'");
     foreach ($rows as $row) {
         $key = $row['k'];
 		$pos = strpos($key, ":");
@@ -545,7 +545,7 @@ function jappixmini_script(&$a,&$s) {
     $contacts_hash = sha1($contacts_json);
 
     // get nickname
-    $r = q("SELECT `channel_address` FROM `channel` WHERE `channel_id`=$uid");
+    $r = q("SELECT channel_address FROM channel WHERE channel_id=$uid");
     $nickname = json_encode($r[0]["channel_address"]);
     $groupchats = get_config('jappixmini','groupchats');
     //if $groupchats has no value jappix_addon_start will produce a syntax error
@@ -597,7 +597,7 @@ function jappixmini_cron(&$a, $d) {
 
 		// for each user, go through list of contacts
 		$rand = db_getfunc('rand');
-		$contacts = q("SELECT * FROM `abook` left join xchan on abook_xchan = xchan_hash WHERE `abook_channel`=%d AND abook_self = 0 order by $rand",
+		$contacts = q("SELECT * FROM abook left join xchan on abook_xchan = xchan_hash WHERE abook_channel=%d AND abook_self = 0 order by $rand",
 			intval($uid)
 		);
 
