@@ -337,8 +337,13 @@ rv.markerMenu = function () {
 rv.openEditMarkerDialog = function (e) {
 	var name = rv.markers[rv.currentMarkerID].name;
 	var description = rv.markers[rv.currentMarkerID].description;
+	var distance = 0;
+	if( typeof(rv.proximity[rv.currentMarkerID]) !== 'undefined' && rv.proximity[rv.currentMarkerID] !== null ) {
+		distance = rv.proximity[rv.currentMarkerID].distance;
+	}
 	$('#edit-marker-name').val(name);
 	$('#edit-marker-description').val(description);
+	$('#edit-marker-proximity-distance').val(distance);
 
 	rv.editMarkerDialog.dialog('open');
 };
@@ -549,7 +554,6 @@ rv.getMembers = function () {
 rv.checkProximity = function (mid) {
 	
 	if(typeof(rv.proximity[mid]) !== 'undefined' && rv.proximity[mid] !== null && rv.proximity[mid].distance > 0) {
-		window.console.log(rv.proximity[mid].distance);
 		if (rv.gps.lat !== null && rv.gps.lng !== null) {
 			// Calculate the distance in meters between member mid and self
 			var distance = rv.distanceBetween(rv.members[mid], rv.gps);
@@ -558,8 +562,8 @@ rv.checkProximity = function (mid) {
 				rv.issue_notification(proximityMessage, 'Rendezvous');
 				$('#generic-message').html('<p>' + proximityMessage + '</p>');
 				$('#generic-message').dialog();			
-				Cookies.remove('proximity', {path: ''});
 				rv.proximity[mid] = null;
+				Cookies.set('proximity', rv.proximity, {expires: 365, path: ''});
 				return true;
 			}
 		} else {
@@ -574,7 +578,6 @@ rv.checkProximity = function (mid) {
 rv.checkMarkerProximity = function (id) {
 	
 	if(typeof(rv.proximity[id]) !== 'undefined' && rv.proximity[id] !== null && rv.proximity[id].distance > 0) {
-		window.console.log(rv.proximity[id].distance);
 		if (rv.gps.lat !== null && rv.gps.lng !== null) {
 			// Calculate the distance in meters between marker and self
 			var distance = rv.distanceBetween(rv.markers[id], rv.gps);
@@ -872,7 +875,9 @@ rv.newMarkerDialog = $("#new-marker-form").dialog({
 
 rv.newMarkerDialog.find("form").on("submit", function (event) {
 	event.preventDefault();
-	rv.popup._closeButton.click();
+	if(typeof($(".leaflet-popup-close-button")[0]) !== 'undefined') {
+		$(".leaflet-popup-close-button")[0].click();
+	}
 	rv.createMarker();
 });
 
@@ -906,8 +911,12 @@ rv.editMarker = function () {
 			window.console.log(data['message']);
 		}
 		rv.editMarkerDialog.dialog('close');
+		if(typeof($(".leaflet-popup-close-button")[0]) !== 'undefined') {
+			$(".leaflet-popup-close-button")[0].click();
+		}
 		$('#edit-marker-description').val('');
 		$('#edit-marker-name').val('');
+		$('#edit-marker-proximity-distance').val('');
 		return false;
 	},
 			'json');

@@ -122,21 +122,6 @@
 						</fieldset>
 					</form>
 				</div>
-				<div id="marker-proximity-form" title="{{$editMarkerProximityDialog.0}}">
-					<form>
-						<fieldset style='width: 100px;'>
-							<label for="edit-marker-proximity-distance">{{$editMarkerProximityDialog.1}}</label>
-							<input type="number" size="10" min="0" step="1" name="edit-marker-proximity-distance" id="edit-marker-proximity-distance" placeholder="{{$editMarkerProximityDialog.2}}" value="" class="text ui-widget-content ui-corner-all">
-							<br>
-							<label for="edit-marker-proximity-description">{{$editMarkerProximityDialog.3}}</label>
-							<br>
-							<textarea rows="5" cols="30" name="edit-marker-proximity-description" id="edit-marker-proximity-description" placeholder="{{$editMarkerProximityDialog.4}}" class="text ui-widget-content ui-corner-all"></textarea>
-
-							<!-- Allow form submission with keyboard without duplicating the dialog button -->
-							<input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
-						</fieldset>
-					</form>
-				</div>
 				<div id="identity-deleted-message" title="{{$newIdentity}}">
 						<p>{{$identityDeletedMessage}}</p>
 				</div>
