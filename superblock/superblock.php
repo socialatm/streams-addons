@@ -4,7 +4,7 @@
 /**
  * Name: superblock
  * Description: block people
- * Version: 1.0
+ * Version: 2.0
  * Author: Mike Macgirvin
  * Maintainer: Mike Macgirvin <mike@macgirvin.com> 
  * MinVersion: 1.1.3
@@ -301,6 +301,7 @@ function superblock_item_photo_menu(&$a,&$b) {
 	$blocked = false;
 	$author = $b['item']['author_xchan'];
 	$item = $b['item']['id'];
+
 	if(App::$channel['channel_hash'] == $author)
 		return;
 
@@ -313,14 +314,16 @@ function superblock_item_photo_menu(&$a,&$b) {
 		}
 	}
 
-	$b['menu'][] = [ 			
-		'menu' => 'superblock',
-		'title' => t('Block Completely'),
-		'icon' => 'fw',
-		'action' => 'superblockBlock(\'' . $author . '\',' . $item . '); return false;',
-		'href' => '#'
-	];
+	if($blocked)
+		return;
 
+	$b['menu'][] = [           
+			'menu' => 'superblock',
+            'title' => t('Block Completely'),
+            'icon' => 'fw',
+            'action' => 'superblockBlock(\'' . $author . '\',' . $item . '); return false;',
+            'href' => '#'
+	];
 }
 
 function superblock_module() {}
