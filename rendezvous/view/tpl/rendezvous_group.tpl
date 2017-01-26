@@ -138,6 +138,25 @@
 						};
 						rv.identity.name = null;
 						rv.zroot = '{{$zroot}}';
+						rv.centerOn = null;
+						{{if $centerOn}}
+						rv.centerOn = {
+							type: '{{$centerOn.type}}',
+							id: '{{$centerOn.id}}',
+							zoom: '{{$centerOn.zoom}}'
+						}
+						{{/if}}
+						
+//						$(document).ready(function () {
+//							if(rv.centerOn !== null) {
+//								if(rv.centerOn.type === 'marker') {
+//									var markerID = parseInt(rv.centerOn.id);
+//									console.log('markerID: ' + markerID);
+//									rv.map.panTo(new L.LatLng(rv.markers[markerID].lat, rv.markers[markerID].lng));
+//									rv.markers[markerID].marker.openPopup();
+//								}
+//							}
+//						});
 				</script>
 		</body>
 </html>

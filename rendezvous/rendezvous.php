@@ -147,7 +147,15 @@ function rendezvous_content($a) {
 		if (argc() > 1) {
 				$group = argv(1);
 				$observer = App::get_observer();
+				$centerOn = null;
 				if(rendezvous_valid_group($group)) {
+						if (argc() > 3 && argv(2) === 'marker') {
+							$zoom = 16;
+							if (argc() > 4 && intval(argv(4)) !== 0) {
+								$zoom = intval(argv(4));
+							}
+							$centerOn = array('type' => 'marker', 'zoom' => $zoom, 'id' => argv(3));
+						}
 						$o .= replace_macros(get_markup_template('rendezvous_group.tpl', 'addon/rendezvous'), array(
 								// Including the version in the script URL should avoid browser JavaScript caching issues
 								'$version' => '/addon/rendezvous/view/js/rendezvous.js?v=' . rendezvous_get_version(),
@@ -177,6 +185,7 @@ function rendezvous_content($a) {
 									t('distance'),
 									t('Reminder note'),
 									t('Enter a note to be displayed when you are within the specified proximity...')),
+								'$centerOn' => $centerOn,
 						));
 						return $o;
 				} else {
