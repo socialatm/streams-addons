@@ -178,7 +178,7 @@ function rendezvous_content($a) {
 								'$deleteMember' => t('Delete member'),
 								'$memberProximity' => t('Edit proximity alert'),
 								'$proximityDialog' => array(t('A proximity alert will be issued when this member is within a certain radius of you.<br><br>Enter a radius in meters (0 to disable):'), t('distance')),
-								'$newMarkerDialog' => array(t('Marker proximity alert'), 
+								'$newMarkerDialog' => array(t('Proximity alert distance (meters)'), 
 									t('A proximity alert will be issued when you are within a certain radius of the marker location.<br><br>Enter a radius in meters (0 to disable):')),
 								'$editMarkerProximityDialog' => array(t('Marker proximity alert'), 
 									t('A proximity alert will be issued when you are within a certain radius of the marker location.<br><br>Enter a radius in meters (0 to disable):'), 

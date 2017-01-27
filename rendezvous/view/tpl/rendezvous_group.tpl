@@ -82,7 +82,7 @@
 								<input type="text" name="new-marker-name" id="new-marker-name" placeholder="{{$myMarkerPlaceholder}}" value="" class="text ui-widget-content ui-corner-all">
 								<br>
 								<label for="new-marker-proximity-distance">{{$newMarkerDialog.0}}</label>
-								<input type="number" size="10" min="0" step="1" name="new-marker-proximity-distance" id="new-marker-proximity-distance" placeholder="{{$newMarkerDialog.1}}" value="0" class="text ui-widget-content ui-corner-all">
+								<input type="number" size="10" min="0" step="1" name="new-marker-proximity-distance" id="new-marker-proximity-distance" placeholder="0" value="0" class="text ui-widget-content ui-corner-all">
 								<br>
 								<label for="new-marker-description">{{$descriptionText}}</label>
 								<br>
@@ -101,7 +101,7 @@
 								<input type="text" name="edit-marker-name" id="edit-marker-name" placeholder="{{$myMarkerPlaceholder}}" value="" class="text ui-widget-content ui-corner-all">
 								<br>
 								<label for="edit-marker-proximity-distance">{{$newMarkerDialog.0}}</label>
-								<input type="number" size="10" min="0" step="1" name="edit-marker-proximity-distance" id="edit-marker-proximity-distance" placeholder="{{$newMarkerDialog.1}}" value="" class="text ui-widget-content ui-corner-all">
+								<input type="number" size="10" min="0" step="1" name="edit-marker-proximity-distance" id="edit-marker-proximity-distance" placeholder="0" value="" class="text ui-widget-content ui-corner-all">
 								<br>
 								<label for="edit-marker-description">{{$descriptionText}}</label>
 								<br>
