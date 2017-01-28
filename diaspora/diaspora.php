@@ -528,16 +528,17 @@ function diaspora_discover(&$a,&$b) {
 				);
 			}
 			else {
-
-				$r = q("insert into xchan ( xchan_hash, xchan_guid, xchan_pubkey, xchan_addr, xchan_url, xchan_name, xchan_network, xchan_name_date ) values ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s') ",
-					dbesc($addr),
-					dbesc($guid),
-					dbesc($pubkey),
-					dbesc($addr),
-					dbesc($profile),
-					dbesc($vcard['fn']),
-					dbesc($network),
-					dbescdate(datetime_convert())
+				$r = xchan_store_lowlevel(
+					[
+						'xchan_hash'         => $addr,
+						'xchan_guid'         => $guid,
+						'xchan_pubkey'       => $pubkey,
+						'xchan_addr'         => $addr,
+						'xchan_url'          => $profile,
+						'xchan_name'         => $vcard['fn'],
+						'xchan_name_date'    => datetime_convert(),
+						'xchan_network'      => $network
+					]
 				);
 			}
 
