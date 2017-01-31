@@ -547,18 +547,21 @@ function diaspora_discover(&$a,&$b) {
 			);
 
 			if(! $r) {
-
-				$r = q("insert into hubloc ( hubloc_guid, hubloc_hash, hubloc_addr, hubloc_network, hubloc_url, hubloc_host, hubloc_callback, hubloc_updated, hubloc_primary ) values ('%s','%s','%s','%s','%s','%s','%s','%s', 1)",
-					dbesc($guid),
-					dbesc($addr),
-					dbesc($addr),
-					dbesc($network),
-					dbesc(trim($diaspora_base,'/')),
-					dbesc($hostname),
-					dbesc($notify),
-					dbescdate(datetime_convert())
+				$r = hubloc_store_lowlevel(
+					[
+						'hubloc_guid'     => $guid,
+						'hubloc_hash'     => $addr,
+						'hubloc_addr'     => $addr,
+						'hubloc_network'  => $network,
+						'hubloc_url'      => trim($diaspora_base,'/'),
+						'hubloc_host'     => $hostname,
+						'hubloc_callback' => $notify,
+						'hubloc_updated'  => datetime_convert(),
+						'hubloc_primary'  => 1
+					]
 				);
 			}
+
 			$photos = import_xchan_photo($vcard['photo'],$addr);
 			$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
 				dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
