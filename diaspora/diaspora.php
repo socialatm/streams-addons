@@ -36,6 +36,7 @@ function diaspora_load() {
 	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
+	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 
 	diaspora_init_relay();
 }
@@ -52,6 +53,7 @@ function diaspora_unload() {
 	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
 	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
 	unregister_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
+	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 }
 
 
@@ -854,3 +856,14 @@ function diaspora_create_identity($a,$b) {
 	}
 
 }
+
+function diaspora_import_foreign_channel_data($a,&$data) {
+
+	if(array_key_exists('user',$data) && array_key_exists('version',$data)) {
+		require_once('addon/diaspora/import_diaspora.php');
+		$data['handled'] = true;
+		import_diaspora_account($data);
+		return;
+	}
+}
+		
