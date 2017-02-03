@@ -4,7 +4,7 @@
  * Name: Firefox 
  * Description: Provide Firefox Social provider interface
  * Version: 1.0
- * Mainainer: none
+ * Maintainer: none
  */
 
 
@@ -19,7 +19,7 @@ function firefox_unload() {
 
 function firefox_channel_settings(&$x) {
 
-	$x['misc'] .= '<div class="ffsapilink"><a type="button" class="btn btn-success" href="/firefox">' .
+	$x['misc'] .= '<div class="ffsapilink"><a type="button" class="btn btn-success" href="/firefox" target="_blank" >' .
 		t('Install Firefox Sharing Tools') . '</a></div>' . "\r\n";
 
 }
