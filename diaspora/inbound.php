@@ -545,8 +545,21 @@ function diaspora_post($importer,$xml,$msg) {
 
 	$body = markdown_to_bb(diaspora_get_body($xml));
 
-	if($xml['photo']) {
-		$body = '[img]' . $xml['photo']['remote_photo_path'] . $xml['photo']['remote_photo_name'] . '[/img]' . "\n\n" . $body;
+	$photos = null;
+
+	// photo could be a single photo or an array of photos.
+	// Turn singles into an array of one. 
+
+	if(array_key_exists('photo',$xml))
+		$photos = ((array_key_exists('guid',$xml['photo'])) ? array($xml['photo']) : $xml['photo']);
+
+	if($photos) {
+		$tmp = '';
+		foreach($photos as $ph) {
+			$tmp .= '[img]' . $ph['remote_photo_path'] . $ph['remote_photo_name'] . '[/img]' . "\n\n";
+		}
+			
+		$body = $tmp . $body;
 		$body = scale_external_images($body);
 	}
 
