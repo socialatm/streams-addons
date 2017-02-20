@@ -365,8 +365,8 @@ function chess_content($a) {
 
     // Include the custom CSS and JavaScript necessary for the chess board
 
-    head_add_css('addon/chess/view/css/chessboard.css');
-    head_add_js('addon/chess/view/js/chessboard.js');
+    head_add_css('/addon/chess/view/css/chessboard.css');
+    head_add_js('/addon/chess/view/js/chessboard.js');
 
     // If the user is not a local channel, then they must use a URL like /chess/localchannel
     // to specify which local channel "chess host" they are visiting

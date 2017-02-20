@@ -15,7 +15,7 @@ function b2tbtn_unload() { unregister_hook('page_end', 'addon/b2tbtn/b2tbtn.php'
 
 function b2tbtn_active(&$a,&$b) { 
 
-    head_add_css('addon/b2tbtn/view/css/b2tbtn.css');
+    head_add_css('/addon/b2tbtn/view/css/b2tbtn.css');
 
     $b .= "
 <script>
