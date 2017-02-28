@@ -94,7 +94,7 @@ function webmention_process($url,$source) {
 	if($fields) {
 		foreach($fields as $y) {
 			if(array_key_exists('content-type',$y)) {
-				$type = explode(';',$y['content-type'])
+				$type = explode(';',$y['content-type']);
 				if($type && trim($type[0]) === 'text/html') {
 					$html_content = true;                    
 					continue;
