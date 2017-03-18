@@ -2,6 +2,8 @@
 
 namespace Zotlabs\Module;
 
+use \Michelf\MarkdownExtra;
+
 require_once('addon/gitwiki/gitwiki_backend.php');
 
 class Gitwiki extends \Zotlabs\Web\Controller {
