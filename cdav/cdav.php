@@ -9,7 +9,7 @@
  * 
  */
 
-require_once('addon/cdav/Mod_Cdav.php');
+//require_once('addon/cdav/Mod_Cdav.php');
 require_once('addon/cdav/include/widgets.php');
 
 function cdav_install() {
@@ -166,7 +166,7 @@ function cdav_feature_settings_post(&$b) {
  	if($_POST['cdav-submit']) {
 
 		$channel = \App::get_channel();
-		$uri = 'principals/' . $channel['channel_address'];
+		$uri = 'principals/' . $channel['channel_hash'];
 
 		set_pconfig(local_channel(),'cdav','enabled',intval($_POST['cdav_enabled']));
 		if(intval($_POST['cdav_enabled'])) {
@@ -192,7 +192,7 @@ function cdav_feature_settings_post(&$b) {
 					dbesc('VEVENT,VTODO')
 				);
 
-				$r = q("insert into calendarinstances (calendarid, principaluri, displayname, uri, description, calendarcolor) values(LAST_INSERT_ID(), '%s', '%s', '%s', '%s', '%s') ",
+				$r = q("insert into calendarinstances (principaluri, displayname, uri, description, calendarcolor) values( '%s', '%s', '%s', '%s', '%s') ",
 					dbesc($uri),
 					dbesc(t('Default Calendar')),
 					dbesc('default'),
