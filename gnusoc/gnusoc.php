@@ -610,14 +610,15 @@ function gnusoc_atom_entry($a,&$b) {
 }
 
 function gnusoc_atom_feed($a,&$b) {
-	$x = preg_match('|' . z_root() . '/channel/(.*?) |',$b,$matches);
-	if($x) {
-		$b = str_replace('</generator>','</generator>' . "\r\n  " . 
-		'<rel="salmon" href="' . z_root() . '/salmon/' . $matches[1] . ' />' . "\r\n  " . 
-		'<rel="http://salmon-protocol.org/ns/salmon-replies" href="' . z_root() . '/salmon/' . $matches[1] . ' />' . "\r\n  " .
-		'<rel="http://salmon-protocol.org/ns/salmon-mention" href="' . z_root() . '/salmon/' . $matches[1] . ' />',$b);
-	}
+    $x = preg_match('|' . 'href\=(.*?)' . z_root() . '/channel/(.*?) |',$b,$matches);
 
+    if($x) {
+        $b = str_replace('</generator>','</generator>' . "\r\n  " .
+        '<link rel="salmon" href="' . z_root() . '/salmon/' . $matches[2] . ' />' . "\r\n  " .
+        '<link rel="http://salmon-protocol.org/ns/salmon-replies" href="' . z_root() . '/salmon/' . $matches[2] . ' />' . 
+		"\r\n  " .
+        '<link rel="http://salmon-protocol.org/ns/salmon-mention" href="' . z_root() . '/salmon/' . $matches[2] . ' />',$b);
+    }
 }
 
 function gnusoc_parse_atom($a,&$b) {
