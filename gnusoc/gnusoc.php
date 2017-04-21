@@ -612,6 +612,10 @@ function gnusoc_atom_entry($a,&$b) {
 function gnusoc_atom_feed($a,&$b) {
     $x = preg_match('|' . 'href\=(.*?)' . z_root() . '/channel/(.*?) |',$b,$matches);
 
+	$y = preg_match('|' . z_root() . '/photo/profile/l/(.*?)"|',$b,$matches2);
+
+logger('matches2: ' . print_r($matches2,true));
+
     if($x) {
         $b = str_replace('</generator>','</generator>' . "\r\n  " .
         '<link rel="salmon" href="' . z_root() . '/salmon/' . $matches[2] . ' />' . "\r\n  " .
@@ -619,6 +623,11 @@ function gnusoc_atom_feed($a,&$b) {
 		"\r\n  " .
         '<link rel="http://salmon-protocol.org/ns/salmon-mention" href="' . z_root() . '/salmon/' . $matches[2] . ' />',$b);
     }
+	if($y) {
+		$b = str_replace('</generator>','</generator>' . "\r\n  " .
+		'<logo>' . z_root() . '/photo/profile/l/' . $matches2[1] . '</logo>',$b);
+	}
+
 }
 
 function gnusoc_parse_atom($a,&$b) {
