@@ -258,7 +258,7 @@ function pubsubhubbub_init(&$a) {
 		}
 
 		// sanity check that topic URLs are the same
-		if(! link_compare($hub_topic, z_root() . '/feed/' . $nick)) {
+		if((! link_compare($hub_topic, z_root() . '/feed/' . $nick)) && (! link_compare($hub_topic, z_root() . '/ofeed/' . $nick))) {
 			logger('pubsubhubbub: not a valid hub topic ' . $hub_topic );
 			http_status_exit(404);
 		}
