@@ -3,7 +3,7 @@
 		<author>
 			<as:object-type>http://activitystrea.ms/schema/1.0/person</as:object-type>
 			<id>{{$profile_page}}</id>
-			<name>{{$name}}</name>
+			<name>{{$nick}}</name>
 			<uri>{{$profile_page}}</uri>
 			<link rel="photo"  type="image/jpeg" media:width="300" media:height="300" href="{{$thumb}}" />
 			<link rel="avatar" type="image/jpeg" media:width="300" media:height="300" href="{{$thumb}}" />
@@ -20,6 +20,7 @@
 		<as:object>
 		<as:object-type>http://activitystrea.ms/schema/1.0/person</as:object-type>
 		<id>{{$remote_profile}}</id>
+		<name>{{$remote_nick}}</name>
 		<title>{{$remote_name}}</title>
  		<link rel="avatar" type="image/jpeg" media:width="175" media:height="175" href="{{$remote_photo}}"/>
 		<link rel="avatar" type="image/jpeg" media:width="80" media:height="80" href="{{$remote_thumb}}"/>
