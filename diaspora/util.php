@@ -196,7 +196,7 @@ function diaspora_build_status($item,$owner) {
 	$images = array();
 
 	$title = $item['title'];
-	$body = bb2diaspora_itembody($item,true);
+	$body = bb_to_markdown($item['body']);
 
 	$poll = '';
 

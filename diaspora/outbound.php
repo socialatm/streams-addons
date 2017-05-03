@@ -366,7 +366,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 		$text        = $meta['body'];
 	}
 	else {
-		$text = bb2diaspora_itembody($item,$uplink,false,$uplink);
+		$text = bb_to_markdown($item['body']);
 
 		// sign it
 
@@ -406,7 +406,7 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 	$myaddr = channel_reddress($owner);
 
-	$text = bb2diaspora_itembody($item);
+	$text = bb_to_markdown($item['body']);
 
 	$parentauthorsig = '';
 
@@ -520,9 +520,6 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 
 
-	// The relayable may have arrived from somebody who provided no Diaspora Comment Virus. 
-	// We check for this above in bb2diaspora_itembody. In that case we will have generated 
-	// the body as a "wall-to-wall" post, and the author_signature will now be our own.  
 
 	if((! $xmlout) && (! $authorsig))
 		$authorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
@@ -632,7 +629,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 
 	$parent_ptr = $cnv['guid'];
 
-	$body = bb2diaspora($item['body']);
+	$body = bb_to_markdown($item['body']);
 	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
  
 	$signed_text =  $item['mid'] . ';' . $parent_ptr . ';' . $body .  ';' 

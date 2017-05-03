@@ -37,6 +37,7 @@ function diaspora_load() {
 	register_hook('profile_sidebar','addon/diaspora/diaspora.php','diaspora_profile_sidebar');
 	register_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
 	register_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
+	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 
 	diaspora_init_relay();
@@ -57,6 +58,7 @@ function diaspora_unload() {
 	unregister_hook('profile_sidebar','addon/diaspora/diaspora.php','diaspora_profile_sidebar');
 	unregister_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
 	unregister_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
+	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 }
 
@@ -779,7 +781,7 @@ function diaspora_post_local(&$a,&$item) {
 			}
 		}
 		else {
-			$body = bb2diaspora_itembody($item,true,true);
+			$body = bb_to_markdown($item['body']);
 
 			$meta = [
 				'guid'            => $item['mid'],
@@ -825,7 +827,7 @@ function diaspora_post_local(&$a,&$item) {
 			}
 		}
 		else {
-			$body = bb2diaspora_itembody($item,true,false);
+			$body = bb_to_markdown($item['body']);
 			$meta = [
 				'guid'            => $item['mid'],
 				'parent_guid'     => $item['parent_mid'],
@@ -933,3 +935,31 @@ function diaspora_import_author(&$a,&$b) {
 	return;
 
 }
+
+function diaspora_bb_to_markdown_bb(&$a,&$Text) {
+
+	$Text = preg_replace_callback('/\@\!?\[([zu])rl\=(\w+.*?)\](\w+.*?)\[\/([zu])rl\]/i', 
+		'diaspora_bb_to_markdown_mention_callback', $Text);
+
+
+	// strip map tags, as the rendering is performed in bbcode() and the resulting output
+	// is not compatible with Diaspora (at least in the case of openstreetmap and probably
+	// due to the inclusion of an html iframe)
+
+	$Text = preg_replace("/\[map\=(.*?)\]/ism", '$1', $Text);
+	$Text = preg_replace("/\[map\](.*?)\[\/map\]/ism", '$1', $Text);
+
+}
+
+function diaspora_bb_to_markdown_mention_callback($match) {
+
+    $r = q("select xchan_addr from xchan where xchan_url = '%s'",
+        dbesc($match[2])
+    );
+
+    if($r)
+        return '@{' . $match[3] . ' ; ' . $r[0]['xchan_addr'] . '}';
+
+    return '@' . $match[3];
+}
+
