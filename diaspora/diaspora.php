@@ -198,8 +198,22 @@ function diaspora_process_outbound(&$a, &$arr) {
 
 	// allow this to be set per message
 
-	if(strpos($arr['target_item']['postopts'],'nodspr') !== false)
+
+	if(($arr['mail']) && intval($arr['item']['raw'])) {
+		logger('Cannot send raw data to Diaspora mail service.');
 		return;
+	}
+
+	if(array_key_exists('target_item',$arr) && is_array($arr['target_item'])) {
+		if(intval($arr['target_item']['item_obscured'])) {
+			logger('Cannot send raw data as a Diaspora activity.');
+			return;
+		}
+
+		if(strpos($arr['target_item']['postopts'],'nodspr') !== false) {
+			return;
+		}
+	}
 
 	$allowed = get_pconfig($arr['channel']['channel_id'],'system','diaspora_allowed');
 
