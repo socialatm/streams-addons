@@ -38,6 +38,7 @@ function diaspora_load() {
 	register_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
 	register_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
 	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
+	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 
 	diaspora_init_relay();
@@ -59,6 +60,7 @@ function diaspora_unload() {
 	unregister_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
 	unregister_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
 	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
+	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 }
 
@@ -977,3 +979,15 @@ function diaspora_bb_to_markdown_mention_callback($match) {
     return '@' . $match[3];
 }
 
+function diaspora_service_plink($a,&$b) {
+	$contact = $b['xchan'];
+	$url     = $b['url'];
+	$guid    = $b['guid'];
+
+	if($contact['xchan_network'] === 'diaspora')
+		$b['plink'] = $url . '/posts/' . $guid;
+	if($contact['xchan_network'] === 'friendica-over-diaspora')
+		$b['plink'] = $url . '/display/' . $handle . '/' . $guid;
+
+
+}
