@@ -39,6 +39,7 @@ function diaspora_load() {
 	register_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
 	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
+	register_hook('legal_webbie','addon/diaspora/diaspora.php','diaspora_legal_webbie');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 
 	diaspora_init_relay();
@@ -61,6 +62,7 @@ function diaspora_unload() {
 	unregister_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
 	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
+	unregister_hook('legal_webbie','addon/diaspora/diaspora.php','diaspora_legal_webbie');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 }
 
@@ -329,7 +331,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 			// downstream (private) posts
 
 			if(! $single) {
-				logger('Singleton private delivery ignored on this site. Will attempt from connected site.');
+				logger('Singleton private delivery ignored on this site.');
 				continue;
 			}
 				
@@ -394,9 +396,7 @@ function diaspora_process_outbound(&$a, &$arr) {
 function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 
 
-	$allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
-	if($allowed === false)
-		$allowed = 1;
+	$allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed',1);
 
 	if(! intval($allowed)) {
 		return false;
@@ -410,8 +410,10 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 
 	logger('diaspora_queue: URL: ' . $dest_url, LOGGER_DEBUG);	
 
-	if(intval(get_config('system','diaspora_test')) || intval(get_pconfig($owner['channel_id'],'system','diaspora_test')))
+	if(intval(get_config('system','diaspora_test')) || intval(get_pconfig($owner['channel_id'],'system','diaspora_test'))) {
+		logger('diaspora test mode - delivery disabled');
 		return false;
+	}
 
 	$hash = random_string();
 
@@ -458,7 +460,7 @@ function diaspora_follow_allow(&$a, &$b) {
 
 
 function diaspora_discover(&$a,&$b) {
-logger('xxy');
+
 	require_once('include/network.php');
 
 	$webbie = $b['address'];
@@ -808,8 +810,9 @@ function diaspora_post_local(&$a,&$item) {
 		}
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
-		if($item['author_xchan'] === $item['owner_xchan'])
+		if($item['author_xchan'] === $item['owner_xchan']) {
 			$meta['parent_author_signature'] = diaspora_sign_fields($meta,$author['channel_prvkey']);
+		}
 	}
 
 	if((! $meta) && ($item['author_xchan'] !== $item['owner_xchan'])) {
@@ -991,3 +994,8 @@ function diaspora_service_plink($a,&$b) {
 
 
 }
+
+function diaspora_legal_webbie($a,&$b) {
+	$b['output'] = preg_replace('/([^a-z0-9\_])/','',strtolower($b['input']));
+}
+
