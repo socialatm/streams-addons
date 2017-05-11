@@ -970,7 +970,12 @@ function diaspora_bb_to_markdown_bb(&$a,&$Text) {
 
 }
 
+
+
 function diaspora_bb_to_markdown_mention_callback($match) {
+
+	// may-2017 this needs to be updated to the "new protocol" where it is just '{$handle}'
+	// but we'll wait until a majority of sites are running the new protocol
 
     $r = q("select xchan_addr from xchan where xchan_url = '%s'",
         dbesc($match[2])

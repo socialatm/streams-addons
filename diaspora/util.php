@@ -235,3 +235,52 @@ function diaspora_build_status($item,$owner) {
 
 	return $msg;
 }
+
+
+
+	function get_diaspora_reshare_xml($url,$recurse = 0) {
+
+		$x = z_fetch_url($url);
+		if(! $x['success'])
+			$x = z_fetch_url(str_replace('https://','http://',$url));
+		if(! $x['success']) {
+			logger('get_diaspora_reshare_xml: unable to fetch source url ' . $url);
+			return;
+		}
+
+		logger('get_diaspora_reshare_xml: source: ' . $x['body'], LOGGER_DEBUG);
+
+		$source_xml = xml2array($x['body'],false,0,'tag');
+
+		if(! $source_xml) {
+			logger('get_diaspora_reshare_xml: unparseable result from ' . $url);
+			return '';
+		}
+
+		if($source_xml) {
+			if(array_key_exists('xml',$source_xml) && array_key_exists('post',$source_xml['xml'])) 
+				$source_xml = $source_xml['xml']['post'];
+		}
+
+		if($source_xml['status_message']) {
+			return $source_xml;
+		}
+
+		// see if it's a reshare of a reshare
+	
+		if($source_xml['reshare'])
+			$xml = $source_xml['reshare'];
+		else 
+			return false;
+
+		if(($xml['root_diaspora_id'] || $xml['root_author']) && $xml['root_guid'] && $recurse < 15) {
+			$orig_author = notags(diaspora_get_root_author($xml));
+			$orig_guid = notags(unxmlify($xml['root_guid']));
+			$source_url = 'https://' . substr($orig_author,strpos($orig_author,'@')+1) . '/p/' . $orig_guid . '.xml';
+			$y = get_diaspora_reshare_xml($source_url,$recurse+1);
+			if($y)
+				return $y;
+		}
+		return false;
+	}
+
