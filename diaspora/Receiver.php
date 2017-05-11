@@ -374,7 +374,7 @@ class Diaspora_Receiver {
 
 		logger('diaspora_reshare: init: ' . print_r($this->xmlbase,true), LOGGER_DATA);
 
-		$guid = notags(unxmlify($this->xmlbase['guid']));
+		$guid = notags($this->get_property('guid'));
 		$diaspora_handle = notags($this->get_author());
 
 		if($diaspora_handle != $this->msg['author']) {
@@ -396,7 +396,7 @@ class Diaspora_Receiver {
 		}
 
 		$orig_author = notags($this->get_root_author());
-		$orig_guid = notags(unxmlify($this->xmlbase['root_guid']));
+		$orig_guid = notags($this->get_property('root_guid'));
 
 		$source_url = 'https://' . substr($orig_author,strpos($orig_author,'@')+1) . '/p/' . $orig_guid . '.xml';
 		$orig_url = 'https://'.substr($orig_author,strpos($orig_author,'@')+1).'/posts/'.$orig_guid;
@@ -408,15 +408,17 @@ class Diaspora_Receiver {
 
 		
 			$orig_author = $this->get_author($source_xml['status_message']);
-			$orig_guid = notags(unxmlify($source_xml['status_message']['guid']));
+			$orig_guid = notags($this->get_property('guid',$source_xml['status_message']));
 
 
 			// Checking for embedded pictures
+			// @fixme - there may be multiple photos
+
 			if($source_xml['status_message']['photo']['remote_photo_path'] &&
 				$source_xml['status_message']['photo']['remote_photo_name']) {
 
-				$remote_photo_path = notags(unxmlify($source_xml['status_message']['photo']['remote_photo_path']));
-				$remote_photo_name = notags(unxmlify($source_xml['status_message']['photo']['remote_photo_name']));
+				$remote_photo_path = notags($this->get_property('remote_photo_path',$source_xml['status_message']['photo']));				
+				$remote_photo_name = notags($this->get_property('remote_photo_name',$source_xml['status_message']['photo']));
 
 				$body = '[img]'.$remote_photo_path.$remote_photo_name.'[/img]'."\n".$body;
 
@@ -425,8 +427,6 @@ class Diaspora_Receiver {
 
 			$body = scale_external_images($body);
 
-			// Add OEmbed and other information to the body
-			//		$body = add_page_info_to_body($body, false, true);
 		}
 		else {
 			// Maybe it is a reshare of a photo that will be delivered at a later time (testing)
@@ -445,14 +445,14 @@ class Diaspora_Receiver {
 		$person = find_diaspora_person_by_handle($orig_author);
 
 		if($person) {
-			$orig_author_name = $person['xchan_name'];
-			$orig_author_link = $person['xchan_url'];
+			$orig_author_name  = $person['xchan_name'];
+			$orig_author_link  = $person['xchan_url'];
 			$orig_author_photo = $person['xchan_photo_m'];
 		}
 
 
-		$created = unxmlify($this->xmlbase['created_at']);
-		$private = ((unxmlify($this->xmlbase['public']) == 'false') ? 1 : 0);
+		$created = $this->get_property('created_at');
+		$private = (($this->get_property('public') === 'false') ? 1 : 0);
 
 		$datarray = array();
 
@@ -556,20 +556,19 @@ class Diaspora_Receiver {
 
 	function comment() {
 
-		$guid = notags(unxmlify($this->xmlbase['guid']));
-		$parent_guid = notags(unxmlify($this->xmlbase['parent_guid']));
+		$guid = notags($this->get_property('guid'));
+		$parent_guid = notags($this->get_property('parent_guid'));
 		$diaspora_handle = notags($this->get_author());
 
 		$created_at = ((array_key_exists('created_at',$this->xmlbase)) 
-			? datetime_convert('UTC','UTC',unxmlify($this->xmlbase['created_at'])) : datetime_convert());
+			? datetime_convert('UTC','UTC',$this->get_property('created_at')) : datetime_convert());
 
 		$thr_parent = ((array_key_exists('thread_parent_guid',$this->xmlbase)) 
-			? notags(unxmlify($this->xmlbase['thread_parent_guid'])) : '');
+			? notags($this->get_property('thread_parent_guid')) : '');
 
-		$text = unxmlify($this->xmlbase['text']);
-		$author_signature = notags(unxmlify($this->xmlbase['author_signature']));
-		$parent_author_signature = (($this->xmlbase['parent_author_signature']) ? notags(unxmlify($this->xmlbase['parent_author_signature'])) : '');
-
+		$text = $this->get_property('text');
+		$author_signature = notags($this->get_property('author_signature'));
+		$parent_author_signature = notags($this->get_property('parent_author_signature'));
 
 		$xchan = find_diaspora_person_by_handle($diaspora_handle);
 
@@ -633,6 +632,8 @@ class Diaspora_Receiver {
 		$signed_data = $guid . ';' . $parent_guid . ';' . $text . ';' . $diaspora_handle;
 		$key = $this->msg['key'];
 
+		/* WARN: As a side effect of this, all of $this->xmlbase will now be unxmlified */
+
 		$unxml = array_map('unxmlify',$this->xmlbase);
 
 		if($parent_author_signature) {
@@ -644,13 +645,6 @@ class Diaspora_Receiver {
 				logger('diaspora_comment: top-level owner verification failed.');
 				return;
 			}
-
-			//$parent_author_signature = base64_decode($parent_author_signature);
-
-			//if(! rsa_verify($signed_data,$parent_author_signature,$key,'sha256')) {
-			//	logger('diaspora_comment: top-level owner verification failed.');
-			//	return;
-			//}
 		}
 		else {
 
@@ -784,13 +778,6 @@ class Diaspora_Receiver {
 
 		$datarray['app'] = $app;
 	
-		if(! $parent_author_signature) {
-			$key = get_config('system','pubkey');
-			$x = array('signer' => $diaspora_handle, 'body' => $text, 
-				'signed_text' => $signed_data, 'signature' => base64_encode($author_signature));
-			$datarray['diaspora_meta'] = json_encode($x);
-		}
-
 
 		// So basically if something arrives at the sys channel it's by definition public and we allow it.
 		// If $pubcomment and the parent was public, we allow it.
