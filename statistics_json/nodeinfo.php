@@ -145,7 +145,7 @@ function nodeinfo_content(&$a) {
 			$arr['protocols']['outbound'][] = 'friendica';
 		}
 
-		$services = [ 'atom1.0', 'rss2.0' ];
+		$services = [ 'atom1.0' ];
 		$iservices = [ 'atom1.0', 'rss2.0' ];
 
 		if(in_array('diaspost',App::$plugins))
@@ -170,11 +170,11 @@ function nodeinfo_content(&$a) {
 			$services[] = 'twitter';
 		if(in_array('wppost',App::$plugins)) {
 			$services[] = 'wordpress';
-			$iservices[] = 'wordpress';
+// apparently this is not legal in nodeinfo
+//			$iservices[] = 'wordpress';
 		}
 		if(in_array('xmpp',App::$plugins)) {
 			$services[] = 'xmpp';
-			$iservices[] = 'xmpp';
 		}
 
 		if($services)
