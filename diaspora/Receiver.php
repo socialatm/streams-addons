@@ -273,7 +273,7 @@ class Diaspora_Receiver {
 		$followed_tags = get_pconfig($this->importer['channel_id'],'diaspora','followed_tags');
 		if($followed_tags && $datarray['term']) {
 			foreach($datarray['term'] as $t) {
-				if(in_array($t['term'],$followed_tags)) {
+				if(in_array(mb_strtolower($t['term']),array_map('mb_strtolower',$followed_tags))) {
 					$found_tags = true;
 					break;
 				}
