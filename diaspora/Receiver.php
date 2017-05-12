@@ -404,35 +404,31 @@ class Diaspora_Receiver {
 		$source_xml = get_diaspora_reshare_xml($source_url);
 
 		if($source_xml['status_message']) {
-			$body = markdown_to_bb(diaspora_get_body($source_xml['status_message']));
+			$body = markdown_to_bb($this->get_body($source_xml['status_message']));
 
-		
 			$orig_author = $this->get_author($source_xml['status_message']);
-			$orig_guid = notags($this->get_property('guid',$source_xml['status_message']));
+			$orig_guid   = notags($this->get_property('guid',$source_xml['status_message']));
 
-
-			// Checking for embedded pictures
-			// @fixme - there may be multiple photos
-
-			if($source_xml['status_message']['photo']['remote_photo_path'] &&
-				$source_xml['status_message']['photo']['remote_photo_name']) {
-
-				$remote_photo_path = notags($this->get_property('remote_photo_path',$source_xml['status_message']['photo']));				
-				$remote_photo_name = notags($this->get_property('remote_photo_name',$source_xml['status_message']['photo']));
-
-				$body = '[img]'.$remote_photo_path.$remote_photo_name.'[/img]'."\n".$body;
-
-				logger('diaspora_reshare: embedded picture link found: '.$body, LOGGER_DEBUG);
+			// Check for one or more embedded photo objects
+		
+			if($source_xml['status_message']['photo']) {
+				$photos = $source_xml['status_message']['photo'];
+				if(array_key_exists($photos['remote_photo_path'])) {
+					$photos = [ $photos ];
+				}
+				if($photos) {
+					foreach($photos as $ph) {
+						if($ph['remote_photo_path'] && $ph['remote_photo_name']) {
+							$remote_photo_path = notags($this->get_property('remote_photo_path',$ph));
+							$remote_photo_name = notags($this->get_property('remote_photo_name',$ph));
+							$body = $body . "\n" . '[img]' . $remote_photo_path . $remote_photo_name . '[/img]' . "\n";
+							logger('reshare: embedded picture link found: '.$body, LOGGER_DEBUG);
+						}
+					}
+				}
 			}
 
 			$body = scale_external_images($body);
-
-		}
-		else {
-			// Maybe it is a reshare of a photo that will be delivered at a later time (testing)
-			logger('diaspora_reshare: no reshare content found: ' . print_r($source_xml,true));
-			$body = "";
-			//return;
 		}
 
 		$maxlen = get_max_import_size();
@@ -504,16 +500,12 @@ class Diaspora_Receiver {
 			}
 		}
 
-
-
-
-
 		$newbody = "[share author='" . urlencode($orig_author_name) 
 			. "' profile='" . $orig_author_link 
-			. "' avatar='" . $orig_author_photo 
-			. "' link='" . $orig_url
-			. "' posted='" . datetime_convert('UTC','UTC',unxmlify($source_xml['status_message']['created_at']))
-			. "' message_id='" . unxmlify($source_xml['status_message']['guid'])
+			. "' avatar='"  . $orig_author_photo 
+			. "' link='"    . $orig_url
+			. "' posted='"  . datetime_convert('UTC','UTC',$this->get_property('created_at',$source_xml['status_message']))
+			. "' message_id='" . $this->get_property('guid',$source_xml['status_message'])
 	 		. "']" . $body . "[/share]";
 
 
@@ -529,7 +521,6 @@ class Diaspora_Receiver {
 
 		$datarray['body'] = $newbody;
 		$datarray['app']  = 'Diaspora';
-
 
 		$tgroup = tgroup_check($this->importer['channel_id'],$datarray);
 
@@ -550,7 +541,6 @@ class Diaspora_Receiver {
 		}
 
 		return;
-
 	}
 
 
@@ -566,7 +556,7 @@ class Diaspora_Receiver {
 		$thr_parent = ((array_key_exists('thread_parent_guid',$this->xmlbase)) 
 			? notags($this->get_property('thread_parent_guid')) : '');
 
-		$text = $this->get_property('text');
+		$text = $this->get_body();
 		$author_signature = notags($this->get_property('author_signature'));
 		$parent_author_signature = notags($this->get_property('parent_author_signature'));
 
@@ -713,13 +703,13 @@ class Diaspora_Receiver {
 			foreach($results as $result) {
 				$success = $result['success'];
 				if($success['replaced']) {
-					$datarray['term'][] = array(
+					$datarray['term'][] = [
 						'uid'   => $this->importer['channel_id'],
-						'ttype'  => $success['termtype'],
+						'ttype' => $success['termtype'],
 						'otype' => TERM_OBJ_POST,
 						'term'  => $success['term'],
 						'url'   => $success['url']
-					);
+					];
 				}
 			}
 		}
@@ -727,13 +717,13 @@ class Diaspora_Receiver {
 		$cnt = preg_match_all('/@\[url=(.*?)\](.*?)\[\/url\]/ism',$body,$matches,PREG_SET_ORDER);
 		if($cnt) {
 			foreach($matches as $mtch) {
-				$datarray['term'][] = array(
+				$datarray['term'][] = [
 					'uid'   => $this->importer['channel_id'],
-					'ttype'  => TERM_MENTION,
+					'ttype' => TERM_MENTION,
 					'otype' => TERM_OBJ_POST,
 					'term'  => $mtch[2],
 					'url'   => $mtch[1]
-				);
+				];
 			}
 		}
 
@@ -742,13 +732,13 @@ class Diaspora_Receiver {
 			foreach($matches as $mtch) {
 				// don't include plustags in the term
 				$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
-				$datarray['term'][] = array(
+				$datarray['term'][] = [
 					'uid'   => $this->importer['channel_id'],
-					'ttype'  => TERM_MENTION,
+					'ttype' => TERM_MENTION,
 					'otype' => TERM_OBJ_POST,
 					'term'  => $term,
 					'url'   => $mtch[1]
-				);
+				];
 			}
 		}
 
@@ -836,11 +826,11 @@ class Diaspora_Receiver {
 
 	function conversation() {
 
-		$guid = notags(unxmlify($this->xmlbase['guid']));
-		$subject = notags(unxmlify($this->xmlbase['subject']));
+		$guid = notags($this->get_property('guid'));
+		$subject = notags($this->get_property('subject'));
 		$diaspora_handle = notags($this->get_author());
 		$participant_handles = notags($this->get_participants());
-		$created_at = datetime_convert('UTC','UTC',notags(unxmlify($this->xmlbase['created_at'])));
+		$created_at = datetime_convert('UTC','UTC',notags($this->get_property('created_at')));
 
 		$parent_uri = $guid;
  
@@ -875,7 +865,8 @@ class Diaspora_Receiver {
 			if($subject)
 				$nsubject = str_rot47(base64url_encode($subject));
 
-			$r = q("insert into conv (uid,guid,creator,created,updated,subject,recips) values(%d, '%s', '%s', '%s', '%s', '%s', '%s') ",
+			$r = q("insert into conv (uid, guid, creator, created, updated, subject, recips) 
+				values( %d, '%s', '%s', '%s', '%s', '%s', '%s') ",
 				intval($this->importer['channel_id']),
 				dbesc($guid),
 				dbesc($diaspora_handle),
@@ -889,7 +880,7 @@ class Diaspora_Receiver {
 				intval($this->importer['channel_id']),
 				dbesc($guid)
 			);
-			if(count($c))
+			if($c)
 				$conversation = $c[0];
 		}
 		if(! $conversation) {
@@ -898,6 +889,8 @@ class Diaspora_Receiver {
 		}
 
 		$conversation['subject'] = base64url_decode(str_rot47($conversation['subject']));
+
+		/* @fixme use signed field order for signature verification */
 
 		foreach($messages as $mesg) {
 
@@ -918,14 +911,12 @@ class Diaspora_Receiver {
 
 			$body = markdown_to_bb($msg_text);
 
-
 			$maxlen = get_max_import_size();
 
 			if($maxlen && mb_strlen($body) > $maxlen) {
 				$body = mb_substr($body,0,$maxlen,'UTF-8');
 				logger('message length exceeds max_import_size: truncated');
 			}
-
 
 			$author_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($mesg['created_at']) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
 
@@ -983,21 +974,21 @@ class Diaspora_Receiver {
 
 			// @fixme - use mail_store or mail_store_lowlevel
 
-			q("insert into mail ( account_id, channel_id, convid, conv_guid, from_xchan,to_xchan,title,body, sig, mail_obscured,mid,parent_mid,created) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s')",
-				intval($this->importer['channel_account_id']),
-				intval($this->importer['channel_id']),
-				intval($conversation['id']),
-				dbesc($conversation['guid']),
-				dbesc($person['xchan_hash']),
-				dbesc($this->importer['channel_hash']),
-				dbesc($subject),
-				dbesc($body),
-				dbesc($sig),
-				intval(1),
-				dbesc($msg_guid),
-				dbesc($stored_parent_mid),
-				dbesc($msg_created_at)
-			);
+			$x = mail_store( [
+				'account_id' => intval($this->importer['channel_account_id']),
+				'channel_id' => intval($this->importer['channel_id']),
+				'convid' => intval($conversation['id']),
+				'conv_guid' => $conversation['guid'],
+				'from_xchan' => $person['xchan_hash'],
+				'to_xchan' => $this->importer['channel_hash'],
+				'title' => $subject,
+				'body' => $body,
+				'sig' => $sig,
+				'mail_obscured' => 1,
+				'mid' => $msg_guid,
+				'parent_mid' => $stored_parent_mid,
+				'created' => $msg_created_at
+			]);
 
 			q("update conv set updated = '%s' where id = %d",
 				dbesc(datetime_convert()),
@@ -1121,23 +1112,23 @@ class Diaspora_Receiver {
 
 		$sig = '';
 
-		// @fixme - use mail_store or mail_store_lowlevel
-
-		q("insert into mail ( account_id, channel_id, convid, conv_guid, from_xchan,to_xchan,title,body, sig, mail_obscured,mid,parent_mid,created, mail_isreply) values ( %d, %d, %d, '%s', '%s', '%s', '%s', '%s', '%s', %d, '%s', '%s', '%s', %d)",
-			intval($this->importer['channel_account_id']),
-			intval($this->importer['channel_id']),
-			intval($conversation['id']),
-			dbesc($conversation['guid']),
-			dbesc($person['xchan_hash']),
-			dbesc($this->importer['xchan_hash']),
-			dbesc($subject),
-			dbesc($body),
-			dbesc($sig),
-			intval(1),
-			dbesc($msg_guid),
-			dbesc($parent_ptr),
-			dbesc($msg_created_at),
-			intval(1)
+		$x = mail_store( 
+			[
+				'account_id'    => intval($this->importer['channel_account_id']),
+				'channel_id'    => intval($this->importer['channel_id']),
+				'convid'        => intval($conversation['id']),
+				'conv_guid'     => $conversation['guid'],
+				'from_xchan'    => $person['xchan_hash'],
+				'to_xchan'      => $this->importer['xchan_hash'],
+				'title'         => $subject,
+				'body'          => $body,
+				'sig'           => $sig,
+				'mail_obscured' => 1,
+				'mid'           => $msg_guid,
+				'parent_mid'    => $parent_ptr,
+				'created'       => $msg_created_at,
+				'mail_isreply'  => 1
+			]
 		);
 
 		q("update conv set updated = '%s' where id = %d",
@@ -1164,6 +1155,8 @@ class Diaspora_Receiver {
 
 
 	function photo() {
+
+		// Probably not used any more
 
 		logger('diaspora_photo: init',LOGGER_DEBUG);
 
@@ -1226,19 +1219,17 @@ class Diaspora_Receiver {
 
 	function like() {
 
-		$guid = notags(unxmlify($this->xmlbase['guid']));
-		$parent_guid = notags(unxmlify($this->xmlbase['parent_guid']));
+		$guid = notags($this->get_property('guid'));
+		$parent_guid = notags($this->get_property('parent_guid'));
 		$diaspora_handle = notags($this->get_author());
 		$target_type = notags($this->get_ptype());
-		$positive = notags(unxmlify($this->xmlbase['positive']));
-		$author_signature = notags(unxmlify($this->xmlbase['author_signature']));
+		$positive = notags($this->get_property('positive'));
+		$author_signature = notags($this->get_property('author_signature'));
 
-		$parent_author_signature = (($this->xmlbase['parent_author_signature']) ? notags(unxmlify($this->xmlbase['parent_author_signature'])) : '');
+		$parent_author_signature = $this->get_property('parent_author_signature');
 
 		// likes on comments not supported here and likes on photos not supported by Diaspora
 
-	//	if($target_type !== 'Post')
-	//		return;
 
 		$contact = diaspora_get_contact_by_handle($this->importer['channel_id'],$this->msg['author']);
 		if(! $contact) {
@@ -1335,19 +1326,9 @@ class Diaspora_Receiver {
 				logger('diaspora_like: top-level owner verification failed.');
 				return;
 			}
-
-			//$parent_author_signature = base64_decode($parent_author_signature);
-
-			//if(! rsa_verify($signed_data,$parent_author_signature,$key,'sha256')) {
-			//	if (intval(get_config('system','ignore_diaspora_like_signature')))
-			//		logger('diaspora_like: top-level owner verification failed. Proceeding anyway.');
-			//	else {
-			//		logger('diaspora_like: top-level owner verification failed.');
-			//		return;
-			//	}
-			//}
 		}
 		else {
+
 			// If there's no parent_author_signature, then we've received the like
 			// from the like creator. In that case, the person is "like"ing
 			// our post, so he/she must be a contact of ours and his/her public key
@@ -1359,20 +1340,7 @@ class Diaspora_Receiver {
 				return;
 			}
 
-
-			//$author_signature = base64_decode($author_signature);
-
-			//if(! rsa_verify($signed_data,$author_signature,$key,'sha256')) {
-			//	if (intval(get_config('system','ignore_diaspora_like_signature')))
-			//		logger('diaspora_like: like creator verification failed. Proceeding anyway');
-			//	else {
-			//		logger('diaspora_like: like creator verification failed.');
-			//		return;
-			//	}
-			//}
-
 			$this->xmlbase['parent_author_signature'] = diaspora_sign_fields($this->xmlbase,$this->importer['channel_prvkey']);
-
 		}
 	
 		logger('diaspora_like: signature check complete.',LOGGER_DEBUG);
