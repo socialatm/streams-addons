@@ -8,7 +8,6 @@
  * Author: Mike Macgirvin
  * Maintainer: none
  * Requires: pubsubhubbub
- * ServerRoles: basic, standard
  */
 
 
@@ -22,6 +21,7 @@ require_once('include/feedutils.php');
 function gnusoc_load() {
 	register_hook('module_loaded', 'addon/gnusoc/gnusoc.php', 'gnusoc_load_module');
 	register_hook('webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_webfinger');
+	register_hook('discover_channel_webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_discover_channel_webfinger');
 	register_hook('personal_xrd', 'addon/gnusoc/gnusoc.php', 'gnusoc_personal_xrd');
 	register_hook('follow_allow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_allow');
 	register_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
@@ -44,6 +44,7 @@ function gnusoc_load() {
 function gnusoc_unload() {
 	unregister_hook('module_loaded', 'addon/gnusoc/gnusoc.php', 'gnusoc_load_module');
 	unregister_hook('webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_webfinger');
+	unregister_hook('discover_channel_webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_discover_channel_webfinger');
 	unregister_hook('personal_xrd', 'addon/gnusoc/gnusoc.php', 'gnusoc_personal_xrd');
 	unregister_hook('follow_allow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_allow');
 	unregister_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
@@ -89,9 +90,7 @@ function gnusoc_follow_allow(&$a, &$b) {
 	if($b['xchan']['xchan_network'] !== 'gnusoc')
 		return;
 
-	$allowed = get_pconfig($b['channel_id'],'system','gnusoc_allowed');
-	if($allowed === false)
-		$allowed = 1;
+	$allowed = get_pconfig($b['channel_id'],'system','gnusoc_allowed',1);
 	$b['allowed'] = $allowed;
 	$b['singleton'] = 1;  // this network does not support channel clones
 }
@@ -637,5 +636,162 @@ function gnusoc_parse_atom($a,&$b) {
 
 	if($b['result']['app'] === 'web')
 		$b['result']['app'] = 'GNU-Social';
+
+}
+
+function gnusoc_discover_channel_webfinger($a,&$b) {
+
+	require_once('include/network.php');
+
+	$webbie = $b['address'];
+
+	$result = array();
+	$network = null;
+	$gnusoc = false;
+
+	$salmon_key = null;
+	$salmon = '';
+	$atom_feed = null;
+	$uri = '';
+	$avatar = '';
+
+	$x = $b['webfinger'];
+
+	if($x && array_key_exists('links',$x) && $x['links']) {
+		foreach($x['links'] as $link) {
+			if(array_key_exists('rel',$link)) {
+				if($link['rel'] == 'magic-public-key') {
+					if(substr($link['href'],0,5) === 'data:') {
+						$salmon_key = convert_salmon_key($link['href']);
+					}
+				}
+				if($link['rel'] == 'salmon') {
+					$has_salmon = true;
+					$salmon = $link['href'];
+				}
+				if($link['rel'] == 'http://schemas.google.com/g/2010#updates-from') {
+					$atom_feed = $link['href'];
+				}
+			}
+		}
+	}
+
+	if(! ($salmon_key && $atom_feed)) {
+		$x = old_webfinger($webbie);
+		if($x) {
+			logger('old_webfinger: ' . print_r($x,true));
+			foreach($x as $link) {
+				if($link['@attributes']['rel'] === 'salmon')
+					$salmon = unamp($link['@attributes']['href']);
+				if($link['@attributes']['rel'] === NAMESPACE_FEED)
+					$atom_feed = unamp($link['@attributes']['href']);
+				if($link['@attributes']['rel'] === 'http://webfinger.net/rel/profile-page')
+					$uri = unamp($link['@attributes']['href']);
+			}
+		}
+	}
+
+	if($atom_feed && $salmon_key)
+		$gnusoc = true;
+
+	if(! $gnusoc)
+		return;
+
+	$k = z_fetch_url($atom_feed);
+	if($k['success'])
+		$feed_meta = feed_meta($k['body']);
+		
+	if($feed_meta) {
+
+		// stash any discovered pubsubhubbub hubs in case we need to follow them
+		// this will save an expensive lookup later
+
+		if($feed_meta['hubs'] && $address) {
+			set_xconfig($b['address'],'system','push_hubs',$feed_meta['hubs']);
+			set_xconfig($b['address'],'system','feed_url',$atom_feed);
+		}
+		if($feed_meta['author']['author_name']) {
+			$fullname = $feed_meta['author']['author_name'];
+		}
+		if(! $avatar) {
+			if($feed_meta['author']['author_photo'])
+				$avatar = $feed_meta['author']['author_photo'];
+		}
+
+		if((! $uri) && ($feed_meta['author']['author_uri']))
+			$uri = $feed_meta['author']['author_uri'];
+
+	}
+
+	if($uri) {
+		$m = parse_url($uri);
+		$base = $m['scheme'] . '://' . $m['host'];
+		$host = $m['host'];
+	}
+
+	if(! $fullname)
+		$fullname = $b['address'];
+
+
+	if(! ($uri && $fullname && $salmon_key && $salmon))
+		return false;
+
+	$r = q("select * from xchan where xchan_hash = '%s' limit 1",
+		dbesc($b['address'])
+	);
+
+	if($r) {
+		$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
+			dbesc($fullname),
+			dbesc('gnusoc'),
+			dbesc(datetime_convert()),
+			dbesc($b['address'])
+		);
+	}
+	else {
+		$r = xchan_store_lowlevel(
+			[
+				'xchan_hash'		 => $b['address'],
+				'xchan_guid'		 => $uri,
+				'xchan_pubkey'       => $salmon_key,
+				'xchan_addr'		 => $b['address'],
+				'xchan_url'          => $uri,
+				'xchan_name'		 => $fullname,
+				'xchan_name_date'    => datetime_convert(),
+				'xchan_network'      => 'gnusoc'
+			]
+		);
+	}
+	$r = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+		dbesc($b['address'])
+	);
+
+	if(! $r) {
+		$r = hubloc_store_lowlevel(
+			[
+				'hubloc_guid'     => $uri,
+				'hubloc_hash'     => $b['address'],
+				'hubloc_addr'     => $b['address'],
+				'hubloc_network'  => 'gnusoc',
+				'hubloc_url'	  => $base,
+				'hubloc_host'     => $host,
+				'hubloc_callback' => $salmon,
+				'hubloc_updated'  => datetime_convert(),
+				'hubloc_primary'  => 1
+			]
+		);
+	}
+
+	$photos = import_xchan_photo($avatar,$b['address']);
+	$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
+		dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
+		dbesc($photos[0]),
+		dbesc($photos[1]),
+		dbesc($photos[2]),
+		dbesc($photos[3]),
+		dbesc($b['address'])
+	);
+	
+	$b['success'] = true;
 
 }
