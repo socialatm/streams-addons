@@ -39,7 +39,6 @@ function diaspora_load() {
 	register_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
 	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
-	register_hook('legal_webbie','addon/diaspora/diaspora.php','diaspora_legal_webbie');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 
 	diaspora_init_relay();
@@ -62,7 +61,6 @@ function diaspora_unload() {
 	unregister_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
 	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
-	unregister_hook('legal_webbie','addon/diaspora/diaspora.php','diaspora_legal_webbie');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 }
 
@@ -998,9 +996,5 @@ function diaspora_service_plink($a,&$b) {
 		$b['plink'] = $url . '/display/' . $handle . '/' . $guid;
 
 
-}
-
-function diaspora_legal_webbie($a,&$b) {
-	$b['output'] = preg_replace('/([^a-z0-9\_])/','',strtolower($b['input']));
 }
 

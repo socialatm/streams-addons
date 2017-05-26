@@ -32,6 +32,7 @@ function gnusoc_load() {
     register_hook('notifier_process','addon/gnusoc/gnusoc.php','gnusoc_notifier_process');
 	register_hook('follow_from_feed','addon/gnusoc/gnusoc.php','gnusoc_follow_from_feed');
 	register_hook('atom_entry','addon/gnusoc/gnusoc.php','gnusoc_atom_entry');
+	register_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	register_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	register_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
 
@@ -55,6 +56,7 @@ function gnusoc_unload() {
     unregister_hook('notifier_process','addon/gnusoc/gnusoc.php','gnusoc_notifier_process');
 	unregister_hook('follow_from_feed','addon/gnusoc/gnusoc.php','gnusoc_follow_from_feed');
 	unregister_hook('atom_entry','addon/gnusoc/gnusoc.php','gnusoc_atom_entry');
+	unregister_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	unregister_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	unregister_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
 
@@ -504,13 +506,13 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 			if($abook_instance)
 				$abook_instance .= ',';
 			$abook_instance .= z_root();
-		}
 
-		$r = q("update abook set abook_instance = '%s' where abook_id = %d and abook_channel = %d",
-			dbesc($abook_instance),
-			intval($contact['abook_id']),
-			intval($importer['channel_id'])
-		);
+			$r = q("update abook set abook_instance = '%s', abook_not_here = 0 where abook_id = %d and abook_channel = %d",
+				dbesc($abook_instance),
+				intval($contact['abook_id']),
+				intval($importer['channel_id'])
+			);
+		}
 
 		foreach($their_perms as $k => $v)
 			set_abconfig($importer['channel_id'],$contact['abook_xchan'],'their_perms',$k,$v);
@@ -794,5 +796,39 @@ function gnusoc_discover_channel_webfinger($a,&$b) {
 	);
 	
 	$b['success'] = true;
+
+}
+
+
+function gnusoc_import_author(&$a,&$b) {
+
+	$x = $b['author'];
+
+	if(strpos($x['network'],'gnusoc') === false)
+		return;
+
+	if(! $x['address'])
+		return;
+
+	$r = q("select * from xchan where xchan_addr = '%s' limit 1",
+		dbesc($x['address'])
+	);
+	if($r) {
+		logger('in_cache: ' . $x['address'], LOGGER_DATA);
+		$b['result'] = $r[0]['xchan_hash'];
+		return;
+	}
+
+	if(discover_by_webbie($x['address'])) {
+		$r = q("select xchan_hash from xchan where xchan_addr = '%s' limit 1",
+			dbesc($x['address'])
+		);
+		if($r) {
+			$b['result'] = $r[0]['xchan_hash'];
+			return;
+		}
+	}
+
+	return;
 
 }

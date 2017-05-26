@@ -308,10 +308,17 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	$myaddr = channel_reddress($owner);
 	$theiraddr = $contact['xchan_addr'];
 
-	// Diaspora doesn't support threaded comments, but some
-	// versions of Diaspora (i.e. Diaspora-pistos) support
-	// likes on comments
-	if(($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) && $item['thr_parent']) {
+	$conv_like = false;
+	$sub_like = false;
+
+	if(($item['verb'] === ACTIVITY_LIKE) 
+		&& ($item['obj_type'] === ACTIVITY_OBJ_NOTE || $item['obj_type'] === ACTIVITY_OBJ_COMMENT)) {
+		$conv_like = true;
+		if(($item['thr_parent']) && ($item['thr_parent'] != $item['parent_mid']))
+			$sub_like = true;
+	}
+
+	if($sub_like) {		
 		$p = q("select mid, parent_mid from item where mid = '%s' and uid = %d limit 1",
 			dbesc($item['thr_parent']),
 			intval($item['uid'])
@@ -335,7 +342,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 
 	$xmlout = (($uplink) ? '' : diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields')));
 
-	if(($item['verb'] === ACTIVITY_LIKE) && ($parent['mid'] === $parent['parent_mid'])) {
+	if(($conv_like) && (! $sub_like)) {
 		$tpl = get_markup_template('diaspora_like.tpl','addon/diaspora');
 		$like = true;
 		$target_type = 'Post';
@@ -350,34 +357,19 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	}
 
 	
-	if($item['diaspora_meta'] && ! $like) {
-		$diaspora_meta = json_decode($item['diaspora_meta'],true);
-		if($diaspora_meta) {
-			if(array_key_exists('iv',$diaspora_meta)) {
-				$key = get_config('system','prvkey');
-				$meta = json_decode(crypto_unencapsulate($diaspora_meta,$key),true);
-			}
-			else
-				$meta = $diaspora_meta;
-		}
-		$signed_text = $meta['signed_text'];
-		$authorsig   = $meta['signature'];
-		$signer      = $meta['signer'];
-		$text        = $meta['body'];
-	}
-	else {
-		$text = bb_to_markdown($item['body']);
 
-		// sign it
+	$text = bb_to_markdown($item['body']);
 
-		if($like)
-			$signed_text = $positive . ';' . $item['mid'] . ';' . $target_type . ';' . $parent['mid'] . ';' . $myaddr;
-		else
-			$signed_text = $item['mid'] . ';' . $parent['mid'] . ';' . $text . ';' . $myaddr;
+	// sign it
 
-		$authorsig = base64_encode(rsa_sign($signed_text,$owner['channel_prvkey'],'sha256'));
+	if($like)
+		$signed_text = $positive . ';' . $item['mid'] . ';' . $target_type . ';' . $parent['mid'] . ';' . $myaddr;
+	else
+		$signed_text = $item['mid'] . ';' . $parent['mid'] . ';' . $text . ';' . $myaddr;
 
-	}
+	$authorsig = base64_encode(rsa_sign($signed_text,$owner['channel_prvkey'],'sha256'));
+
+
 
 	$msg = replace_macros($tpl,array(
 		'$xml' => $xmlout,

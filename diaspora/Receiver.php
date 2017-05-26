@@ -60,7 +60,7 @@ class Diaspora_Receiver {
 					$abook_instance .= ',';
 				$abook_instance .= z_root();
 
-				$r = q("update abook set abook_instance = '%s' where abook_id = %d and abook_channel = %d",
+				$r = q("update abook set abook_instance = '%s', abook_not_here = 0 where abook_id = %d and abook_channel = %d",
 					dbesc($abook_instance),
 					intval($contact['abook_id']),
 					intval($this->importer['channel_id'])
