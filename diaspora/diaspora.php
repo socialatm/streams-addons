@@ -37,6 +37,7 @@ function diaspora_load() {
 	register_hook('profile_sidebar','addon/diaspora/diaspora.php','diaspora_profile_sidebar');
 	register_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
 	register_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
+	register_hook('markdown_to_bb_init','addon/diaspora/diaspora.php','diaspora_markdown_to_bb_init');
 	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
@@ -59,6 +60,7 @@ function diaspora_unload() {
 	unregister_hook('profile_sidebar','addon/diaspora/diaspora.php','diaspora_profile_sidebar');
 	unregister_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
 	unregister_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
+	unregister_hook('markdown_to_bb_init','addon/diaspora/diaspora.php','diaspora_markdown_to_bb_init');
 	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
@@ -952,6 +954,84 @@ function diaspora_import_author(&$a,&$b) {
 	return;
 
 }
+
+
+function diaspora_mention_callback($matches) {
+
+    $webbie = $matches[2] . '@' . $matches[3];
+    $link = '';
+    if($webbie) {
+        $r = q("select * from hubloc left join xchan on hubloc_hash = xchan_hash where hubloc_addr = '%s' limit 1",
+            dbesc($webbie)
+        );
+        if(! $r) {
+            $x = discover_by_webbie($webbie);
+            if($x) {
+                $r = q("select * from hubloc left join xchan on hubloc_hash = xchan_hash where hubloc_addr = '%s' limit 1",
+                    dbesc($webbie)
+                );
+            }
+        }
+        if($r)
+            $link = $r[0]['xchan_url'];
+    }
+    if(! $link)
+        $link = 'https://' . $matches[3] . '/u/' . $matches[2];
+
+    if($r && $r[0]['hubloc_network'] === 'zot')
+        return '@[zrl=' . $link . ']' . trim($matches[1]) . ((substr($matches[0],-1,1) === '+') ? '+' : '') . '[/zrl]' ;
+    else
+        return '@[url=' . $link . ']' . trim($matches[1]) . ((substr($matches[0],-1,1) === '+') ? '+' : '') . '[/url]' ;
+
+}
+
+function diaspora_mention_callback2($matches) {
+
+    $webbie = $matches[1] . '@' . $matches[2];
+    $link = '';
+    if($webbie) {
+        $r = q("select * from hubloc left join xchan on hubloc_hash = xchan_hash where hubloc_addr = '%s' limit 1",
+            dbesc($webbie)
+        );
+        if(! $r) {
+            $x = discover_by_webbie($webbie);
+            if($x) {
+                $r = q("select * from hubloc left join xchan on hubloc_hash = xchan_hash where hubloc_addr = '%s' limit 1",
+                    dbesc($webbie)
+                );
+            }
+        }
+        if($r)
+            $link = $r[0]['xchan_url'];
+    }
+
+    $name = (($r) ? $r[0]['xchan_name'] : $matches[1]);
+
+    if(! $link)
+        $link = 'https://' . $matches[2] . '/u/' . $matches[1];
+
+    if($r && $r[0]['hubloc_network'] === 'zot')
+        return '@[zrl=' . $link . ']' . trim($name) . ((substr($matches[0],-1,1) === '+') ? '+' : '') . '[/zrl]' ;
+    else
+        return '@[url=' . $link . ']' . trim($name) . ((substr($matches[0],-1,1) === '+') ? '+' : '') . '[/url]' ;
+
+}
+
+function diaspora_markdown_to_bb_init($a,&$s) {
+
+   // if empty link text replace with the url
+    $s = preg_replace("/\[\]\((.*?)\)/ism",'[$1]($1)',$s);
+
+   $s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}\+/','diaspora_mention_callback',$s);
+    $s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}/','diaspora_mention_callback',$s);
+
+    $s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}\+/','diaspora_mention_callback2',$s);
+    $s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}/','diaspora_mention_callback2',$s);
+
+
+}
+
+
 
 function diaspora_bb_to_markdown_bb(&$a,&$Text) {
 
