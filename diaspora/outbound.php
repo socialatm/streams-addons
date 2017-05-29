@@ -1,5 +1,76 @@
 <?php
 
+
+function diaspora_prepare_outbound($msg,$owner,$contact,$owner_prvkey,$contact_pubkey,$public = false) {
+
+	if(defined('DIASPORA_V2')) {
+		$post = diaspora_v2_build($msg,$owner,$contact,$owner_prvkey,$contact_pubkey,$public);
+		logger('diaspora_v2:' . print_r($post,true));
+		return $post;
+	}
+	else {
+		return 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner_prvkey,$contact_pubkey,$public)));
+	}
+}
+
+
+function diaspora_v2_build($msg,$channel,$contact,$prvkey,$pubkey,$public = false) {
+
+	logger('diaspora_v2_build: ' . $msg, LOGGER_DATA, LOG_DEBUG);
+
+    $handle      = channel_reddress($channel);
+	$enchandle   = base64url_encode($handle,false);
+	$b64url_data = base64url_encode($msg,false);
+
+	$data = str_replace(array("\n","\r"," ","\t"),array('','','',''),$b64url_data);
+
+	$type = 'application/xml';
+	$encoding = 'base64url';
+	$alg = 'RSA-SHA256';
+
+	$signable_data = $data  . '.' . base64url_encode($type,false) . '.'
+		. base64url_encode($encoding,false) . '.' . base64url_encode($alg,false) ;
+
+	$signature = rsa_sign($signable_data,$prvkey);
+	$sig = base64url_encode($signature,false);
+
+$magic_env = <<< EOT
+<?xml version='1.0' encoding='UTF-8'?>
+<me:env xmlns:me="http://salmon-protocol.org/ns/magic-env">
+	<me:encoding>base64url</me:encoding>
+	<me:alg>RSA-SHA256</me:alg>
+	<me:data type="application/xml">$data</me:data>
+	<me:sig key_id="$enchandle">$sig</me:sig>
+</me:env>
+EOT;
+
+	logger('diaspora_v2_build: magic_env: ' . $magic_env, LOGGER_DATA, LOG_DEBUG);
+
+	if($public)
+		return $magic_env;
+
+	// if not public, generate the json encryption packet
+
+	$key = openssl_random_pseudo_bytes(32);
+	$iv  = openssl_random_pseudo_bytes(16);
+	$data = AES256CBC_encrypt($magic_env,$key,$iv);
+
+	$key1 = $iv1 = '';
+
+	openssl_public_encrypt($key,$key1,$pubkey);
+	openssl_public_encrypt($iv,$iv1,$pubkey);
+
+	$j = [
+		'aes_key' => [
+			'key' => base64_encode($key1),
+			'iv' => base64_encode($iv1),
+		],
+		'encrypted_magic_envelope' => base64_encode($data)
+	];
+	return json_encode($j);
+
+}
+
 function diaspora_pubmsg_build($msg,$channel,$contact,$prvkey,$pubkey) {
 
 	logger('diaspora_pubmsg_build: ' . $msg, LOGGER_DATA, LOG_DEBUG);
@@ -72,11 +143,7 @@ function diaspora_msg_build($msg,$channel,$contact,$prvkey,$pubkey,$public = fal
 
 	$inner_encrypted = AES256CBC_encrypt($msg,$inner_aes_key,$inner_iv);
 
-//	$padded_data = pkcs5_pad($msg,16);
-//	$inner_encrypted = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $inner_aes_key, $padded_data, MCRYPT_MODE_CBC, $inner_iv);
-
 	$b64_data = base64_encode($inner_encrypted);
-
 
 	$b64url_data = base64url_encode($b64_data,false);
 	$data = str_replace(array("\n","\r"," ","\t"),array('','','',''),$b64url_data);
@@ -102,9 +169,6 @@ $decrypted_header = <<< EOT
 EOT;
 
 	$ciphertext = AES256CBC_encrypt($decrypted_header,$outer_aes_key,$outer_iv);
-
-//	$decrypted_header = pkcs5_pad($decrypted_header,16);
-//	$ciphertext = mcrypt_encrypt(MCRYPT_RIJNDAEL_128, $outer_aes_key, $decrypted_header, MCRYPT_MODE_CBC, $outer_iv);
 
 	$outer_json = json_encode(array('iv' => $b_outer_iv,'key' => $b_outer_aes_key));
 
@@ -166,33 +230,59 @@ function diaspora_share($owner,$contact) {
 
 	$theiraddr = $contact['xchan_addr'];
 
-	$tpl = get_markup_template('diaspora_share.tpl','addon/diaspora');
-	$msg = replace_macros($tpl, array(
-		'$sender' => $myaddr,
-		'$recipient' => $theiraddr
-	));
+	if(defined('DIASPORA_V2')) {
+		$msg = arrtoxml('contact',
+			[
+				'author'    => $myaddr,
+				'recipient' => $theiraddr,
+				'following' => 'true',
+				'sharing'   => 'true'
+			]
+		);
 
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'])));
+	}
+	else {
+		$tpl = get_markup_template('diaspora_share.tpl','addon/diaspora');
+		$msg = replace_macros($tpl, array(
+			'$sender' => $myaddr,
+			'$recipient' => $theiraddr
+		));
+	}
+
+	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey']);
+
 	return(diaspora_queue($owner,$contact,$slap, false));
+	return;
+
 }
 
 function diaspora_unshare($owner,$contact) {
 
-	$myaddr = channel_reddress($owner);
+	$myaddr    = channel_reddress($owner);
+	$theiraddr = $contact['xchan_addr'];
 
-	$tpl = get_markup_template('diaspora_retract.tpl','addon/diaspora');
-	$msg = replace_macros($tpl, array(
-		'$guid'   => $owner['channel_guid'] . str_replace('.','',App::get_hostname()),
-		'$type'   => 'Person',
-		'$handle' => $myaddr
-	));
+	if(defined('DIASPORA_V2')) {
+		$msg = arrtoxml('contact',
+			[
+				'author'    => $myaddr,
+				'recipient' => $theiraddr,
+				'following' => 'false',
+				'sharing'   => 'false'
+			]
+		);
+	}
+	else {
+		$tpl = get_markup_template('diaspora_retract.tpl','addon/diaspora');
+		$msg = replace_macros($tpl, array(
+			'$guid'   => $owner['channel_guid'] . str_replace('.','',App::get_hostname()),
+			'$type'   => 'Person',
+			'$handle' => $myaddr
+		));
+	}
 
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'])));
-
+	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey']);
 	return(diaspora_queue($owner,$contact,$slap, false));
 }
-
-
 
 
 
@@ -203,8 +293,7 @@ function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 	$msg = diaspora_build_status($item,$owner);
 
 	logger('diaspora_send_status: '.$owner['channel_name'].' -> '.$contact['xchan_name'].' base message: ' . $msg, LOGGER_DATA);
-
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
+	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'], $public_batch);
 
 	$qi = array(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 	return $qi;
@@ -309,7 +398,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	$theiraddr = $contact['xchan_addr'];
 
 	$conv_like = false;
-	$sub_like = false;
+	$sub_like  = false;
 
 	if(($item['verb'] === ACTIVITY_LIKE) 
 		&& ($item['obj_type'] === ACTIVITY_OBJ_NOTE || $item['obj_type'] === ACTIVITY_OBJ_COMMENT)) {

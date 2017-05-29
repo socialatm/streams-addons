@@ -10,7 +10,7 @@
  */
 
 
-
+define('DIASPORA_V2',1);
 
 require_once('include/crypto.php');
 require_once('include/items.php');
