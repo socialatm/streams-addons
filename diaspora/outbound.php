@@ -60,11 +60,15 @@ EOT;
 	openssl_public_encrypt($key,$key1,$pubkey);
 	openssl_public_encrypt($iv,$iv1,$pubkey);
 
+	$aes_key => json_encode([
+		'key' => base64_encode($key1),
+		'iv' => base64_encode($iv1),
+	]);
+
+	openssl_public_encrypt($aes_key,$aes_key1,$pubkey);
+
 	$j = [
-		'aes_key' => [
-			'key' => base64_encode($key1),
-			'iv' => base64_encode($iv1),
-		],
+		'aes_key' => base64_encode($aes_key1),
 		'encrypted_magic_envelope' => base64_encode($data)
 	];
 	return json_encode($j);
