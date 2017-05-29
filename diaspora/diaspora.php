@@ -789,7 +789,7 @@ function diaspora_post_local(&$a,&$item) {
 		if($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) {
 			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
 				$meta = [
-					'positive'        => (($item['verb'] === ACTVITY_LIKE) ? 'true' : 'false',
+					'positive'        => (($item['verb'] === ACTVITY_LIKE) ? 'true' : 'false'),
 					'guid'            => $item['mid'],
 					'parent_guid'     => $item['parent_mid'],
 				];
@@ -813,11 +813,11 @@ function diaspora_post_local(&$a,&$item) {
 			];
 
 			if(defined('DIASPORA_V2')) {
-				$meta['author']     => $handle;
-				$meta['created_at'] => datetime_convert('UTC','UTC', $item['created'], 'Y-m-d\TH:i:s\Z');
+				$meta['author']     = $handle;
+				$meta['created_at'] = datetime_convert('UTC','UTC', $item['created'], 'Y-m-d\TH:i:s\Z');
 			}
 			else {
-				$meta['diaspora_handle'] => $handle
+				$meta['diaspora_handle'] = $handle;
 			}
 
 		}

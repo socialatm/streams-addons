@@ -446,7 +446,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 
 	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
-	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
+	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch);
 	return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 }
 
