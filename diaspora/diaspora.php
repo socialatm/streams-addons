@@ -778,8 +778,7 @@ function diaspora_post_local(&$a,&$item) {
 	$author = channelx_by_hash($item['author_xchan']);
 	if($author) {
 
-		// The author has a local channel, If they have this connector installed,
-		// sign the comment and create a Diaspora Comment Virus. 
+		// The author has a local channel and this protocol is enabled, sign the comment/like
 
 		$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
 		if(! $dspr_allowed)
@@ -787,15 +786,21 @@ function diaspora_post_local(&$a,&$item) {
 
 		$handle = channel_reddress($author);
 
-		if($item['verb'] === ACTIVITY_LIKE) {
+		if($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) {
 			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
 				$meta = [
-					'positive'        => 'true',
+					'positive'        => (($item['verb'] === ACTVITY_LIKE) ? 'true' : 'false',
 					'guid'            => $item['mid'],
-					'target_type'     => 'Post',
 					'parent_guid'     => $item['parent_mid'],
-					'diaspora_handle' => $handle
 				];
+				if(defined('DIASPORA_V2')) {
+					$meta['author']      = $handle;
+					$meta['parent_type'] = 'Post';
+				}
+				else {
+					$meta['diaspora_handle'] = $handle;
+					$meta['target_type']     = 'Post';
+				}
 			}
 		}
 		else {
@@ -804,9 +809,17 @@ function diaspora_post_local(&$a,&$item) {
 			$meta = [
 				'guid'            => $item['mid'],
 				'parent_guid'     => $item['parent_mid'],
-				'text'            => $body,
-				'diaspora_handle' => $handle
+				'text'            => $body
 			];
+
+			if(defined('DIASPORA_V2')) {
+				$meta['author']     => $handle;
+				$meta['created_at'] => datetime_convert('UTC','UTC', $item['created'], 'Y-m-d\TH:i:s\Z');
+			}
+			else {
+				$meta['diaspora_handle'] => $handle
+			}
+
 		}
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
@@ -815,58 +828,9 @@ function diaspora_post_local(&$a,&$item) {
 		}
 	}
 
-	if((! $meta) && ($item['author_xchan'] !== $item['owner_xchan'])) {
-
-		// A local comment arrived but the commenter does not have a local channel
-		// or the commenter doesn't have the Diaspora plugin enabled.
-		// The owner *should* have a local channel
-		// Find the owner and if the owner has this addon installed, turn the comment into
-		// a 'wall-to-wall' message containing the author attribution,
-		// with the comment signed by the owner.
-
-		$owner = channelx_by_hash($item['owner_xchan']);
-		if(! $owner)
-			return;
-
-		$dspr_allowed = get_pconfig($owner['channel_id'],'system','diaspora_allowed');
-		if(! $dspr_allowed)
-			return;
-
-		$handle = channel_reddress($owner);
-
-		if($item['verb'] === ACTIVITY_LIKE) {
-			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
-				$meta = [
-					'positive'        => 'true',
-					'guid'            => $item['mid'],
-					'target_type'     => 'Post',
-					'parent_guid'     => $item['parent_mid'],
-					'diaspora_handle' => $handle
-				];
-			}
-		}
-		else {
-			$body = bb_to_markdown($item['body']);
-			$meta = [
-				'guid'            => $item['mid'],
-				'parent_guid'     => $item['parent_mid'],
-				'text'            => $body,
-				'diaspora_handle' => $handle
-			];
-		}
-
-		$meta['author_signature'] = diaspora_sign_fields($meta, $owner['channel_prvkey']);
-		$meta['parent_author_signature'] = diaspora_sign_fields($meta,$owner['channel_prvkey']);
-	}
-
-
 	if($meta)
 		set_iconfig($item,'diaspora','fields', $meta, true);
 
-	// otherwise, neither the author or owner have this plugin installed. Do nothing. 
-
-
-// 	logger('ditem: ' . print_r($item,true));
 
 }
 

@@ -404,7 +404,12 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	$conv_like = false;
 	$sub_like  = false;
 
-	if(($item['verb'] === ACTIVITY_LIKE) 
+	if($uplink) {
+		logger('uplink not supported');
+		return;
+	}
+
+	if((($item['verb'] === ACTIVITY_LIKE) || ($item['verb'] === ACTIVITY_DISLIKE)) 
 		&& ($item['obj_type'] === ACTIVITY_OBJ_NOTE || $item['obj_type'] === ACTIVITY_OBJ_COMMENT)) {
 		$conv_like = true;
 		if(($item['thr_parent']) && ($item['thr_parent'] != $item['parent_mid']))
@@ -412,17 +417,16 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	}
 
 	if($sub_like) {		
+
+		return; // @FIXME
+
 		$p = q("select mid, parent_mid from item where mid = '%s' and uid = %d limit 1",
 			dbesc($item['thr_parent']),
 			intval($item['uid'])
 		);
 	}
 	else {
-		// The first item in the item table with the parent id is the parent. However, MySQL doesn't always
-		// return the items ordered by item.id, in which case the wrong item is chosen as the parent.
-		// The only item with parent and id as the parent id is the parent item.
-		$p = q("select * from item where parent = %d and id = %d limit 1",
-			intval($item['parent']),
+		$p = q("select * from item where id = %d and id = parent limit 1",
 			intval($item['parent'])
 		);
 	}
@@ -431,58 +435,18 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	else
 		return;
 
-	// if uplinking to Diaspora, ignore any existing signatures and create a wall-to-wall.
+	$signed_fields = get_iconfig($item,'diaspora','fields');
 
-	$xmlout = (($uplink) ? '' : diaspora_fields_to_xml(get_iconfig($item,'diaspora','fields')));
-
-	if(($conv_like) && (! $sub_like)) {
-		$tpl = get_markup_template('diaspora_like.tpl','addon/diaspora');
-		$like = true;
-		$target_type = 'Post';
-		$positive = 'true';
-
-		if(intval($item['item_deleted']))
-			logger('diaspora_send_upstream: received deleted "like". Those should go to diaspora_send_retraction');
+	if($signed_fields) {
+		$msg = arrtoxml((($conv_like) ? 'like' : 'comment' ),$signed_fields);
 	}
 	else {
-		$tpl = get_markup_template('diaspora_comment.tpl','addon/diaspora');
-		$like = false;
+		return;
 	}
 
-	
+	logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
 
-	$text = bb_to_markdown($item['body']);
-
-	// sign it
-
-	if($like)
-		$signed_text = $positive . ';' . $item['mid'] . ';' . $target_type . ';' . $parent['mid'] . ';' . $myaddr;
-	else
-		$signed_text = $item['mid'] . ';' . $parent['mid'] . ';' . $text . ';' . $myaddr;
-
-	$authorsig = base64_encode(rsa_sign($signed_text,$owner['channel_prvkey'],'sha256'));
-
-
-
-	$msg = replace_macros($tpl,array(
-		'$xml' => $xmlout,
-		'$guid' => xmlify($item['mid']),
-		'$parent_guid' => xmlify($parent['mid']),
-		'$target_type' =>xmlify($target_type),
-		'$authorsig' => xmlify($authorsig),
-		'$body' => xmlify($text),
-		'$positive' => xmlify($positive),
-		'$handle' => xmlify($myaddr)
-	));
-
-	if($uplink)
-		logger('diaspora_send_upstream: uplink message: ' . $msg, LOGGER_DATA);
-	else
-		logger('diaspora_send_upstream: base message: ' . $msg, LOGGER_DATA);
-
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
-
-
+	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
 	return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 }
 
@@ -497,12 +461,6 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 	$body = $text;
 
-	// Diaspora doesn't support threaded comments, but some
-	// versions of Diaspora (i.e. Diaspora-pistos) support
-	// likes on comments
-
-	// That version is now dead so detect a "sublike" and
-	// just send it as an activity. 
 
 	$sublike = false;
 
