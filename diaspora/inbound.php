@@ -186,6 +186,7 @@ function diaspora_is_blacklisted($s) {
  * 'message' -> decoded Diaspora XML message
  * 'author' -> author diaspora handle
  * 'key' -> author public key (converted to pkcs#8)
+ * 'format' -> 'legacy', 'json', or 'salmon'
  *
  * Author and key are used elsewhere to save a lookup for verifying replies and likes
  */
@@ -354,7 +355,7 @@ function diaspora_decode($importer,$xml,$format) {
 
 	logger('mod-diaspora: Message verified.');
 
-	return array('message' => $final_msg, 'author' => $author_link, 'key' => $key);
+	return array('message' => $final_msg, 'author' => $author_link, 'key' => $key, 'format' => $format);
 
 }
 

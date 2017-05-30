@@ -628,7 +628,7 @@ class Diaspora_Receiver {
 
 		if($parent_author_signature) {
 			// If a parent_author_signature exists, then we've received the comment
-			// relayed from the top-level post owner. 
+			// relayed from the top-level post owner *or* it is legacy protocol. 
 
 			$x = diaspora_verify_fields($unxml,$parent_author_signature,$key);
 			if(! $x) {
@@ -638,9 +638,10 @@ class Diaspora_Receiver {
 		}
 		else {
 
-			// the comment is being sent to the owner to relay
+			// the comment is being sent to the owner to relay 
+			// *or* there is no parent signature because it is the new format
 
-			if($this->importer['system']) {
+			if($this->importer['system'] && $this->msg['format'] === 'legacy') {
 				// don't relay to the sys channel
 				logger('diaspora_comment: relay to sys channel blocked.');
 				return;
@@ -662,8 +663,11 @@ class Diaspora_Receiver {
 			}
 
 			// No parent_author_signature, so let's assume we're relaying the post. Create one. 
-	
-			$unxml['parent_author_signature'] = diaspora_sign_fields($unxml,$this->importer['channel_prvkey']);
+			// in the V2 protocol we don't create a parent_author_signature as the salmon 
+			// magic envelope we will send is signed and verified.
+
+			if(defined('DIASPORA_V2'))	
+				$unxml['parent_author_signature'] = diaspora_sign_fields($unxml,$this->importer['channel_prvkey']);
 
 		}
 
@@ -1292,34 +1296,19 @@ class Diaspora_Receiver {
 		// Note: I don't think "Like" objects with positive = "false" are ever actually used
 		// It looks like "RelayableRetractions" are used for "unlike" instead
 
-		if($positive === 'false') {
-			logger('diaspora_like: received a like with positive set to "false"');
-			logger('diaspora_like: unlike received with no corresponding like...ignoring');
-			return;	
-		}
+		if($positive === 'true')
+			$activity = ACTIVITY_LIKE;
+		else
+			$activity = ACTIVITY_DISLIKE;
 
-
-		/* How Diaspora performs "like" signature checking:
-
-	   - If an item has been sent by the like author to the top-level post owner to relay on
-	     to the rest of the contacts on the top-level post, the top-level post owner should check
-	     the author_signature, then create a parent_author_signature before relaying the like on
-	   - If an item has been relayed on by the top-level post owner, the contacts who receive it
-	     check only the parent_author_signature. Basically, they trust that the top-level post
-	     owner has already verified the authenticity of anything he/she sends out
-	   - In either case, the signature that get checked is the signature created by the person
-	     who sent the salmon
-		*/
-
-
+		// old style signature
 		$signed_data = $positive . ';' . $guid . ';' . $target_type . ';' . $parent_guid . ';' . $diaspora_handle;
 
 		$key = $this->msg['key'];
 
 		if($parent_author_signature) {
 			// If a parent_author_signature exists, then we've received the like
-			// relayed from the top-level post owner. There's no need to check the
-			// author_signature if the parent_author_signature is valid
+			// relayed from the top-level post owner.
 
 			$x = diaspora_verify_fields($this->xmlbase,$parent_author_signature,$key);
 			if(! $x) {
@@ -1340,7 +1329,8 @@ class Diaspora_Receiver {
 				return;
 			}
 
-			$this->xmlbase['parent_author_signature'] = diaspora_sign_fields($this->xmlbase,$this->importer['channel_prvkey']);
+			if(defined('DIASPORA_V2'))
+				$this->xmlbase['parent_author_signature'] = diaspora_sign_fields($this->xmlbase,$this->importer['channel_prvkey']);
 		}
 	
 		logger('diaspora_like: signature check complete.',LOGGER_DEBUG);
@@ -1363,7 +1353,6 @@ class Diaspora_Receiver {
 
 		$uri = $diaspora_handle . ':' . $guid;
 
-		$activity = ACTIVITY_LIKE;
 
 		$post_type = (($parent_item['resource_type'] === 'photo') ? t('photo') : t('status'));
 
@@ -1419,13 +1408,6 @@ class Diaspora_Receiver {
 		$arr['verb'] = $activity;
 		$arr['obj_type'] = $objtype;
 		$arr['obj'] = $object;
-
-		if(! $parent_author_signature) {
-			$key = get_config('system','pubkey');
-			$x = array('signer' => $diaspora_handle, 'body' => $text, 
-				'signed_text' => $signed_data, 'signature' => base64_encode($author_signature));
-			$arr['diaspora_meta'] = json_encode($x);
-		}
 
 		set_iconfig($arr,'diaspora','fields',array_map('unxmlify',$this->xmlbase),true);
 

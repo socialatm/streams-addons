@@ -438,7 +438,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	$signed_fields = get_iconfig($item,'diaspora','fields');
 
 	if($signed_fields) {
-		$msg = arrtoxml((($conv_like) ? 'like' : 'comment' ),$signed_fields);
+		$msg = arrtoxml((($conv_like) ? 'like' : 'comment' ), $signed_fields);
 	}
 	else {
 		return;
