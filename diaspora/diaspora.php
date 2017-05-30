@@ -41,6 +41,7 @@ function diaspora_load() {
 	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
+	register_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
 
 	diaspora_init_relay();
 }
@@ -64,6 +65,7 @@ function diaspora_unload() {
 	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
 	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
+	unregister_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
 }
 
 
@@ -125,7 +127,22 @@ function diaspora_well_known(&$a,&$b) {
 }
 
 
+function diaspora_personal_xrd($a,&$b) {
 
+	if(! intval(get_pconfig($b['user']['channel_id'],'system','diaspora_allowed')))
+		return;
+
+	$dspr = replace_macros(get_markup_template('xrd_diaspora.tpl','addon/diaspora'),
+		[
+			'$baseurl'   => z_root(),
+			'$dspr_guid' => $b['user']['channel_guid'] . str_replace('.','',\App::get_hostname()),
+			'$dspr_key'  => base64_encode(pemtorsa($b['user']['channel_pubkey']))
+		]
+	);
+
+	$b['xml'] = str_replace('</XRD>',$dspr . "\n" . '</XRD>',$b['xml']);
+
+}
 
 
 
