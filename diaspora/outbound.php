@@ -453,177 +453,98 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 
 function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
+
 	$myaddr = channel_reddress($owner);
+	$theiraddr = $contact['xchan_addr'];
 
-	$text = bb_to_markdown($item['body']);
-
-	$parentauthorsig = '';
-
-	$body = $text;
-
-
-	$sublike = false;
-
-	if($item['verb'] === ACTIVITY_LIKE) {
-		if(($item['thr_parent']) && ($item['thr_parent'] !== $item['parent_mid'])) {
-			$sublike = true;
-		}
+	if($item['item_deleted']) {
+		return diaspora_send_retraction($item,$owner,$contact,$public_batch);
 	}
 
-	// The first item in the item table with the parent id is the parent. However, MySQL doesn't always
-	// return the items ordered by item.id, in which case the wrong item is chosen as the parent.
-	// The only item with parent and id as the parent id is the parent item.
+	$conv_like = false;
+	$sub_like  = false;
 
-	$p = q("select * from item where parent = %d and id = %d limit 1",
-		   intval($item['parent']),
-		   intval($item['parent'])
-	);
+	if((($item['verb'] === ACTIVITY_LIKE) || ($item['verb'] === ACTIVITY_DISLIKE)) 
+		&& ($item['obj_type'] === ACTIVITY_OBJ_NOTE || $item['obj_type'] === ACTIVITY_OBJ_COMMENT)) {
+		$conv_like = true;
+		if(($item['thr_parent']) && ($item['thr_parent'] != $item['parent_mid']))
+			$sub_like = true;
+	}
 
+	if($sub_like) {		
 
+		return; // @FIXME
+
+		$p = q("select mid, parent_mid from item where mid = '%s' and uid = %d limit 1",
+			dbesc($item['thr_parent']),
+			intval($item['uid'])
+		);
+	}
+	else {
+		$p = q("select * from item where id = %d and id = parent limit 1",
+			intval($item['parent'])
+		);
+	}
 	if($p)
 		$parent = $p[0];
+	else
+		return;
+
+	$signed_fields = get_iconfig($item,'diaspora','fields');
+
+	if($signed_fields) {
+		$msg = arrtoxml((($conv_like) ? 'like' : 'comment' ), $signed_fields);
+	}
 	else {
-		logger('diaspora_send_downstream: no parent');
 		return;
 	}
 
-	$diaspora_fields = get_iconfig($item,'diaspora','fields');
-	if($diaspora_fields) {
-		$xmlout = diaspora_fields_to_xml($diaspora_fields);
-		$parentauthorsig = diaspora_sign_fields($diaspora_fields,$owner['channel_prvkey']);
-	}
-
-	$like = false;
-	$relay_retract = false;
-	$sql_sign_id = 'iid';
-
-	if( intval($item['item_deleted'])) {
-		$relay_retract = true;
-
-		$target_type = ( ($item['verb'] === ACTIVITY_LIKE && (! $sublike)) ? 'Like' : 'Comment');
-
-		$sql_sign_id = 'retract_iid';
-		$tpl = get_markup_template('diaspora_relayable_retraction.tpl','addon/diaspora');
-	}
-	elseif(($item['verb'] === ACTIVITY_LIKE) && (! $sublike) && ($xmlout)) {
-		$like = true;
-
-		$target_type = ( $parent['mid'] === $parent['parent_mid']  ? 'Post' : 'Comment');
-//		$positive = (intval($item['item_deleted']) ? 'false' : 'true');
-		$positive = 'true';
-
-		$tpl = get_markup_template('diaspora_like_relay.tpl','addon/diaspora');
-	}
-	else { // item is a comment
-		$tpl = get_markup_template('diaspora_comment_relay.tpl','addon/diaspora');
-	}
-
-	$diaspora_meta = (($item['diaspora_meta']) ? json_decode($item['diaspora_meta'],true) : '');
-	if($diaspora_meta) {
-		if(array_key_exists('iv',$diaspora_meta)) {
-			$key = get_config('system','prvkey');
-			$meta = json_decode(crypto_unencapsulate($diaspora_meta,$key),true);
-		}
-		else
-			$meta = $diaspora_meta;
-		$sender_signed_text = $meta['signed_text'];
-		$authorsig = $meta['signature'];
-		$handle = $meta['signer'];
-		$text = $meta['body'];
-	}
-	else {
-		logger('diaspora_send_downstream: original author signature not found');
-	}
-
-	/* Since the author signature is only checked by the parent, not by the relay recipients,
-	 * I think it may not be necessary for us to do so much work to preserve all the original
-	 * signatures. The important thing that Diaspora DOES need is the original creator's handle.
-	 * Let's just generate that and forget about all the original author signature stuff.
-	 *
-	 * Note: this might be more of an problem if we want to support likes on comments for older
-	 * versions of Diaspora (diaspora-pistos), but since there are a number of problems with
-	 * doing that, let's ignore it for now.
-	 *
-	 *
-	 */
-	
-	// bug - nomadic identity may/will affect diaspora_handle_from_contact
-
-	if(! $handle)
-		$handle = channel_reddress($owner);
-
-	if(! $sender_signed_text) {
-		if($relay_retract)
-			$sender_signed_text = $item['mid'] . ';' . $target_type;
-		elseif($like)
-			$sender_signed_text = $positive . ';' . $item['mid'] . ';' . $target_type . ';' . $parent['mid'] . ';' . $handle;
-		else
-			$sender_signed_text = $item['mid'] . ';' . $parent['mid'] . ';' . $text . ';' . $handle;
-	}
-
-
-
-
-	if((! $xmlout) && (! $authorsig))
-		$authorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
-		
-	// Sign the relayable with the top-level owner's signature
-
-	if(! $parentauthorsig)
-		$parentauthorsig = base64_encode(rsa_sign($sender_signed_text,$owner['channel_prvkey'],'sha256'));
-
-	if(! $text)
-		logger('diaspora_send_downstream: no text');
-
-	$msg = replace_macros($tpl,array(
-		'$xml' => $xmlout,
-		'$guid' => xmlify($item['mid']),
-		'$parent_guid' => xmlify($parent['mid']),
-		'$target_type' =>xmlify($target_type),
-		'$authorsig' => xmlify($authorsig),
-		'$parentsig' => xmlify($parentauthorsig),
-		'$body' => xmlify($text),
-		'$positive' => xmlify($positive),
-		'$handle' => xmlify($handle)
-	));
-
 	logger('diaspora_send_downstream: base message: ' . $msg, LOGGER_DATA);
 
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
-
-	return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
+    $slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch);
+    return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 
 }
-
 
 
 function diaspora_send_retraction($item,$owner,$contact,$public_batch = false) {
 
 	$myaddr = channel_reddress($owner);
 
-	// Check whether the retraction is for a top-level post or whether it's a relayable
-	if( $item['mid'] !== $item['parent_mid'] ) {
+	if(! $item['item_deleted'])
+		return;
 
-		$tpl = get_markup_template('diaspora_relay_retraction.tpl','addon/diaspora');
-		$target_type = (($item['verb'] === ACTIVITY_LIKE) ? 'Like' : 'Comment');
+	$r = q("select xchan_addr from xchan where xchan_hash = '%s' limit 1",
+		dbesc($item['author_xchan'])
+	);
+	if($r) {
+		$author = $r[0]['xchan_addr'];
+	}
+	else
+		return;
+
+
+	if( $item['mid'] !== $item['parent_mid'] ) {
+		if(($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) && ($item['obj_type'] === ACTIVITY_TYPE_POST || $item['obj_type'] === ACTIVITY_TYPE_COMMENT)) {
+			$target_type = 'Like';
+		}
+		else {
+			$target_type = 'Comment';
+		}
 	}
 	else {
-		
-		$tpl = get_markup_template('diaspora_signed_retract.tpl','addon/diaspora');
 		$target_type = 'StatusMessage';
 	}
 
-	$signed_text = $item['mid'] . ';' . $target_type;
+	$fields = [
+		'author'      => $author,
+		'target_guid' => $item['mid'],
+		'target_type' => $target_type
+	]; 
 
-	$msg = replace_macros($tpl, array(
-		'$guid'   => xmlify($item['mid']),
-		'$type'   => xmlify($target_type),
-		'$handle' => xmlify($myaddr),
-		'$signature' => xmlify(base64_encode(rsa_sign($signed_text,$owner['channel_prvkey'],'sha256')))
-	));
+	$msg = arrtoxml('retraction',$fields);
 
-	$slap = 'xml=' . urlencode(urlencode(diaspora_msg_build($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch)));
-
+	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch);
 	return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 }
 
