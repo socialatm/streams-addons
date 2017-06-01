@@ -418,7 +418,7 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 
 	if($sub_like) {		
 
-		return; // @FIXME
+		return; // @FIXME not yet supported in Diaspora
 
 		$p = q("select mid, parent_mid from item where mid = '%s' and uid = %d limit 1",
 			dbesc($item['thr_parent']),
@@ -473,7 +473,7 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 
 	if($sub_like) {		
 
-		return; // @FIXME
+		return; // @FIXME not yet supported in Diaspora
 
 		$p = q("select mid, parent_mid from item where mid = '%s' and uid = %d limit 1",
 			dbesc($item['thr_parent']),
@@ -594,8 +594,43 @@ function diaspora_send_mail($item,$owner,$contact) {
 	$parent_ptr = $cnv['guid'];
 
 	$body = bb_to_markdown($item['body']);
+
+	if(defined('DIASPORA_V2')) {
+
+		$conv = null;
+		$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d\TH:i:s\Z');
+		$message = [
+			'author' => $myaddr,
+			'guid' => $item['mid'],
+			'conversation_guid' => $cnv['guid'],
+			'text' => $body,
+			'created_at' => $created
+		]; 
+
+		if(! $item['mail_is_reply']) {
+			$conv = [
+				'author' => $cnv['creator'],
+				'guid' => $cnv['guid'],
+				'subject' => $cnv['subject'],
+				'created_at' => xmlify(datetime_convert('UTC','UTC',$cnv['created'],'Y-m-d\TH:i:s\Z')),
+				'participants' => $cnv['recips'],
+				'message' => $message
+			];
+		}
+
+		if($conv) {
+			$outmsg = arrtoxml('conversation',$conv);
+		}
+		else {
+			$outmsg = arrtoxml('message',$message);
+		}
+
+		$slap = diaspora_prepare_outbound($outmsg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],false);
+		return(diaspora_queue($owner,$contact,$slap,$false,$item['mid']));
+	}
+
 	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
- 
+
 	$signed_text =  $item['mid'] . ';' . $parent_ptr . ';' . $body .  ';' 
 		. $created . ';' . $myaddr . ';' . $cnv['guid'];
 
@@ -699,6 +734,29 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 			}
 		}
 		$tags = xmlify(trim($tags));
+	}
+
+	if(defined('DIASPORA_V2')) {
+
+		$msg = [
+			'author'           => $handle,
+			'first_name'       => $first,
+			'last_name'        => $last,
+			'image_url'        => $large,
+			'image_url_medium' => $medium,
+			'image_url_small'  => $small,
+			'birthday'         => $dob,
+			'gender'           => $gender,
+			'bio'              => $about,
+			'location'         => $location,
+			'searchable'       => $searchable,
+			'nsfw'             => $nsfw,
+			'tag_string'       => $tags
+		];
+
+		$outmsg = arrtoxml('profile',$msg);
+		$slap = diaspora_prepare_outbound($outmsg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch);
+		return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 	}
 
 	$tpl = get_markup_template('diaspora_profile.tpl','addon/diaspora');

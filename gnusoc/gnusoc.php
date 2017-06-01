@@ -368,7 +368,7 @@ function gnusoc_notifier_process(&$a,&$b) {
 
 	logger('notifier process gnusoc');
 
-	logger('notifier data: ' . print_r($b,true));
+	//	logger('notifier data: ' . print_r($b,true));
 
     if(! ($b['normal_mode']))
         return;
