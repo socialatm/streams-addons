@@ -808,6 +808,7 @@ function diaspora_post_local(&$a,&$item) {
 			return;
 
 		$handle = channel_reddress($author);
+		$meta = null;
 
 		if($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) {
 			if($item['thr_parent'] === $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
@@ -844,6 +845,9 @@ function diaspora_post_local(&$a,&$item) {
 			}
 
 		}
+
+		if(! $meta)
+			return;
 
 		$meta['author_signature'] = diaspora_sign_fields($meta, $author['channel_prvkey']);
 		if($item['author_xchan'] === $item['owner_xchan']) {
@@ -943,7 +947,7 @@ function diaspora_import_author(&$a,&$b) {
 }
 
 
-function diaspora_mention_callback($matches) {
+function diaspora_md_mention_callback($matches) {
 
     $webbie = $matches[2] . '@' . $matches[3];
     $link = '';
@@ -972,7 +976,7 @@ function diaspora_mention_callback($matches) {
 
 }
 
-function diaspora_mention_callback2($matches) {
+function diaspora_md_mention_callback2($matches) {
 
     $webbie = $matches[1] . '@' . $matches[2];
     $link = '';
@@ -1006,14 +1010,14 @@ function diaspora_mention_callback2($matches) {
 
 function diaspora_markdown_to_bb_init($a,&$s) {
 
-   // if empty link text replace with the url
-    $s = preg_replace("/\[\]\((.*?)\)/ism",'[$1]($1)',$s);
+	// if empty link text replace with the url
+	$s = preg_replace("/\[\]\((.*?)\)/ism",'[$1]($1)',$s);
 
-   $s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}\+/','diaspora_mention_callback',$s);
-    $s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}/','diaspora_mention_callback',$s);
+  	$s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}\+/','diaspora_md_mention_callback',$s);
+	$s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}/','diaspora_md_mention_callback',$s);
 
-    $s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}\+/','diaspora_mention_callback2',$s);
-    $s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}/','diaspora_mention_callback2',$s);
+	$s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}\+/','diaspora_md_mention_callback2',$s);
+	$s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}/','diaspora_md_mention_callback2',$s);
 
 
 }
