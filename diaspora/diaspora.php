@@ -810,9 +810,9 @@ function diaspora_post_local(&$a,&$item) {
 		$handle = channel_reddress($author);
 
 		if($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) {
-			if($item['thr_parent'] == $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
+			if($item['thr_parent'] === $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
 				$meta = [
-					'positive'        => (($item['verb'] === ACTVITY_LIKE) ? 'true' : 'false'),
+					'positive'        => (($item['verb'] === ACTIVITY_LIKE) ? 'true' : 'false'),
 					'guid'            => $item['mid'],
 					'parent_guid'     => $item['parent_mid'],
 				];
