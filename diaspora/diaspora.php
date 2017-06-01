@@ -42,6 +42,7 @@ function diaspora_load() {
 	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 	register_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
+	register_hook('author_is_pmable','addon/diaspora/diaspora.php','diaspora_author_is_pmable');
 
 	diaspora_init_relay();
 }
@@ -66,6 +67,7 @@ function diaspora_unload() {
 	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 	unregister_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
+	unregister_hook('author_is_pmable','addon/diaspora/diaspora.php','diaspora_author_is_pmable');
 }
 
 
@@ -84,7 +86,10 @@ function diaspora_init_relay() {
 	}
 }
 
-
+function diaspora_author_is_pmable($a, &$b) {
+	if($b['abook'] && (! intval($b['abook']['abook_not_here'])) && (strpos($b['xchan']['xchan_network'],'diaspora') !== false))
+		$b['result'] = true;
+}
 
 function diaspora_load_module(&$a, &$b) {
 	if($b['module'] === 'receive') {
