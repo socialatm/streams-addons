@@ -655,18 +655,25 @@ class Diaspora_Receiver {
 			// our post, so he/she must be a contact of ours and his/her public key
 			// should be in $this->msg['key']
 
-
-			$x = diaspora_verify_fields($unxml,$author_signature,$key);
-			if(! $x) {
-				logger('diaspora_comment: comment author verification failed.');
-				return;
+			if(! $author_signature) {
+				if($parent_item['owner_xchan'] !== $this->msg['author']) {
+					logger('author signature required and not present');
+					return;
+				}
+			}
+			if($author_signature || $this->msg['type'] === 'legacy') {
+				$x = diaspora_verify_fields($unxml,$author_signature,$key);
+				if(! $x) {
+					logger('diaspora_comment: comment author verification failed.');
+					return;
+				}
 			}
 
 			// No parent_author_signature, so let's assume we're relaying the post. Create one. 
 			// in the V2 protocol we don't create a parent_author_signature as the salmon 
 			// magic envelope we will send is signed and verified.
 
-			if(defined('DIASPORA_V2'))	
+			if(! defined('DIASPORA_V2'))	
 				$unxml['parent_author_signature'] = diaspora_sign_fields($unxml,$this->importer['channel_prvkey']);
 
 		}
