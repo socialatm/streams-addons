@@ -14,7 +14,6 @@
 
 require_once('include/crypto.php');
 require_once('include/items.php');
-require_once('include/markdown.php');
 require_once('include/queue_fn.php');
 require_once('include/feedutils.php');
 
@@ -224,7 +223,7 @@ function slapper($owner,$url,$slap) {
 		return;
 	}
 
-	logger('slapper called for ' .$url . '. Data: ' . $slap, LOGGER_DATA, LOG_DEBUG);
+	logger('slapper called for '  .$url . '. Data: ' . $slap, LOGGER_DATA, LOG_DEBUG);
 
 	// create a magic envelope
 
