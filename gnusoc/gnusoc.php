@@ -709,7 +709,7 @@ function gnusoc_discover_channel_webfinger($a,&$b) {
 		// stash any discovered pubsubhubbub hubs in case we need to follow them
 		// this will save an expensive lookup later
 
-		if($feed_meta['hubs'] && $address) {
+		if($feed_meta['hubs'] && $b['address']) {
 			set_xconfig($b['address'],'system','push_hubs',$feed_meta['hubs']);
 			set_xconfig($b['address'],'system','feed_url',$atom_feed);
 		}
