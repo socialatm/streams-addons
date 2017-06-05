@@ -103,7 +103,7 @@ function push_notifier_process(&$a,&$b) {
 
 		$compat = ((strpos('/ofeed/',$rr['topic'])) ? 1 : 0);
 
-		$feed = get_feed_for($channel,'',array('begin' => $rr['last_update'], 'compat' => $compat));
+		$feed = get_feed_for($channel,'',array('begin' => $rr['last_update'], 'compat' => $compat, 'start' => 0, 'records' => 255 ));
 
 		$hmac_sig = hash_hmac("sha1", $feed, $rr['secret']);
 
