@@ -34,6 +34,7 @@ function gnusoc_load() {
 	register_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	register_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	register_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
+	register_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
 
 
 //	register_hook('notifier_hub', 'addon/gnusoc/gnusoc.php', 'gnusoc_process_outbound');
@@ -58,6 +59,7 @@ function gnusoc_unload() {
 	unregister_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	unregister_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	unregister_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
+	unregister_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
 
 }
 
@@ -105,10 +107,35 @@ function gnusoc_follow_local(&$a,&$b) {
 		$hubs = get_xconfig($b['abook']['abook_xchan'],'system','push_hubs');
 		if($hubs) {
 			foreach($hubs as $hub) {
-				pubsubhubbub_subscribe($hub,$b['channel'],$b['abook'],'',$hubmode = 'subscribe');
+				pubsubhubbub_subscribe($hub,$b['channel'],$b['abook'],'','subscribe');
 			}
 		}
 	}
+}
+
+function gnusoc_connection_remove(&$a,&$b) {
+		  
+	$r = q("SELECT abook.*, xchan.*
+		FROM abook left join xchan on abook_xchan = xchan_hash
+		WHERE abook_channel = %d and abook_id = %d LIMIT 1",
+		intval($b['channel_id']),
+		intval($b['abook_id'])
+	);
+
+	if((! $r) || ($r[0]['xchan_network'] !== 'gnusoc'))
+		return;
+
+	require_once('addon/pubsubhubbub/pubsubhubbub.php');
+
+	$channel = channelx_by_n($b['channel_id']);
+	
+	$hubs = get_xconfig($r[0]['xchan_hash'],'system','push_hubs');
+	if($hubs) {
+		foreach($hubs as $hub) {
+			pubsubhubbub_subscribe($hub,$channel,$r[0],'','unsubscribe');
+		}
+	}
+
 }
 
 
