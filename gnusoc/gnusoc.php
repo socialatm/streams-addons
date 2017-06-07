@@ -639,6 +639,10 @@ function gnusoc_parse_atom($a,&$b) {
 	if($b['result']['app'] === 'web')
 		$b['result']['app'] = 'GNU-Social';
 
+	$mastscope = $item->get_item_tags('http://mastodon.social/schema/1.0','scope');
+	if($mastscope)
+		$b['result']['title'] = '';
+
 }
 
 function gnusoc_discover_channel_webfinger($a,&$b) {
