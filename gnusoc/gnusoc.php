@@ -26,6 +26,7 @@ function gnusoc_load() {
 	register_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	register_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
 	register_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
+	register_hook('accept_follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	register_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	register_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
     register_hook('notifier_process','addon/gnusoc/gnusoc.php','gnusoc_notifier_process');
@@ -51,6 +52,7 @@ function gnusoc_unload() {
 	unregister_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
 	unregister_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
+	unregister_hook('accept_follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	unregister_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	unregister_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
     unregister_hook('notifier_process','addon/gnusoc/gnusoc.php','gnusoc_notifier_process');
@@ -63,7 +65,7 @@ function gnusoc_unload() {
 
 }
 
-// @fixme - subscribe to hub(s) on follow
+
 
 
 function gnusoc_load_module(&$a, &$b) {
@@ -101,13 +103,24 @@ function gnusoc_follow_allow(&$a, &$b) {
 
 function gnusoc_follow_local(&$a,&$b) {
 
+	// we are calling this function to handle both
+	// 'follow_local' and 'accept_follow' and which both 
+	// have slightly different hook params
+
+	if(array_key_exists('channel',$b)) {
+		$channel = $b['channel'];
+	}	
+	else {
+		$channel = channelx_by_n($b['channel_id']);
+	}
+
 	require_once('addon/pubsubhubbub/pubsubhubbub.php');
 
 	if($b['abook']['abook_xchan'] && $b['abook']['xchan_network'] === 'gnusoc') {
 		$hubs = get_xconfig($b['abook']['abook_xchan'],'system','push_hubs');
 		if($hubs) {
 			foreach($hubs as $hub) {
-				pubsubhubbub_subscribe($hub,$b['channel'],$b['abook'],'','subscribe');
+				pubsubhubbub_subscribe($hub,$channel,$b['abook'],'','subscribe');
 			}
 		}
 	}
