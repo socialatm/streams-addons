@@ -18,7 +18,7 @@ function pubsubhubbub_install() {
 	  `last_update` datetime NOT NULL DEFAULT '0001-01-01 00:00:00',
 	  `secret` varchar(255) NOT NULL DEFAULT '',
 	  PRIMARY KEY (`id`)
-		) ENGINE=MyISAM DEFAULT CHARSET=utf8");
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 	if($r) {
 		q("alter table push_subscriber add index ( callback_url ) ");
 		q("alter table push_subscriber add index ( topic ) ");
