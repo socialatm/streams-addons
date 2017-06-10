@@ -26,6 +26,7 @@ function gnusoc_load() {
 	register_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	register_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
 	register_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
+	register_hook('create_identity', 'addon/gnusoc/gnusoc.php', 'gnusoc_create_identity');
 	register_hook('accept_follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	register_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	register_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
@@ -52,6 +53,7 @@ function gnusoc_unload() {
 	unregister_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
 	unregister_hook('feature_settings', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings');
 	unregister_hook('follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
+	unregister_hook('create_identity', 'addon/gnusoc/gnusoc.php', 'gnusoc_create_identity');
 	unregister_hook('accept_follow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_local');
 	unregister_hook('permissions_create', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_create');
 	unregister_hook('queue_deliver', 'addon/gnusoc/gnusoc.php', 'gnusoc_queue_deliver');
@@ -158,6 +160,15 @@ function gnusoc_feature_settings_post(&$a,&$b) {
 		set_pconfig(local_channel(),'system','gnusoc_allowed',intval($_POST['gnusoc_allowed']));
 		info( t('GNU-Social Protocol Settings updated.') . EOL);
 	}
+}
+
+
+function gnusoc_create_identity($a,$b) {
+
+	if(get_config('system','gnusoc_allowed')) {
+		set_pconfig($b,'system','gnusoc_allowed','1');
+	}
+
 }
 
 
