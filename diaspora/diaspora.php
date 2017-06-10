@@ -738,6 +738,8 @@ function diaspora_feature_settings(&$a,&$s) {
 	else
 		$hashtags = '';
 
+	$sc = '<div>' . t('The Diaspora protocol does not support location independence. Connections you make within that network may be unreachable from alternate channel locations.') . '</div><br>';
+
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'	=> array('dspr_allowed', t('Enable the Diaspora protocol for this channel'), $dspr_allowed, '', $yes_no),
 	));

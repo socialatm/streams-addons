@@ -166,6 +166,8 @@ function gnusoc_feature_settings(&$a,&$s) {
 	if($gnusoc_allowed === false)
 		$gnus_allowed = get_config('gnusoc','allowed');	
 
+	$sc = '<div>' . t('The GNU-Social protocol does not support location independence. Connections you make within that network may be unreachable from alternate channel locations.') . '</div><br>';
+
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'	=> array('gnusoc_allowed', t('Enable the GNU-Social protocol for this channel'), $gnusoc_allowed, '', $yes_no),
 	));
