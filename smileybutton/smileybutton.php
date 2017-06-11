@@ -69,17 +69,17 @@ function show_button($a, &$b) {
 	 *
 	 */
 
-	$s = "\t<table class=\"smiley-preview\"><tr>\n";
+	$html = "\t<table class=\"smiley-preview\"><tr>\n";
 	for($x = 0; $x < count($s['texts']); $x ++) {
 		$icon = $s['icons'][$x];
 		$icon = str_replace('/>', 'onclick="smileybutton_addsmiley(\'' . $s['texts'][$x] . '\')"/>', $icon);
 		$icon = str_replace('class="smiley"', 'class="smiley_preview"', $icon);
-		$s .= "<td>" . $icon . "</td>";
+		$html .= "<td>" . $icon . "</td>";
 		if (($x+1) % (sqrt(count($s['texts']))+1) == 0) {
-			$s .= "</tr>\n\t<tr>";
+			$html .= "</tr>\n\t<tr>";
 		}
 	}
-	$s .= "\t</tr></table>\n";
+	$html .= "\t</tr></table>\n";
 
 	/**
 	 *
@@ -118,7 +118,7 @@ function show_button($a, &$b) {
 			$b .= "\t<div id=\"smileybutton\" style=\"display:none;\">\n";
 		}
 	}
-	$b .= $s . "\n"; 
+	$b .= $html . "\n"; 
 	$b .= "</div>\n";
 
 	/**
@@ -220,3 +220,4 @@ function smileybutton_settings(&$a,&$s) {
 		'$content'	=> $sc
 	));
 }
+

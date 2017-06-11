@@ -170,6 +170,7 @@ function nodeinfo_content(&$a) {
 			$services[] = 'twitter';
 		if(in_array('wppost',App::$plugins)) {
 			$services[] = 'wordpress';
+
 // apparently this is not legal in nodeinfo
 //			$iservices[] = 'wordpress';
 		}
@@ -193,3 +194,4 @@ function nodeinfo_content(&$a) {
 
 
 }
+

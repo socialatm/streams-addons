@@ -177,3 +177,4 @@ function statistics_json_cron($a,$b) {
 	logger('statistics_json_cron: cron_end');
 
 }
+
