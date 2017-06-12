@@ -7,7 +7,6 @@
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
- * Requires: pubsubhubbub
  */
 
 
@@ -15,6 +14,18 @@ require_once('include/crypto.php');
 require_once('include/items.php');
 require_once('include/queue_fn.php');
 require_once('include/feedutils.php');
+
+function gnusoc_install() {
+
+	//ensure pubsubhubbub plugin is installed
+
+	$x = in_array('pubsubhubbub',App::$plugins);
+	if(! $x) {
+		App::$plugins[] = 'pubsubhubbub';
+		install_plugin('pubsubhubbub');
+		set_config('system','addon',implode(', ',App::$plugins));
+	}
+}
 
 
 function gnusoc_load() {
