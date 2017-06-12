@@ -348,6 +348,9 @@ class Diaspora_Receiver {
 			return 202;
 		}
 
+		// Diaspora allows anybody to comment on public posts in theory
+		// In fact the comment will be rejected unless it is correctly signed
+
 		if($this->importer['system'] || $this->msg['public']) {
 			$datarray['comment_policy'] = 'network: diaspora';
 		}

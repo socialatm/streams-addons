@@ -43,6 +43,7 @@ function diaspora_load() {
 	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 	register_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
 	register_hook('author_is_pmable','addon/diaspora/diaspora.php','diaspora_author_is_pmable');
+	register_hook('can_comment_on_post','addon/diaspora/diaspora.php','diaspora_can_comment_on_post');
 
 	diaspora_init_relay();
 }
@@ -68,6 +69,7 @@ function diaspora_unload() {
 	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
 	unregister_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
 	unregister_hook('author_is_pmable','addon/diaspora/diaspora.php','diaspora_author_is_pmable');
+	unregister_hook('can_comment_on_post','addon/diaspora/diaspora.php','diaspora_can_comment_on_post');
 }
 
 
@@ -1071,3 +1073,8 @@ function diaspora_service_plink($a,&$b) {
 
 }
 
+function diaspora_can_comment_on_post($a,&$b) {
+	if(local_channel() && strpos($b['item']['comment_policy'],'diaspora') !== false) {
+		$b['allowed'] = get_pconfig(local_channel(),'system','diaspora_allowed');
+	}
+}
