@@ -55,14 +55,11 @@ EOT;
 	$iv  = openssl_random_pseudo_bytes(16);
 	$data = AES256CBC_encrypt($magic_env,$key,$iv);
 
-	$key1 = $iv1 = $aes_key1 = '';
-
-	openssl_public_encrypt($key,$key1,$pubkey);
-	openssl_public_encrypt($iv,$iv1,$pubkey);
+	$aes_key1 = '';
 
 	$aes_key = json_encode([
-		'key' => base64_encode($key1),
-		'iv'  => base64_encode($iv1),
+		'key' => base64_encode($key),
+		'iv'  => base64_encode($iv),
 	]);
 
 	openssl_public_encrypt($aes_key,$aes_key1,$pubkey);
