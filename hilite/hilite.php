@@ -43,7 +43,7 @@ function hilite_text_highlight(&$x) {
 
 	$css = head_get_css();
 	if(strpos($css,'Text_Highlighter/sample.css') === false)
-		head_add_css('addon/hilite/Text_Highlighter/sample.css');
+		head_add_css('/addon/hilite/Text_Highlighter/sample.css');
 
 	$s = $x['text'];
 
