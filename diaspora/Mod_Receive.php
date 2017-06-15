@@ -40,13 +40,8 @@ class Receive extends \Zotlabs\Web\Controller {
 			if(($x = strpos($guid,$hn)) > 0)
 				$guid = substr($guid,0,$x);
 
-			// Sites running old code *may* provide a truncated guid, when GUIDs were 16 hex chars.
-			// This might also be true for older Friendica sites that stored the guid separately. 
-			// We may not require this truncation check any more, but it probably does no harm to leave it.
-			// Forgeries and mischief will be caught out by permission checks later. 
-
-			$r = q("SELECT * FROM channel left join xchan on channel_hash = xchan_hash WHERE channel_guid like '%s' AND channel_removed = 0 LIMIT 1",
-				dbesc($guid . '%')
+			$r = q("SELECT * FROM channel left join xchan on channel_hash = xchan_hash WHERE channel_guid = '%s' AND channel_removed = 0 LIMIT 1",
+				dbesc($guid)
 			);
 
 			if(! $r)
