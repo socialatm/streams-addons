@@ -9,7 +9,7 @@
  * Maintainer: none
  */
 
-
+// use the new federation protocol
 define('DIASPORA_V2',1);
 
 require_once('include/crypto.php');
@@ -23,53 +23,36 @@ require_once('addon/diaspora/util.php');
 
 
 function diaspora_load() {
-	register_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
-	register_hook('notifier_process', 'addon/diaspora/diaspora.php', 'diaspora_notifier_process');
-	register_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
-	register_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
-	register_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
-	register_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
-	register_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
-	register_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
-	register_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
-	register_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
-	register_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
-	register_hook('profile_sidebar','addon/diaspora/diaspora.php','diaspora_profile_sidebar');
-	register_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
-	register_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
-	register_hook('markdown_to_bb_init','addon/diaspora/diaspora.php','diaspora_markdown_to_bb_init');
-	register_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
-	register_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
-	register_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
-	register_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
-	register_hook('author_is_pmable','addon/diaspora/diaspora.php','diaspora_author_is_pmable');
-	register_hook('can_comment_on_post','addon/diaspora/diaspora.php','diaspora_can_comment_on_post');
+
+	Zotlabs\Extend\Hook::register_array('addon/diaspora/diaspora.php', [
+		'notifier_hub'                => 'diaspora_process_outbound',
+		'notifier_process'            => 'diaspora_notifier_process',
+		'permissions_create'          => 'diaspora_permissions_create',
+		'permissions_update'          => 'diaspora_permissions_update',
+		'module_loaded'               => 'diaspora_load_module',
+		'follow_allow'                => 'diaspora_follow_allow',
+		'feature_settings_post'       => 'diaspora_feature_settings_post',
+		'feature_settings'            => 'diaspora_feature_settings',
+		'post_local'                  => 'diaspora_post_local',
+		'well_known'                  => 'diaspora_well_known',
+		'create_identity'             => 'diaspora_create_identity',
+		'profile_sidebar'             => 'diaspora_profile_sidebar',
+		'discover_channel_webfinger'  => 'diaspora_discover',
+		'import_author'               => 'diaspora_import_author',
+		'markdown_to_bb_init'         => 'diaspora_markdown_to_bb_init',
+		'bb_to_markdown_bb'           => 'diaspora_bb_to_markdown_bb',
+		'service_plink'               => 'diaspora_service_plink',
+		'import_foreign_channel_data' => 'diaspora_import_foreign_channel_data',
+		'personal_xrd'                => 'diaspora_personal_xrd',
+		'author_is_pmable'            => 'diaspora_author_is_pmable',
+		'can_comment_on_post'         => 'diaspora_can_comment_on_post'
+	]);
 
 	diaspora_init_relay();
 }
 
 function diaspora_unload() {
-	unregister_hook('notifier_hub', 'addon/diaspora/diaspora.php', 'diaspora_process_outbound');
-	unregister_hook('notifier_process', 'addon/diaspora/diaspora.php', 'diaspora_notifier_process');
-	unregister_hook('permissions_create', 'addon/diaspora/diaspora.php', 'diaspora_permissions_create');
-	unregister_hook('permissions_update', 'addon/diaspora/diaspora.php', 'diaspora_permissions_update');
-	unregister_hook('module_loaded', 'addon/diaspora/diaspora.php', 'diaspora_load_module');
-	unregister_hook('follow_allow', 'addon/diaspora/diaspora.php', 'diaspora_follow_allow');
-	unregister_hook('feature_settings_post', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings_post');
-	unregister_hook('feature_settings', 'addon/diaspora/diaspora.php', 'diaspora_feature_settings');
-	unregister_hook('post_local','addon/diaspora/diaspora.php','diaspora_post_local');
-	unregister_hook('well_known','addon/diaspora/diaspora.php','diaspora_well_known');
-	unregister_hook('create_identity','addon/diaspora/diaspora.php','diaspora_create_identity');
-	unregister_hook('profile_sidebar','addon/diaspora/diaspora.php','diaspora_profile_sidebar');
-	unregister_hook('discover_channel_webfinger','addon/diaspora/diaspora.php','diaspora_discover');
-	unregister_hook('import_author','addon/diaspora/diaspora.php','diaspora_import_author');
-	unregister_hook('markdown_to_bb_init','addon/diaspora/diaspora.php','diaspora_markdown_to_bb_init');
-	unregister_hook('bb_to_markdown_bb','addon/diaspora/diaspora.php','diaspora_bb_to_markdown_bb');
-	unregister_hook('service_plink','addon/diaspora/diaspora.php','diaspora_service_plink');
-	unregister_hook('import_foreign_channel_data','addon/diaspora/diaspora.php','diaspora_import_foreign_channel_data');
-	unregister_hook('personal_xrd','addon/diaspora/diaspora.php','diaspora_personal_xrd');
-	unregister_hook('author_is_pmable','addon/diaspora/diaspora.php','diaspora_author_is_pmable');
-	unregister_hook('can_comment_on_post','addon/diaspora/diaspora.php','diaspora_can_comment_on_post');
+	Zotlabs\Extend\Hook::unregister_by_file('addon/diaspora/diaspora.php');
 }
 
 
@@ -88,14 +71,15 @@ function diaspora_init_relay() {
 	}
 }
 
-function diaspora_author_is_pmable($a, &$b) {
+function diaspora_author_is_pmable(&$b) {
 	if($b['abook'] && (! intval($b['abook']['abook_not_here'])) && (strpos($b['xchan']['xchan_network'],'diaspora') !== false))
 		$b['result'] = true;
 }
 
-function diaspora_load_module(&$a, &$b) {
+function diaspora_load_module(&$b) {
 	if($b['module'] === 'receive') {
-		require_once('addon/diaspora/receive.php');
+		require_once('addon/diaspora/Mod_Receive.php');
+		$b['controller'] = new \Zotlabs\Module\Receive();
 		$b['installed'] = true;
 	}
 	if($b['module'] === 'p') {
@@ -110,7 +94,7 @@ function diaspora_load_module(&$a, &$b) {
 }
 
 
-function diaspora_well_known(&$a,&$b) {
+function diaspora_well_known(&$b) {
 	if(argc() > 1 && argv(1) === 'x-social-relay') {
 		$disabled = (get_config('system','disable_discover_tab') || get_config('system','disable_diaspora_discover_tab'));
 		$scope = 'all';
@@ -134,7 +118,7 @@ function diaspora_well_known(&$a,&$b) {
 }
 
 
-function diaspora_personal_xrd($a,&$b) {
+function diaspora_personal_xrd(&$b) {
 
 	if(! intval(get_pconfig($b['user']['channel_id'],'system','diaspora_allowed')))
 		return;
@@ -154,7 +138,7 @@ function diaspora_personal_xrd($a,&$b) {
 
 
 
-function diaspora_permissions_create(&$a,&$b) {
+function diaspora_permissions_create(&$b) {
 	if($b['recipient']['xchan_network'] === 'diaspora' || $b['recipient']['xchan_network'] === 'friendica-over-diaspora') {
 
 		$b['deliveries'] = diaspora_share($b['sender'],$b['recipient']);
@@ -163,14 +147,14 @@ function diaspora_permissions_create(&$a,&$b) {
 	}
 }
 
-function diaspora_permissions_update(&$a,&$b) {
+function diaspora_permissions_update(&$b) {
 	if($b['recipient']['xchan_network'] === 'diaspora' || $b['recipient']['xchan_network'] === 'friendica-over-diaspora') {
 		discover_by_webbie($b['recipient']['xchan_hash']);
 		$b['success'] = 1;
 	}
 }
 
-function diaspora_notifier_process(&$a,&$arr) {
+function diaspora_notifier_process(&$arr) {
 
 	// if it is a public post (reply, etc.), add the chosen relay channel to the recipients
 
@@ -193,7 +177,7 @@ function diaspora_notifier_process(&$a,&$arr) {
 }
 
 
-function diaspora_process_outbound(&$a, &$arr) {
+function diaspora_process_outbound(&$arr) {
 
 /*
 
@@ -471,7 +455,7 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 }
 
 
-function diaspora_follow_allow(&$a, &$b) {
+function diaspora_follow_allow(&$b) {
 
 	if($b['xchan']['xchan_network'] !== 'diaspora' && $b['xchan']['xchan_network'] !== 'friendica-over-diaspora')
 		return;
@@ -484,7 +468,7 @@ function diaspora_follow_allow(&$a, &$b) {
 }
 
 
-function diaspora_discover(&$a,&$b) {
+function diaspora_discover(&$b) {
 
 	require_once('include/network.php');
 
@@ -700,7 +684,7 @@ LSIeXnd14lQYK/uxW/8cTFjcmddsKxeXysoQxbSa9VdDK+KkpZdgYXYrTTofXs6v+
 }
 
 
-function diaspora_feature_settings_post(&$a,&$b) {
+function diaspora_feature_settings_post(&$b) {
 
 	if($_POST['diaspora-submit']) {
 		set_pconfig(local_channel(),'system','diaspora_allowed',intval($_POST['dspr_allowed']));
@@ -727,7 +711,7 @@ function diaspora_feature_settings_post(&$a,&$b) {
 }
 
 
-function diaspora_feature_settings(&$a,&$s) {
+function diaspora_feature_settings(&$s) {
 
 	diaspora_init_relay();
 
@@ -771,7 +755,7 @@ function diaspora_feature_settings(&$a,&$s) {
 
 
 
-function diaspora_post_local(&$a,&$item) {
+function diaspora_post_local(&$item) {
 
 	/**
 	 * If all the conditions are met, generate an instance of the Diaspora Comment Virus
@@ -866,7 +850,7 @@ function diaspora_post_local(&$a,&$item) {
 }
 
 
-function diaspora_create_identity($a,$b) {
+function diaspora_create_identity($b) {
 
 	if(get_config('system','diaspora_allowed')) {
 		set_pconfig($b,'system','diaspora_allowed','1');
@@ -874,7 +858,7 @@ function diaspora_create_identity($a,$b) {
 
 }
 
-function diaspora_import_foreign_channel_data($a,&$data) {
+function diaspora_import_foreign_channel_data(&$data) {
 
 	if(array_key_exists('user',$data) && array_key_exists('version',$data)) {
 		require_once('addon/diaspora/import_diaspora.php');
@@ -884,7 +868,7 @@ function diaspora_import_foreign_channel_data($a,&$data) {
 	}
 }
 		
-function diaspora_profile_sidebar($a,&$x) {
+function diaspora_profile_sidebar(&$x) {
 
 	$profile = $x['profile'];
 
@@ -917,7 +901,7 @@ function diaspora_profile_sidebar($a,&$x) {
 }
 
 
-function diaspora_import_author(&$a,&$b) {
+function diaspora_import_author(&$b) {
 
 	$x = $b['author'];
 
@@ -1012,7 +996,7 @@ function diaspora_md_mention_callback2($matches) {
 
 }
 
-function diaspora_markdown_to_bb_init($a,&$s) {
+function diaspora_markdown_to_bb_init(&$s) {
 
 	// if empty link text replace with the url
 	$s = preg_replace("/\[\]\((.*?)\)/ism",'[$1]($1)',$s);
@@ -1028,7 +1012,7 @@ function diaspora_markdown_to_bb_init($a,&$s) {
 
 
 
-function diaspora_bb_to_markdown_bb(&$a,&$Text) {
+function diaspora_bb_to_markdown_bb(&$Text) {
 
 	$Text = preg_replace_callback('/\@\!?\[([zu])rl\=(\w+.*?)\](\w+.*?)\[\/([zu])rl\]/i', 
 		'diaspora_bb_to_markdown_mention_callback', $Text);
@@ -1060,7 +1044,7 @@ function diaspora_bb_to_markdown_mention_callback($match) {
     return '@' . $match[3];
 }
 
-function diaspora_service_plink($a,&$b) {
+function diaspora_service_plink(&$b) {
 	$contact = $b['xchan'];
 	$url     = $b['url'];
 	$guid    = $b['guid'];
@@ -1073,7 +1057,7 @@ function diaspora_service_plink($a,&$b) {
 
 }
 
-function diaspora_can_comment_on_post($a,&$b) {
+function diaspora_can_comment_on_post(&$b) {
 	if(local_channel() && strpos($b['item']['comment_policy'],'diaspora') !== false) {
 		$b['allowed'] = get_pconfig(local_channel(),'system','diaspora_allowed');
 	}
