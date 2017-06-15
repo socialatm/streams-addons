@@ -826,7 +826,7 @@ function diaspora_post_local(&$item) {
 
 			if(defined('DIASPORA_V2')) {
 				$meta['author']     = $handle;
-				$meta['created_at'] = datetime_convert('UTC','UTC', $item['created'], 'Y-m-d\TH:i:s\Z');
+				$meta['created_at'] = datetime_convert('UTC','UTC', $item['created'], ATOM_TIME );
 			}
 			else {
 				$meta['diaspora_handle'] = $handle;

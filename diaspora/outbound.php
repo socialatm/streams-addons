@@ -595,7 +595,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 	if(defined('DIASPORA_V2')) {
 
 		$conv = null;
-		$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d\TH:i:s\Z');
+		$created = datetime_convert('UTC','UTC',$item['created'],ATOM_TIME);
 		$message = [
 			'author' => $myaddr,
 			'guid' => $item['mid'],
@@ -609,7 +609,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 				'author' => $cnv['creator'],
 				'guid' => $cnv['guid'],
 				'subject' => $cnv['subject'],
-				'created_at' => xmlify(datetime_convert('UTC','UTC',$cnv['created'],'Y-m-d\TH:i:s\Z')),
+				'created_at' => xmlify(datetime_convert('UTC','UTC',$cnv['created'],ATOM_TIME)),
 				'participants' => $cnv['recips'],
 				'message' => $message
 			];

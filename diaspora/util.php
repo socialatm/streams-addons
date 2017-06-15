@@ -204,7 +204,7 @@ function diaspora_build_status($item,$owner) {
 
 	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
 
-	$created_at = datetime_convert('UTC','UTC',$item['created'],'Y-m-d\TH:i:s\Z');
+	$created_at = datetime_convert('UTC','UTC',$item['created'],ATOM_TIME);
 
 	if(defined('DIASPORA_V2')) {
 
