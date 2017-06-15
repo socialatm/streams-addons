@@ -667,6 +667,9 @@ function gnusoc_atom_entry($a,&$b) {
 		$conv = $item['parent_mid'];
 	}
 
+	if(! strpos($conv,':'))
+		$conv = 'X-ZOT:' . $conv;
+
 	$o = '<link rel="ostatus:conversation" href="' . xmlify($conv) . '"/>' . "\r\n";
 	$o .= '<ostatus:conversation>' . xmlify($conv) . '</ostatus:conversation>' . "\r\n";
 
