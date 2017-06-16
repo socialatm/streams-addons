@@ -47,6 +47,7 @@ function gnusoc_load() {
 	register_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	register_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	register_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
+	register_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
 	register_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
 
 
@@ -74,6 +75,7 @@ function gnusoc_unload() {
 	unregister_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	unregister_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	unregister_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
+	unregister_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
 	unregister_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
 
 }
@@ -138,6 +140,30 @@ function gnusoc_follow_local(&$a,&$b) {
 		}
 	}
 }
+
+function gnusoc_cron_daily($a,&$b) {
+
+	// resubscribe periodically so that it doesn't expire
+	// should probably cache the channel lookup
+
+	$r = q("select abook_channel, abook_xchan from abook left join xchan on abook_xchan = xchan_hash where xchan_network = 'gnusoc'");
+	if($r) {
+		require_once('addon/pubsubhubbub/pubsubhubbub.php');
+		foreach($r as $rv) {
+			$channel = channelx_by_n($rv['abook_channel']);
+			if($channel) {
+				$hubs = get_xconfig($rv['abook_xchan'],'system','push_hubs');
+				if($hubs) {
+					foreach($hubs as $hub) {
+						pubsubhubbub_subscribe($hub,$channel,$rv,'','subscribe');
+					}
+				}
+			}
+		}
+	}
+}
+
+
 
 function gnusoc_connection_remove(&$a,&$b) {
 		  
