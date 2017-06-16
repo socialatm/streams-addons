@@ -757,27 +757,7 @@ function diaspora_feature_settings(&$s) {
 
 function diaspora_post_local(&$item) {
 
-	/**
-	 * If all the conditions are met, generate an instance of the Diaspora Comment Virus
-	 *
-	 * Previously all comments from any Hubzilla source (including those who have not opted in to
-	 * Diaspora federation), were required to locally generate a Diaspora comment signature.
-	 * The only exception was wall-to-wall posts which have no local signing authority.
-	 *
-	 * Going forward, if we are asked to propagate the virus and it is not present (due to the post author
-	 * not opting in to Diaspora federation); we will generate a "wall-to-wall" comment and not require 
-	 * a source signature. This allows hubs and communities to opt-out of Diaspora federation and not be
-	 * forced to generate the comment virus regardless. This is necessary because Diaspora now requires
-	 * the virus not just to provide a stored signature and Diaspora formatted text body, but must also 
-	 * include all XML fields presented by the Diaspora protocol when transmitting the comment, while
-	 * maintaining their source order. This is fine for federated communities using UNO, but it makes 
-	 * no sense to require this low-level baggage in channels and communities that have chosen not to use
-	 * the Diaspora protocol and services.
-	 *   
-	 */
-
 	require_once('include/markdown.php');
-
 
 	if($item['mid'] === $item['parent_mid'])
 		return;
@@ -788,12 +768,6 @@ function diaspora_post_local(&$item) {
 
 	$author = channelx_by_hash($item['author_xchan']);
 	if($author) {
-
-		// The author has a local channel and this protocol is enabled, sign the comment/like
-
-		$dspr_allowed = get_pconfig($author['channel_id'],'system','diaspora_allowed');
-		if(! $dspr_allowed)
-			return;
 
 		$handle = channel_reddress($author);
 		$meta = null;
