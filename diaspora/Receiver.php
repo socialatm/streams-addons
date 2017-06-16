@@ -1684,8 +1684,6 @@ class Diaspora_Receiver {
 
 		$signed_text = 'AccountMigration:' . $diaspora_handle . ':' . $new_handle;
 
-		$signed_text2 = 'AccountMigration:' . $diaspora_handle . ';' . $new_handle;
-
 		$signature = $this->get_property('signature');
 
 		if(! $signature) {
@@ -1710,10 +1708,8 @@ class Diaspora_Receiver {
 		$sig_decode = base64_decode($signature);
 
 		if(! rsa_verify($signed_text,$sig_decode,$new_contact['xchan_pubkey'],'sha256')) {
-			if(! rsa_verify($signed_text2,$sig_decode,$new_contact['xchan_pubkey'],'sha256')) {
-				logger('message verification failed.');
-				return 202;
-			}
+			logger('message verification failed.');
+			return 202;
 		}
 
 
