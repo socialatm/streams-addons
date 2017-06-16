@@ -1660,6 +1660,122 @@ class Diaspora_Receiver {
 	}
 
 
+	function account_migration() {
+
+		$diaspora_handle = notags($this->get_author());
+
+		$profile = $this->xmlbase['profile'];
+		if(! $profile) {
+			return;	
+		}
+
+		logger('xml: ' . print_r($this->xmlbase,true), LOGGER_DEBUG);
+
+		if($this->msg['format'] === 'legacy') {
+			return;
+		}
+
+		if($diaspora_handle != $this->msg['author']) {
+			logger('diaspora_post: Potential forgery. Message handle is not the same as envelope sender.');
+			return 202;
+		}
+
+		$new_handle = notags($this->get_author($profile));
+
+		$signed_text = 'AccountMigration:' . $diaspora_handle . ':' . $new_handle;
+
+		$signature = $this->get_property('signature');
+
+		if(! $signature) {
+			logger('signature not found.');
+			return 202;
+		}
+		$signature = str_replace(array(" ","\t","\r","\n"),array("","","",""),$signature);
+
+		$contact = diaspora_get_contact_by_handle($this->importer['channel_id'],$diaspora_handle);
+		if(! $contact) {
+			logger('connection not found.');
+			return 202;
+		}
+
+		$new_contact = find_diaspora_person_by_handle($new_handle);
+
+		if(! $new_contact) {
+			logger('new handle not found.');
+			return 202;
+		}
+
+		$sig_decode = base64_decode($signature);
+
+		if(! rsa_verify($signed_text,$sig_decode,$new_contact['xchan_pubkey'],'sha256')) {
+			logger('message verification failed.');
+			return 202;
+		}
+
+
+		$name = unxmlify($this->get_property('first_name',$profile) . (($this->get_property('last_name',$profile)) ? ' ' . $this->get_property('last_name',$profile) : ''));
+		$image_url = unxmlify($this->get_property('image_url',$profile));
+		$birthday = unxmlify($this->get_property('birthday',$profile));
+
+		$handle_parts = explode("@", $new_handle);
+		if($name === '') {
+			$name = $handle_parts[0];
+		}
+		 
+		if( preg_match("|^https?://|", $image_url) === 0) {
+			$image_url = "http://" . $handle_parts[1] . $image_url;
+		}
+
+		require_once('include/photo/photo_driver.php');
+
+		$images = import_xchan_photo($image_url,$new_contact['xchan_hash']);
+	
+		// Generic birthday. We don't know the timezone. The year is irrelevant. 
+
+		$birthday = str_replace('1000','1901',$birthday);
+
+		$birthday = datetime_convert('UTC','UTC',$birthday,'Y-m-d');
+
+		// this is to prevent multiple birthday notifications in a single year
+		// if we already have a stored birthday and the 'm-d' part hasn't changed, preserve the entry, which will preserve the notify year
+		// currently not implemented
+
+		if(substr($birthday,5) === substr($new_contact['bd'],5))
+			$birthday = $new_contact['bd'];
+
+		$r = q("update xchan set xchan_name = '%s', xchan_name_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s' ",
+			dbesc($name),
+			dbesc(datetime_convert()),
+			dbesc($images[0]),
+			dbesc($images[1]),
+			dbesc($images[2]),
+			dbesc($images[3]),
+			dbesc(datetime_convert()),
+			intval($new_contact['xchan_hash'])
+		); 
+
+		$r = q("update abook set abook_xchan = '%s' where abook_xchan = '%s' and abook_channel = %d",
+			dbesc($new_contact['xchan_hash']),
+			dbesc($contact['xchan_hash']),
+			intval($this->importer['channel_id'])
+		);
+
+		$r = q("update group_member set xchan = '%s' where xchan = '%s' and uid = %d",
+			dbesc($new_contact['xchan_hash']),
+			dbesc($contact['xchan_hash']),
+			intval($this->importer['channel_id'])
+		);		
+
+		// @todo also update private conversational items with the old xchan_hash in an allow_cid or deny_cid acl
+		// Not much point updating other DB objects which wouldn't have been visible without remote authentication
+		// to begin with.
+ 
+		return;
+
+	}
+
+
+
 	function get_author($xml = []) {
 		if(! $xml)
 			$xml = $this->xmlbase;
