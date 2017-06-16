@@ -416,7 +416,7 @@ class Diaspora_Receiver {
 		
 			if($source_xml['status_message']['photo']) {
 				$photos = $source_xml['status_message']['photo'];
-				if(array_key_exists($photos['remote_photo_path'])) {
+				if(array_key_exists('remote_photo_path',$photos)) {
 					$photos = [ $photos ];
 				}
 				if($photos) {
