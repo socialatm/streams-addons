@@ -251,11 +251,14 @@ function salmon_post(&$a) {
 				$status = 202;
         		continue;
 			}
+			$r = q("update abook set abook_connected = '%s' where abook_xchan = '%s' and abook_channel = %d",
+				dbesc(datetime_convert()),
+				dbesc($xchan['xchan_hash']),
+				intval($importer['channel_id'])
+			);
+
 		}
-
-
-
-
+		
 		$parent_item = null;
 		if($item['parent_mid']) {
 			$r = q("select * from item where mid = '%s' and uid = %d limit 1",
