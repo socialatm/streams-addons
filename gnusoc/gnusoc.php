@@ -146,7 +146,7 @@ function gnusoc_cron_daily($a,&$b) {
 	// resubscribe periodically so that it doesn't expire
 	// should probably cache the channel lookup
 
-	$r = q("select abook_channel, abook_xchan from abook left join xchan on abook_xchan = xchan_hash where xchan_network = 'gnusoc'");
+	$r = q("select abook_channel, abook_xchan, abook_id, xchan_hash from abook left join xchan on abook_xchan = xchan_hash where xchan_network = 'gnusoc'");
 	if($r) {
 		require_once('addon/pubsubhubbub/pubsubhubbub.php');
 		foreach($r as $rv) {
