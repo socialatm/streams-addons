@@ -31,7 +31,7 @@ function gnusoc_install() {
 function gnusoc_load() {
 	register_hook('module_loaded', 'addon/gnusoc/gnusoc.php', 'gnusoc_load_module');
 	register_hook('webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_webfinger');
-	register_hook('discover_channel_webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_discover_channel_webfinger');
+	Zotlabs\Extend\Hook::register('discover_channel_webfinger', 'addon/gnusoc/gnusoc.php', 'gnusoc_discover_channel_webfinger',0,(-5));
 	register_hook('personal_xrd', 'addon/gnusoc/gnusoc.php', 'gnusoc_personal_xrd');
 	register_hook('follow_allow', 'addon/gnusoc/gnusoc.php', 'gnusoc_follow_allow');
 	register_hook('feature_settings_post', 'addon/gnusoc/gnusoc.php', 'gnusoc_feature_settings_post');
@@ -742,6 +742,12 @@ function gnusoc_parse_atom($a,&$b) {
 }
 
 function gnusoc_discover_channel_webfinger($a,&$b) {
+
+	// allow more advanced protocols to win, use this as last resort
+	// if there more than one protocol is supported
+
+	if($b['success'])
+		return;
 
 	require_once('include/network.php');
 
