@@ -48,6 +48,7 @@ function gnusoc_load() {
 	register_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	register_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
 	register_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
+	register_hook('can_comment_on_post','addon/gnusoc/gnusoc.php','gnusoc_can_comment_on_post');
 	register_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
 
 
@@ -76,6 +77,7 @@ function gnusoc_unload() {
 	unregister_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
 	unregister_hook('atom_feed','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
 	unregister_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
+	unregister_hook('can_comment_on_post','addon/gnusoc/gnusoc.php','gnusoc_can_comment_on_post');
 	unregister_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
 
 }
@@ -936,4 +938,11 @@ function gnusoc_import_author(&$a,&$b) {
 
 	return;
 
+}
+
+function gnusoc_can_comment_on_post($a,&$b) {
+	if($b['allowed'] !== 'unset')
+		return;
+	if($b['item']['author']['xchan_network'] === 'gnusoc' && $b['observer_hash'] !== '')
+		$b['allowed'] = true;
 }
