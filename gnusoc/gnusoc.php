@@ -576,6 +576,7 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 
 	$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
 	$their_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
+	$their_perms['post_comments'] = 1;
 
 	$r = q("select * from abook where abook_channel = %d and abook_xchan = '%s' limit 1",
 		intval($importer['channel_id']),
@@ -726,8 +727,10 @@ function gnusoc_parse_atom($a,&$b) {
 	$item = $b['item'];
 
   	$rawconv = $item->get_item_tags(NAMESPACE_OSTATUS,'conversation');
-    if($rawconv && $rawconv[0]['data'])
+    if($rawconv && $rawconv[0]['data']) {
         set_iconfig($b['result'],'ostatus','conversation',$rawconv[0]['data'],true);
+		$b['result']['comment_policy'] = 'authenticated';
+	}
 
 	if($b['result']['app'] === 'web')
 		$b['result']['app'] = 'GNU-Social';
