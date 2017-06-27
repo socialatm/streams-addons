@@ -233,6 +233,8 @@ class Diaspora_Receiver {
 		if($photos) {
 			$tmp = '';
 			foreach($photos as $ph) {
+				if((! $ph['remote_photo_path']) || (strpos($ph['remote_photo_path'],'http') !== 0))
+					continue; 
 				$tmp .= '[img]' . $ph['remote_photo_path'] . $ph['remote_photo_name'] . '[/img]' . "\n\n";
 			}
 			
@@ -1885,7 +1887,7 @@ class Diaspora_Receiver {
 
 		if(array_key_exists($property,$xml)) {
 			if(is_array($xml[$property])) {
-				return $xml['property'];
+				return $xml[$property];
 			}
 			else {
 				return unxmlify($xml[$property]);

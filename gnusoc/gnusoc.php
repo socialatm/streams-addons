@@ -517,7 +517,8 @@ function gnusoc_notifier_process(&$a,&$b) {
 	if($b['upstream']) {
 		$slap = str_replace('</entry>', '<link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="' . $r[0]['hubloc_guid'] . '"/></entry>',$slap);
 	}
-logger('slap: ' . $slap);
+
+	logger('slap: ' . $slap, LOGGER_DATA);
 
 
 
@@ -941,8 +942,11 @@ function gnusoc_import_author(&$a,&$b) {
 }
 
 function gnusoc_can_comment_on_post($a,&$b) {
+
 	if($b['allowed'] !== 'unset')
 		return;
-	if($b['item']['author']['xchan_network'] === 'gnusoc' && $b['observer_hash'] !== '')
+	if($b['item']['author']['xchan_network'] === 'gnusoc' && $b['observer_hash'] !== '') {
 		$b['allowed'] = true;
+	}
+
 }
