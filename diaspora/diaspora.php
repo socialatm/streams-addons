@@ -45,7 +45,8 @@ function diaspora_load() {
 		'import_foreign_channel_data' => 'diaspora_import_foreign_channel_data',
 		'personal_xrd'                => 'diaspora_personal_xrd',
 		'author_is_pmable'            => 'diaspora_author_is_pmable',
-		'can_comment_on_post'         => 'diaspora_can_comment_on_post'
+		'can_comment_on_post'         => 'diaspora_can_comment_on_post',
+		'queue_deliver'               => 'diaspora_queue_deliver'
 	]);
 
 	diaspora_init_relay();
@@ -432,7 +433,7 @@ function diaspora_queue($owner,$contact,$slap,$public_batch,$message_id = '') {
 		'hash'       => $hash,
 		'account_id' => $owner['channel_account_id'],
 		'channel_id' => $owner['channel_id'],
-		'driver'     => 'post',
+		'driver'     => 'diaspora',
 		'posturl'    => $dest_url,
 		'notify'     => '',
 		'msg'        => $slap
@@ -1034,5 +1035,66 @@ function diaspora_service_plink(&$b) {
 function diaspora_can_comment_on_post(&$b) {
 	if(local_channel() && strpos($b['item']['comment_policy'],'diaspora') !== false) {
 		$b['allowed'] = get_pconfig(local_channel(),'system','diaspora_allowed');
+	}
+}
+
+
+function diaspora_queue_deliver(&$b) {
+
+	$outq = $b['outq'];
+	$base = $b['base'];
+	$immediate = $b['immediate'];
+
+
+	if($outq['outq_driver'] === 'diaspora') {
+		$first_char = substr(trim($outq['outq_msg']),0,1);
+
+		if($first_char === '{')
+			$content_type = 'application/json';
+		elseif($first_char === '<')
+			$content_type = 'application/magic-envelope+xml';
+		else
+			$content_type = 'application/x-www-form-urlencoded';
+
+
+		$retries = 0;
+		$result = z_post_url($outq['outq_posturl'],$outq['outq_msg'],$retries,[ 'headers' => [ 'Content-type: ' . $content_type ]] );
+
+		if($result['success'] && $result['return_code'] < 300) {
+			logger('deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
+			if($base) {
+				q("update site set site_update = '%s', site_dead = 0 where site_url = '%s' ",
+					dbesc(datetime_convert()),
+					dbesc($base)
+				);
+			}
+			q("update dreport set dreport_result = '%s', dreport_time = '%s' where dreport_queue = '%s'",
+				dbesc('accepted for delivery'),
+				dbesc(datetime_convert()),
+				dbesc($outq['outq_hash'])
+			);
+			remove_queue_item($outq['outq_hash']);
+
+			// server is responding - see if anything else is going to this destination and is piled up 
+			// and try to send some more. We're relying on the fact that do_delivery() results in an 
+			// immediate delivery otherwise we could get into a queue loop. 
+
+			if(! $immediate) {
+				$x = q("select outq_hash from outq where outq_posturl = '%s' and outq_delivered = 0",
+					dbesc($outq['outq_posturl'])
+				);
+
+				$piled_up = array();
+				if($x) {
+					foreach($x as $xx) {
+						 $piled_up[] = $xx['outq_hash'];
+					}
+				}
+				if($piled_up) {
+					do_delivery($piled_up);
+				}
+			}
+		}
+		$b['handled'] = true;
 	}
 }
