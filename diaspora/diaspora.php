@@ -868,10 +868,7 @@ function diaspora_profile_sidebar(&$x) {
 		]
 	);
 
-	$pos = strpos($x['entry'],'</dl>');
-	if($pos) {
-		$x['entry'] = substr_replace($x['entry'],'</dl>' . "\n" . $vcarddata . "\n",$pos,5);
-	}
+	$x['entry'] = str_replace('<div class="hcard-addon"></div>',$vcarddata . '<div class="hcard-addon"></div>', $x['entry']);
 
 }
 
@@ -1047,6 +1044,7 @@ function diaspora_queue_deliver(&$b) {
 
 
 	if($outq['outq_driver'] === 'diaspora') {
+		$b['handled'] = true;
 		$first_char = substr(trim($outq['outq_msg']),0,1);
 
 		if($first_char === '{')
@@ -1095,6 +1093,5 @@ function diaspora_queue_deliver(&$b) {
 				}
 			}
 		}
-		$b['handled'] = true;
 	}
 }
