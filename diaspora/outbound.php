@@ -432,6 +432,8 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	else
 		return;
 
+	diaspora_deliver_local_comments($item,$parent);
+
 	$signed_fields = get_iconfig($item,'diaspora','fields');
 
 	if($signed_fields) {
@@ -446,6 +448,38 @@ function diaspora_send_upstream($item,$owner,$contact,$public_batch = false,$upl
 	$slap = diaspora_prepare_outbound($msg,$owner,$contact,$owner['channel_prvkey'],$contact['xchan_pubkey'],$public_batch);
 	return(diaspora_queue($owner,$contact,$slap,$public_batch,$item['mid']));
 }
+
+// Diaspora will not send comments downstream to the system it originated from.
+// So we have to deliver comments/likes/etc. to everybody on this site that 
+// received the parent. ***IMPORTANT*** check the owner xchan of the parent
+// because others on this system may have received the comment through another
+// route or delivery chain.
+
+function diaspora_deliver_local_comments($item,$parent) {
+
+	$r = q("select aid, uid from item where mid = '%s' and owner_xchan = '%s'",
+		dbesc($parent['mid']),
+		dbesc($parent['owner_xchan'])
+	);
+
+	if(! $r)
+		return;
+
+	$new_item = $item;
+	unset($new_item['owner']);
+	unset($new_item['author']);
+
+	foreach($r as $rv) {
+		if($rv['uid'] === $item['uid'])
+			continue;	 
+		$new_item['uid'] = $rv['uid'];
+		$new_item['aid'] = $rv['aid'];
+		item_store($new_item);
+	}
+
+}
+
+
 
 
 function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
