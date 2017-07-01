@@ -697,10 +697,12 @@ function gnusoc_atom_entry($a,&$b) {
 		$conv = $item['parent_mid'];
 	}
 
+	$conv_link = z_root() . '/display/' . $conv;
+
 	if(! strpos($conv,':'))
 		$conv = 'X-ZOT:' . $conv;
 
-	$o = '<link rel="ostatus:conversation" href="' . xmlify($conv) . '"/>' . "\r\n";
+	$o = '<link rel="ostatus:conversation" href="' . xmlify($conv_link) . '"/>' . "\r\n";
 	$o .= '<ostatus:conversation>' . xmlify($conv) . '</ostatus:conversation>' . "\r\n";
 
 	$b['entry'] = str_replace('</entry>', $o . '</entry>', $b['entry']);
@@ -731,7 +733,8 @@ function gnusoc_parse_atom($a,&$b) {
 
   	$rawconv = $item->get_item_tags(NAMESPACE_OSTATUS,'conversation');
     if($rawconv && $rawconv[0]['data']) {
-        set_iconfig($b['result'],'ostatus','conversation',$rawconv[0]['data'],true);
+		// this is currently done inside include/feedutils
+		// set_iconfig($b['result'],'ostatus','conversation',normalise_id(unxmlify($rawconv[0]['data'])),true);
 		$b['result']['comment_policy'] = 'authenticated';
 	}
 
