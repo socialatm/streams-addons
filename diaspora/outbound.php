@@ -781,6 +781,7 @@ function diaspora_profile_change($channel,$recip,$public_batch = false) {
 			'bio'              => $about,
 			'location'         => $location,
 			'searchable'       => $searchable,
+			'public'           => $searchable,
 			'nsfw'             => $nsfw,
 			'tag_string'       => $tags
 		];
