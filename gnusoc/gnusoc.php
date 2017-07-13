@@ -551,12 +551,20 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 	$xchan    = $b['xchan'];
 	$author   = $b['author'];
 
+	if($b['caught'])
+		return;
+
 	$b['caught'] = true;
 
 	logger('follow activity received');
 
 	logger('author link: ' . $author['author_link']);
 
+	$id = $item['obj']['id'];
+	if((! $id) || (strpos($id,z_root()) === false) || (! strpos($id,$importer['channel_address']))) {
+		logger('follow was for somebody else: ' . $id);
+		return;
+	}
 
 	if(($author) && ($xchan) && (! array_key_exists('xchan_hash',$xchan))) {
 

@@ -29,7 +29,7 @@ function authchoose_zid(&$x) {
 	if(! $c)
 		return;
 
-	$enabled = get_pconfig(local_channel(),'authchoose','enable');
+	$enabled = get_pconfig($c['channel_id'],'authchoose','enable');
 	if(! $enabled)
 		return;
 
