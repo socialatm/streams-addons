@@ -934,31 +934,39 @@ class Diaspora_Receiver {
 				logger('message length exceeds max_import_size: truncated');
 			}
 
-			$author_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($mesg['created_at']) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
 
-			$author_signature = base64_decode($msg_author_signature);
+			if($msg_author_signature || $this->msg['type'] === 'legacy') {
+				$author_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($mesg['created_at']) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
 
-			if(strcasecmp($msg_diaspora_handle,$this->msg['author']) == 0) {
-				$person = $contact;
-				$key = $this->msg['key'];
-			}
-			else {
-				$person = find_diaspora_person_by_handle($msg_diaspora_handle);	
+				$author_signature = base64_decode($msg_author_signature);
 
-				if(is_array($person) && x($person,'xchan_pubkey'))
-					$key = $person['xchan_pubkey'];
+				if(strcasecmp($msg_diaspora_handle,$this->msg['author']) == 0) {
+					$person = $contact;
+					$key = $this->msg['key'];
+				}
 				else {
-					logger('diaspora_conversation: unable to find author details');
+					$person = find_diaspora_person_by_handle($msg_diaspora_handle);	
+
+					if(is_array($person) && x($person,'xchan_pubkey'))
+						$key = $person['xchan_pubkey'];
+					else {
+						logger('diaspora_conversation: unable to find author details');
+						continue;
+					}
+				}
+
+				if(! rsa_verify($author_signed_data,$author_signature,$key,'sha256')) {
+					logger('diaspora_conversation: verification failed.');
 					continue;
 				}
 			}
-
-			if(! rsa_verify($author_signed_data,$author_signature,$key,'sha256')) {
-				logger('diaspora_conversation: verification failed.');
-				continue;
+			else {
+				if(strcasecmp($msg_diaspora_handle,$this->msg['author']) == 0) {
+					$person = $contact;
+				}
 			}
 
-			if($msg_parent_author_signature) {
+			if($msg_parent_author_signature && $this->msg['type'] === 'legacy') {
 				$owner_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($mesg['created_at']) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
 
 				$parent_author_signature = base64_decode($msg_parent_author_signature);
@@ -1081,34 +1089,33 @@ class Diaspora_Receiver {
 		}
 
 
-		$parent_ptr = $msg_parent_guid;
-		if($parent_ptr === $conversation['guid']) {
-			// this should always be the case
-			$x = q("select mid from mail where conv_guid = '%s' and channel_id = %d order by id asc limit 1",
-				dbesc($conversation['guid']),
-				intval($this->importer['channel_id'])
-			);
-			if($x)
-				$parent_ptr = $x[0]['mid'];
+		$x = q("select mid from mail where conv_guid = '%s' and channel_id = %d order by id asc limit 1",
+			dbesc($conversation['guid']),
+			intval($this->importer['channel_id'])
+		);
+		if($x)
+			$parent_ptr = $x[0]['mid'];
+
+		if($msg_author_signature || $this->msg['type'] === 'legacy') {
+			$author_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($this->xmlbase['created_at']) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
+
+			$author_signature = base64_decode($msg_author_signature);
+
+			$person = find_diaspora_person_by_handle($msg_diaspora_handle);	
+			if(is_array($person) && x($person,'xchan_pubkey'))
+				$key = $person['xchan_pubkey'];
+			else {
+				logger('diaspora_message: unable to find author details');
+				return;
+			}
+
+			if(! rsa_verify($author_signed_data,$author_signature,$key,'sha256')) {
+				logger('diaspora_message: verification failed.');
+				return;
+			}
 		}
-
-
-		$author_signed_data = $msg_guid . ';' . $msg_parent_guid . ';' . $msg_text . ';' . unxmlify($this->xmlbase['created_at']) . ';' . $msg_diaspora_handle . ';' . $msg_conversation_guid;
-
-
-		$author_signature = base64_decode($msg_author_signature);
-
-		$person = find_diaspora_person_by_handle($msg_diaspora_handle);	
-		if(is_array($person) && x($person,'xchan_pubkey'))
-			$key = $person['xchan_pubkey'];
 		else {
-			logger('diaspora_message: unable to find author details');
-			return;
-		}
-
-		if(! rsa_verify($author_signed_data,$author_signature,$key,'sha256')) {
-			logger('diaspora_message: verification failed.');
-			return;
+			$person = find_diaspora_person_by_handle($msg_diaspora_handle);	
 		}
 
 		$r = q("select id from mail where mid = '%s' and channel_id = %d limit 1",
@@ -1119,7 +1126,6 @@ class Diaspora_Receiver {
 			logger('diaspora_message: duplicate message already delivered.', LOGGER_DEBUG);
 			return;
 		}
-
 
 		$key = get_config('system','pubkey');
 		// $subject is a copy of the already obscured subject from the conversation structure
