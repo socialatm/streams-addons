@@ -72,7 +72,7 @@ function statistics_init() {
 		"registrations_open" => (($hidden) ? 0 : (get_config('system','register_policy') != 0)),
 		"total_users" => (($hidden) ? 1 : get_config('system','channels_total_stat')),
 		"active_users_halfyear" => (($hidden) ? 1 : get_config('system','channels_active_halfyear_stat')),
-		"active_users_monthly" => (($hidden) ? 1 : get_config('system',channels_active_monthly_stat')),
+		"active_users_monthly" => (($hidden) ? 1 : get_config('system','channels_active_monthly_stat')),
 		"local_posts" => (($hidden) ? 1 : get_config('system','local_posts_stat')),
 		"local_comments" => (($hidden) ? 1 : get_config('statistics','local_comments')),
 		"twitter" => (($hidden) ? false : (bool) get_config('statistics','twitter')),
