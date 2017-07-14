@@ -70,10 +70,10 @@ function statistics_init() {
 		"network" => Zotlabs\Lib\System::get_platform_name(),
 		"version" => (($hidden) ? '0.0' : Zotlabs\Lib\System::get_project_version()),
 		"registrations_open" => (($hidden) ? 0 : (get_config('system','register_policy') != 0)),
-		"total_users" => (($hidden) ? 1 : get_config('statistics','total_users')),
-		"active_users_halfyear" => (($hidden) ? 1 : get_config('statistics','active_users_halfyear')),
-		"active_users_monthly" => (($hidden) ? 1 : get_config('statistics','active_users_monthly')),
-		"local_posts" => (($hidden) ? 1 : get_config('statistics','local_posts')),
+		"total_users" => (($hidden) ? 1 : get_config('system','channels_total_stat')),
+		"active_users_halfyear" => (($hidden) ? 1 : get_config('system','channels_active_halfyear_stat')),
+		"active_users_monthly" => (($hidden) ? 1 : get_config('system',channels_active_monthly_stat')),
+		"local_posts" => (($hidden) ? 1 : get_config('system','local_posts_stat')),
 		"local_comments" => (($hidden) ? 1 : get_config('statistics','local_comments')),
 		"twitter" => (($hidden) ? false : (bool) get_config('statistics','twitter')),
 		"wordpress" => (($hidden) ? false : (bool) get_config('statistics','wordpress'))
@@ -88,72 +88,6 @@ function statistics_init() {
 function statistics_cron($a,$b) {
 
 	logger('statistics_cron: cron_start');
-
-	$r = q("select count(channel_id) as total_users from channel left join account on account_id = channel_account_id
-		where account_flags = 0 ");
-	if($r)
-		$total_users = $r[0]['total_users'];
-
-	$r = q("select channel_id from channel left join account on account_id = channel_account_id
-		where account_flags = 0 and account_lastlog > %s - INTERVAL %s",
-		db_utcnow(), db_quoteinterval('6 MONTH')
-	);
-	if($r) {
-		$s = '';
-		foreach($r as $rr) {
-			if($s)
-				$s .= ',';
-			$s .= intval($rr['channel_id']);
-		}
-		$x = q("select uid from item where uid in ( $s ) and item_wall !=  0 and created > %s - INTERVAL %s group by uid",
-			db_utcnow(), db_quoteinterval('6 MONTH')
-		);
-		if($x)
-			$active_users_halfyear = count($x);
-	}
-
-	$r = q("select channel_id from channel left join account on account_id = channel_account_id
-		where account_flags = 0 and account_lastlog > %s - INTERVAL %s",
-		db_utcnow(), db_quoteinterval('1 MONTH')
-	);
-	if($r) {
-		$s = '';
-		foreach($r as $rr) {
-			if($s)
-				$s .= ',';
-			$s .= intval($rr['channel_id']);
-		}
-		$x = q("select uid from item where uid in ( $s ) and item_wall != 0 and created > %s - INTERVAL %s group by uid",
-			db_utcnow(), db_quoteinterval('1 MONTH')
-		);
-		if($x)
-			$active_users_monthly = count($x);
-	}
-
-
-	set_config('statistics','total_users', $total_users);
-
-	set_config('statistics','active_users_halfyear', $active_users_halfyear);
-	set_config('statistics','active_users_monthly', $active_users_monthly);
-
-
-	$posts = q("SELECT COUNT(*) AS local_posts FROM item WHERE item_wall != 0 ");
-	if (!is_array($posts))
-		$local_posts = -1;
-	else
-		$local_posts = $posts[0]["local_posts"];
-
-	set_config('statistics','local_posts', $local_posts);
-
-
-	$posts = q("SELECT COUNT(*) AS local_posts FROM item WHERE item_wall != 0 and id != parent");
-	if (!is_array($posts))
-		$local_posts = -1;
-	else
-		$local_posts = $posts[0]["local_posts"];
-
-	set_config('statistics','local_comments', $local_posts);
-
 
 	$wordpress = false;
 	$r = q("select * from addon where hidden = 0 and aname = 'wppost'");

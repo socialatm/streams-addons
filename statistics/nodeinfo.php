@@ -47,12 +47,12 @@ function nodeinfo_content(&$a) {
 			'openRegistrations' => ((get_config('system','register_policy') === REGISTER_OPEN) ? true : false),
 			'usage' => array(
 				'users' => array(
-					'total' => intval(get_config('statistics','total_users')),
-					'activeHalfyear' => intval(get_config('statistics','active_users_halfyear')),
-					'activeMonth' => intval(get_config('statistics','active_users_monthly')),
+					'total' => intval(get_config('system','channels_total_stat')),
+					'activeHalfyear' => intval(get_config('system','channels_active_halfyear_stat')),
+					'activeMonth' => intval(get_config('system','channels_active_monthly_stat')),
 				),
-				'localPosts' => intval(get_config('statistics','local_posts')),
-				'localComments' => intval(get_config('statistics','local_comments')),
+				'localPosts' => intval(get_config('system','local_posts_stat')),
+				'localComments' => intval(get_config('system','local_comments_stat')),
 			)
 		);
 
@@ -119,14 +119,15 @@ function nodeinfo_content(&$a) {
 			'protocols' => array('inbound' => array('zot'), 'outbound' => array('zot')),
 			'services' => array(),
 			'openRegistrations' => ((get_config('system','register_policy') === REGISTER_OPEN) ? true : false),
+
 			'usage' => array(
 				'users' => array(
-					'total' => intval(get_config('statistics','total_users')),
-					'activeHalfyear' => intval(get_config('statistics','active_users_halfyear')),
-					'activeMonth' => intval(get_config('statistics','active_users_monthly')),
+					'total' => intval(get_config('system','channels_total_stat')),
+					'activeHalfyear' => intval(get_config('system','channels_active_halfyear_stat')),
+					'activeMonth' => intval(get_config('system','channels_active_monthly_stat')),
 				),
-				'localPosts' => intval(get_config('statistics','local_posts')),
-				'localComments' => intval(get_config('statistics','local_comments')),
+				'localPosts' => intval(get_config('system','local_posts_stat')),
+				'localComments' => intval(get_config('system','local_comments_stat')),
 			)
 		);
 
