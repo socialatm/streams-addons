@@ -3,7 +3,7 @@
 
 /**
  * Name: Diaspora Protocol
- * Description: Diaspora Protocol. Install Diaspora Statistics (statistics_json) first if you wish to use public tag relays
+ * Description: Diaspora Protocol. Install 'Diaspora Statistics' first if you wish to use public tag relays
  * Version: 1.0
  * Author: Mike Macgirvin
  * Maintainer: none
@@ -59,7 +59,7 @@ function diaspora_unload() {
 
 function diaspora_init_relay() {
 	if(! get_config('diaspora','relay_handle')) {
-		if(plugin_is_installed('statistics_json')) {
+		if(plugin_is_installed('statistics')) {
 			$x = ['author' => [ 'address' => 'relay@relay.iliketoast.net', 'network' => 'diaspora' ], 'result' => false ];
 			diaspora_import_author('placeholder',$x);
 			if($x['result']) {
@@ -704,7 +704,7 @@ function diaspora_feature_settings_post(&$b) {
 		}
 		set_pconfig(local_channel(),'diaspora','followed_tags',$ntags);
 
-		if(plugin_is_installed('statistics_json'))
+		if(plugin_is_installed('statistics'))
 			diaspora_build_relay_tags();
 		
 		info( t('Diaspora Protocol Settings updated.') . EOL);
@@ -739,7 +739,7 @@ function diaspora_feature_settings(&$s) {
 		'$field'	=> array('dspr_hijack', t('Prevent your hashtags from being redirected to other sites'), $hijacking, '', $yes_no),
 	));
 
-	if(plugin_is_installed('statistics_json')) {
+	if(plugin_is_installed('statistics')) {
 		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
 			'$field'	=> array('dspr_followed', t('Followed hashtags (comma separated, do not include the #)'), $hashtags, '')
 		));

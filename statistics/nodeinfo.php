@@ -47,12 +47,12 @@ function nodeinfo_content(&$a) {
 			'openRegistrations' => ((get_config('system','register_policy') === REGISTER_OPEN) ? true : false),
 			'usage' => array(
 				'users' => array(
-					'total' => intval(get_config('statistics_json','total_users')),
-					'activeHalfyear' => intval(get_config('statistics_json','active_users_halfyear')),
-					'activeMonth' => intval(get_config('statistics_json','active_users_monthly')),
+					'total' => intval(get_config('statistics','total_users')),
+					'activeHalfyear' => intval(get_config('statistics','active_users_halfyear')),
+					'activeMonth' => intval(get_config('statistics','active_users_monthly')),
 				),
-				'localPosts' => intval(get_config('statistics_json','local_posts')),
-				'localComments' => intval(get_config('statistics_json','local_comments')),
+				'localPosts' => intval(get_config('statistics','local_posts')),
+				'localComments' => intval(get_config('statistics','local_comments')),
 			)
 		);
 
@@ -121,12 +121,12 @@ function nodeinfo_content(&$a) {
 			'openRegistrations' => ((get_config('system','register_policy') === REGISTER_OPEN) ? true : false),
 			'usage' => array(
 				'users' => array(
-					'total' => intval(get_config('statistics_json','total_users')),
-					'activeHalfyear' => intval(get_config('statistics_json','active_users_halfyear')),
-					'activeMonth' => intval(get_config('statistics_json','active_users_monthly')),
+					'total' => intval(get_config('statistics','total_users')),
+					'activeHalfyear' => intval(get_config('statistics','active_users_halfyear')),
+					'activeMonth' => intval(get_config('statistics','active_users_monthly')),
 				),
-				'localPosts' => intval(get_config('statistics_json','local_posts')),
-				'localComments' => intval(get_config('statistics_json','local_comments')),
+				'localPosts' => intval(get_config('statistics','local_posts')),
+				'localComments' => intval(get_config('statistics','local_comments')),
 			)
 		);
 
