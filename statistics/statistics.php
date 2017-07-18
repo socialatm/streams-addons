@@ -10,14 +10,14 @@
  */
 
 function statistics_load() {
-	register_hook('cron_daily', 'addon/statistics/statistics.php', 'statistics_cron');
+	register_hook('cron_weekly', 'addon/statistics/statistics.php', 'statistics_cron_weekly');
 	register_hook('well_known', 'addon/statistics/statistics.php', 'statistics_well_known');
 	register_hook('module_loaded', 'addon/statistics/statistics.php', 'statistics_load_module');
 }
 
 
 function statistics_unload() {
-	unregister_hook('cron_daily', 'addon/statistics/statistics.php', 'statistics_cron');
+	unregister_hook('cron_weekly', 'addon/statistics/statistics.php', 'statistics_cron_weekly');
 	unregister_hook('well_known', 'addon/statistics/statistics.php', 'statistics_well_known');
 	unregister_hook('module_loaded', 'addon/statistics/statistics.php', 'statistics_load_module');
 }
@@ -85,7 +85,7 @@ function statistics_init() {
 	killme();
 }
 
-function statistics_cron($a,$b) {
+function statistics_cron_weekly($a,$b) {
 
 	logger('statistics_cron: cron_start');
 
