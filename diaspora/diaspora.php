@@ -692,6 +692,7 @@ function diaspora_feature_settings_post(&$b) {
 		set_pconfig(local_channel(),'system','diaspora_allowed',intval($_POST['dspr_allowed']));
 		set_pconfig(local_channel(),'system','diaspora_public_comments',intval($_POST['dspr_pubcomment']));
 		set_pconfig(local_channel(),'system','prevent_tag_hijacking',intval($_POST['dspr_hijack']));
+		set_pconfig(local_channel(),'diaspora','sign_unsigned',intval($_POST['dspr_sign']));
 
 		$followed = $_POST['dspr_followed'];
 		$ntags = array();
@@ -720,6 +721,7 @@ function diaspora_feature_settings(&$s) {
 	$dspr_allowed = get_pconfig(local_channel(),'system','diaspora_allowed');
 	$pubcomments  = get_pconfig(local_channel(),'system','diaspora_public_comments',1);
 	$hijacking    = get_pconfig(local_channel(),'system','prevent_tag_hijacking');
+	$signing      = get_pconfig(local_channel(),'diaspora','sign_unsigned');
 	$followed     = get_pconfig(local_channel(),'diaspora','followed_tags');
 	if(is_array($followed))
 		$hashtags = implode(',',$followed);
@@ -738,6 +740,10 @@ function diaspora_feature_settings(&$s) {
 
 	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
 		'$field'	=> array('dspr_hijack', t('Prevent your hashtags from being redirected to other sites'), $hijacking, '', $yes_no),
+	));
+
+	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+		'$field'	=> array('dspr_sign', t('Sign and forward posts and comments with no existing Diaspora signature'), $signing, '', $yes_no),
 	));
 
 	if(plugin_is_installed('statistics')) {

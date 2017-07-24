@@ -183,6 +183,31 @@ function diaspora_magic_env($channel,$msg) {
 	);
 }
 
+function diaspora_share_unsigned(&$item,$author) {
+
+	if(! $author) {
+		$r = q("select * from xchan where xchan_hash = '%s' limit 1",
+			dbesc($item['author_xchan'])
+		);
+		if($r) {
+			$author = $r[0];
+		}
+		else {
+			return;
+		}
+	}
+
+	// post will come across with the owner's identity. Throw a preamble onto the post to indicate the true author.
+	$item['body'] = "\n\n"
+		. '[quote]'
+		. '[img]' . $author['xchan_photo_s'] . '[/img]'
+		. ' '
+		. '[url=' . $author['xchan_url'] . '][b]' . $author['xchan_name'] . '[/b][/url]' . "\n\n"
+		. $item['body']
+		. '[/quote]';
+
+}
+
 
 function diaspora_build_status($item,$owner) {
 
@@ -191,6 +216,11 @@ function diaspora_build_status($item,$owner) {
 	if(intval($item['id']) != intval($item['parent'])) {
 		logger('attempted to send a comment as a top-level post');
 		return;
+	}
+
+	if(($item['item_wall']) && ($item['owner_xchan'] != $item['author_xchan']) &&
+		get_pconfig($owner['channel_id'],'diaspora','sign_unsigned')) {
+		diaspora_share_unsigned($item,(($item['author']) ? $item['author'] : null));
 	}
 
 	$images = array();

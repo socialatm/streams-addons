@@ -527,7 +527,25 @@ function diaspora_send_downstream($item,$owner,$contact,$public_batch = false) {
 		$msg = arrtoxml((($conv_like) ? 'like' : 'comment' ), $signed_fields);
 	}
 	else {
-		return;
+		if($conv_like)
+			return;
+		if(get_pconfig($owner['channel_id'],'diaspora','sign_unsigned')) {
+			// copy the data so we can mess with it. 
+			$fake_item = $item;
+			// change the body to a simulated reshare of the author's content
+			diaspora_share_unsigned($fake_item,(($fake_item['author']) ? $fake_item['author'] : null));
+			// change the author to the item owner who will sign it
+			$fake_item['author_xchan'] = $fake_item['owner_xchan'];
+			$fake_item['author'] = $fake_item['owner'];
+			// The diaspora_post_local callback will sign it (with the owner's sig, since the author didn't supply one).
+			diaspora_post_local($fake_item);
+			// extract the signature we just created
+			$signed_fields = get_iconfig($fake_item,'diaspora','fields');
+			$msg = arrtoxml((($conv_like) ? 'like' : 'comment' ), $signed_fields);
+		}
+		else {
+			return;
+		}
 	}
 
 	logger('diaspora_send_downstream: base message: ' . $msg, LOGGER_DATA);
