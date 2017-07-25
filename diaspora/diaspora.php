@@ -208,11 +208,14 @@ function diaspora_process_outbound(&$arr) {
 			);
 */
 
+	if(! strstr($arr['hub']['hubloc_network'],'diaspora'))
+		return;
+
 	logger('upstream: ' . $arr['upstream']);
 //	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
 
-	// allow this to be set per message
 
+	// allow this to be set per message
 
 	if(($arr['mail']) && intval($arr['item']['raw'])) {
 		logger('Cannot send raw data to Diaspora mail service.');

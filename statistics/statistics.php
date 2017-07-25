@@ -58,7 +58,7 @@ function statistics_init() {
 
 
 	if(! get_config('statistics','total_users'))
-		statistics_cron($a,$b);
+		statistics_cron_weekly($a,$b);
 
 	// ignore $_REQUEST['module_format'] ('json')
 
