@@ -286,8 +286,13 @@ function diaspora_unshare($owner,$contact) {
 }
 
 
+function diaspora_send_migration($item,$owner,$contact,$public_batch = false) {
+	// @TODO: send account_migration message
+	// called on keychange with $item set to the keychange packet.
+	// @TODO call on account move operation (as opposed to a clone operation)
 
 
+}
 
 function diaspora_send_status($item,$owner,$contact,$public_batch = false) {
 

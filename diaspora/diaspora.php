@@ -215,6 +215,7 @@ function diaspora_process_outbound(&$arr) {
 //	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
 
 
+
 	// allow this to be set per message
 
 	if(($arr['mail']) && intval($arr['item']['raw'])) {
@@ -372,6 +373,13 @@ function diaspora_process_outbound(&$arr) {
 
 		$contact = $arr['hub'];
 
+		if($arr['packet_type'] === 'keychange') {
+			$target_item = get_pconfig($arr['channel']['channel_id'],'system','keychange');
+			$qi = diaspora_send_migration($target_item,$arr['channel'],$contact,true);
+			if($qi)
+				$arr['queued'][] = $qi;
+			return;
+		}
 		if(intval($target_item['item_deleted']) 
 			&& ($target_item['mid'] === $target_item['parent_mid'])) {
 			// top-level retraction
