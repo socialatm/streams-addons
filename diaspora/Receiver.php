@@ -797,7 +797,7 @@ class Diaspora_Receiver {
 		// but we did import the parent post so at least at that time we did allow it and
 		// the check would nearly always be superfluous and redundant.
 
-		if($parent_item['owner_xchan'] == $this->importer['channel_hash']) 
+		if($parent_item['owner_xchan'] === $this->importer['channel_hash']) 
 			$allowed = perm_is_allowed($this->importer['channel_id'],$xchan['xchan_hash'],'post_comments');
 		else
 			$allowed = true;
@@ -814,13 +814,8 @@ class Diaspora_Receiver {
 		if($result && $result['success'])
 			$message_id = $result['item_id'];
 
-
-		$upstream_leg = false;
-		if(intval($parent_item['item_origin']) && (! $parent_author_signature)) {
-			// if the message isn't already being relayed, notify others
-			// the existence of parent_author_signature means the parent_author or owner
-			// is already relaying.
-			$upstream_leg = true;
+		if($parent_item['owner_xchan'] === $this->importer['channel_hash']) {
+			// We are the owner of this conversation, so send all received comments back downstream
 			Zotlabs\Daemon\Master::Summon(array('Notifier','comment-import',$message_id));
 		}
 
