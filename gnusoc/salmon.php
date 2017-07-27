@@ -279,7 +279,7 @@ function salmon_post(&$a) {
 				dbesc($xchan['xchan_hash']),
 				intval($importer['channel_id'])
 			);
-
+			$importer['send_downstream'] = true;
 		}
 		
 		consume_feed($data,$importer,$xchan,0);
