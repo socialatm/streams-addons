@@ -678,7 +678,7 @@ class Diaspora_Receiver {
 			// in the V2 protocol we don't create a parent_author_signature as the salmon 
 			// magic envelope we will send is signed and verified.
 
-			if(! defined('DIASPORA_V2'))	
+			// if(! defined('DIASPORA_V2'))	
 				$unxml['parent_author_signature'] = diaspora_sign_fields($unxml,$this->importer['channel_prvkey']);
 
 		}
