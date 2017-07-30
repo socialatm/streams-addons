@@ -56,9 +56,14 @@ function statistics_module() {}
 
 function statistics_init() {
 
-
-	if(! get_config('statistics','total_users'))
-		statistics_cron_weekly($a,$b);
+	if(! get_config('system','channels_total_stat')) {
+		require_once('include/statistics_fns.php');
+		update_channels_total_stat();
+		update_channels_active_halfyear_stat();
+		update_channels_active_monthly_stat();
+		update_local_posts_stat();
+		update_local_comments_stat();
+	}
 
 	// ignore $_REQUEST['module_format'] ('json')
 
