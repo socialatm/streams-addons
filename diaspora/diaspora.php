@@ -1008,12 +1008,15 @@ function diaspora_bb_to_markdown_bb(&$Text) {
 		'diaspora_bb_to_markdown_mention_callback', $Text);
 
 
-	// strip map tags, as the rendering is performed in bbcode() and the resulting output
+	// strip map and embed tags, as the rendering is performed in bbcode() and the resulting output
 	// is not compatible with Diaspora (at least in the case of openstreetmap and probably
 	// due to the inclusion of an html iframe)
 
 	$Text = preg_replace("/\[map\=(.*?)\]/ism", '$1', $Text);
 	$Text = preg_replace("/\[map\](.*?)\[\/map\]/ism", '$1', $Text);
+
+	$Text = preg_replace("/\[embed\](.*?)\[\/embed\]/ism", '$1', $Text);
+
 
 }
 
