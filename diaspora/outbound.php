@@ -647,7 +647,7 @@ function diaspora_send_mail($item,$owner,$contact) {
 
 	$parent_ptr = $cnv['guid'];
 
-	$body = bb_to_markdown($item['body']);
+	$body = bb_to_markdown($item['body'], [ 'diaspora' ]);
 
 	if(defined('DIASPORA_V2')) {
 

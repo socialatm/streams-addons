@@ -809,7 +809,7 @@ function diaspora_post_local(&$item) {
 			}
 		}
 		else {
-			$body = bb_to_markdown($item['body']);
+			$body = bb_to_markdown($item['body'], [ 'diaspora' ]);
 
 			$meta = [
 				'guid'            => $item['mid'],
@@ -1002,7 +1002,12 @@ function diaspora_markdown_to_bb_init(&$s) {
 
 
 
-function diaspora_bb_to_markdown_bb(&$Text) {
+function diaspora_bb_to_markdown_bb(&$x) {
+
+	if(! in_array('diaspora',$x['options']))
+		return;	
+
+	$Text = $x['bbcode'];
 
 	$Text = preg_replace_callback('/\@\!?\[([zu])rl\=(\w+.*?)\](\w+.*?)\[\/([zu])rl\]/i', 
 		'diaspora_bb_to_markdown_mention_callback', $Text);
@@ -1017,7 +1022,7 @@ function diaspora_bb_to_markdown_bb(&$Text) {
 
 	$Text = preg_replace("/\[embed\](.*?)\[\/embed\]/ism", '$1', $Text);
 
-
+	$x['bbcode'] = $Text;
 }
 
 
