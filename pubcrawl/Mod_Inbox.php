@@ -41,6 +41,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 			case 'Follow':
 				if($AP->obj & $AP->obj['type'] === 'Person') {
 					// do follow activity
+
 				}
 				break;
 			default:

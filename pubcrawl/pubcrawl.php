@@ -12,10 +12,13 @@ require_once('addon/pubcrawl/ActivityStreams.php');
 
 function pubcrawl_load() {
 	Zotlabs\Extend\Hook::register_array('addon/pubcrawl/pubcrawl.php', [
-		'module_loaded'    => 'pubcrawl_load_module',
-		'channel_mod_init' => 'pubcrawl_channel_mod_init',
-		'profile_mod_init' => 'pubcrawl_profile_mod_init',
-		'item_mod_init'    => 'pubcrawl_item_mod_init'
+		'module_loaded'              => 'pubcrawl_load_module',
+		'channel_mod_init'           => 'pubcrawl_channel_mod_init',
+		'profile_mod_init'           => 'pubcrawl_profile_mod_init',
+		'item_mod_init'              => 'pubcrawl_item_mod_init',
+		'follow_allow'               => 'pubcrawl_follow_allow',
+		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger'
+
 	]);
 }
 
@@ -23,6 +26,108 @@ function pubcrawl_unload() {
 	Zotlabs\Extend\Hook::unregister_by_file('addon/pubcrawl/pubcrawl.php');
 }
 
+
+function pubcrawl_follow_allow(&$b) {
+
+	if($b['xchan']['xchan_network'] !== 'activitypub')
+		return;
+
+	$allowed = get_pconfig($b['channel_id'],'system','activitypub_allowed');
+	if($allowed === false)
+		$allowed = 1;
+	$b['allowed'] = $allowed;
+	$b['singleton'] = 1;  // this network does not support channel clones
+
+}
+
+function pubcrawl_discover_channel_webfinger(&$x) {
+
+	$url = $b['address'];
+	if($url) {
+		$x = as_fetch($url);
+		if(! $x)
+			return;
+	}
+
+	$AS = new ActivityStreams($x);
+
+	if(! $AS->is_valid())
+		return;
+
+	// Now find the actor and see if there is something we can follow	
+
+	$person_obj = null;
+	if($AS->type === 'Person') {
+		$person_obj = $AS->data;
+	}
+	elseif($AS->object && $AS->object['type'] === 'Person') {
+		$person_obj = $AS->object;
+	}
+	else {
+		return;
+	}
+
+	$r = q("select * from xchan where xchan_hash = '%s' limit 1",
+		dbesc($person_obj['id'])
+	);
+	
+	if(! $r) {
+		// create a new record
+		$r = xchan_store_lowlevel(
+			[
+				'xchan_hash'         => $url,
+				'xchan_guid'         => $url,
+				'xchan_pubkey'       => $pubkey,
+				'xchan_addr'         => '',
+				'xchan_url'          => $profile,
+				'xchan_name'         => $vcard['fn'],
+				'xchan_name_date'    => datetime_convert(),
+				'xchan_network'      => 'activitypub'
+			]
+		);
+	}
+	else {
+		// update existing record
+		$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
+			dbesc($vcard['fn']),
+			dbesc('activitypub'),
+			dbesc(datetime_convert()),
+			dbesc($url)
+		);
+	}
+
+	$r = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+		dbesc($url)
+	);
+
+	if(! $r) {
+		$r = hubloc_store_lowlevel(
+			[
+				'hubloc_guid'     => $url,
+				'hubloc_hash'     => $url,
+				'hubloc_addr'     => '',
+				'hubloc_network'  => 'activitypub',
+				'hubloc_url'      => $url,
+				'hubloc_host'     => $hostname,
+				'hubloc_callback' => $inbox,
+				'hubloc_updated'  => datetime_convert(),
+				'hubloc_primary'  => 1
+			]
+		);
+	}
+
+	$photos = import_xchan_photo($vcard['photo'],$addr);
+	$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
+		dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
+		dbesc($photos[0]),
+		dbesc($photos[1]),
+		dbesc($photos[2]),
+		dbesc($photos[3]),
+		dbesc($addr)
+	);
+	$b['success'] = true;
+
+}
 
 
 function pubcrawl_load_module(&$b) {
