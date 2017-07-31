@@ -67,6 +67,28 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 		return;
 	}
 
+	$name = $person_obj['name'];
+	if(! $name)
+		$name = t('unknown');
+
+	if($person_obj['icon']) {
+		if(is_array($person_obj['icon'])) {
+			if(array_key_exists('url',$person_obj['icon']))
+				$icon = $person_obj['icon]['url'];
+			else
+				$icon = $person_obj['icon'][0]['url'];
+		}
+		else
+			$icon = $person_obj['icon'];
+	}
+
+	if($person_obj['url'] && $person_obj['url']['href'])
+		$profile = $person_obj['url']['href'];
+	else
+		$profile = $url;
+
+	// @todo fetch pubkey
+
 	$r = q("select * from xchan where xchan_hash = '%s' limit 1",
 		dbesc($person_obj['id'])
 	);
@@ -80,7 +102,7 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 				'xchan_pubkey'       => $pubkey,
 				'xchan_addr'         => '',
 				'xchan_url'          => $profile,
-				'xchan_name'         => $vcard['fn'],
+				'xchan_name'         => $name,
 				'xchan_name_date'    => datetime_convert(),
 				'xchan_network'      => 'activitypub'
 			]
@@ -89,7 +111,7 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 	else {
 		// update existing record
 		$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
-			dbesc($vcard['fn']),
+			dbesc($name),
 			dbesc('activitypub'),
 			dbesc(datetime_convert()),
 			dbesc($url)
@@ -116,14 +138,17 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 		);
 	}
 
-	$photos = import_xchan_photo($vcard['photo'],$addr);
+	if(! $icon)
+		$icon = get_default_profile_photo(300);
+
+	$photos = import_xchan_photo($icon,$url);
 	$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
 		dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
 		dbesc($photos[0]),
 		dbesc($photos[1]),
 		dbesc($photos[2]),
 		dbesc($photos[3]),
-		dbesc($addr)
+		dbesc($url)
 	);
 	$b['success'] = true;
 
