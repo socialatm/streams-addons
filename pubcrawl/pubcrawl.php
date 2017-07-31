@@ -6,6 +6,12 @@
  * 
  */
 
+/**
+ * This connector is undergoing heavy development at the moment. If you think some shortcuts were taken 
+ * - you are probably right. These will be cleaned up and moved to generalised interfaces once we actually 
+ * get communication flowing. 
+ */
+
 require_once('addon/pubcrawl/as.php');
 require_once('addon/pubcrawl/ActivityStreams.php');
 
@@ -40,9 +46,14 @@ function pubcrawl_follow_allow(&$b) {
 
 }
 
-function pubcrawl_discover_channel_webfinger(&$x) {
+function pubcrawl_discover_channel_webfinger(&$b) {
+
+logger('pubcrawl discover');
 
 	$url = $b['address'];
+
+logger('url: ' . $url);
+
 	if($url) {
 		$x = as_fetch($url);
 		if(! $x)
@@ -53,6 +64,8 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 
 	if(! $AS->is_valid())
 		return;
+
+logger('as_data: ' . print_r($AS->data,true));
 
 	// Now find the actor and see if there is something we can follow	
 
@@ -87,6 +100,24 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 	else
 		$profile = $url;
 
+
+	$inbox = $person_obj['inbox'];
+
+	$collections = [];
+
+	if($inbox) {
+		$collectons['inbox'] = $inbox;
+		if($person['outbox'])
+			$collections['outbox'] = $person_obj['outbox'];
+		if($person['publicInbox'])
+			$collections['publicInbox'] = $person_obj['publicInbox'];
+		if($person['followers'])
+			$collections['followers'] = $person_obj['followers'];
+		if($person['following'])
+			$collections['following'] = $person_obj['following'];
+	}
+
+
 	// @todo fetch pubkey
 
 	$r = q("select * from xchan where xchan_hash = '%s' limit 1",
@@ -116,6 +147,10 @@ function pubcrawl_discover_channel_webfinger(&$x) {
 			dbesc(datetime_convert()),
 			dbesc($url)
 		);
+	}
+
+	if($collections) {
+		set_xconfig($url,'activitypub','collections',$collections);
 	}
 
 	$r = q("select * from hubloc where hubloc_hash = '%s' limit 1",

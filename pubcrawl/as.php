@@ -348,7 +348,7 @@ function as_fetch($url) {
 	$x = z_fetch_url($url,true,$redirects,
 		['headers' => [ 'Accept: application/ld+json; profile="https://www.w3.org/ns/activitystreams"']]);
 	if($x['success']) {
-		return json_decode($x['body'],true);
+		return $x['body'];
 	}
 	return null;
 }
