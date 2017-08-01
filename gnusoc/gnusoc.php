@@ -956,7 +956,7 @@ function gnusoc_can_comment_on_post($a,&$b) {
 
 	if($b['allowed'] !== 'unset')
 		return;
-	if($b['item']['author']['xchan_network'] === 'gnusoc' && $b['observer_hash'] !== '') {
+	if($b['item']['owner']['xchan_network'] === 'gnusoc' && $b['observer_hash'] !== '') {
 		$b['allowed'] = true;
 	}
 
