@@ -61,7 +61,7 @@ function asencode_object($x) {
 	if($x['type'] === ACTIVITY_OBJ_PERSON) {
 		return asfetch_person($x); 
 	}
-	if($x['type'] === ACTIVITY_OBJ_PERSON) {
+	if($x['type'] === ACTIVITY_OBJ_PROFILE) {
 		return asfetch_profile($x); 
 	}
 }	
@@ -235,6 +235,8 @@ function asencode_person($p) {
 	$ret = [];
 	$ret['type']  = 'Person';
 	$ret['id']    = $p['xchan_url'];
+	if($p['xchan_addr'] && strpos($p['xchan_addr'],'@'))
+		$ret['preferredUsername'] = substr($p['xchan_addr'],0,strpos($p['xchan_addr'],'@'));
 	$ret['name']  = $p['xchan_name'];
 	$ret['icon']  = [ 
 		[
@@ -276,7 +278,7 @@ function asencode_person($p) {
 	if($c) {
 		$ret['inbox']       = z_root() . '/inbox/' . $c['channel_address'];
 		$ret['outbox']      = z_root() . '/outbox/' . $c['channel_address'];
-		$ret['publicInbox'] = z_root() . '/inbox/[public]';
+		$ret['endpoints']   = [ 'publicInbox' => z_root() . '/inbox/[public]' ];
 	}
 	else {
 		$collections = get_xconfig($p['xchan_hash'],'activitystreams','collections',[]);

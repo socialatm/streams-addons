@@ -201,6 +201,10 @@ function diaspora_decode($importer,$xml,$format) {
 	$public = false;
 
 	if($format === 'json') {
+		if(! $importer['channel_id']) {
+			logger('Private encrypted message arrived on public channel.');
+			http_status_exit(400);
+		}
 		$json = json_decode($xml,true);
 		if($json['aes_key']) {
 			$key_bundle = '';
@@ -244,6 +248,11 @@ function diaspora_decode($importer,$xml,$format) {
 			$author_link = str_replace('acct:','',$children->header->author_id);
 		}
 		else {
+
+			if(! $importer['channel_id']) {
+				logger('Private encrypted message arrived on public channel.');
+				http_status_exit(400);
+			}
 
 			$encrypted_header = json_decode(base64_decode($children->encrypted_header));
 			$encrypted_aes_key_bundle = base64_decode($encrypted_header->aes_key);
