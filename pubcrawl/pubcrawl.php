@@ -21,6 +21,7 @@ function pubcrawl_load() {
 		'module_loaded'              => 'pubcrawl_load_module',
 		'channel_mod_init'           => 'pubcrawl_channel_mod_init',
 		'profile_mod_init'           => 'pubcrawl_profile_mod_init',
+		'follow_mod_init'            => 'pubcrawl_follow_mod_init',
 		'item_mod_init'              => 'pubcrawl_item_mod_init',
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger'
@@ -255,4 +256,43 @@ function pubcrawl_item_mod_init($x) {
 		json_return_and_die($x);
 
 	}
+}
+
+function pubcrawl_follow_mod_init($x) {
+
+	if(pubcrawl_is_as_request() && argc() == 2) {
+		$abook_id = intval(argv(1));
+		if(! $abook_id)
+			return;
+		$r = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_id = %d",
+			intval($abook_id)
+		);
+		if (! $r)
+			return;
+
+		$chan = channelx_by_n($r[0]['abook_channel']);
+
+		$x = array_merge(['@context' => [
+				'https://www.w3.org/ns/activitystreams',
+				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+				[ 'zot' => 'http://purl.org/zot/protocol' ]
+			]], 
+			[
+				'type' => 'Follow',
+				'actor' => asencode_person($chan),
+				'object' => asencode_person($r[0])
+		]);
+				
+		if(pubcrawl_magic_env_allowed()) {
+			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
+			header('Content-Type: application/magic-envelope+json');
+			json_return_and_die($x);
+		}
+		else {
+			header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+			json_return_and_die($x);
+		}
+	}
+
+
 }
