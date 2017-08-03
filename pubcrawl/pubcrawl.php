@@ -278,6 +278,7 @@ function pubcrawl_follow_mod_init($x) {
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], 
 			[
+				'id' => z_root() . '/follow/' . $r[0]['abook_id'],
 				'type' => 'Follow',
 				'actor' => asencode_person($chan),
 				'object' => asencode_person($r[0])
