@@ -48,11 +48,7 @@ function pubcrawl_follow_allow(&$b) {
 
 function pubcrawl_discover_channel_webfinger(&$b) {
 
-logger('pubcrawl discover');
-
 	$url = $b['address'];
-
-logger('url: ' . $url);
 
 	if($url) {
 		$x = as_fetch($url);
@@ -64,8 +60,6 @@ logger('url: ' . $url);
 
 	if(! $AS->is_valid())
 		return;
-
-logger('as_data: ' . print_r($AS->data,true));
 
 	// Now find the actor and see if there is something we can follow	
 
@@ -80,112 +74,8 @@ logger('as_data: ' . print_r($AS->data,true));
 		return;
 	}
 
-	$name = $person_obj['name'];
-	if(! $name)
-		$name = t('unknown');
+	as_actor_store($person_obj);
 
-	if($person_obj['icon']) {
-		if(is_array($person_obj['icon'])) {
-			if(array_key_exists('url',$person_obj['icon']))
-				$icon = $person_obj['icon']['url'];
-			else
-				$icon = $person_obj['icon'][0]['url'];
-		}
-		else
-			$icon = $person_obj['icon'];
-	}
-
-	if($person_obj['url'] && $person_obj['url']['href'])
-		$profile = $person_obj['url']['href'];
-	else
-		$profile = $url;
-
-
-	$inbox = $person_obj['inbox'];
-
-	$collections = [];
-
-	if($inbox) {
-		$collectons['inbox'] = $inbox;
-		if($person['outbox'])
-			$collections['outbox'] = $person_obj['outbox'];
-		if($person['publicInbox'])
-			$collections['publicInbox'] = $person_obj['publicInbox'];
-		if($person['followers'])
-			$collections['followers'] = $person_obj['followers'];
-		if($person['following'])
-			$collections['following'] = $person_obj['following'];
-	}
-
-
-	// @todo fetch pubkey
-
-	$r = q("select * from xchan where xchan_hash = '%s' limit 1",
-		dbesc($person_obj['id'])
-	);
-	
-	if(! $r) {
-		// create a new record
-		$r = xchan_store_lowlevel(
-			[
-				'xchan_hash'         => $url,
-				'xchan_guid'         => $url,
-				'xchan_pubkey'       => $pubkey,
-				'xchan_addr'         => '',
-				'xchan_url'          => $profile,
-				'xchan_name'         => $name,
-				'xchan_name_date'    => datetime_convert(),
-				'xchan_network'      => 'activitypub'
-			]
-		);
-	}
-	else {
-		// update existing record
-		$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
-			dbesc($name),
-			dbesc('activitypub'),
-			dbesc(datetime_convert()),
-			dbesc($url)
-		);
-	}
-
-	if($collections) {
-		set_xconfig($url,'activitypub','collections',$collections);
-	}
-
-	$r = q("select * from hubloc where hubloc_hash = '%s' limit 1",
-		dbesc($url)
-	);
-
-	if(! $r) {
-		$r = hubloc_store_lowlevel(
-			[
-				'hubloc_guid'     => $url,
-				'hubloc_hash'     => $url,
-				'hubloc_addr'     => '',
-				'hubloc_network'  => 'activitypub',
-				'hubloc_url'      => $url,
-				'hubloc_host'     => $hostname,
-				'hubloc_callback' => $inbox,
-				'hubloc_updated'  => datetime_convert(),
-				'hubloc_primary'  => 1
-			]
-		);
-	}
-
-	if(! $icon)
-		$icon = get_default_profile_photo(300);
-
-	$photos = import_xchan_photo($icon,$url);
-	$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
-		dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
-		dbesc($photos[0]),
-		dbesc($photos[1]),
-		dbesc($photos[2]),
-		dbesc($photos[3]),
-		dbesc($url)
-	);
-	$b['success'] = true;
 
 }
 

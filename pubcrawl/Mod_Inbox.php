@@ -30,6 +30,10 @@ class Inbox extends \Zotlabs\Web\Controller {
 		if(! $AS->is_valid())
 			return;
 
+		if(is_array($AS->actor) && array_key_exist('id',$AS->actor))
+			as_actor_store($AS->actor);
+
+
 		$saved_recips = [];
 		foreach( [ 'to', 'cc', 'audience' ] as $x ) {
 			if(array_key_exists($x,$AS->data) {
@@ -41,6 +45,9 @@ class Inbox extends \Zotlabs\Web\Controller {
 			case 'Follow':
 				if($AP->obj & $AP->obj['type'] === 'Person') {
 					// do follow activity
+					as_follow($channel,$AP);
+					http_status_exit(200,'OK');
+					return;
 
 				}
 				break;
