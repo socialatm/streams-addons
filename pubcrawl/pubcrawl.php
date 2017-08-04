@@ -14,6 +14,7 @@
 
 require_once('addon/pubcrawl/as.php');
 require_once('addon/pubcrawl/ActivityStreams.php');
+require_once('addon/pubcrawl/HTTPSig.php');
 
 
 function pubcrawl_load() {
@@ -180,7 +181,10 @@ function pubcrawl_channel_mod_init($x) {
 		}
 		else {
 			header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
-			json_return_and_die($x);
+			$ret = json_encode($x);
+			HTTPSig::generate_digest($ret);
+			echo $ret;
+			killme();
 		}
 	}
 }
