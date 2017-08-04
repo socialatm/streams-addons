@@ -24,7 +24,7 @@ function pubcrawl_load() {
 		'follow_mod_init'            => 'pubcrawl_follow_mod_init',
 		'item_mod_init'              => 'pubcrawl_item_mod_init',
 		'follow_allow'               => 'pubcrawl_follow_allow',
-		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger'
+		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
 
 	]);
