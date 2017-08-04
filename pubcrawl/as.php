@@ -640,7 +640,7 @@ function as_actor_store($url,$person_obj) {
 
 function as_create_action($channel,$observer_hash,$act) {
 
-	if($act->object['type'] === 'Note') {
+	if($act->obj['type'] === 'Note') {
 		as_create_note($channel,$observer_hash,$act);
 	}
 
@@ -651,7 +651,7 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	$s = [];
 
-	$parent = ((array_key_exists('inReplyTo',$act->object)) ? $act->object['inReplyTo'] : '');
+	$parent = ((array_key_exists('inReplyTo',$act->obj)) ? $act->obj['inReplyTo'] : '');
 	if($parent) {
 
 
@@ -663,7 +663,7 @@ function as_create_note($channel,$observer_hash,$act) {
 		$s['owner_xchan'] = $s['author_xchan'] = $observer_hash;		
 	}
 	
-	$content = $as_get_content($act->object);
+	$content = $as_get_content($act->obj);
 
 	if(! $content) {
 		return;
@@ -671,7 +671,7 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	$s['aid'] = $channel['channel_account_id'];
 	$s['uid'] = $channel['channel_id'];
-	$s['mid'] = $act->object['id'];
+	$s['mid'] = $act->obj['id'];
 
 	if(! $parent)
 		$s['parent_mid'] = $s['mid'];
