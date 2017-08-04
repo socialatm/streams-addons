@@ -25,6 +25,7 @@ function pubcrawl_load() {
 		'item_mod_init'              => 'pubcrawl_item_mod_init',
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger'
+		'permissions_create'         => 'pubcrawl_permissions_create',
 
 	]);
 }
@@ -294,6 +295,48 @@ function pubcrawl_follow_mod_init($x) {
 			json_return_and_die($x);
 		}
 	}
+}
 
+
+function pubcrawl_permissions_create(&$b) {
+
+	if($b['recipient']['xchan_network'] !== 'activitypub') {
+		return;
+	}
+
+	$x = array_merge(['@context' => [
+		'https://www.w3.org/ns/activitystreams',
+		[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+		[ 'zot' => 'http://purl.org/zot/protocol' ]
+	]], 
+	[
+		'id'     => z_root() . '/follow/' . $b['recipient']['abook_id'],
+		'type'   => 'Follow',
+		'actor'  => asencode_person($b['sender']),
+		'object' => $b['recipient']['xchan_hash'])
+	]);
+
+	$h = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+		dbesc($b['recipient']['xchan_hash'])
+	);
+	if(! $h) {
+		return;
+	}
+
+	require_once('include/queue_fns.php');
+
+	$hash = random_string();
+
+	queue_insert( [
+		'hash'       => $hash,
+		'account_id' => $b['sender']['channel_account_id'],
+		'channel_id' => $b['sender']['channel_id'],
+		'driver'     => 'post',
+		'posturl'    => $h[0]['hubloc_callback'],
+		'msg'        => $x
+	]);
+
+	$b['deliveries'] = $hash;
+	$b['success'] = 1;
 
 }
