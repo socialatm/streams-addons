@@ -32,10 +32,8 @@ class ActivityStreams {
 	}
 
 	function get_property_obj($property,$base = '') {
-		if(! $base) {
-			$base = $this->data;
-		}
-		return $base[$property];
+		$base = (($base) ? $base : $this->data);
+		return ((array_key_exists($property,$base)) ? $base[$property] : null);
 	}
 
 	function fetch_property($url) {
