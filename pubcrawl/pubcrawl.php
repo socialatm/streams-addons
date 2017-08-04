@@ -313,7 +313,7 @@ function pubcrawl_permissions_create(&$b) {
 		'id'     => z_root() . '/follow/' . $b['recipient']['abook_id'],
 		'type'   => 'Follow',
 		'actor'  => asencode_person($b['sender']),
-		'object' => $b['recipient']['xchan_hash'])
+		'object' => $b['recipient']['xchan_hash']
 	]);
 
 	$h = q("select * from hubloc where hubloc_hash = '%s' limit 1",
