@@ -542,7 +542,7 @@ function as_actor_store($url,$person_obj) {
 	$collections = [];
 
 	if($inbox) {
-		$collectons['inbox'] = $inbox;
+		$collections['inbox'] = $inbox;
 		if($person['outbox'])
 			$collections['outbox'] = $person_obj['outbox'];
 		if($person['publicInbox'])
