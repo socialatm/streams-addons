@@ -43,9 +43,9 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		switch($AS->type) {
 			case 'Follow':
-				if($AP->obj & $AP->obj['type'] === 'Person') {
+				if($AS->obj & $AS->obj['type'] === 'Person') {
 					// do follow activity
-					as_follow($channel,$AP);
+					as_follow($channel,$AS);
 					http_status_exit(200,'OK');
 					return;
 
@@ -56,14 +56,29 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		}
 
+		$observer_hash = $AS->actor['id'];
+		if(! $observer_hash)
+			return;
+
+
+		if($is_public) {
+
+
+		}
+		else {
+
+		}
+
+
+
 		// Look up actor
 		// These activities require permissions		
 
 		switch($AS->type) {
 			case 'Create':
+				as_create_action($channel,$observer_hash,$AS);
 			case 'Update':
 			case 'Delete':
-			case 'Follow':
 			case 'Add':
 			case 'Remove':
 			case 'Like':

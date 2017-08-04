@@ -636,3 +636,101 @@ function as_actor_store($url,$person_obj) {
 	);
 
 }
+
+
+function as_create_action($channel,$observer_hash,$act) {
+
+	if($act->object['type'] === 'Note') {
+		as_create_note($channel,$observer_hash,$act);
+	}
+
+
+}
+
+function as_create_note($channel,$observer_hash,$act) {
+
+	$s = [];
+
+	$parent = ((array_key_exists('inReplyTo',$act->object)) ? $act->object['inReplyTo'] : '');
+	if($parent) {
+
+
+	}
+	else {
+		if(! perm_is_allowed($channel,$observer_hash,'send_stream')) {
+			return;
+		}
+		$s['owner_xchan'] = $s['author_xchan'] = $observer_hash;		
+	}
+	
+	$content = $as_get_content($act->object);
+
+	if(! $content) {
+		return;
+	}
+
+	$s['aid'] = $channel['channel_account_id'];
+	$s['uid'] = $channel['channel_id'];
+	$s['mid'] = $act->object['id'];
+
+	if(! $parent)
+		$s['parent_mid'] = $s['mid'];
+	
+	$s['title'] = as_bb_content($content,'name');
+
+	$s['body'] = as_bb_content($content,'content');
+	$s['verb'] = ACTIVITY_POST;
+	$s['obj_type'] = ACTIVITY_OBJ_NOTE;
+
+
+	$x = item_store($s);
+
+}
+
+function as_bb_content($content,$field) {
+
+	require_once('include/html2bbcode.php');
+
+	$ret = false;
+
+	if(is_array($content[$field])) {
+		foreach($content[$field] as $k => $v) {
+			$ret .= '[language=' . $k . ']' . html2bbcode($v) . '[/language]';
+		}
+	}
+	else {
+		$ret = html2bbcode($content[$field]);
+	}
+
+	return $ret;
+}
+
+
+
+function as_get_content($act) {
+
+	$content = [];
+
+	foreach([ 'name', 'summary', 'content' ] as $a) {
+		if(($x = as_get_textfield($act,$a)) !== false) {
+			$content[$a] = $x;
+		}
+	}
+
+	return $content;
+}
+
+
+function as_get_textfield($act,$field) {
+	
+	$content = false;
+
+	if(array_key_exists($field,$act))
+		$content = purify_html($act[$field]);
+	elseif(array_key_exists($field . 'Map',$act) && $act[$field . 'Map']) {
+		foreach($act[$field . 'Map'] as $k => $v) {
+			$content[escape_tags($k)] = purify_html($v);
+		}
+	}
+	return $content;
+}
