@@ -82,12 +82,12 @@ var chess_init = function () {
 		onDragStart: chess_onDragStart,
 		onDrop: chess_onDrop
 	};
-	chess_board = ChessBoard('chessboard', cfg);
+	chess_board = new ChessBoard('chessboard', cfg);
+	chess_game = new Chess(chess_original_pos);
 	$(window).resize(chess_fit_board);
 	setTimeout(chess_fit_board,300);
 	setTimeout(chess_get_history,300);
 	chess_timer = setTimeout(chess_update_game,300);
-	chess_game = new Chess();
 };
 
 var chess_update_settings = function () {
@@ -139,18 +139,19 @@ var chess_onDrop = function(source, target, piece, newPos, oldPos, orientation) 
 	if(ChessBoard.objToFen(newPos) === ChessBoard.objToFen(oldPos)) {
 		return false;
 	}
-	if(chess_enforce_legal_moves) {
-		// see if the move is legal
-		var move = chess_game.move({
-		  from: source,
-		  to: target,
-		  promotion: 'q' // NOTE: always promote to a queen for example simplicity
-		});
+	
+	var move = chess_game.move({
+	  from: source,
+	  to: target,
+	  promotion: 'q' // NOTE: always promote to a queen for example simplicity
+	});
 
+	if(chess_enforce_legal_moves) {
 		// illegal move
 		if (move === null) return 'snapback';
-	}
-	chess_new_pos.push(ChessBoard.objToFen(newPos));
+	} 
+	chess_new_pos.push(chess_game.fen());
+	window.console.log('Current FEN: ' + chess_game.fen());
 	chess_verify_move();
 };
 
@@ -180,6 +181,8 @@ var chess_update_game = function () {
 	function(data) {
 		if (data['status']) {
 			chess_board.position(data['position']);
+			chess_game = new Chess(data['position']);
+			window.console.log('Updated FEN: ' + chess_game.fen());
 			if (data['position'] !== chess_original_pos) {
 				setTimeout(chess_get_history,1000);
 			}
@@ -200,6 +203,14 @@ var chess_update_game = function () {
 			} else {
 				$('#chess-turn-indicator').html("Opponent's turn");
 				chess_notify_turn = true;
+			}
+			
+			if (data['enforce_legal_moves'] === 1) {
+				chess_enforce_legal_moves = 1;
+				$("#chess-enforce-legal-moves").html('Legal moves only');
+			} else {
+				chess_enforce_legal_moves = 0;
+				$("#chess-enforce-legal-moves").html('');
 			}
 		} else {
 			window.console.log('Error updating: ' + data['errormsg']);
@@ -259,6 +270,33 @@ var chess_undo_move = function () {
 	chess_myturn = true;
 	chess_fit_board();
 
+}
+
+var syncChessObject = function () {
+	$.post("chess/history", {game_id: chess_game_id} , function(data) {
+		if (data['status']) {
+			var chessObj = null;
+			var move_history = data['history'];
+			var moves = [];
+			for(var i=0; i<move_history.length; i++) {
+				var move = JSON.parse(move_history[i]['obj']);
+				moves.push(move['position']);
+				if (i === 0) {
+					chessObj = Chess();
+				} else {
+					var position = ChessBoard.fenToObj(moves[moves.length-1]);
+					var prevPosition = ChessBoard.fenToObj(moves[moves.length-2]);
+					
+					chessObj.move
+				}
+			}
+			
+		} else {
+			window.console.log('Error: ' + data['errormsg']);
+		}
+		return false;
+	},
+	'json');
 }
 
 var chess_get_history = function () {

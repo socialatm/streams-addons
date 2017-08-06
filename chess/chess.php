@@ -265,7 +265,7 @@ function chess_post(&$a) {
 				}
 				$player = array_search($observer['xchan_hash'], $game['players']);
 				$active = ($game['active'] === $game['players'][$player] ? true : false);
-				json_return_and_die(array('position' => $game['position'], 'myturn' => $active, 'ended' => $game['ended'], 'status' => true));
+				json_return_and_die(array('position' => $game['position'], 'myturn' => $active, 'ended' => $game['ended'], 'enforce_legal_moves' => $game['enforce_legal_moves'], 'status' => true));
 			// API: /chess/move
 			// Adds a new board position by creating a child post for the original
 			// game item.
