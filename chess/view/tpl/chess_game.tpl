@@ -13,6 +13,8 @@ var chess_notify_enabled = {{$notifications}};
 var chess_notify_granted = false;
 var chess_notify_turn = true;
 var chess_notify_audio = {};
+var chess_mycolor = '{{$color}}';
+var chess_enforce_legal_moves = {{$enforce_legal_moves}};
 
 var chess_notification_init = function () {
 	if (chess_notify_enabled === 0) {
@@ -55,6 +57,11 @@ var chess_init = function () {
 	} else {
 		$("#chess-resume-game").hide();
 	}
+	if (chess_enforce_legal_moves === 1) {
+		$("#chess-enforce-legal-moves").html('Legal moves only');
+	} else {
+		$("#chess-enforce-legal-moves").html('');
+	}
 	$("#id_chess_notify_enabled").change(function() {
 		if($(this).is(":checked")) {
 			chess_notify_enabled = 1;
@@ -80,6 +87,7 @@ var chess_init = function () {
 	setTimeout(chess_fit_board,300);
 	setTimeout(chess_get_history,300);
 	chess_timer = setTimeout(chess_update_game,300);
+	chess_game = new Chess();
 };
 
 var chess_update_settings = function () {
@@ -130,6 +138,17 @@ var chess_onDragStart = function(source, piece, position, orientation) {
 var chess_onDrop = function(source, target, piece, newPos, oldPos, orientation) {
 	if(ChessBoard.objToFen(newPos) === ChessBoard.objToFen(oldPos)) {
 		return false;
+	}
+	if(chess_enforce_legal_moves) {
+		// see if the move is legal
+		var move = chess_game.move({
+		  from: source,
+		  to: target,
+		  promotion: 'q' // NOTE: always promote to a queen for example simplicity
+		});
+
+		// illegal move
+		if (move === null) return 'snapback';
 	}
 	chess_new_pos.push(ChessBoard.objToFen(newPos));
 	chess_verify_move();
@@ -379,6 +398,20 @@ var chess_resume_game = function () {
 	'json');
 }
 
+var chess_toggle_legal_moves = function (game_id) {
+	$.post("chess/toggle_legal_moves", {game_id: game_id},
+	function(data) {
+		if (data['status']) {
+			// Notify players of updated state of legal move enforcement
+			chess_enforce_legal_moves = data['enforce_legal_moves']
+		} else {
+			window.console.log('Error toggling legal move enforcement for: ' + game_id + ':' + data['errormsg']);
+		}
+		return false;
+	},
+	'json');
+}
+
 $(document).ready(chess_init);
 </script>
 <h2 id='chess-turn-indicator'>
@@ -391,4 +424,5 @@ $(document).ready(chess_init);
 	Game Over
 	{{/if}}
 </h2>
+<div id="chess-enforce-legal-moves"></div>
 <div id="chessboard" style="width: 400px; position: fixed;"></div>
