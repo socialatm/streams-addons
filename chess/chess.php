@@ -358,7 +358,7 @@ function chess_post(&$a) {
 					notice(t('You must select one opponent that is not yourself.') . EOL);
 					return;
 				} else {
-					info(t('Creating new game...') . EOL);
+					//info(t('Creating new game...') . EOL);
 					// Get the game owner's color choice
 					$color = '';
 					if ($_POST['color'] === 'white' || $_POST['color'] === 'black') {
@@ -367,7 +367,8 @@ function chess_post(&$a) {
 						notice(t('You must select white or black.') . EOL);
 						return;
 					}
-					$game = chess_create_game($channel, $color, $acl);
+					$enforce_legal_moves = isset($_POST['playmode']) ? 1 : 0;
+					$game = chess_create_game($channel, $color, $acl, $enforce_legal_moves);
 					if ($game['status']) {
 						goaway('/chess/' . $channel['channel_address'] . '/' . $game['item']['resource_id']);
 					} else {
@@ -437,11 +438,14 @@ function chess_content($a) {
 
 				$channel = App::get_channel();
 				$o = replace_macros(get_markup_template('chess_new.tpl', 'addon/chess'), array(
-					'$acl' => populate_acl($channel_acl, false),
-					'$allow_cid' => acl2json($channel_acl['allow_cid']),
-					'$allow_gid' => acl2json($channel_acl['allow_gid']),
-					'$deny_cid' => acl2json($channel_acl['deny_cid']),
-					'$deny_gid' => acl2json($channel_acl['deny_gid']),
+					'$acl' => populate_acl($channel_acl, false, '', 
+					  'Select "Custom selection" and choose a <i>single</i> channel '
+					  . 'to select your opponent by pressing the "Show" button for '
+					  . 'the desired channel.'),
+					'$allow_cid' => acl2json(array()),
+					'$allow_gid' => acl2json(array()),
+					'$deny_cid' => acl2json($channel['channel_hash']),
+					'$deny_gid' => acl2json(array()),
 					'$channel' => $channel['channel_address']
 				));
 				return $o;
@@ -504,7 +508,7 @@ function chess_content($a) {
  *
  * @return array Status and parameters of the new game post
  */
-function chess_create_game($channel, $color, $acl) {
+function chess_create_game($channel, $color, $acl, $enforce_legal_moves) {
 
 	$resource_type = 'chess';
 	// Generate unique resource_id using the same method as item_message_id()
@@ -543,7 +547,7 @@ function chess_create_game($channel, $color, $acl) {
 		'active' => ($color === 'white' ? $players[0] : $players[1]),
 		'position' => 'start',
 		'ended' => 0,
-		'enforce_legal_moves' => 0,
+		'enforce_legal_moves' => (($enforce_legal_moves === 0 || $enforce_legal_moves === 1) ? $enforce_legal_moves : 0),
 		'version' => chess_get_version()	// Potential compatability issues
 	));
 	$item_hidden = 0; // TODO: Allow form creator to send post to ACL about new game automatically

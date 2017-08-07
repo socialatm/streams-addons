@@ -69,12 +69,12 @@
   top: 2px;
   left: 2px;
 }
-
+/*
 label {
   width: 200px;
   border-radius: 3px;
   border: 1px solid #D1D3D4
-}
+}*/
 
 /* hide input */
 input.radio:empty {
@@ -157,4 +157,11 @@ input.radio:focus ~ label:before {
 
 #chess-games-owner a {
 	color: gray;
+}
+
+#chess-new-form input {
+	margin-left: 10px;
+}
+#chess-new-form button {
+	margin-left: 20px;
 }

@@ -58,7 +58,6 @@
 							<li><a href="/chess/{{$channel}}/{{$game.game_id}}" title="Play game">Play game</a></li>
 							<li><a href="{{$game.plink}}" target="_blank" title="View conversation">View conversation</a></li>
 							<li class="divider"></li>
-							<li><a href="#" onclick="chess_toggle_legal_moves('{{$game.game_id}}'); return false;" title="Toggle legal move enforcement">Toggle legal move enforcement</a></li>
 							<li><a href="#" onclick="chess_delete_game('{{$game.game_id}}'); return false;" title="Delete game {{$game.game_id}}">Delete game</a></li>
 						</ul>
 					</li>

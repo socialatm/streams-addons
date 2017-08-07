@@ -139,19 +139,20 @@ var chess_onDrop = function(source, target, piece, newPos, oldPos, orientation) 
 	if(ChessBoard.objToFen(newPos) === ChessBoard.objToFen(oldPos)) {
 		return false;
 	}
-	
-	var move = chess_game.move({
-	  from: source,
-	  to: target,
-	  promotion: 'q' // NOTE: always promote to a queen for example simplicity
-	});
 
 	if(chess_enforce_legal_moves) {
+		var move = chess_game.move({
+		  from: source,
+		  to: target,
+		  promotion: 'q' // NOTE: always promote to a queen for example simplicity
+		});
 		// illegal move
 		if (move === null) return 'snapback';
-	} 
-	chess_new_pos.push(chess_game.fen());
-	window.console.log('Current FEN: ' + chess_game.fen());
+		chess_new_pos.push(chess_game.fen());
+	} else {
+		chess_new_pos.push(ChessBoard.objToFen(newPos));
+	}
+	
 	chess_verify_move();
 };
 
@@ -182,7 +183,6 @@ var chess_update_game = function () {
 		if (data['status']) {
 			chess_board.position(data['position']);
 			chess_game = new Chess(data['position']);
-			window.console.log('Updated FEN: ' + chess_game.fen());
 			if (data['position'] !== chess_original_pos) {
 				setTimeout(chess_get_history,1000);
 			}
@@ -203,14 +203,6 @@ var chess_update_game = function () {
 			} else {
 				$('#chess-turn-indicator').html("Opponent's turn");
 				chess_notify_turn = true;
-			}
-			
-			if (data['enforce_legal_moves'] === 1) {
-				chess_enforce_legal_moves = 1;
-				$("#chess-enforce-legal-moves").html('Legal moves only');
-			} else {
-				chess_enforce_legal_moves = 0;
-				$("#chess-enforce-legal-moves").html('');
 			}
 		} else {
 			window.console.log('Error updating: ' + data['errormsg']);
@@ -430,20 +422,6 @@ var chess_resume_game = function () {
 			chess_timer = setTimeout(chess_update_game,300);
 		} else {
 			window.console.log('Error resuming ' + chess_game_id + ':' + data['errormsg']);
-		}
-		return false;
-	},
-	'json');
-}
-
-var chess_toggle_legal_moves = function (game_id) {
-	$.post("chess/toggle_legal_moves", {game_id: game_id},
-	function(data) {
-		if (data['status']) {
-			// Notify players of updated state of legal move enforcement
-			chess_enforce_legal_moves = data['enforce_legal_moves']
-		} else {
-			window.console.log('Error toggling legal move enforcement for: ' + game_id + ':' + data['errormsg']);
 		}
 		return false;
 	},
