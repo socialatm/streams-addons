@@ -545,7 +545,7 @@ function chess_create_game($channel, $color, $acl, $enforce_legal_moves) {
 		'players' => $players,
 		'colors' => array($color, ($color === 'white' ? 'black' : 'white')),
 		'active' => ($color === 'white' ? $players[0] : $players[1]),
-		'position' => 'start',
+		'position' => 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
 		'ended' => 0,
 		'enforce_legal_moves' => (($enforce_legal_moves === 0 || $enforce_legal_moves === 1) ? $enforce_legal_moves : 0),
 		'version' => chess_get_version()	// Potential compatability issues

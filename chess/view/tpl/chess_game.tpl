@@ -15,6 +15,8 @@ var chess_notify_turn = true;
 var chess_notify_audio = {};
 var chess_mycolor = '{{$color}}';
 var chess_enforce_legal_moves = {{$enforce_legal_moves}};
+var chess_game = null;
+var chess_game_move = null;
 
 var chess_notification_init = function () {
 	if (chess_notify_enabled === 0) {
@@ -83,7 +85,11 @@ var chess_init = function () {
 		onDrop: chess_onDrop
 	};
 	chess_board = new ChessBoard('chessboard', cfg);
-	chess_game = new Chess(chess_original_pos);
+	if (chess_enforce_legal_moves === 1) {
+		window.console.log(chess_original_pos);
+		chess_game = new Chess(chess_original_pos);
+	}
+	
 	$(window).resize(chess_fit_board);
 	setTimeout(chess_fit_board,300);
 	setTimeout(chess_get_history,300);
@@ -109,7 +115,6 @@ var chess_fit_board = function () {
 	if($(window).width() > 767) {
 		leftOffset = 1.1*$('#region_1').width() + $('#region_1').offset().left;
 	} else if ($("main").hasClass('region_1-on') ) {
-		//window.console.log('z-index: ' + $('#region_1').css('zIndex'));
 		$('#chessboard').css('zIndex',-100);
 		$('#region_1').css('background-color', 'rgba(255,255,255,0.8)');
 		//leftOffset = $('#region_1').width();
@@ -139,21 +144,40 @@ var chess_onDrop = function(source, target, piece, newPos, oldPos, orientation) 
 	if(ChessBoard.objToFen(newPos) === ChessBoard.objToFen(oldPos)) {
 		return false;
 	}
-
-	if(chess_enforce_legal_moves) {
-		var move = chess_game.move({
-		  from: source,
-		  to: target,
-		  promotion: 'q' // NOTE: always promote to a queen for example simplicity
-		});
-		// illegal move
-		if (move === null) return 'snapback';
-		chess_new_pos.push(chess_game.fen());
+	if (chess_enforce_legal_moves === 1 ) {
+		if(chess_game_move === null) {
+			chess_game_move = chess_game.move({
+			  from: source,
+			  to: target,
+			  promotion: 'q' // NOTE: always promote to a queen for example simplicity
+			});
+			window.console.log(JSON.stringify(chess_game_move));
+			// illegal move
+			if (chess_game_move === null) return 'snapback';
+			if (chess_game_move.flags.indexOf('k') < 0 && chess_game_move.flags.indexOf('q') < 0) {
+				chess_new_pos.push(chess_game.fen());
+				chess_game_move = null;
+				chess_verify_move();
+			} else {
+				chess_new_pos.push(chess_game.fen());
+				clearTimeout(chess_timer);
+			}
+		} else {
+			if (chess_game_move.flags.indexOf('k') < 0 && chess_game_move.flags.indexOf('q') < 0) {
+				chess_new_pos.push(chess_game.fen());
+			} else {
+				chess_new_pos.push(chess_game.fen());
+				chess_game_move = null;
+				chess_verify_move();
+			}
+			
+		}
 	} else {
 		chess_new_pos.push(ChessBoard.objToFen(newPos));
+		chess_verify_move();
 	}
 	
-	chess_verify_move();
+	
 };
 
 var chess_issue_notification = function (theBody,theTitle) {
@@ -182,7 +206,9 @@ var chess_update_game = function () {
 	function(data) {
 		if (data['status']) {
 			chess_board.position(data['position']);
-			chess_game = new Chess(data['position']);
+			if (chess_enforce_legal_moves === 1) {
+				chess_game = new Chess(data['position']);
+			}
 			if (data['position'] !== chess_original_pos) {
 				setTimeout(chess_get_history,1000);
 			}
@@ -215,6 +241,16 @@ var chess_update_game = function () {
 
 var chess_verify_move = function () {
 	clearTimeout(chess_timer);
+	if (chess_enforce_legal_moves === 1) {
+		if(chess_game.in_checkmate()) {
+			alert('Checkmate!')
+			chess_end_game(true);
+		}
+		if(chess_game.in_stalemate()) {
+			alert('Stalemate!')
+			chess_end_game(true);
+		}
+	}
 	$("#chess-verify-move").show();
 	if(!$("main").hasClass('region_1-on')) {
 		$("main").addClass('region_1-on');
@@ -371,10 +407,12 @@ var chess_delete_game = function (game_id) {
 	'json');
 }
 
-var chess_end_game = function () {
-	var answer = confirm("End game?");
-	if (!answer) {
-		return false;
+var chess_end_game = function (game_over) {
+	if(typeof(game_over) !== 'undefined' && !game_over) {
+		var answer = confirm("End game?");
+		if (!answer) {
+			return false;
+		}
 	}
 	if(chess_new_pos.length < 1 || chess_new_pos[chess_new_pos.length-1] === chess_original_pos) {
 		return false;
