@@ -423,7 +423,7 @@ class Diaspora_Receiver {
 		$orig_author = notags($this->get_root_author());
 		$orig_guid = notags($this->get_property('root_guid'));
 
-		$source_url = 'https://' . substr($orig_author,strpos($orig_author,'@')+1) . '/p/' . $orig_guid . '.xml';
+		$source_url = 'https://' . substr($orig_author,strpos($orig_author,'@')+1) . '/fetch/post/' . $orig_guid ;
 		$orig_url = 'https://'.substr($orig_author,strpos($orig_author,'@')+1).'/posts/'.$orig_guid;
 
 		$source_xml = get_diaspora_reshare_xml($source_url);
