@@ -180,9 +180,12 @@ function pubcrawl_channel_mod_init($x) {
 
 		}
 		else {
-			header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+			$headers = [];
+			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 			$ret = json_encode($x);
-			HTTPSig::generate_digest($ret);
+			$hash = HTTPSig::generate_digest($ret,false);
+			$headers['Digest'] = 'SHA-256=' . $hash;  
+			HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . argv(1));
 			echo $ret;
 			killme();
 		}
