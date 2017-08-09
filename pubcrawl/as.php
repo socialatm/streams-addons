@@ -74,6 +74,31 @@ function asfetch_profile($x) {
 	return $x;
 }
 
+function asencode_item_collection($items,$id,$type,$extra = null) {
+
+	$ret = [
+		'id' => z_root() . '/' . $id,
+		'type' => $type,
+		'totalItems' => count($items),
+	];
+	if($extra)
+		$ret = array_merge($ret,$extra);
+
+	if($items) {
+		$x = [];
+		foreach($items as $i) {
+			$x[] = asencode_item($i);
+		}
+		if($type === 'OrderedCollection')
+			$ret['orderedItems'] = $x;
+		else
+			$ret['items'] = $x;
+	}
+
+	return $ret;
+}
+
+
 function asencode_item($i) {
 
 	$ret = array();
