@@ -27,7 +27,7 @@ function pubcrawl_load() {
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
-
+		'queue_deliver'              => 'pubcrawl_queue_deliver'
 	]);
 }
 
@@ -180,9 +180,12 @@ function pubcrawl_channel_mod_init($x) {
 
 		}
 		else {
-			header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+			$headers = [];
+			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 			$ret = json_encode($x);
-			HTTPSig::generate_digest($ret);
+			$hash = HTTPSig::generate_digest($ret,false);
+			$headers['Digest'] = 'SHA-256=' . $hash;  
+			HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . argv(1));
 			echo $ret;
 			killme();
 		}
@@ -335,7 +338,7 @@ function pubcrawl_permissions_create(&$b) {
 		'hash'       => $hash,
 		'account_id' => $b['sender']['channel_account_id'],
 		'channel_id' => $b['sender']['channel_id'],
-		'driver'     => 'post',
+		'driver'     => 'pubcrawl',
 		'posturl'    => $h[0]['hubloc_callback'],
 		'msg'        => $x
 	]);
@@ -343,4 +346,56 @@ function pubcrawl_permissions_create(&$b) {
 	$b['deliveries'] = $hash;
 	$b['success'] = 1;
 
+}
+
+
+function pubcrawl_queue_deliver(&$b) {
+
+	$outq = $b['outq'];
+	$base = $b['base'];
+	$immediate = $b['immediate'];
+
+
+	if($outq['outq_driver'] === 'pubcrawl') {
+		$b['handled'] = true;
+
+		$retries = 0;
+		$result = z_post_url($outq['outq_posturl'],$outq['outq_msg'],$retries,[ 'headers' => [ 'Content-type: ' . 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ]] );
+
+		if($result['success'] && $result['return_code'] < 300) {
+			logger('deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
+			if($base) {
+				q("update site set site_update = '%s', site_dead = 0 where site_url = '%s' ",
+					dbesc(datetime_convert()),
+					dbesc($base)
+				);
+			}
+			q("update dreport set dreport_result = '%s', dreport_time = '%s' where dreport_queue = '%s'",
+				dbesc('accepted for delivery'),
+				dbesc(datetime_convert()),
+				dbesc($outq['outq_hash'])
+			);
+			remove_queue_item($outq['outq_hash']);
+
+			// server is responding - see if anything else is going to this destination and is piled up 
+			// and try to send some more. We're relying on the fact that do_delivery() results in an 
+			// immediate delivery otherwise we could get into a queue loop. 
+
+			if(! $immediate) {
+				$x = q("select outq_hash from outq where outq_posturl = '%s' and outq_delivered = 0",
+					dbesc($outq['outq_posturl'])
+				);
+
+				$piled_up = array();
+				if($x) {
+					foreach($x as $xx) {
+						 $piled_up[] = $xx['outq_hash'];
+					}
+				}
+				if($piled_up) {
+					do_delivery($piled_up);
+				}
+			}
+		}
+	}
 }

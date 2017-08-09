@@ -47,26 +47,76 @@ class HTTPSig {
 
 		}
 
+	}
 
+	static function create_sig($request,$head,$prvkey,$keyid = 'Key',$alg = 'sha256') {
 
+		if($alg === 'sha256') {
+			$algorithm = 'rsa-sha256';
+		}
 
+		$x = self::sign($request,$head,$prvkey,$alg);			
+
+		$sighead = 'Signature: keyId="' . $keyid . '",algorithm="' . $algorithm
+			. '",headers="' . $x['headers'] . '",signature="' . $x['signature'] . '"';
+
+		if($head) {
+			foreach($head as $k => $v) {
+				header($k . ': ' . $v);
+			}
+		}
+
+		header($sighead);
 	}
 
 
-	static function sign($head,$body,$prvkey,$keyid = 'key') {
-		$fields = '';
+
+	static function sign($request,$head,$prvkey,$alg = 'sha256') {
+
+		$ret = [];
+
+		$headers = '';
+		$fields  = '';
+		if($request) {
+			$headers = '(request-target)' . ': ' . trim($request) . "\n";
+			$fields = '(request-target)';
+		}			
+
 		if(head) {
 			foreach($head as $k => $v) {
-				$headers = strtolower($k) . ': ' . trim($v) . "\n";
+				$headers .= strtolower($k) . ': ' . trim($v) . "\n";
 				if($fields)
 					$fields .= ' ';
 				$fields .= strtolower($k);
 			}
-			$headers = rtrim($headers);
-
+			// strip the trailing linefeed
+			$headers = rtrim($headers,"\n");
 		}
-		$body = trim($body);
 
+		$sig = base64_encode(rsa_sign($headers,$prvkey,$alg)); 		
+
+		$ret['headers']   = $fields;
+		$ret['signature'] = $sig;
+	
+		return $ret;
+	}
+
+	static function parse_sigheader($header) {
+		$ret = [];
+		$matches = [];
+		if(preg_match('keyId="(.*?)"/ism',$header,$matches))
+			$ret['keyId'] = $matches[1];
+		if(preg_match('algorithm="(.*?)"/ism',$header,$matches))
+			$ret['algorithm'] = $matches[1];
+		if(preg_match('headers="(.*?)"/ism',$header,$matches))
+			$ret['headers'] = explode(' ', $matches[1]);
+		if(preg_match('signature="(.*?)"/ism',$header,$matches))
+			$ret['signature'] = base64_decode(preg_replace('/\s+/','',$matches[1]));
+
+		if(($ret['signature']) && ($ret['algorithm']) && (! $ret['headers']))
+			$ret['headers'] = [ 'date' ];
+
+ 		return $ret;
 	}
 
 
