@@ -69,6 +69,23 @@ class HTTPSig {
 
 	}
 
+	static function parse_sigheader($header) {
+		$ret = [];
+		$matches = [];
+		if(preg_match('keyId="(.*?)"/ism',$header,$matches))
+			$ret['keyId'] = $matches[1];
+		if(preg_match('algorithm="(.*?)"/ism',$header,$matches))
+			$ret['algorithm'] = $matches[1];
+		if(preg_match('headers="(.*?)"/ism',$header,$matches))
+			$ret['headers'] = explode(' ', $matches[1]);
+		if(! $ret['headers'])
+			$ret['headers'] = [ 'date' ];
+		if(preg_match('signature="(.*?)"/ism',$header,$matches))
+			$ret['signature'] = base64_decode(preg_replace('/\s+/','',$matches[1]));
+
+ 		return $ret;
+	}
+
 
 }
 
