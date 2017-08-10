@@ -487,6 +487,11 @@ function diaspora_discover(&$b) {
 
 	$webbie = $b['address'];
 
+	$protocol = $b['protocol'];
+	if($protocol && strtolower($protocol) !== 'diaspora')
+		return;
+
+
 	$result = array();
 	$network = null;
 	$diaspora = false;

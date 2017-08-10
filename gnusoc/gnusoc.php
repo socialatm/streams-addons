@@ -763,6 +763,10 @@ function gnusoc_discover_channel_webfinger($a,&$b) {
 	if($b['success'])
 		return;
 
+	$protocol = $b['protocol'];
+	if($protocol && strtolower($protocol) !== 'ostatus')
+		return;
+
 	require_once('include/network.php');
 
 	$webbie = $b['address'];

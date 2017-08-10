@@ -54,6 +54,11 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 
 	$url = $b['address'];
 
+	$protocol = $b['protocol'];
+	if($protocol && strtolower($protocol) !== 'activitypub')
+		return;
+
+
 	if($url) {
 		$x = as_fetch($url);
 		if(! $x)
