@@ -224,6 +224,11 @@ function diaspora_decode($importer,$xml,$format) {
 
 	$basedom = parse_xml_string($xml,false);
 
+	if($basedom === false) {
+		logger('unparseable xml');
+		http_status_exit(400);
+	}
+
 	if($format !== 'legacy') {
 		$children = $basedom->children('http://salmon-protocol.org/ns/magic-env');
 		$public = true;

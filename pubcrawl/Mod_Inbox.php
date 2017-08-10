@@ -21,22 +21,25 @@ class Inbox extends \Zotlabs\Web\Controller {
 		if(! $channel)
 			return;
 
-		$data = file_get_contents('php:input'));
+		$data = file_get_contents('php://input');
 		if(! $data)
 			return;
 
-		$AS = new ActivityStreams($data);
+		logger('inbox_activity: ' . $data, LOGGER_DATA);
+
+
+		$AS = new \ActivityStreams($data);
 
 		if(! $AS->is_valid())
 			return;
 
-		if(is_array($AS->actor) && array_key_exist('id',$AS->actor))
-			as_actor_store($AS->actor);
+		if(is_array($AS->actor) && array_key_exists('id',$AS->actor))
+			as_actor_store($AS->actor['id'],$AS->actor);
 
 
 		$saved_recips = [];
 		foreach( [ 'to', 'cc', 'audience' ] as $x ) {
-			if(array_key_exists($x,$AS->data) {
+			if(array_key_exists($x,$AS->data)) {
 				$saved_recips[$x] = $AS->data[$x];
 			}
 		}
@@ -77,6 +80,8 @@ class Inbox extends \Zotlabs\Web\Controller {
 		switch($AS->type) {
 			case 'Create':
 				as_create_action($channel,$observer_hash,$AS);
+				http_status_exit(200,'OK');
+
 			case 'Update':
 			case 'Delete':
 			case 'Add':
@@ -99,6 +104,9 @@ class Inbox extends \Zotlabs\Web\Controller {
 	}
 
 	function get() {
+
+//		logger('config: ' . print_r(\App::$config,true));
+
 
 	}
 

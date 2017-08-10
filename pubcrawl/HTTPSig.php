@@ -49,7 +49,9 @@ class HTTPSig {
 
 	}
 
-	static function create_sig($request,$head,$prvkey,$keyid = 'Key',$alg = 'sha256') {
+	static function create_sig($request,$head,$prvkey,$keyid = 'Key',$send_headers = false,$alg = 'sha256') {
+
+		$return_headers = [];
 
 		if($alg === 'sha256') {
 			$algorithm = 'rsa-sha256';
@@ -62,11 +64,21 @@ class HTTPSig {
 
 		if($head) {
 			foreach($head as $k => $v) {
-				header($k . ': ' . $v);
+				if($send_headers) {
+					header($k . ': ' . $v);
+				}
+				else {
+					$return_headers[] = $k . ': ' . $v;
+				}
 			}
 		}
-
-		header($sighead);
+		if($send_headers) {
+			header($sighead);
+		}
+		else {
+			$return_headers[] = $sighead;
+		}
+		return $return_headers;
 	}
 
 

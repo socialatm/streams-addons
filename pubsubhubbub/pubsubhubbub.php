@@ -131,7 +131,7 @@ function push_notifier_process(&$a,&$b) {
 
 		$feed = get_feed_for($channel,'',array('begin' => $rr['last_update'], 'compat' => $compat, 'start' => 0, 'records' => 255 ));
 
-		logger('feed: ' . $feed,LOGGER_DATA);
+		// logger('feed: ' . $feed,LOGGER_DATA);
 
 		$hmac_sig = hash_hmac("sha1", $feed, $rr['secret']);
 
