@@ -311,10 +311,13 @@ function get_diaspora_reshare_xml($url,$recurse = 0) {
 		$x = z_fetch_url(str_replace('https://','http://',$url));
 
 	if($x['success']) {
-		// it is a magic envelope
+		// it is (hopefully) a magic envelope
 		$basedom = parse_xml_string($x['body'],false);
-		if(! $basedom)
+		if($basedom === false) {
+			logger('no xml found');
 			return false;
+		}
+
 		$children = $basedom->children('http://salmon-protocol.org/ns/magic-env');
 		$author_link = str_replace('acct:','',base64url_decode($children->sig[0]->attributes()->key_id[0]));
 		$dom = $basedom->children(NAMESPACE_SALMON_ME);
@@ -420,8 +423,8 @@ function get_diaspora_reshare_xml($url,$recurse = 0) {
 	if(($xml['root_diaspora_id'] || $xml['root_author']) && $xml['root_guid'] && $recurse < 15) {
 		$orig_author = notags(diaspora_get_root_author($xml));
 		$orig_guid = notags(unxmlify($xml['root_guid']));
-		$source_url = 'https://' . substr($orig_author,strpos($orig_author,'@')+1) . '/p/' . $orig_guid . '.xml';
-		$y = get_diaspora_reshare_xml($source_url,$recurse+1);
+		$source_url = 'https://' . substr($orig_author,strpos($orig_author,'@') + 1) . '/fetch/post/' . $orig_guid ;
+		$y = get_diaspora_reshare_xml($source_url,$recurse + 1);
 		if($y)
 			return $y;
 	}
