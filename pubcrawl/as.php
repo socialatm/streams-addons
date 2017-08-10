@@ -580,9 +580,9 @@ function as_actor_store($url,$person_obj) {
 
 	// @todo fetch pubkey
 
-	if(array_key_exists('publicKey',$person) && array_key_exists('publicKeyPem',$person['publicKey'])) {
-		if($person['id'] === $person['publicKey']['owner']) {
-			$pubkey = $person['publicKey']['publicKeyPem'];
+	if(array_key_exists('publicKey',$person_obj) && array_key_exists('publicKeyPem',$person_obj['publicKey'])) {
+		if($person_obj['id'] === $person_obj['publicKey']['owner']) {
+			$pubkey = $person_obj['publicKey']['publicKeyPem'];
 		}
 	}
 
@@ -631,6 +631,12 @@ function as_actor_store($url,$person_obj) {
 		dbesc($url)
 	);
 
+
+	$m = parse_url($url);
+	if($m) {
+		$hostname = $m['host'];
+	}
+
 	if(! $r) {
 		$r = hubloc_store_lowlevel(
 			[
@@ -676,21 +682,24 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	$s = [];
 
+
 	$parent = ((array_key_exists('inReplyTo',$act->obj)) ? $act->obj['inReplyTo'] : '');
 	if($parent) {
 
 
 	}
 	else {
-		if(! perm_is_allowed($channel,$observer_hash,'send_stream')) {
+		if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream')) {
+			logger('no permission');
 			return;
 		}
 		$s['owner_xchan'] = $s['author_xchan'] = $observer_hash;		
 	}
 	
-	$content = $as_get_content($act->obj);
+	$content = as_get_content($act->obj);
 
 	if(! $content) {
+		logger('no content');
 		return;
 	}
 
@@ -702,10 +711,10 @@ function as_create_note($channel,$observer_hash,$act) {
 		$s['parent_mid'] = $s['mid'];
 	
 	$s['title'] = as_bb_content($content,'name');
-
 	$s['body'] = as_bb_content($content,'content');
 	$s['verb'] = ACTIVITY_POST;
 	$s['obj_type'] = ACTIVITY_OBJ_NOTE;
+	$s['app'] = t('ActivityPub');
 
 
 	$x = item_store($s);

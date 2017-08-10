@@ -27,6 +27,7 @@ function pubcrawl_load() {
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
+		'notifier_hub'               => 'pubcrawl_notifier_process',
 		'queue_deliver'              => 'pubcrawl_queue_deliver'
 	]);
 }
@@ -185,11 +186,163 @@ function pubcrawl_channel_mod_init($x) {
 			$ret = json_encode($x);
 			$hash = HTTPSig::generate_digest($ret,false);
 			$headers['Digest'] = 'SHA-256=' . $hash;  
-			HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . argv(1));
+			HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . argv(1),true);
 			echo $ret;
 			killme();
 		}
 	}
+}
+
+function pubcrawl_notifier_process(&$arr) {
+
+	if($arr['hub']['hubloc_network'] !== 'activitypub')
+		return;
+
+	logger('upstream: ' . intval($arr['upstream']));
+
+	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
+
+	// allow this to be set per message
+
+	if($arr['mail']) {
+		logger('Cannot send mail to activitypub.');
+		return;
+	}
+
+	if(array_key_exists('target_item',$arr) && is_array($arr['target_item'])) {
+
+		if(intval($arr['target_item']['item_obscured'])) {
+			logger('Cannot send raw data as an activitypub activity.');
+			return;
+		}
+
+		if(strpos($arr['target_item']['postopts'],'nopub') !== false) {
+			return;
+		}
+	}
+
+	$allowed = get_pconfig($arr['channel']['channel_id'],'system','activitypub_allowed');
+
+	if(! intval($allowed)) {
+		logger('pubcrawl: disallowed for channel ' . $arr['channel']['channel_name']);
+		return;
+	}
+
+	if($arr['location'])
+		return;
+
+	$target_item = $arr['target_item'];
+
+	$prv_recips = $arr['env_recips'];
+
+	$msg = array_merge(['@context' => [
+		'https://www.w3.org/ns/activitystreams',
+		[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+		[ 'zot' => 'http://purl.org/zot/protocol' ]
+	]], asencode_activity($target_item));
+	
+
+	$jmsg = json_encode($msg);
+
+	if($prv_recips) {
+		$hashes = array();
+
+		// re-explode the recipients, but only for this hub/pod
+
+		foreach($prv_recips as $recip)
+			$hashes[] = "'" . $recip['hash'] . "'";
+
+		$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_url = '%s'
+			and xchan_hash in (" . implode(',', $hashes) . ") and xchan_network = 'activitypub' ",
+			dbesc($arr['hub']['hubloc_url'])
+		);
+
+		if(! $r) {
+			logger('activitypub_process_outbound: no recipients');
+			return;
+		}
+
+		foreach($r as $contact) {
+
+			// is $contact connected with this channel - and if the channel is cloned, also on this hub?
+			$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
+
+			if(! $arr['normal_mode'])
+				continue;
+
+
+			$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
+			if($qi)
+				$arr['queued'][] = $qi;
+			continue;
+		}
+
+	}
+	else {
+
+		// public message
+
+		$contact = $arr['hub'];
+
+		$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
+		if($qi)
+			$arr['queued'][] = $qi;
+			
+		return;
+	}
+
+}
+
+
+function pubcrawl_queue_message($msg,$sender,$recip,$message_id = '') {
+
+
+    $allowed = get_pconfig($sender['channel_id'],'system','activitypub_allowed',1);
+
+    if(! intval($allowed)) {
+        return false;
+    }
+
+//    if($public_batch)
+  //      $dest_url = $recip['hubloc_callback'] . '/public';
+//    else
+        
+	$dest_url = $recip['hubloc_callback'];
+
+    logger('URL: ' . $dest_url, LOGGER_DEBUG);
+
+    if(intval(get_config('system','activitypub_test')) || intval(get_pconfig($sender['channel_id'],'system','activitypub_test'))) {
+        logger('test mode - delivery disabled');
+        return false;
+    }
+
+    $hash = random_string();
+
+    logger('queue: ' . $hash . ' ' . $dest_url, LOGGER_DEBUG);
+	queue_insert(array(
+        'hash'       => $hash,
+        'account_id' => $sender['channel_account_id'],
+        'channel_id' => $sender['channel_id'],
+        'driver'     => 'pubcrawl',
+        'posturl'    => $dest_url,
+        'notify'     => '',
+        'msg'        => $msg
+    ));
+
+    if($message_id && (! get_config('system','disable_dreport'))) {
+        q("insert into dreport ( dreport_mid, dreport_site, dreport_recip, dreport_result, dreport_time, dreport_xchan, dreport_queue ) values ( '%s','%s','%s','%s','%s','%s','%s' ) ",
+            dbesc($message_id),
+            dbesc($dest_url),
+            dbesc($dest_url),
+            dbesc('queued'),
+            dbesc(datetime_convert()),
+            dbesc($sender['channel_hash']),
+            dbesc($hash)
+        );
+    }
+
+    return $hash;
+
 }
 
 
@@ -317,7 +470,7 @@ function pubcrawl_permissions_create(&$b) {
 		[ 'zot' => 'http://purl.org/zot/protocol' ]
 	]], 
 	[
-		'id'     => z_root() . '/follow/' . $b['recipient']['abook_id'],
+		'id'	 => z_root() . '/follow/' . $b['recipient']['abook_id'],
 		'type'   => 'Follow',
 		'actor'  => asencode_person($b['sender']),
 		'object' => $b['recipient']['xchan_hash']
@@ -359,8 +512,18 @@ function pubcrawl_queue_deliver(&$b) {
 	if($outq['outq_driver'] === 'pubcrawl') {
 		$b['handled'] = true;
 
+		$channel = channelx_by_n($outq['outq_channel']);
+
 		$retries = 0;
-		$result = z_post_url($outq['outq_posturl'],$outq['outq_msg'],$retries,[ 'headers' => [ 'Content-type: ' . 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ]] );
+
+		$headers = [];
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
+		$ret = $outq['outq_msg'];
+		$hash = HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		$xhead = HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . argv(1),false);
+	
+		$result = z_post_url($outq['outq_posturl'],$outq['outq_msg'],$retries,[ 'headers' => $xhead ]);
 
 		if($result['success'] && $result['return_code'] < 300) {
 			logger('deliver: queue post success to ' . $outq['outq_posturl'], LOGGER_DEBUG);
