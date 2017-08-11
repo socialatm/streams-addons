@@ -72,8 +72,6 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		}
 
-
-
 		// Look up actor
 		// These activities require permissions		
 
