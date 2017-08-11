@@ -81,14 +81,14 @@ class Inbox extends \Zotlabs\Web\Controller {
 			case 'Create':
 				as_create_action($channel,$observer_hash,$AS);
 				http_status_exit(200,'OK');
-
+			case 'Like':
+			case 'Dislike':
+				as_like_action($channel,$observer_hash,$AS);
+				http_status_exit(200,'OK');
 			case 'Update':
 			case 'Delete':
 			case 'Add':
 			case 'Remove':
-			case 'Like':
-				as_like_action($channel,$observer_hash,$AS);
-				http_status_exit(200,'OK');
 			case 'Announce':
 			case 'Undo':
 				break;

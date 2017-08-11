@@ -768,6 +768,11 @@ function as_like_note($channel,$observer_hash,$act) {
 
 	$parent = $act->obj['id'];
 
+	if($act->type === 'Like')
+		$s['verb'] = ACTIVITY_LIKE;
+	if($act->type === 'Dislike')
+		$s['verb'] = ACTIVITY_DISLIKE;
+
 	if(! $parent)
 		return;
 
@@ -845,7 +850,10 @@ function as_like_note($channel,$observer_hash,$act) {
 		)
 	);
 
-	$bodyverb = t('%1$s likes %2$s\'s %3$s');
+	if($act->type === 'Like')
+		$bodyverb = t('%1$s likes %2$s\'s %3$s');
+	if($act->type === 'Dislike')
+		$bodyverb = t('%1$s doesn\'t like %2$s\'s %3$s');
 
 	$ulink = '[url=' . $item_author['xchan_url'] . ']' . $item_author['xchan_name'] . '[/url]';
 	$alink = '[url=' . $parent_item['author']['xchan_url'] . ']' . $parent_item['author']['xchan_name'] . '[/url]';
@@ -855,9 +863,9 @@ function as_like_note($channel,$observer_hash,$act) {
 	$s['app']  = t('ActivityPub');
 
 	// set the route to that of the parent so downstream hubs won't reject it.
+
 	$s['route'] = $parent_item['route'];
 	$s['item_private'] = $parent_item['item_private'];
-	$s['verb'] = ACTIVITY_LIKE;
 	$s['obj_type'] = $objtype;
 	$s['obj'] = $object;
 
