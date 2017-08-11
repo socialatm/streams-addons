@@ -674,6 +674,17 @@ function as_create_action($channel,$observer_hash,$act) {
 
 }
 
+function as_like_action($channel,$observer_hash,$act) {
+
+	if($act->obj['type'] === 'Note') {
+		as_like_note($channel,$observer_hash,$act);
+	}
+
+
+}
+
+
+
 function as_create_note($channel,$observer_hash,$act) {
 
 	$s = [];
@@ -734,6 +745,124 @@ function as_create_note($channel,$observer_hash,$act) {
 	$x = item_store($s);
 
 }
+
+
+function as_like_note($channel,$observer_hash,$act) {
+
+	$s = [];
+
+	$parent = $act->obj['id'];
+
+	if(! $parent)
+		return;
+
+	$r = q("select * from item where uid = %d and ( mid = '%s' || mid = '%s' ) limit 1",
+		intval($channel['channel_id']),
+		dbesc($parent),
+		dbesc(urldecode(basename($parent)))
+	);
+
+	if(! $r) {
+		logger('parent not found.');
+		return;
+	}
+
+	xchan_query($r);
+	$parent_item = $r[0];
+
+	if($parent_item['owner_xchan'] === $channel['channel_hash']) {
+		if(! perm_is_allowed($channel['channel_id'],$observer_hash,'post_comments')) {
+			logger('no comment permission.');
+			return;
+		}
+	}
+
+	if($parent_item['mid'] === $parent_item['parent_mid']) {
+		$s['parent_mid'] = $parent_item['mid'];
+	}
+	else {
+		$s['thr_parent'] = $parent_item['mid'];
+		$s['parent_mid'] = $parent_item['parent_mid'];
+	}
+
+	$s['owner_xchan'] = $parent_item['owner_xchan'];
+	$s['author_xchan'] = $observer_hash;
+
+	$s['aid'] = $channel['channel_account_id'];
+	$s['uid'] = $channel['channel_id'];
+	$s['mid'] = $act->id;
+
+	if(! $s['parent_mid'])
+		$s['parent_mid'] = $s['mid'];
+	
+
+	$post_type = (($parent_item['resource_type'] === 'photo') ? t('photo') : t('status'));
+
+	$links = array(array('rel' => 'alternate','type' => 'text/html', 'href' => $parent_item['plink']));
+	$objtype = (($parent_item['resource_type'] === 'photo') ? ACTIVITY_OBJ_PHOTO : ACTIVITY_OBJ_NOTE );
+
+	$body = $parent_item['body'];
+
+	$z = q("select * from xchan where xchan_hash = '%s' limit 1",
+		dbesc($parent_item['author_xchan'])
+	);
+	if($z)
+		$item_author = $z[0];		
+
+	$object = json_encode(array(
+		'type'    => $post_type,
+		'id'      => $parent_item['mid'],
+		'parent'  => (($parent_item['thr_parent']) ? $parent_item['thr_parent'] : $parent_item['parent_mid']),
+		'link'    => $links,
+		'title'   => $parent_item['title'],
+		'content' => $parent_item['body'],
+		'created' => $parent_item['created'],
+		'edited'  => $parent_item['edited'],
+		'author'  => array(
+			'name'     => $item_author['xchan_name'],
+			'address'  => $item_author['xchan_addr'],
+			'guid'     => $item_author['xchan_guid'],
+			'guid_sig' => $item_author['xchan_guid_sig'],
+			'link'     => array(
+				array('rel' => 'alternate', 'type' => 'text/html', 'href' => $item_author['xchan_url']),
+				array('rel' => 'photo', 'type' => $item_author['xchan_photo_mimetype'], 'href' => $item_author['xchan_photo_m'])),
+			),
+		)
+	);
+
+	$bodyverb = t('%1$s likes %2$s\'s %3$s');
+
+	$ulink = '[url=' . $item_author['xchan_url'] . ']' . $item_author['xchan_name'] . '[/url]';
+	$alink = '[url=' . $parent_item['author']['xchan_url'] . ']' . $parent_item['author']['xchan_name'] . '[/url]';
+	$plink = '[url='. z_root() . '/display/' . urlencode($act->id) . ']' . $post_type . '[/url]';
+	$s['body'] =  sprintf( $bodyverb, $ulink, $alink, $plink );
+
+	$s['app']  = t('ActivityPub');
+
+	// set the route to that of the parent so downstream hubs won't reject it.
+	$s['route'] = $parent_item['route'];
+	$s['item_private'] = $parent_item['item_private'];
+	$s['verb'] = ACTIVITY_LIKE;
+	$s['obj_type'] = $objtype;
+	$s['obj'] = $object;
+
+
+	$result = item_store($s);
+
+	if($result['success']) {
+		// if the message isn't already being relayed, notify others
+		if(intval($parent_item['item_origin']))
+				Zotlabs\Daemon\Master::Summon(array('Notifier','comment-import',$result['item_id']));
+			sync_an_item($channel['channel_id'],$result['item_id']);
+	}
+
+	return;
+}
+
+
+
+
+
 
 function as_bb_content($content,$field) {
 
