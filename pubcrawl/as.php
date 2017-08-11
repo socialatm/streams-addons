@@ -55,7 +55,7 @@ function i2asld($i) {
 
 function asencode_object($x) {
 
-	if((substr(0,1,trim($x))) === '{' ) {
+	if((substr(trim($x),0,1)) === '{' ) {
 		$x = json_decode($x,true);
 	}
 	if($x['type'] === ACTIVITY_OBJ_PERSON) {
@@ -121,12 +121,12 @@ function asencode_item($i) {
 	if(intval($i['item_deleted'])) {
 		$ret['type'] = 'Tombstone';
 		$ret['formerType'] = 'Note';
-		$ret['id'] = z_root() . '/item/' . urlencode($i['mid']);
+		$ret['id'] = ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/item/' . urlencode($i['mid']));
 		return $ret;
 	}
 
 	$ret['type'] = 'Note';
-	$ret['id']   = z_root() . '/item/' . urlencode($i['mid']);
+	$ret['id']   = ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/item/' . urlencode($i['mid']));
 
 	if($i['title'])
 		$ret['title'] = bbcode($i['title']);
@@ -161,7 +161,7 @@ function asencode_item($i) {
 	$ret['tag'] = [];
 	$ret['tag'][] = [ 
 		'type' => 'zot:messageId', 
-		'id'   => z_root() . '/display/' . urlencode($i['mid']),
+		'id'   => ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/display/' . urlencode($i['mid'])),
 		'name' => $i['mid']
 	];
 
@@ -178,12 +178,12 @@ function asencode_activity($i) {
 	if(intval($i['item_deleted'])) {
 		$ret['type'] = 'Tombstone';
 		$ret['formerType'] = activity_obj_mapper($i['obj_type']);
-		$ret['id'] = z_root() . '/item/' . urlencode($i['mid']);
+		$ret['id'] = ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/item/' . urlencode($i['mid']));
 		return $ret;
 	}
 
 	$ret['type'] = activity_mapper($i['verb']);
-	$ret['id']   = z_root() . '/activity/' . urlencode($i['mid']);
+	$ret['id']   = ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/activity/' . urlencode($i['mid']));
 
 	if($i['title'])
 		$ret['title'] = html2plain(bbcode($i['title']));
@@ -228,7 +228,7 @@ function asencode_activity($i) {
 	$ret['tag'] = [];
 	$ret['tag'][] = [ 
 		'type' => 'zot:messageId', 
-		'id'   => z_root() . '/display/' . urlencode($i['mid']),
+		'id'   => ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/display/' . urlencode($i['mid'])),
 		'name' => $i['mid']
 	];
 
