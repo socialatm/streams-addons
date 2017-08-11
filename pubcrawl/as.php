@@ -64,6 +64,11 @@ function asencode_object($x) {
 	if($x['type'] === ACTIVITY_OBJ_PROFILE) {
 		return asfetch_profile($x); 
 	}
+
+	if($x['type'] === ACTIVITY_OBJ_NOTE) {
+		return asfetch_item($x); 
+	}
+
 }	
 
 function asfetch_person($x) {
@@ -72,6 +77,16 @@ function asfetch_person($x) {
 
 function asfetch_profile($x) {
 	return $x;
+}
+
+function asfetch_item($x) {
+
+	$r = q("select * from item where mid = '%s' limit 1",
+		dbesc($x['id'])
+	);
+	if($r) {
+		return asencode_item($r[0]);
+	}
 }
 
 function asencode_item_collection($items,$id,$type,$extra = null) {
