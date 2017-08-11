@@ -25,8 +25,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 		if(! $data)
 			return;
 
-		logger('inbox_activity: ' . $data, LOGGER_DATA);
-
+		logger('inbox_activity: ' . jindent($data), LOGGER_DATA);
 
 		$AS = new \ActivityStreams($data);
 
@@ -95,18 +94,9 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		}
 
-
-
-
-
-
-
 	}
 
 	function get() {
-
-//		logger('config: ' . print_r(\App::$config,true));
-
 
 	}
 
