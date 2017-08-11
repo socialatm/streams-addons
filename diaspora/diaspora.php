@@ -976,7 +976,6 @@ function diaspora_markdown_to_bb_init(&$s) {
 }
 
 
-
 function diaspora_bb_to_markdown_bb(&$x) {
 
 	if(! in_array('diaspora',$x['options']))

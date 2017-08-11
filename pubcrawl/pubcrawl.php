@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Name: PubCrawl (WIP; developers only - not yet functional)
+ * Name: PubCrawl
  * Description: An unapologetically non-compliant ActivityPub Protocol implemention
  * 
  */
@@ -28,6 +28,8 @@ function pubcrawl_load() {
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
 		'notifier_hub'               => 'pubcrawl_notifier_process',
+		'feature_settings_post'      => 'pubcrawl_feature_settings_post',
+		'feature_settings'           => 'pubcrawl_feature_settings',
 		'queue_deliver'              => 'pubcrawl_queue_deliver'
 	]);
 }
@@ -567,3 +569,34 @@ function pubcrawl_queue_deliver(&$b) {
 		}
 	}
 }
+
+function pubcrawl_feature_settings_post(&$b) {
+
+	if($_POST['pubcrawl-submit']) {
+		set_pconfig(local_channel(),'system','activitypub_allowed',intval($_POST['activitypub_allowed']));
+		
+		info( t('ActivityPub Protocol Settings updated.') . EOL);
+	}
+}
+
+
+function pubcrawl_feature_settings(&$s) {
+
+	$ap_allowed = get_pconfig(local_channel(),'system','activitypub_allowed');
+
+	$sc = '<div>' . t('The ActivityPub protocol does not support location independence. Connections you make within that network may be unreachable from alternate channel locations.') . '</div><br>';
+
+	$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+		'$field'	=> array('activitypub_allowed', t('Enable the ActivityPub protocol for this channel'), $ap_allowed, '', $yes_no),
+	));
+
+
+	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
+		'$addon' 	=> array('pubcrawl', t('ActivityPub Protocol Settings'), '', t('Submit')),
+		'$content'	=> $sc
+	));
+
+	return;
+
+}
+

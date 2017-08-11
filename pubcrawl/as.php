@@ -579,17 +579,15 @@ function as_actor_store($url,$person_obj) {
 
 	if($inbox) {
 		$collections['inbox'] = $inbox;
-		if($person['outbox'])
+		if($person_obj['outbox'])
 			$collections['outbox'] = $person_obj['outbox'];
-		if($person['publicInbox'])
+		if($person_obj['publicInbox'])
 			$collections['publicInbox'] = $person_obj['publicInbox'];
-		if($person['followers'])
+		if($person_obj['followers'])
 			$collections['followers'] = $person_obj['followers'];
-		if($person['following'])
+		if($person_obj['following'])
 			$collections['following'] = $person_obj['following'];
 	}
-
-	// @todo fetch pubkey
 
 	if(array_key_exists('publicKey',$person_obj) && array_key_exists('publicKeyPem',$person_obj['publicKey'])) {
 		if($person_obj['id'] === $person_obj['publicKey']['owner']) {
@@ -626,8 +624,9 @@ function as_actor_store($url,$person_obj) {
 			return;
 
 		// update existing record
-		$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
+		$r = q("update xchan set xchan_name = '%s', xchan_pubkey = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
 			dbesc($name),
+			dbesc($pubkey),
 			dbesc('activitypub'),
 			dbesc(datetime_convert()),
 			dbesc($url)
