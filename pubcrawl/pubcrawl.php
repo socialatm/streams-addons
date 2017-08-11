@@ -198,6 +198,48 @@ function pubcrawl_channel_mod_init($x) {
 	}
 }
 
+
+function pubcrawl_permissions_create(&$x) {
+
+	// send a follow activity to the followee's inbox
+
+	if($x['recipient']['xchan_network'] !== 'activitypub') {
+		return;
+	}
+
+	$msg = array_merge(['@context' => [
+			'https://www.w3.org/ns/activitystreams',
+			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+			[ 'zot' => 'http://purl.org/zot/protocol' ]
+		]], 
+		[
+			'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
+			'type' => 'Follow',
+			'actor' => asencode_person($x['sender']),
+			'object' => asencode_person($x['recipient'])
+	]);
+
+	$jmsg = json_encode($msg);
+
+	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
+	$single = deliverable_singleton($x['sender']['channel_id'],$x['recipient']);
+
+	$h = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+		dbesc($x['recipient']['xchan_hash'])
+	);
+
+	if($single && $h) {
+		$qi = pubcrawl_queue_message($jmsg,$x['sender'],$h[0]);
+		if($qi)
+			$x['deliveries'] = $qi;
+	}
+		
+	$x['success'] = true;
+
+}
+
+
+
 function pubcrawl_notifier_process(&$arr) {
 
 	if($arr['hub']['hubloc_network'] !== 'activitypub')
@@ -205,7 +247,7 @@ function pubcrawl_notifier_process(&$arr) {
 
 	logger('upstream: ' . intval($arr['upstream']));
 
-	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
+//	logger('notifier_array: ' . print_r($arr,true), LOGGER_ALL, LOG_INFO);
 
 	// allow this to be set per message
 
@@ -213,6 +255,17 @@ function pubcrawl_notifier_process(&$arr) {
 		logger('Cannot send mail to activitypub.');
 		return;
 	}
+
+	$allowed = get_pconfig($arr['channel']['channel_id'],'system','activitypub_allowed');
+
+	if(! intval($allowed)) {
+		logger('pubcrawl: disallowed for channel ' . $arr['channel']['channel_name']);
+		return;
+	}
+
+	if($arr['location'])
+		return;
+
 
 	if(array_key_exists('target_item',$arr) && is_array($arr['target_item'])) {
 
@@ -226,15 +279,6 @@ function pubcrawl_notifier_process(&$arr) {
 		}
 	}
 
-	$allowed = get_pconfig($arr['channel']['channel_id'],'system','activitypub_allowed');
-
-	if(! intval($allowed)) {
-		logger('pubcrawl: disallowed for channel ' . $arr['channel']['channel_name']);
-		return;
-	}
-
-	if($arr['location'])
-		return;
 
 	$target_item = $arr['target_item'];
 
@@ -460,50 +504,6 @@ function pubcrawl_follow_mod_init($x) {
 			json_return_and_die($x);
 		}
 	}
-}
-
-
-function pubcrawl_permissions_create(&$b) {
-
-	if($b['recipient']['xchan_network'] !== 'activitypub') {
-		return;
-	}
-
-	$x = array_merge(['@context' => [
-		'https://www.w3.org/ns/activitystreams',
-		[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-		[ 'zot' => 'http://purl.org/zot/protocol' ]
-	]], 
-	[
-		'id'	 => z_root() . '/follow/' . $b['recipient']['abook_id'],
-		'type'   => 'Follow',
-		'actor'  => asencode_person($b['sender']),
-		'object' => $b['recipient']['xchan_hash']
-	]);
-
-	$h = q("select * from hubloc where hubloc_hash = '%s' limit 1",
-		dbesc($b['recipient']['xchan_hash'])
-	);
-	if(! $h) {
-		return;
-	}
-
-	require_once('include/queue_fns.php');
-
-	$hash = random_string();
-
-	queue_insert( [
-		'hash'       => $hash,
-		'account_id' => $b['sender']['channel_account_id'],
-		'channel_id' => $b['sender']['channel_id'],
-		'driver'     => 'pubcrawl',
-		'posturl'    => $h[0]['hubloc_callback'],
-		'msg'        => $x
-	]);
-
-	$b['deliveries'] = $hash;
-	$b['success'] = 1;
-
 }
 
 

@@ -135,7 +135,7 @@ function asencode_item($i) {
 	}
 
 	if($i['id'] != $i['parent']) {
-		$ret['inReplyTo'] = z_root() . '/item/' . urlencode($i['parent_mid']);
+		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
 	}
 
 	$ret['content']   = bbcode($i['body']);
@@ -192,7 +192,7 @@ function asencode_activity($i) {
 	}
 
 	if($i['id'] != $i['parent']) {
-		$ret['inReplyTo'] = z_root() . '/item/' . urlencode($i['parent_mid']);
+		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
 	}
 
 	$ret['content']   = bbcode($i['body']);
@@ -495,13 +495,9 @@ function as_follow($channel,$act) {
 				]
 			);
 
-			if($my_perms) {
+			if($my_perms && $automatic) {
 				// Send back a follow notification to them
-// @FIXME
-//					$x = diaspora_share($channel,$new_connection[0]);
-//					if($x)
-//						Zotlabs\Daemon\Master::Summon(array('Deliver',$x));
-		
+				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_create', $new_connection[0]['abook_id'] ]);
 			}
 
 			$clone = array();
@@ -654,7 +650,7 @@ function as_actor_store($url,$person_obj) {
 	}
 
 	if(! $icon)
-		$icon = get_default_profile_photo(300);
+		$icon = z_root() . '/' . get_default_profile_photo(300);
 
 	$photos = import_xchan_photo($icon,$url);
 	$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
@@ -686,7 +682,25 @@ function as_create_note($channel,$observer_hash,$act) {
 	$parent = ((array_key_exists('inReplyTo',$act->obj)) ? $act->obj['inReplyTo'] : '');
 	if($parent) {
 
+		$r = q("select * from item where uid = %d and ( mid = '%s' || mid = '%s' ) and parent_mid = mid limit 1",
+			intval($channel['channel_id']),
+			dbesc($parent),
+			dbesc(urldecode(basename($parent)))
+		);
 
+		if(! $r) {
+			logger('parent not found.');
+			return;
+		}
+		if($r[0]['owner_xchan'] === $channel['channel_hash']) {
+			if(! perm_is_allowed($channel['channel_id'],$observer_hash,'post_comments')) {
+				logger('no comment permission.');
+				return;
+			}
+		}
+		$s['parent_mid'] = $r[0]['mid'];
+		$s['owner_xchan'] = $r[0]['owner_xchan'];
+		$s['author_xchan'] = $observer_hash;
 	}
 	else {
 		if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream')) {
@@ -707,7 +721,7 @@ function as_create_note($channel,$observer_hash,$act) {
 	$s['uid'] = $channel['channel_id'];
 	$s['mid'] = $act->obj['id'];
 
-	if(! $parent)
+	if(! $s['parent_mid'])
 		$s['parent_mid'] = $s['mid'];
 	
 	$s['title'] = as_bb_content($content,'name');
