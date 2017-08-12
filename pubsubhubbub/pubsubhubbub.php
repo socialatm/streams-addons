@@ -102,12 +102,6 @@ function push_notifier_process(&$a,&$b) {
 		return;
 	}
 
-	if($b['upstream'])  {
-		logger('Not a downstream post. Not suitable for PuSH forwarding.');
-		return;
-	}
-
-
 	// find push_subscribers following this $owner
 
 	$channel = $b['channel'];
@@ -168,8 +162,8 @@ function push_notifier_process(&$a,&$b) {
 		$b['queued'][] = $hash;
 	}
 
-
 }
+
 
 function push_queue_deliver(&$a,&$b) {
 

@@ -486,17 +486,10 @@ function gnusoc_notifier_process(&$a,&$b) {
 	if(! perm_is_allowed($channel['channel_id'],'','view_stream'))
 		return;
 
-
 	if($b['upstream']) {
 		$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d and hubloc_hash = '%s'",
 			intval($channel['channel_id']),
 			dbesc(trim($b['recipients'][0],"'"))
-		);
-	}
-	else {
-	    // find gnusoc subscribers following this $owner
-		$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d",
-			intval($channel['channel_id'])
 		);
 	}
 
@@ -510,36 +503,32 @@ function gnusoc_notifier_process(&$a,&$b) {
 
 	}
 
-	if(! $recips)
-		return;
-
 	$slap = atom_entry($b['target_item'],'html',null,null,false);
-	if($b['upstream']) {
+	if($b['upstream'] && $recips) {
 		$slap = str_replace('</entry>', '<link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="' . $r[0]['hubloc_guid'] . '"/></entry>',$slap);
-	}
 
-	logger('slap: ' . $slap, LOGGER_DATA);
+		logger('slap: ' . $slap, LOGGER_DATA);
 
-
-
-
-	$slap = str_replace('<entry>','<entry xmlns="http://www.w3.org/2005/Atom"
-      xmlns:thr="http://purl.org/syndication/thread/1.0"
-      xmlns:at="http://purl.org/atompub/tombstones/1.0"
-      xmlns:media="http://purl.org/syndication/atommedia"
-      xmlns:dfrn="http://purl.org/macgirvin/dfrn/1.0" 
-      xmlns:zot="http://purl.org/zot"
-      xmlns:as="http://activitystrea.ms/spec/1.0/"
-      xmlns:georss="http://www.georss.org/georss" 
-      xmlns:poco="http://portablecontacts.net/spec/1.0" 
-      xmlns:ostatus="http://ostatus.org/schema/1.0" 
-	  xmlns:statusnet="http://status.net/schema/api/1/" >',$slap);
+		$slap = str_replace('<entry>','<entry xmlns="http://www.w3.org/2005/Atom"
+	      xmlns:thr="http://purl.org/syndication/thread/1.0"
+    	  xmlns:at="http://purl.org/atompub/tombstones/1.0"
+	      xmlns:media="http://purl.org/syndication/atommedia"
+    	  xmlns:dfrn="http://purl.org/macgirvin/dfrn/1.0" 
+	      xmlns:zot="http://purl.org/zot"
+    	  xmlns:as="http://activitystrea.ms/spec/1.0/"
+	      xmlns:georss="http://www.georss.org/georss" 
+    	  xmlns:poco="http://portablecontacts.net/spec/1.0" 
+	      xmlns:ostatus="http://ostatus.org/schema/1.0" 
+		  xmlns:statusnet="http://status.net/schema/api/1/" >',$slap);
 
  
-	foreach($recips as $recip) {
-		$h = slapper($channel,$recip['hubloc_callback'],$slap);
-        $b['queued'][] = $h;
+		foreach($recips as $recip) {
+			$h = slapper($channel,$recip['hubloc_callback'],$slap);
+        	$b['queued'][] = $h;
+		}
+
 	}
+
 }
 
 
