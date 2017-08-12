@@ -125,7 +125,7 @@ class Diaspora_Receiver {
 					]
 				);
 
-				if($my_perms) {
+				if($my_perms && $automatic) {
 					// Send back a sharing notification to them
 					$x = diaspora_share($this->importer,$new_connection[0]);
 					if($x)

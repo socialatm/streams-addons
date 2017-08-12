@@ -653,7 +653,7 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 					'link'         => z_root() . '/connedit/' . $new_connection[0]['abook_id'],
 				));
 
-				if($default_perms) {
+				if($default_perms && $automatic) {
 					// Send back a sharing notification to them
 					$deliver = gnusoc_remote_follow($importer,$new_connection[0]);
 					if($deliver)
