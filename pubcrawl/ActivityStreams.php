@@ -24,6 +24,11 @@ class ActivityStreams {
 			$this->actor = $this->get_compound_property('actor');
 			$this->obj   = $this->get_compound_property('object');
 			$this->tgt   = $this->get_compound_property('target');
+
+			if(($this->type === 'Note') && (! $this->obj)) {
+				$this->obj = $this->data;
+				$this->type = 'Create';
+			}
 		}
 	}
 
