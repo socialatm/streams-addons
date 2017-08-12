@@ -106,6 +106,19 @@ function push_notifier_process(&$a,&$b) {
 
 	$channel = $b['channel'];
 
+	// We will send a copy to all our ostatus/websub followers going both upstream and downstream.
+	// This could result in duplicated deliveries if the top-level post is our own.
+	// Check for that condition and only send downstream in that case.
+ 
+	if(array_key_exists('parent_item',$b) && $b['parent_item']) {
+
+		if($b['upstream'] && $channel['channel_hash'] === $b['parent_item']['owner_xchan']) {
+			return;
+		}
+	}
+
+
+
 	// allow subscriptions either by http or https, as gnu-social has been known to subscribe
 	// to the wrong one.
 
