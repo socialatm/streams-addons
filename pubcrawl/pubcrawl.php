@@ -290,17 +290,28 @@ function pubcrawl_notifier_process(&$arr) {
 
 		// public message
 
-		$contact = $arr['hub'];
+		$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_url = '%s' and xchan_network = 'activitypub' ",
+			dbesc($arr['hub']['hubloc_url'])
+		);
 
-		$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
+		if(! $r) {
+			logger('activitypub_process_outbound: no recipients');
+			return;
+		}
 
-		if($single) {
-			$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
-			if($qi)
-				$arr['queued'][] = $qi;
+		foreach($r as $contact) {
+
+			$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
+
+			if($single) {
+				$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
+				if($qi)
+					$arr['queued'][] = $qi;
+			}
 		}	
-		return;
 	}
+	
+	return;
 
 }
 
