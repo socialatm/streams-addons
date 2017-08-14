@@ -8,18 +8,22 @@ class Inbox extends \Zotlabs\Web\Controller {
 		if(argc() <= 1)
 			return;
 
+		$sys_disabled = false;
+
+		if(get_config('system','disable_discover_tab') || get_config('system','disable_activitypub_discover_tab')) {
+			$sys_disabled = true;
+		}
+
 		$is_public = false;
 
 		if(argv(1) === '[public]') {
-			$channel = get_sys_channel();
+//			$channel = (($sys_disabled) ? null : get_sys_channel());
 			$is_public = true;
 		}
 		else {
-			$channel = channelx_by_nick(argv(1));
+			$channels = [ channelx_by_nick(argv(1)) ];
 		}
 
-		if(! $channel)
-			return;
 
 		$data = file_get_contents('php://input');
 		if(! $data)
@@ -36,6 +40,31 @@ class Inbox extends \Zotlabs\Web\Controller {
 			as_actor_store($AS->actor['id'],$AS->actor);
 
 
+		$observer_hash = $AS->actor['id'];
+		if(! $observer_hash)
+			return;
+
+		if($is_public) {
+			$channels = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network = 'activitypub' and xchan_addr = '%s' ) and channel_removed = 0 ",
+		        dbesc($observer_hash);
+			);
+			if($channels === false)
+				$channels = [];
+			if(! $sys_disabled)
+				$channels[] = get_sys_channel();
+
+			// look for channels with send_stream = PERMS_PUBLIC
+
+			$r = q("select * from channel where channel_id in (select uid from pconfig where cat = 'perm_limits' and k = 'send_stream' and v = 1 ) and channel_removed = 0 ");
+			if($r) {
+				$channels = array_merge($channels,$r);
+			}
+
+		}
+
+		if(! $channels)
+			return;
+
 		$saved_recips = [];
 		foreach( [ 'to', 'cc', 'audience' ] as $x ) {
 			if(array_key_exists($x,$AS->data)) {
@@ -43,57 +72,46 @@ class Inbox extends \Zotlabs\Web\Controller {
 			}
 		}
 
-		switch($AS->type) {
-			case 'Follow':
-				if($AS->obj & $AS->obj['type'] === 'Person') {
-					// do follow activity
-					as_follow($channel,$AS);
-					http_status_exit(200,'OK');
-					return;
+		foreach($channels as $channel) {
 
-				}
-				break;
-			default:
-				break;
+			switch($AS->type) {
+				case 'Follow':
+					if($AS->obj & $AS->obj['type'] === 'Person') {
+						// do follow activity
+						as_follow($channel,$AS);
+						continue;
+					}
+					break;
+				default:
+					break;
 
-		}
-
-		$observer_hash = $AS->actor['id'];
-		if(! $observer_hash)
-			return;
+			}
 
 
-		if($is_public) {
+			// These activities require permissions		
 
+			switch($AS->type) {
+				case 'Create':
+					as_create_action($channel,$observer_hash,$AS);
+					continue;
+				case 'Like':
+				case 'Dislike':
+					as_like_action($channel,$observer_hash,$AS);
+					continue;
+				case 'Update':
+				case 'Delete':
+				case 'Add':
+				case 'Remove':
+				case 'Announce':
+				case 'Undo':
+					break;
+				default:
+					break;
 
-		}
-		else {
-
-		}
-
-		// Look up actor
-		// These activities require permissions		
-
-		switch($AS->type) {
-			case 'Create':
-				as_create_action($channel,$observer_hash,$AS);
-				http_status_exit(200,'OK');
-			case 'Like':
-			case 'Dislike':
-				as_like_action($channel,$observer_hash,$AS);
-				http_status_exit(200,'OK');
-			case 'Update':
-			case 'Delete':
-			case 'Add':
-			case 'Remove':
-			case 'Announce':
-			case 'Undo':
-				break;
-			default:
-				break;
+			}
 
 		}
-
+		http_status_exit(200,'OK');
 	}
 
 	function get() {
