@@ -25,27 +25,76 @@ class HTTPSig {
 		if($data['header']) {
 			if(! $data['success'])
 				return false;
-			$headers = $data['header'];
+			$headers = new \Zotlabs\Web\HTTPHeaders($data['header']);
 			$body = $data['body'];
-
-
-
 		}
+
 		else {
 			$headers = [];
 			$headers['(request-target)'] = 
 				$_SERVER['REQUEST_METHOD'] . ' ' .
-				$_SERVER['REQUEST_URI']    . ' ' . 
-				$_SERVER['SERVER_PROTOCOL'];
+				$_SERVER['REQUEST_URI'];
 			foreach($_SERVER as $k => $v) {
 				if(strpos($k,'HTTP_') === 0) {
 					$field = str_replace('_','-',strtolower(substr($k,5)));
 					$headers[$field] = $v;
 				}
 			}
-					
-
 		}
+
+		$sig_block = null;
+
+		if(array_key_exists('signature',$headers)) {
+			$sig_block = parse_sigheader($headers['signature']);
+		}
+		elseif(array_key_exists('authorization',$headers)) {
+			$sig_block = parse_sigheader($headers['authorization']);
+		}
+
+		if(! $sig_block)
+			return null;
+
+		$signed_headers = $sig_block['headers'];
+		if(! $signed_headers) 
+			$signed_headers = [ 'date' ];
+
+		$signed_data = '';
+		foreach($signed_headers as $h) {
+			if(array_key_exists($h,$headers)) {
+				$signed_data .= $h . ': ' . $headers[$h] . "\n";
+			}
+		}
+		$signed_data = rtrim($signed_data,"\n");
+
+		$algorithm = null;
+		if($sig_block['algorithm'] === 'rsa-sha256') {
+			$algorithm = 'sha256';
+		}
+
+		if(! $key) {
+			// $key = get_activitypub_key($sig_block['keyId']);
+		}
+
+		if(! $key)
+			return null;
+
+		$x = rsa_verify($signed_data,$key,$algorithm);
+
+		if($x === false)
+			return $x;
+
+		if(in_array('digest',$signed_headers)) {
+			$digest = explode($headers['digest'],'=');
+			if($digest[0] === 'SHA-256')
+				$hashalg = 'sha256';
+
+			if(base64_encode(hash($hashalg,$body,true)) === $digest[1])
+				return true;
+			else
+				return false;
+		}
+
+		return $x;
 
 	}
 
