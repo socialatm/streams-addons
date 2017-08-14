@@ -72,7 +72,7 @@ class HTTPSig {
 		}
 
 		if(! $key) {
-			// $key = get_activitypub_key($sig_block['keyId']);
+			$key = $this->get_activitypub_key($sig_block['keyId']);
 		}
 
 		if(! $key)
@@ -97,6 +97,27 @@ class HTTPSig {
 		return $x;
 
 	}
+
+	function get_activitypub_key($id) {
+		$x = q("select xchan_pubkey from xchan where xchan_hash = '%s' and xchan_protocol = 'activitypub' ",
+			dbesc($id)
+		);
+		if($x) {
+			return ($x[0]['xchan_pubkey']);
+		}
+		$r = as_fetch($id);
+		if($r) {
+			$j = json_decode($r,true);
+			if($r['id'] !== $id)
+				return false; 
+			if(array_key_exists('publicKey',$j) && array_key_exists('publicKeyPem',$j['publicKey']))
+				return($j['publicKey']['publicKeyPem']);
+		}
+		return false;
+	}
+
+
+
 
 	static function create_sig($request,$head,$prvkey,$keyid = 'Key',$send_headers = false,$alg = 'sha256') {
 
