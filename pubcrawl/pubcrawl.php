@@ -20,6 +20,7 @@ require_once('addon/pubcrawl/HTTPSig.php');
 function pubcrawl_load() {
 	Zotlabs\Extend\Hook::register_array('addon/pubcrawl/pubcrawl.php', [
 		'module_loaded'              => 'pubcrawl_load_module',
+		'webfinger'                  => 'pubcrawl_webfinger',
 		'channel_mod_init'           => 'pubcrawl_channel_mod_init',
 		'profile_mod_init'           => 'pubcrawl_profile_mod_init',
 		'follow_mod_init'            => 'pubcrawl_follow_mod_init',
@@ -51,6 +52,15 @@ function pubcrawl_follow_allow(&$b) {
 	$b['singleton'] = 1;  // this network does not support channel clones
 
 }
+
+function pubcrawl_webfinger(&$b) {
+	$b['result']['links'][] = [ 
+		'rel'  => 'self', 
+		'type' => 'application/activity+json', 
+		'href' => z_root() . '/channel/' . $b['channel']['channel_address']
+	];
+}
+
 
 function pubcrawl_discover_channel_webfinger(&$b) {
 
