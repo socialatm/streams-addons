@@ -357,7 +357,7 @@ function activity_mapper($verb) {
 	];
 
 
-	if(array_key_exists($verb,$acts)) {
+	if(array_key_exists($verb,$acts) && $acts[$verb]) {
 		return $acts[$verb];
 	}
 	return false;
@@ -748,6 +748,14 @@ function as_create_note($channel,$observer_hash,$act) {
 	$s['uid'] = $channel['channel_id'];
 	$s['mid'] = $act->obj['id'];
 
+
+	if($act->data['published']) {
+		$s['created'] = datetime_convert('UTC','UTC',$act->data['published']);
+	}
+	elseif($act->obj['published']) {
+		$s['created'] = datetime_convert('UTC','UTC',$act->obj['published']);
+	}
+
 	if(! $s['parent_mid'])
 		$s['parent_mid'] = $s['mid'];
 	
@@ -926,7 +934,7 @@ function as_get_textfield($act,$field) {
 	
 	$content = false;
 
-	if(array_key_exists($field,$act))
+	if(array_key_exists($field,$act) && $act[$field])
 		$content = purify_html($act[$field]);
 	elseif(array_key_exists($field . 'Map',$act) && $act[$field . 'Map']) {
 		foreach($act[$field . 'Map'] as $k => $v) {
