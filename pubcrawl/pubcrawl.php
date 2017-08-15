@@ -121,9 +121,9 @@ function pubcrawl_is_as_request() {
 		return true;
 
 	$x = getBestSupportedMimeType([
+		'application/activity+json',
 		'application/ld+json;profile="https://www.w3.org/ns/activitystreams"',
-		'application/ld+json;profile="http://www.w3.org/ns/activitystreams"',
-		'application/activity+json'
+		'application/ld+json;profile="http://www.w3.org/ns/activitystreams"'
 	]);
 
 	return(($x) ? true : false);
@@ -143,7 +143,7 @@ function pubcrawl_magic_env_allowed() {
 function pubcrawl_salmon_sign($data,$channel) {
 
   	$data      = base64url_encode($data, false); // do not strip padding
-    $data_type = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"';
+    $data_type = 'application/activity+json';
     $encoding  = 'base64url';
     $algorithm = 'RSA-SHA256';
     $keyhash   = base64url_encode(hash('sha256',salmon_key($channel['channel_pubkey'])),true);
@@ -189,7 +189,7 @@ function pubcrawl_channel_mod_init($x) {
 		}
 		else {
 			$headers = [];
-			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
+			$headers['Content-Type'] = 'application/activity+json' ;
 			$ret = json_encode($x);
 			$hash = HTTPSig::generate_digest($ret,false);
 			$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -428,7 +428,7 @@ function pubcrawl_profile_mod_init($x) {
 			json_return_and_die($x);
 		}
 		else {
-			header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+			header('Content-Type: application/activity+json');
 			json_return_and_die($x);
 		}
 	}
@@ -475,7 +475,7 @@ function pubcrawl_item_mod_init($x) {
 			[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], asencode_item($items[0]));
 
-		header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+		header('Content-Type: application/activity+json');
 		json_return_and_die($x);
 
 	}
@@ -513,7 +513,7 @@ function pubcrawl_follow_mod_init($x) {
 			json_return_and_die($x);
 		}
 		else {
-			header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+			header('Content-Type: application/activity+json');
 			json_return_and_die($x);
 		}
 	}
@@ -535,7 +535,7 @@ function pubcrawl_queue_deliver(&$b) {
 		$retries = 0;
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
+		$headers['Content-Type'] = 'application/activity+json');
 		$ret = $outq['outq_msg'];
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  

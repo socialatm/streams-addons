@@ -68,7 +68,7 @@ class Outbox extends \Zotlabs\Web\Controller {
 
         	}
 	        else {
-    	        header('Content-Type: application/ld+json; profile="https://www.w3.org/ns/activitystreams"');
+    	        header('Content-Type: application/activity+json');
         	    $ret = json_encode($x);
             	\HTTPSig::generate_digest($ret);
 	            echo $ret;
