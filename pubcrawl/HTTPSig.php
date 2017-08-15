@@ -16,16 +16,17 @@ class HTTPSig {
 
 	// See draft-cavage-http-signatures-07
 
-	static function verify($data,$key) {
+	static function verify($data,$key = '') {
 
 		$body = $data;
 		$headers = null;
 
 		// decide if $data arrived via controller submission or curl
-		if($data['header']) {
+		if(is_array($data) && $data['header']) {
 			if(! $data['success'])
 				return false;
-			$headers = new \Zotlabs\Web\HTTPHeaders($data['header']);
+			$h = new \Zotlabs\Web\HTTPHeaders($data['header']);
+			$headers = $h->fetcharr();
 			$body = $data['body'];
 		}
 
@@ -45,10 +46,10 @@ class HTTPSig {
 		$sig_block = null;
 
 		if(array_key_exists('signature',$headers)) {
-			$sig_block = parse_sigheader($headers['signature']);
+			$sig_block = self::parse_sigheader($headers['signature']);
 		}
 		elseif(array_key_exists('authorization',$headers)) {
-			$sig_block = parse_sigheader($headers['authorization']);
+			$sig_block = self::parse_sigheader($headers['authorization']);
 		}
 
 		if(! $sig_block)
@@ -72,23 +73,24 @@ class HTTPSig {
 		}
 
 		if(! $key) {
-			$key = $this->get_activitypub_key($sig_block['keyId']);
+			$key = self::get_activitypub_key($sig_block['keyId']);
 		}
 
 		if(! $key)
 			return null;
 
-		$x = rsa_verify($signed_data,$key,$algorithm);
+		$x = rsa_verify($signed_data,$sig_block['signature'],$key,$algorithm);
 
 		if($x === false)
 			return $x;
 
 		if(in_array('digest',$signed_headers)) {
-			$digest = explode($headers['digest'],'=');
+			$digest = explode('=', $headers['digest']);
 			if($digest[0] === 'SHA-256')
 				$hashalg = 'sha256';
 
-			if(base64_encode(hash($hashalg,$body,true)) === $digest[1])
+			// The explode operation will have stripped the '=' padding, so compare against unpadded base64 
+			if(rtrim(base64_encode(hash($hashalg,$body,true)),'=') === $digest[1])
 				return true;
 			else
 				return false;
@@ -99,19 +101,24 @@ class HTTPSig {
 	}
 
 	function get_activitypub_key($id) {
-		$x = q("select xchan_pubkey from xchan where xchan_hash = '%s' and xchan_protocol = 'activitypub' ",
+
+		$x = q("select xchan_pubkey from xchan where xchan_hash = '%s' and xchan_network = 'activitypub' ",
 			dbesc($id)
 		);
-		if($x) {
+
+		if($x && $x[0]['xchan_pubkey']) {
 			return ($x[0]['xchan_pubkey']);
 		}
 		$r = as_fetch($id);
+
 		if($r) {
 			$j = json_decode($r,true);
-			if($r['id'] !== $id)
+
+			if($j['id'] !== $id)
 				return false; 
-			if(array_key_exists('publicKey',$j) && array_key_exists('publicKeyPem',$j['publicKey']))
+			if(array_key_exists('publicKey',$j) && array_key_exists('publicKeyPem',$j['publicKey'])) {
 				return($j['publicKey']['publicKeyPem']);
+			}
 		}
 		return false;
 	}
@@ -186,13 +193,13 @@ class HTTPSig {
 	static function parse_sigheader($header) {
 		$ret = [];
 		$matches = [];
-		if(preg_match('keyId="(.*?)"/ism',$header,$matches))
+		if(preg_match('/keyId="(.*?)"/ism',$header,$matches))
 			$ret['keyId'] = $matches[1];
-		if(preg_match('algorithm="(.*?)"/ism',$header,$matches))
+		if(preg_match('/algorithm="(.*?)"/ism',$header,$matches))
 			$ret['algorithm'] = $matches[1];
-		if(preg_match('headers="(.*?)"/ism',$header,$matches))
+		if(preg_match('/headers="(.*?)"/ism',$header,$matches))
 			$ret['headers'] = explode(' ', $matches[1]);
-		if(preg_match('signature="(.*?)"/ism',$header,$matches))
+		if(preg_match('/signature="(.*?)"/ism',$header,$matches))
 			$ret['signature'] = base64_decode(preg_replace('/\s+/','',$matches[1]));
 
 		if(($ret['signature']) && ($ret['algorithm']) && (! $ret['headers']))
