@@ -725,6 +725,7 @@ function as_create_note($channel,$observer_hash,$act) {
 				return;
 			}
 		}
+
 		$s['parent_mid'] = $r[0]['mid'];
 		$s['owner_xchan'] = $r[0]['owner_xchan'];
 		$s['author_xchan'] = $observer_hash;
@@ -736,6 +737,11 @@ function as_create_note($channel,$observer_hash,$act) {
 		}
 		$s['owner_xchan'] = $s['author_xchan'] = $observer_hash;		
 	}
+	
+	$abook = q("select * from abook where abook_xchan = '%s' and abook_channel = %d limit 1",
+		dbesc($observer_hash),
+		intval($channel['channel_id'])
+	);
 	
 	$content = as_get_content($act->obj);
 
@@ -765,6 +771,13 @@ function as_create_note($channel,$observer_hash,$act) {
 	$s['obj_type'] = ACTIVITY_OBJ_NOTE;
 	$s['app'] = t('ActivityPub');
 
+
+	if($abook) {
+		if(! post_is_importable($s,$abook[0])) {
+			logger('post is filtered');
+			return;
+		}
+	}
 
 	$x = item_store($s);
 
