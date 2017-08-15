@@ -102,7 +102,7 @@ function asencode_item_collection($items,$id,$type,$extra = null) {
 	if($items) {
 		$x = [];
 		foreach($items as $i) {
-			$x[] = asencode_item($i);
+			$x[] = asencode_activity($i);
 		}
 		if($type === 'OrderedCollection')
 			$ret['orderedItems'] = $x;
@@ -234,6 +234,8 @@ function asencode_activity($i) {
 
 	if(! $i['item_private']) {
 		$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
+		if($i['item_origin'])
+			$ret['cc'] = [ z_root() . '/followers/' . $ret['zot:owner']['preferredUsername'] ];
 	}
 	else {
 		$ret['bto'] = as_map_acl($i);
