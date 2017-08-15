@@ -535,7 +535,7 @@ function pubcrawl_queue_deliver(&$b) {
 		$retries = 0;
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json');
+		$headers['Content-Type'] = 'application/activity+json';
 		$ret = $outq['outq_msg'];
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
