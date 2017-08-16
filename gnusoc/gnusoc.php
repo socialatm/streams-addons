@@ -486,6 +486,8 @@ function gnusoc_notifier_process(&$a,&$b) {
 	if(! perm_is_allowed($channel['channel_id'],'','view_stream'))
 		return;
 
+	// $b['recipients'][0] should point to the top level post owner
+
 	if($b['upstream']) {
 		$r = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d and hubloc_hash = '%s'",
 			intval($channel['channel_id']),
@@ -493,19 +495,47 @@ function gnusoc_notifier_process(&$a,&$b) {
 		);
 	}
 
-	if(! $r)
-		return;
-
 	$recips = array();
-	foreach($r as $rr) {
-		if(perm_is_allowed($channel['channel_id'],$rr['hubloc_hash'],'view_stream'))
-			$recips[] = $rr;
 
+	// also send salmon slaps to anybody who was mentioned in the comment to match OStatus expected behaviour;
+	// however they need to be registered on this site (have a valid xchan and hubloc) from some prior
+	// activity and also be OStatus. 
+
+	if((is_array('term',$b['target_item'])) && count($b['target_item']['term'])) {
+		foreach($b['target_item']['term'] as $t) {
+			if(intval($t['ttype']) != TERM_MENTION)
+				continue;
+			$m = q("select * from abook left join hubloc on abook_xchan = hubloc_hash where hubloc_network = 'gnusoc' and abook_channel = %d and hubloc_hash = '%s'",
+				intval($channel['channel_id']),
+				dbesc($t['url'])
+			);
+			if($m) {
+				foreach($m as $mentioned) {
+					if(perm_is_allowed($channel['channel_id'],$mentioned['hubloc_hash'],'view_stream')) {
+						$recips[] = $mentioned;
+					}
+				}
+			}
+		}
 	}
 
+	if($r) {
+		foreach($r as $rr) {
+			if(perm_is_allowed($channel['channel_id'],$rr['hubloc_hash'],'view_stream')) {
+				$recips[] = $rr;
+			}
+		}
+	}
+
+	if(! $recips)
+		return;
+
 	$slap = atom_entry($b['target_item'],'html',null,null,false);
-	if($b['upstream'] && $recips) {
-		$slap = str_replace('</entry>', '<link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="' . $r[0]['hubloc_guid'] . '"/></entry>',$slap);
+	if($b['upstream']) {
+
+		foreach($recips as $rv) {
+			$slap = str_replace('</entry>', '<link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="' . $rv['hubloc_guid'] . '"/></entry>',$slap);
+		}
 
 		logger('slap: ' . $slap, LOGGER_DATA);
 

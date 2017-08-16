@@ -118,7 +118,6 @@ function push_notifier_process(&$a,&$b) {
 	}
 
 
-
 	// allow subscriptions either by http or https, as gnu-social has been known to subscribe
 	// to the wrong one.
 
