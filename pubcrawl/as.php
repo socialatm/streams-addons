@@ -552,6 +552,32 @@ function as_follow($channel,$act) {
 }
 
 
+function as_unfollow($channel,$act) {
+
+	$contact = null;
+
+	/* @FIXME This really needs to be a signed request. */
+
+	/* actor is unfollowing $channel */
+
+	$person_obj = $act->actor;
+
+	if(is_array($person_obj)) {
+
+		$r = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_xchan = '%s' and abook_channel = %d limit 1",
+			dbesc($person_obj['id']),
+			intval($channel['channel_id'])
+		);
+		if($r) {
+			contact_remove($channel['channel_id'],$r[0]['abook_id']);
+		}
+	}
+
+	return;
+}
+
+
+
 
 function as_actor_store($url,$person_obj) {
 

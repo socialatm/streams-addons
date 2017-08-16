@@ -17,7 +17,6 @@ class Inbox extends \Zotlabs\Web\Controller {
 		$is_public = false;
 
 		if(argv(1) === '[public]') {
-//			$channel = (($sys_disabled) ? null : get_sys_channel());
 			$is_public = true;
 		}
 		else {
@@ -98,12 +97,19 @@ class Inbox extends \Zotlabs\Web\Controller {
 				case 'Dislike':
 					as_like_action($channel,$observer_hash,$AS);
 					continue;
+				case 'Undo':
+					if($AS->obj & $AS->obj['type'] === 'Follow') {
+						// do unfollow activity
+						as_unfollow($channel,$AS);
+						continue;
+					}
 				case 'Update':
 				case 'Delete':
 				case 'Add':
 				case 'Remove':
 				case 'Announce':
-				case 'Undo':
+
+
 					break;
 				default:
 					break;
