@@ -437,10 +437,14 @@ function pubcrawl_profile_mod_init($x) {
 			header('Content-Type: application/magic-envelope+json');
 			json_return_and_die($x);
 		}
-		else {
-			header('Content-Type: application/activity+json');
-			json_return_and_die($x);
-		}
+
+		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$hash = HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		echo $ret;
+		killme();
 	}
 }
 
@@ -479,14 +483,22 @@ function pubcrawl_item_mod_init($x) {
 			http_status_exit(418, "I'm a teapot"); 
 		}
 
+		$chan = channelx_by_n($items[0]['uid']);
+
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
 			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 			[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], asencode_item($items[0]));
 
-		header('Content-Type: application/activity+json');
-		json_return_and_die($x);
+
+		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$hash = HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		echo $ret;
+		killme();
 
 	}
 }
@@ -522,10 +534,14 @@ function pubcrawl_follow_mod_init($x) {
 			header('Content-Type: application/magic-envelope+json');
 			json_return_and_die($x);
 		}
-		else {
-			header('Content-Type: application/activity+json');
-			json_return_and_die($x);
-		}
+
+		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$hash = HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		echo $ret;
+		killme();
 	}
 }
 
