@@ -72,11 +72,24 @@ function asencode_object($x) {
 }	
 
 function asfetch_person($x) {
-	return $x;
+	return asfetch_profile($x);
 }
 
 function asfetch_profile($x) {
-	return $x;
+	$r = q("select * from xchan where xchan_url like '%s' limit 1",
+		dbesc($x['id'] . '/%')
+	);
+	if(! $r) {
+		$r = q("select * from xchan where xchan_hash = '%s' limit 1",
+			dbesc($x['id'])
+		);
+
+	} 
+	if(! $r)
+		return [];
+
+	return asencode_person($r[0]);
+
 }
 
 function asfetch_item($x) {
