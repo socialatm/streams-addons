@@ -206,7 +206,7 @@ function pubcrawl_channel_mod_init($x) {
 		$ret = json_encode($x);
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . argv(1),true);
+		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
 	}
@@ -434,19 +434,18 @@ function pubcrawl_profile_mod_init($x) {
 			'describes' => asencode_person($chan)
 		];
 				
-		if(pubcrawl_magic_env_allowed()) {
-			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
-			header('Content-Type: application/magic-envelope+json');
-			json_return_and_die($x);
-		}
-
+		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$y = pubcrawl_salmon_sign($ret,$chan);
+		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
+
 	}
 }
 
@@ -496,13 +495,11 @@ function pubcrawl_item_mod_init($x) {
 			]], asencode_item($items[0]));
 
 
-		if(pubcrawl_magic_env_allowed()) {
-			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
-			header('Content-Type: application/magic-envelope+json');
-			json_return_and_die($x);
-		}
-
+		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$y = pubcrawl_salmon_sign($ret,$chan);
+		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -547,20 +544,17 @@ function pubcrawl_thing_mod_init($x) {
 			$x['image'] = $r[0]['obj_image'];
 
 
-		if(pubcrawl_magic_env_allowed()) {
-			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
-			header('Content-Type: application/magic-envelope+json');
-			json_return_and_die($x);
-		}
-
+		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$y = pubcrawl_salmon_sign($ret,$chan);
+		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
-
 	}
 }
 
@@ -592,19 +586,19 @@ function pubcrawl_follow_mod_init($x) {
 				'object' => asencode_person($r[0])
 		]);
 				
-		if(pubcrawl_magic_env_allowed()) {
-			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
-			header('Content-Type: application/magic-envelope+json');
-			json_return_and_die($x);
-		}
 
+		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$y = pubcrawl_salmon_sign($ret,$chan);
+		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
+
 	}
 }
 

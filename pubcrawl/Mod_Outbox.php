@@ -61,19 +61,19 @@ class Outbox extends \Zotlabs\Web\Controller {
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
             	]], asencode_item_collection($items, \App::$query_string, 'OrderedCollection'));
 
-	        if(pubcrawl_magic_env_allowed()) {
-    	        $x = pubcrawl_salmon_sign(json_encode($x),$chan);
-        	    header('Content-Type: application/magic-envelope+json');
-            	json_return_and_die($x);
 
-        	}
-	        else {
-    	        header('Content-Type: application/activity+json');
-        	    $ret = json_encode($x);
-            	\HTTPSig::generate_digest($ret);
-	            echo $ret;
-    	        killme();
-        	}
+			$headers = [];
+			$headers['Content-Type'] = 'application/activity+json' ;
+			$ret = json_encode($x);
+			$y = pubcrawl_salmon_sign($ret,$chan);
+			$x['me:env'] = $y;
+			$ret = json_encode($x);
+			$hash = \HTTPSig::generate_digest($ret,false);
+			$headers['Digest'] = 'SHA-256=' . $hash;  
+			\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+			echo $ret;
+			killme();
+
     	}
 
 	}

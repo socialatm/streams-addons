@@ -32,14 +32,26 @@ class Activity extends \Zotlabs\Web\Controller {
 			xchan_query($r,true);
 			$items = fetch_post_tags($r,true);
 
+			$chan = channelx_by_n($items[0]['uid']);
+
 			$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
 				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
 				]], asencode_activity($items[0]));
 
-			header('Content-Type: application/activity+json');
-			json_return_and_die($x);
+
+			$headers = [];
+			$headers['Content-Type'] = 'application/activity+json' ;
+			$ret = json_encode($x);
+			$y = pubcrawl_salmon_sign($ret,$chan);
+			$x['me:env'] = $y;
+			$ret = json_encode($x);
+			$hash = \HTTPSig::generate_digest($ret,false);
+			$headers['Digest'] = 'SHA-256=' . $hash;  
+			\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+			echo $ret;
+			killme();
 
 		}
 
