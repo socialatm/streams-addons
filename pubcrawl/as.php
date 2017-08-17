@@ -148,6 +148,12 @@ function asencode_item($i) {
 			$ret['location']['longitude'] = $l[1];
 		}
 	}
+	$ret['url'] = [
+		'type' => 'Link',
+		'rel'  => 'alternate',
+		'type' => 'text/html',
+		'href' => $i['plink']
+	];
 
 	if($i['id'] != $i['parent']) {
 		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
