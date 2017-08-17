@@ -366,6 +366,19 @@ function activity_mapper($verb) {
 	if(array_key_exists($verb,$acts) && $acts[$verb]) {
 		return $acts[$verb];
 	}
+
+	// Reactions will just map to normal activities
+
+	if(strpos($verb,ACTIVITY_REACT) !== false)
+		return 'Create';
+	if(strpos($verb,ACTIVITY_MOOD) !== false)
+		return 'Create';
+
+
+	if(strpos($verb,ACTIVITY_MOOD) !== false)
+		return false;
+
+
 	return false;
 }
 
@@ -387,7 +400,6 @@ function activity_obj_mapper($obj) {
 		'http://purl.org/zot/activity/thing'                => 'zot:Thing',
 		'http://purl.org/zot/activity/file'                 => 'zot:File',
 		'http://purl.org/zot/activity/poke'                 => 'zot:Action',
-		'http://purl.org/zot/activity/react'                => 'zot:Reaction',
 		'http://purl.org/zot/activity/mood'                 => 'zot:Mood',
 		
 	];
