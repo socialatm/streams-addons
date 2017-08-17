@@ -123,6 +123,11 @@ function pubcrawl_load_module(&$b) {
 		$b['controller'] = new \Zotlabs\Module\Nullbox();
 		$b['installed'] = true;
 	}
+	if($b['module'] === 'ap_probe') {
+		require_once('addon/pubcrawl/Mod_Ap_probe.php');
+		$b['controller'] = new \Zotlabs\Module\Ap_probe();
+		$b['installed'] = true;
+	}
 }
 
 
