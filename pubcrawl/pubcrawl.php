@@ -25,6 +25,7 @@ function pubcrawl_load() {
 		'profile_mod_init'           => 'pubcrawl_profile_mod_init',
 		'follow_mod_init'            => 'pubcrawl_follow_mod_init',
 		'item_mod_init'              => 'pubcrawl_item_mod_init',
+		'thing_mod_init'             => 'pubcrawl_thing_mod_init',
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
@@ -494,6 +495,12 @@ function pubcrawl_item_mod_init($x) {
 			]], asencode_item($items[0]));
 
 
+		if(pubcrawl_magic_env_allowed()) {
+			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
+			header('Content-Type: application/magic-envelope+json');
+			json_return_and_die($x);
+		}
+
 		$headers['Content-Type'] = 'application/activity+json' ;
 		$ret = json_encode($x);
 		$hash = HTTPSig::generate_digest($ret,false);
@@ -504,6 +511,59 @@ function pubcrawl_item_mod_init($x) {
 
 	}
 }
+
+
+function pubcrawl_thing_mod_init($x) {
+	
+	if(pubcrawl_is_as_request()) {
+		$item_id = argv(1);
+		if(! $item_id)
+			return;
+
+		$r = q("select * from obj where obj_type = %d and obj_obj = '%s' limit 1",
+			intval(TERM_OBJ_THING),
+			dbesc($item_id)
+		);
+
+		if(! $r)
+			return;
+
+		$chan = channelx_by_n($r[0]['obj_channel']);
+
+		$x = array_merge(['@context' => [
+			'https://www.w3.org/ns/activitystreams',
+			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+			[ 'zot' => 'http://purl.org/zot/protocol' ]
+			]],
+			[ 
+				'type' => 'Object',
+				'id'   => z_root() . '/thing/' . $r[0]['obj_obj'],
+ 				'name' => $r[0]['obj_term']
+			]
+		);
+
+		if($r[0]['obj_image'])
+			$x['image'] = $r[0]['obj_image'];
+
+
+		if(pubcrawl_magic_env_allowed()) {
+			$x = pubcrawl_salmon_sign(json_encode($x),$chan);
+			header('Content-Type: application/magic-envelope+json');
+			json_return_and_die($x);
+		}
+
+		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$hash = HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		echo $ret;
+		killme();
+
+	}
+}
+
+
 
 function pubcrawl_follow_mod_init($x) {
 
