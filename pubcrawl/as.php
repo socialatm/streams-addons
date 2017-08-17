@@ -438,7 +438,7 @@ function activity_obj_mapper($obj) {
 		'http://purl.org/zot/activity/location'             => 'Place',
 		'http://purl.org/zot/activity/chessgame'            => 'Game',
 		'http://purl.org/zot/activity/tagterm'              => 'zot:Tag',
-		'http://purl.org/zot/activity/thing'                => 'zot:Thing',
+		'http://purl.org/zot/activity/thing'                => 'Object',
 		'http://purl.org/zot/activity/file'                 => 'zot:File',
 		'http://purl.org/zot/activity/poke'                 => 'zot:Action',
 		'http://purl.org/zot/activity/mood'                 => 'zot:Mood',
