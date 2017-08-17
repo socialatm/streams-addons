@@ -400,6 +400,12 @@ function activity_obj_mapper($obj) {
 
 
 function as_fetch($url) {
+
+	if(! check_siteallowed($url)) {
+		logger('blacklisted: ' . $url);
+		return null;
+	}
+
 	$redirects = 0;
 	$x = z_fetch_url($url,true,$redirects,
 		['headers' => [ 'Accept: application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"']]);

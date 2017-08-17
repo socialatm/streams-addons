@@ -43,6 +43,11 @@ class ActivityStreams {
 
 	function fetch_property($url) {
 		$redirects = 0;
+		if(! check_siteallowed($url)) {
+			logger('blacklisted: ' . $url);
+			return null;
+		}
+
 		$x = z_fetch_url($url,true,$redirects,
 			['headers' => [ 'Accept: application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"']]);
 		if($x['success'])
