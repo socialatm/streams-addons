@@ -13,7 +13,6 @@
  */
 
 require_once('addon/pubcrawl/as.php');
-require_once('addon/pubcrawl/ActivityStreams.php');
 require_once('addon/pubcrawl/HTTPSig.php');
 
 
@@ -78,7 +77,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 			return;
 	}
 
-	$AS = new ActivityStreams($x);
+	$AS = new \Zotlabs\Lib\ActivityStreams($x);
 
 	if(! $AS->is_valid())
 		return;
@@ -89,7 +88,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 	if($AS->type === 'Person') {
 		$person_obj = $AS->data;
 	}
-	elseif($AS->object && $AS->object['type'] === 'Person') {
+	elseif($AS->obj && $AS->obj['type'] === 'Person') {
 		$person_obj = $AS->object;
 	}
 	else {

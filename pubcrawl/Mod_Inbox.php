@@ -30,7 +30,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		logger('inbox_activity: ' . jindent($data), LOGGER_DATA);
 
-		$AS = new \ActivityStreams($data);
+		$AS = new \Zotlabs\Lib\ActivityStreams($data);
 
 		if(! $AS->is_valid())
 			return;
