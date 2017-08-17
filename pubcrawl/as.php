@@ -69,6 +69,11 @@ function asencode_object($x) {
 		return asfetch_item($x); 
 	}
 
+	if($x['type'] === ACTIVITY_OBJ_THING) {
+		return asfetch_thing($x); 
+	}
+
+
 }	
 
 function asfetch_person($x) {
@@ -89,6 +94,29 @@ function asfetch_profile($x) {
 		return [];
 
 	return asencode_person($r[0]);
+
+}
+
+function asfetch_thing($x) {
+
+	$r = q("select * from obj where obj_type = %d and obj_obj = '%s' limit 1",
+		intval(TERM_OBJ_THING),
+		dbesc($x['id'])
+	);
+
+	if(! $r)
+		return [];
+
+	$x = [
+		'type' => 'Object',
+		'id'   => z_root() . '/thing/' . $r[0]['obj_obj'],
+		'name' => $r[0]['obj_term']
+	];
+
+	if($r[0]['obj_image'])
+		$x['image'] = $r[0]['obj_image'];
+
+	return $x;
 
 }
 
