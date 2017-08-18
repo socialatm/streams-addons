@@ -175,6 +175,11 @@ function diaspora_is_blacklisted($s) {
 		return true;
 	}
 
+	if(! check_channelallowed($s)) {
+		logger('blacklisted channel: ' . $s);
+		return true;
+	}
+
 	return false;
 }
 
