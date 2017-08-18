@@ -64,14 +64,14 @@ function pubcrawl_webfinger(&$b) {
 
 function pubcrawl_discover_channel_webfinger(&$b) {
 
-	$url = $b['address'];
-	$x   = $b['webfinger'];
-
+	$url      = $b['address'];
+	$x        = $b['webfinger'];
 	$protocol = $b['protocol'];
+
 	if($protocol && strtolower($protocol) !== 'activitypub')
 		return;
 
-    if($x && array_key_exists('links',$x) && $x['links']) {
+    if(strpos($url,'@') && $x && array_key_exists('links',$x) && $x['links']) {
         foreach($x['links'] as $link) {
             if(array_key_exists('rel',$link) && array_key_exists('type',$link)) {
                 if($link['rel'] === 'self' && $link['type'] === 'application/activity+json') {
