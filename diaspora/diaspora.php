@@ -547,27 +547,30 @@ function diaspora_discover(&$b) {
 	if($x) {
 		logger('old_webfinger: ' . print_r($x,true));
 		foreach($x as $link) {
-			if($link['@attributes']['rel'] === NAMESPACE_DFRN)
-				$dfrn = unamp($link['@attributes']['href']);				
-			if($link['@attributes']['rel'] === 'http://microformats.org/profile/hcard')
-				$hcard = unamp($link['@attributes']['href']);
-			if($link['@attributes']['rel'] === 'http://webfinger.net/rel/profile-page')
-				$profile = unamp($link['@attributes']['href']);
-			if($link['@attributes']['rel'] === 'http://joindiaspora.com/seed_location') {
-				$diaspora_base = unamp($link['@attributes']['href']);
-				$diaspora = true;
-			}
-			if($link['@attributes']['rel'] === 'http://joindiaspora.com/guid') {
-				$diaspora_guid = unamp($link['@attributes']['href']);
-				$diaspora = true;
-			}
-			if($link['@attributes']['rel'] === 'diaspora-public-key') {
-				$diaspora_key = base64_decode(unamp($link['@attributes']['href']));
-				if(strstr($diaspora_key,'RSA '))
-					$pubkey = rsatopem($diaspora_key);
-				else
-					$pubkey = $diaspora_key;
-				$diaspora = true;
+			if(is_array($link)) {
+				if($link['@attributes']['rel'] === NAMESPACE_DFRN)
+					$dfrn = unamp($link['@attributes']['href']);				
+				if($link['@attributes']['rel'] === 'http://microformats.org/profile/hcard')
+					$hcard = unamp($link['@attributes']['href']);
+				if($link['@attributes']['rel'] === 'http://webfinger.net/rel/profile-page')
+					$profile = unamp($link['@attributes']['href']);
+				if($link['@attributes']['rel'] === 'http://joindiaspora.com/seed_location') {
+					$diaspora_base = unamp($link['@attributes']['href']);
+					$diaspora = true;
+				}
+			
+				if($link['@attributes']['rel'] === 'http://joindiaspora.com/guid') {
+					$diaspora_guid = unamp($link['@attributes']['href']);
+					$diaspora = true;
+				}
+				if($link['@attributes']['rel'] === 'diaspora-public-key') {
+					$diaspora_key = base64_decode(unamp($link['@attributes']['href']));
+					if(strstr($diaspora_key,'RSA '))
+						$pubkey = rsatopem($diaspora_key);
+					else
+						$pubkey = $diaspora_key;
+					$diaspora = true;
+				}
 			}
 		}
 	}
