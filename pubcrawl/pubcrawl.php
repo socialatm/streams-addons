@@ -65,22 +65,37 @@ function pubcrawl_webfinger(&$b) {
 function pubcrawl_discover_channel_webfinger(&$b) {
 
 	$url = $b['address'];
+	$x   = $b['webfinger'];
 
 	$protocol = $b['protocol'];
 	if($protocol && strtolower($protocol) !== 'activitypub')
 		return;
 
-
-	if($url) {
+    if($x && array_key_exists('links',$x) && $x['links']) {
+        foreach($x['links'] as $link) {
+            if(array_key_exists('rel',$link) && array_key_exists('type',$link)) {
+                if($link['rel'] === 'self' && $link['type'] === 'application/activity+json') {
+					$url = $x['href'];
+                }
+            }
+        }
+    }
+	
+	if(($url) && (strpos($url,'http') === 0)) {
 		$x = as_fetch($url);
-		if(! $x)
+		if(! $x) {
 			return;
+		}
+	}
+	else {
+		return;
 	}
 
 	$AS = new \Zotlabs\Lib\ActivityStreams($x);
 
-	if(! $AS->is_valid())
+	if(! $AS->is_valid()) {
 		return;
+	}
 
 	// Now find the actor and see if there is something we can follow	
 
