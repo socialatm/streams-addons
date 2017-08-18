@@ -2,7 +2,6 @@
 namespace Zotlabs\Module;
 
 require_once('include/zot.php');
-require_once('addon/pubcrawl/HTTPSig.php');
 
 class Ap_probe extends \Zotlabs\Web\Controller {
 
@@ -32,7 +31,7 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 	    	if($x['success'])
 				$o .= '<pre>' . $x['header'] . '</pre>' . EOL;
 				
-				$o .= 'verify returns: ' . \HTTPSig::verify($x) . EOL;
+				$o .= 'verify returns: ' . \Zotlabs\Web\HTTPSig::verify($x) . EOL;
  
 				$o .= '<pre>' . str_replace(['\\n','\\'],["\n",''],jindent($x['body'])) . '</pre>';
 		}

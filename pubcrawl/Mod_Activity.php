@@ -47,9 +47,9 @@ class Activity extends \Zotlabs\Web\Controller {
 			$y = pubcrawl_salmon_sign($ret,$chan);
 			$x['me:env'] = $y;
 			$ret = json_encode($x);
-			$hash = \HTTPSig::generate_digest($ret,false);
+			$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 			$headers['Digest'] = 'SHA-256=' . $hash;  
-			\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+			\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 			echo $ret;
 			killme();
 

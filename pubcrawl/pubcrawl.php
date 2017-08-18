@@ -13,7 +13,7 @@
  */
 
 require_once('addon/pubcrawl/as.php');
-require_once('addon/pubcrawl/HTTPSig.php');
+
 
 
 function pubcrawl_load() {
@@ -218,9 +218,9 @@ function pubcrawl_channel_mod_init($x) {
 		$y = pubcrawl_salmon_sign($ret,$chan);
 		$x['me:env'] = $y;
 		$ret = json_encode($x);
-		$hash = HTTPSig::generate_digest($ret,false);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
 	}
@@ -454,9 +454,9 @@ function pubcrawl_profile_mod_init($x) {
 		$y = pubcrawl_salmon_sign($ret,$chan);
 		$x['me:env'] = $y;
 		$ret = json_encode($x);
-		$hash = HTTPSig::generate_digest($ret,false);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
 
@@ -515,9 +515,9 @@ function pubcrawl_item_mod_init($x) {
 		$y = pubcrawl_salmon_sign($ret,$chan);
 		$x['me:env'] = $y;
 		$ret = json_encode($x);
-		$hash = HTTPSig::generate_digest($ret,false);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
 
@@ -564,9 +564,9 @@ function pubcrawl_thing_mod_init($x) {
 		$y = pubcrawl_salmon_sign($ret,$chan);
 		$x['me:env'] = $y;
 		$ret = json_encode($x);
-		$hash = HTTPSig::generate_digest($ret,false);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
 	}
@@ -607,9 +607,9 @@ function pubcrawl_follow_mod_init($x) {
 		$y = pubcrawl_salmon_sign($ret,$chan);
 		$x['me:env'] = $y;
 		$ret = json_encode($x);
-		$hash = HTTPSig::generate_digest($ret,false);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
 		killme();
 
@@ -634,9 +634,9 @@ function pubcrawl_queue_deliver(&$b) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json';
 		$ret = $outq['outq_msg'];
-		$hash = HTTPSig::generate_digest($ret,false);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		$xhead = HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . argv(1),false);
+		$xhead = \Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . argv(1),false);
 	
 		$result = z_post_url($outq['outq_posturl'],$outq['outq_msg'],$retries,[ 'headers' => $xhead ]);
 
