@@ -381,7 +381,7 @@ function get_diaspora_reshare_xml($url,$recurse = 0) {
 	}
 	else {
 		// fetch the old-style xml
-		$url = str_replace('/fetch/post/','p',$url) . '.xml';
+		$url = str_replace('/fetch/post/','/p/',$url) . '.xml';
 
 		$x = z_fetch_url($url);
 		if(! $x['success'])
