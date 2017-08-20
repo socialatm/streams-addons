@@ -208,7 +208,8 @@ function pubcrawl_channel_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ]
+			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+			[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], asencode_person($chan));
 
 
@@ -442,7 +443,8 @@ function pubcrawl_profile_mod_init($x) {
 			return;
 		$x = [
 			'@context' => [ 'https://www.w3.org/ns/activitystreams',
-				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ]
+				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
+				[ 'zot' => 'http://purl.org/zot/protocol' ]
 			],
 			'type' => 'Profile',
 			'describes' => asencode_person($chan)

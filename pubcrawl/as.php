@@ -364,7 +364,9 @@ function asencode_person($p) {
 	];
 
 	$c = channelx_by_hash($p['xchan_hash']);
+
 	if($c) {
+
 		$ret['inbox']       = z_root() . '/inbox/' . $c['channel_address'];
 		$ret['outbox']      = z_root() . '/outbox/' . $c['channel_address'];
 		$ret['endpoints']   = [ 'publicInbox' => z_root() . '/inbox/[public]' ];
@@ -374,6 +376,15 @@ function asencode_person($p) {
 			'owner'        => $p['xchan_url'],
 			'publicKeyPem' => $p['xchan_pubkey']
 		];
+
+		$locs = zot_encode_locations($c);
+		if($locs) {
+			for($x = 0; $x < count($locs); $x++) {
+				$locs[$x]['id'] = $locs[$x]['url'] . '/channel/' . substr($locs[$x]['address'],0,strpos($locs[$x]['address'],'@'));
+			}
+			$ret['zot:locations'] = $locs;
+		}
+
 	}
 	else {
 		$collections = get_xconfig($p['xchan_hash'],'activitystreams','collections',[]);
