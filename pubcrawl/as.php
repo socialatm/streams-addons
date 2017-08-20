@@ -379,10 +379,15 @@ function asencode_person($p) {
 
 		$locs = zot_encode_locations($c);
 		if($locs) {
-			for($x = 0; $x < count($locs); $x++) {
-				$locs[$x]['id'] = $locs[$x]['url'] . '/channel/' . substr($locs[$x]['address'],0,strpos($locs[$x]['address'],'@'));
+			$ret['zot:locations'] = [];
+			foreach($locs as $loc) {
+				$ret['zot:locations'][] = [
+					'id' => $loc['url'] . '/channel/' . substr($loc['address'],0,strpos($loc['address'],'@')),
+					'address' => $loc['address'],
+					'primary' => $loc['primary'],
+					'deleted' => $loc['deleted']
+				];
 			}
-			$ret['zot:locations'] = $locs;
 		}
 
 	}
