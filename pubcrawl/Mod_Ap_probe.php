@@ -31,7 +31,7 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 	    	if($x['success'])
 				$o .= '<pre>' . $x['header'] . '</pre>' . EOL;
 				
-				$o .= 'verify returns: ' . \Zotlabs\Web\HTTPSig::verify($x) . EOL;
+				$o .= 'verify returns: ' . str_replace("\n",EOL,print_r(\Zotlabs\Web\HTTPSig::verify($x),true)) . EOL;
  
 				$o .= '<pre>' . str_replace(['\\n','\\'],["\n",''],jindent($x['body'])) . '</pre>';
 		}
