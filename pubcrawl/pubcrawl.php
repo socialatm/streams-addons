@@ -176,7 +176,7 @@ function pubcrawl_salmon_sign($data,$channel) {
     $data_type = 'application/activity+json';
     $encoding  = 'base64url';
     $algorithm = 'RSA-SHA256';
-    $keyhash   = base64url_encode(hash('sha256',salmon_key($channel['channel_pubkey'])),true);
+    $keyhash   = base64url_encode(z_root() . '/channel/' . $channel['channel_address']);
 
     $data = str_replace(array(" ","\t","\r","\n"),array("","","",""),$data);
 
