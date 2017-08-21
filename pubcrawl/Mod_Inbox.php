@@ -93,6 +93,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 			switch($AS->type) {
 				case 'Create':
+				case 'Update':
 					as_create_action($channel,$observer_hash,$AS);
 					continue;
 				case 'Like':
@@ -105,7 +106,6 @@ class Inbox extends \Zotlabs\Web\Controller {
 						as_unfollow($channel,$AS);
 						continue;
 					}
-				case 'Update':
 				case 'Delete':
 				case 'Add':
 				case 'Remove':

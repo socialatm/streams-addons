@@ -850,6 +850,19 @@ function as_create_note($channel,$observer_hash,$act) {
 	elseif($act->obj['published']) {
 		$s['created'] = datetime_convert('UTC','UTC',$act->obj['published']);
 	}
+	if($act->data['updated']) {
+		$s['edited'] = datetime_convert('UTC','UTC',$act->data['updated']);
+	}
+	elseif($act->obj['updated']) {
+		$s['edited'] = datetime_convert('UTC','UTC',$act->obj['updated']);
+	}
+
+	if(! $s['created'])
+		$s['created = datetime_convert();
+
+	if(! $s['edited'])
+		$s['edited'] = $s['created'];
+
 
 	if(! $s['parent_mid'])
 		$s['parent_mid'] = $s['mid'];
