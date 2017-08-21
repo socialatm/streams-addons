@@ -32,6 +32,8 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		$AS = new \Zotlabs\Lib\ActivityStreams($data);
 
+		//		logger('debug: ' . $AS->debug());
+
 		if(! $AS->is_valid())
 			return;
 
