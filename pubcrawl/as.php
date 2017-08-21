@@ -795,13 +795,13 @@ function as_create_note($channel,$observer_hash,$act) {
 	$s = [];
 
 
-	$parent = ((array_key_exists('inReplyTo',$act->obj)) ? $act->obj['inReplyTo'] : '');
+	$parent = ((array_key_exists('inReplyTo',$act->obj)) ? urldecode($act->obj['inReplyTo']) : '');
 	if($parent) {
 
 		$r = q("select * from item where uid = %d and ( mid = '%s' || mid = '%s' ) and parent_mid = mid limit 1",
 			intval($channel['channel_id']),
 			dbesc($parent),
-			dbesc(urldecode(basename($parent)))
+			dbesc(basename($parent))
 		);
 
 		if(! $r) {
@@ -841,7 +841,7 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	$s['aid'] = $channel['channel_account_id'];
 	$s['uid'] = $channel['channel_id'];
-	$s['mid'] = $act->obj['id'];
+	$s['mid'] = urldecode($act->obj['id']);
 
 
 	if($act->data['published']) {
