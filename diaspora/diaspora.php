@@ -536,7 +536,7 @@ function diaspora_discover(&$b) {
 		}
 	}
 
-	if($diaspora && $diaspora_base) {
+	if(! ($diaspora && $diaspora_base)) {
 		$x = false;
 	}
 
@@ -603,6 +603,15 @@ function diaspora_discover(&$b) {
 				$vcard['fn'] = $webbie;
 			if(($vcard['uid']) && (! $diaspora_guid))
 				$diaspora_guid = $guid = $vcard['uid'];
+
+			if($vcard['public_key']) {
+				$diaspora_key = $vcard['public_key'];
+				if(strstr($diaspora_key,'RSA '))
+					$pubkey = rsatopem($diaspora_key);
+				else
+					$pubkey = $diaspora_key;
+			}
+
 		} 
 
 		$r = q("select * from xchan where xchan_hash = '%s' limit 1",
@@ -619,10 +628,11 @@ function diaspora_discover(&$b) {
 		 */  			
 
 		if($r) {
-			$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s' where xchan_hash = '%s'",
+			$r = q("update xchan set xchan_name = '%s', xchan_network = '%s', xchan_name_date = '%s', xchan_pubkey = '%s' where xchan_hash = '%s'",
 				dbesc($vcard['fn']),
 				dbesc($network),
 				dbesc(datetime_convert()),
+				dbesc($pubkey),
 				dbesc($addr)
 			);
 		}
