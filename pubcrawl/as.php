@@ -858,7 +858,7 @@ function as_create_note($channel,$observer_hash,$act) {
 	}
 
 	if(! $s['created'])
-		$s['created = datetime_convert();
+		$s['created'] = datetime_convert();
 
 	if(! $s['edited'])
 		$s['edited'] = $s['created'];
