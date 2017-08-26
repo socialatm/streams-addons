@@ -57,6 +57,7 @@ class Outbox extends \Zotlabs\Web\Controller {
 
 	        $x = array_merge(['@context' => [
     	        'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1',
         	    [ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
             	]], asencode_item_collection($items, \App::$query_string, 'OrderedCollection'));

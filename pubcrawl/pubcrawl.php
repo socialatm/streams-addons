@@ -208,6 +208,7 @@ function pubcrawl_channel_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1',
 			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 			[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], asencode_person($chan));
@@ -271,6 +272,7 @@ function pubcrawl_notifier_process(&$arr) {
 
 	$msg = array_merge(['@context' => [
 		'https://www.w3.org/ns/activitystreams',
+		'https://w3id.org/security/v1',
 		[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 		[ 'zot' => 'http://purl.org/zot/protocol' ]
 	]], asencode_activity($target_item));
@@ -405,6 +407,7 @@ function pubcrawl_permissions_create(&$x) {
 
 	$msg = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1',
 			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 			[ 'zot' => 'http://purl.org/zot/protocol' ]
 		]], 
@@ -443,6 +446,7 @@ function pubcrawl_profile_mod_init($x) {
 			return;
 		$x = [
 			'@context' => [ 'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1',
 				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
 			],
@@ -506,6 +510,7 @@ function pubcrawl_item_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1',
 			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 			[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], asencode_item($items[0]));
@@ -546,6 +551,7 @@ function pubcrawl_thing_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1',
 			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 			[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]],
@@ -592,6 +598,7 @@ function pubcrawl_follow_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1',
 				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
 			]], 

@@ -1,57 +1,5 @@
 <?php
 
-/**
- * @brief
- *
- * @param array $items
- * @return array
- */
-function gen_asld($items) {
-	$ret = array();
-	if(! $items)
-		return $ret;
-
-	foreach($items as $item) {
-		$ret[] = i2asld($item);
-	}
-
-	return $ret;
-}
-
-/**
- * @brief
- *
- * @param array $i
- * @return array
- */
-function i2asld($i) {
-
-	if(! $i)
-		return array();
-
-	$ret = array();
-
-	$ret['@context'] = array( 'https://www.w3.org/ns/activitystreams', 'zot' => 'http://purl.org/zot/protocol');
-
-	if($i['verb']) {
-		if(strpos(dirname($i['verb'],'activitystrea.ms/schema/1.0'))) {
-			$ret['type'] = ucfirst(basename($i['verb']));
-		}
-		elseif(strpos(dirname($i['verb'],'purl.org/zot'))) {
-			$ret['type'] = 'zot:' . ucfirst(basename($i['verb']));
-		}
-	}
-	$ret['id'] = $i['plink'];
-
-	$ret['published'] = datetime_convert('UTC','UTC',$i['created'],ATOM_TIME);
-
-	if($i['obj_type'] === ACTIVITY_OBJ_NOTE)
-		$ret['object'] = asencode_item($i);
-
-	$ret['actor'] = asencode_person($i['author']);
-
-	return $ret;
-}
 
 function asencode_object($x) {
 

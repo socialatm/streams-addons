@@ -36,6 +36,7 @@ class Activity extends \Zotlabs\Web\Controller {
 
 			$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1',
 				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
 				[ 'zot' => 'http://purl.org/zot/protocol' ]
 				]], asencode_activity($items[0]));

@@ -2,6 +2,7 @@
 namespace Zotlabs\Module;
 
 require_once('include/zot.php');
+//require_once('jsonld.php');
 
 class Ap_probe extends \Zotlabs\Web\Controller {
 
@@ -32,7 +33,13 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 				$o .= '<pre>' . $x['header'] . '</pre>' . EOL;
 				
 				$o .= 'verify returns: ' . str_replace("\n",EOL,print_r(\Zotlabs\Web\HTTPSig::verify($x),true)) . EOL;
- 
+
+//				$normalized1 = jsonld_normalize(json_decode($x['body']),[ 'algorithm' => 'URDNA2015' ]);
+//				$o .= var_export($normalized1,true); 
+
+//				$o .= '<pre>' . json_encode($normalized1, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . '</pre>';
+
+
 				$o .= '<pre>' . str_replace(['\\n','\\'],["\n",''],jindent($x['body'])) . '</pre>';
 		}
 		return $o;
