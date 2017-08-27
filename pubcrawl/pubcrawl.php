@@ -208,17 +208,12 @@ function pubcrawl_channel_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1',
-			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-			[ 'zot' => 'http://purl.org/zot/protocol' ]
+			'https://w3id.org/security/v1'
 			]], asencode_person($chan));
 
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
-		$ret = json_encode($x);
-		$y = pubcrawl_salmon_sign($ret,$chan);
-		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -272,9 +267,7 @@ function pubcrawl_notifier_process(&$arr) {
 
 	$msg = array_merge(['@context' => [
 		'https://www.w3.org/ns/activitystreams',
-		'https://w3id.org/security/v1',
-		[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-		[ 'zot' => 'http://purl.org/zot/protocol' ]
+		'https://w3id.org/security/v1'
 	]], asencode_activity($target_item));
 	
 
@@ -407,9 +400,7 @@ function pubcrawl_permissions_create(&$x) {
 
 	$msg = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1',
-			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-			[ 'zot' => 'http://purl.org/zot/protocol' ]
+			'https://w3id.org/security/v1'
 		]], 
 		[
 			'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
@@ -446,9 +437,7 @@ function pubcrawl_profile_mod_init($x) {
 			return;
 		$x = [
 			'@context' => [ 'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1',
-				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-				[ 'zot' => 'http://purl.org/zot/protocol' ]
+				'https://w3id.org/security/v1'
 			],
 			'type' => 'Profile',
 			'describes' => asencode_person($chan)
@@ -456,9 +445,6 @@ function pubcrawl_profile_mod_init($x) {
 				
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
-		$ret = json_encode($x);
-		$y = pubcrawl_salmon_sign($ret,$chan);
-		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -510,17 +496,12 @@ function pubcrawl_item_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1',
-			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-			[ 'zot' => 'http://purl.org/zot/protocol' ]
+			'https://w3id.org/security/v1'
 			]], asencode_item($items[0]));
 
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
-		$ret = json_encode($x);
-		$y = pubcrawl_salmon_sign($ret,$chan);
-		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -551,9 +532,7 @@ function pubcrawl_thing_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1',
-			[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-			[ 'zot' => 'http://purl.org/zot/protocol' ]
+			'https://w3id.org/security/v1'
 			]],
 			[ 
 				'type' => 'Object',
@@ -568,9 +547,6 @@ function pubcrawl_thing_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
-		$ret = json_encode($x);
-		$y = pubcrawl_salmon_sign($ret,$chan);
-		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -598,9 +574,7 @@ function pubcrawl_follow_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1',
-				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-				[ 'zot' => 'http://purl.org/zot/protocol' ]
+				'https://w3id.org/security/v1'
 			]], 
 			[
 				'id' => z_root() . '/follow/' . $r[0]['abook_id'],
@@ -612,9 +586,6 @@ function pubcrawl_follow_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
-		$ret = json_encode($x);
-		$y = pubcrawl_salmon_sign($ret,$chan);
-		$x['me:env'] = $y;
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  

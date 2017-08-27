@@ -2,7 +2,7 @@
 namespace Zotlabs\Module;
 
 require_once('include/zot.php');
-//require_once('jsonld.php');
+require_once('library/jsonld/jsonld.php');
 
 class Ap_probe extends \Zotlabs\Web\Controller {
 
@@ -12,7 +12,6 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 	
 		$o .= '<form action="ap_probe" method="get">';
 		$o .= 'Lookup URI: <input type="text" style="width: 250px;" name="addr" value="' . $_GET['addr'] .'" /><br>';
-		$o .= 'Request Signed version: <input type=checkbox name="magenv" value="1" ><br>';
 		$o .= '<input type="submit" name="submit" value="Submit" /></form>'; 
 	
 		$o .= '<br /><br />';
@@ -20,12 +19,8 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 		if(x($_GET,'addr')) {
 			$addr = $_GET['addr'];
 
-			if($_GET['magenv']) {
-				$headers = 'Accept: application/magic-envelope+json, application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"';
-			}
-			else {
-				$headers = 'Accept: application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"';
-			}
+			$headers = 'Accept: application/activity+json, application/ld+json; profile="https://www.w3.org/ns/activitystreams"';
+
 
 			$redirects = 0;
 		    $x = z_fetch_url($addr,true,$redirects, [ 'headers' => [ $headers ]]);
@@ -34,8 +29,8 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 				
 				$o .= 'verify returns: ' . str_replace("\n",EOL,print_r(\Zotlabs\Web\HTTPSig::verify($x),true)) . EOL;
 
-//				$normalized1 = jsonld_normalize(json_decode($x['body']),[ 'algorithm' => 'URDNA2015' ]);
-//				$o .= var_export($normalized1,true); 
+				$normalized1 = jsonld_normalize(json_decode($x['body']),[ 'algorithm' => 'URDNA2015', 'format' => 'application/nquads' ]);
+				$o .= str_replace("\n",EOL,htmlentities(var_export($normalized1,true))); 
 
 //				$o .= '<pre>' . json_encode($normalized1, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . '</pre>';
 

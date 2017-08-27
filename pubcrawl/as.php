@@ -150,15 +150,8 @@ function asencode_item($i) {
 
 	$ret['content']   = bbcode($i['body']);
 
-	$ret['zot:owner'] = asencode_person($i['owner']);
 	$ret['actor']     = asencode_person($i['author']);
 
-	$ret['tag'] = [];
-	$ret['tag'][] = [ 
-		'type' => 'zot:messageId', 
-		'id'   => ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/display/' . urlencode($i['mid'])),
-		'name' => $i['mid']
-	];
 
 	return $ret;
 }
@@ -207,7 +200,6 @@ function asencode_activity($i) {
 
 	$ret['content']   = bbcode($i['body']);
 
-	$ret['zot:owner'] = asencode_person($i['owner']);
 	$ret['actor']     = asencode_person($i['author']);
 	if($i['obj']) {
 		$ret['object'] = asencode_object($i['obj']);
@@ -220,17 +212,11 @@ function asencode_activity($i) {
 		$ret['target'] = asencode_object($i['target']);
 	}
 
-	$ret['tag'] = [];
-	$ret['tag'][] = [ 
-		'type' => 'zot:messageId', 
-		'id'   => ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/display/' . urlencode($i['mid'])),
-		'name' => $i['mid']
-	];
 
 	if(! $i['item_private']) {
 		$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
 		if($i['item_origin'])
-			$ret['cc'] = [ z_root() . '/followers/' . $ret['zot:owner']['preferredUsername'] ];
+			$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['xchan_addr'],0,strpos($i['owner']['xchan_addr'],'@')) ];
 	}
 	else {
 		$ret['bto'] = as_map_acl($i);
@@ -288,13 +274,6 @@ function asencode_person($p) {
 		'href'      => $p['xchan_url']
 	];
 
-	$ret['me:magic_keys'] = [
-		[ 
-			'value'  => salmon_key($p['xchan_pubkey']), 
-			'key_id' => base64url_encode(hash('sha256',salmon_key($p['xchan_pubkey'])),true)
-		]
-	];
-
 	$c = channelx_by_hash($p['xchan_hash']);
 
 	if($c) {
@@ -308,19 +287,6 @@ function asencode_person($p) {
 			'owner'        => $p['xchan_url'],
 			'publicKeyPem' => $p['xchan_pubkey']
 		];
-
-		$locs = zot_encode_locations($c);
-		if($locs) {
-			$ret['zot:locations'] = [];
-			foreach($locs as $loc) {
-				$ret['zot:locations'][] = [
-					'id' => $loc['url'] . '/channel/' . substr($loc['address'],0,strpos($loc['address'],'@')),
-					'address' => $loc['address'],
-					'primary' => $loc['primary'],
-					'deleted' => $loc['deleted']
-				];
-			}
-		}
 
 	}
 	else {
