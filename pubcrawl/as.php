@@ -391,6 +391,8 @@ function as_follow($channel,$act) {
 
 		as_actor_store($person_obj['id'],$person_obj);
 
+		set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','follow_id', $act->id);
+
 		// Do we already have an abook record? 
 
 		$r = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_xchan = '%s' and abook_channel = %d limit 1",

@@ -398,16 +398,39 @@ function pubcrawl_permissions_create(&$x) {
 		return;
 	}
 
-	$msg = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1'
-		]], 
-		[
-			'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
-			'type' => 'Follow',
-			'actor' => asencode_person($x['sender']),
-			'object' => asencode_person($x['recipient'])
-	]);
+	// we currently are not handling send of reject follow activities; this is permitted by protocol
+
+	$accept = get_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','follow_id');
+
+	if($accept) {
+		$msg = array_merge(['@context' => [
+				'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1'
+			]], 
+			[
+				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
+				'type' => 'Accept',
+				'actor' => asencode_person($x['sender']),
+				'object' => [
+					'type' => 'Follow',
+					'id' => $accept
+				]
+		]);
+		del_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','follow_id');
+
+	}
+	else {
+		$msg = array_merge(['@context' => [
+				'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1'
+			]], 
+			[
+				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
+				'type' => 'Follow',
+				'actor' => asencode_person($x['sender']),
+				'object' => asencode_person($x['recipient'])
+		]);
+	}
 
 	$jmsg = json_encode($msg);
 
