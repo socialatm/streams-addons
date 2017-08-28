@@ -28,6 +28,7 @@ function pubcrawl_load() {
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
+		'connection_remove'          => 'pubcrawl_connection_remove',
 		'notifier_hub'               => 'pubcrawl_notifier_process',
 		'feature_settings_post'      => 'pubcrawl_feature_settings_post',
 		'feature_settings'           => 'pubcrawl_feature_settings',
@@ -390,6 +391,79 @@ function pubcrawl_queue_message($msg,$sender,$recip,$message_id = '') {
 }
 
 
+function pubcrawl_connection_remove(&$x) {
+
+	$recip = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_id = %d",
+		intval($x['abook_id'])
+	);
+
+	if((! $recip) || $recip[0]['xchan_network'] !== 'activitypub')
+		return; 
+
+	$channel = channelx_by_n($recip[0]['abook_channel']);
+	if(! $channel)
+		return;
+
+	// send an unfollow activity to the followee's inbox
+
+	$orig_activity = get_abconfig($recip[0]['abook_channel'],$recip[0]['xchan_hash'],'pubcrawl','follow_id');
+
+	if($orig_activity) {
+
+		// was never approved
+
+		$msg = array_merge(['@context' => [
+				'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1'
+			]], 
+			[
+				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
+				'type' => 'Reject',
+				'actor' => asencode_person($channel),
+				'object' => [
+					'type' => 'Follow',
+					'id' => $orig_activity
+				]
+		]);
+		del_abconfig($recip[0]['abook_channel'],$recip[0]['xchan_hash'],'pubcrawl','follow_id');
+
+	}
+	else {
+		$msg = array_merge(['@context' => [
+				'https://www.w3.org/ns/activitystreams',
+				'https://w3id.org/security/v1'
+			]], 
+			[
+				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'] . '#Undo',
+				'type' => 'Undo',
+				'actor' => asencode_person($channel),
+				'object' => z_root() . '/follow/' . $recip[0]['abook_id']
+		]);
+	}
+
+	$jmsg = json_encode($msg);
+
+	// @fixme - sign this message
+
+	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
+	$single = deliverable_singleton($channel['channel_id'],$recip[0]);
+
+	$h = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+		dbesc($recip[0]['xchan_hash'])
+	);
+
+	if($single && $h) {
+		$qi = pubcrawl_queue_message($jmsg,$channel,$h[0]);
+		if($qi) {
+			\Zotlabs\Daemon\Master::Summon([ 'Deliver' , $qi ]);
+		}
+	}
+		
+}
+
+
+
+
 function pubcrawl_permissions_create(&$x) {
 
 	// send a follow activity to the followee's inbox
@@ -433,6 +507,8 @@ function pubcrawl_permissions_create(&$x) {
 	}
 
 	$jmsg = json_encode($msg);
+
+	// @fixme - sign this message
 
 	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
 	$single = deliverable_singleton($x['sender']['channel_id'],$x['recipient']);
