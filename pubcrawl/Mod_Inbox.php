@@ -41,11 +41,13 @@ class Inbox extends \Zotlabs\Web\Controller {
 			as_actor_store($AS->actor['id'],$AS->actor);
 
 
+
 		$observer_hash = $AS->actor['id'];
 		if(! $observer_hash)
 			return;
 
 		if($is_public) {
+
 			$channels = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network = 'activitypub' and xchan_addr = '%s' ) and channel_removed = 0 ",
 		        dbesc($observer_hash)
 			);
@@ -54,11 +56,14 @@ class Inbox extends \Zotlabs\Web\Controller {
 			if(! $sys_disabled)
 				$channels[] = get_sys_channel();
 
-			// look for channels with send_stream = PERMS_PUBLIC
+			if(in_array(ACTIVITY_PUBLIC_INBOX,$AS->recips)) {
 
-			$r = q("select * from channel where channel_id in (select uid from pconfig where cat = 'perm_limits' and k = 'send_stream' and v = 1 ) and channel_removed = 0 ");
-			if($r) {
-				$channels = array_merge($channels,$r);
+				// look for channels with send_stream = PERMS_PUBLIC
+
+				$r = q("select * from channel where channel_id in (select uid from pconfig where cat = 'perm_limits' and k = 'send_stream' and v = 1 ) and channel_removed = 0 ");
+				if($r) {
+					$channels = array_merge($channels,$r);
+				}
 			}
 
 		}

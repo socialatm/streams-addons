@@ -23,6 +23,7 @@ class Activity extends \Zotlabs\Web\Controller {
 				$r = q("select * from item where mid like '%s' $item_normal limit 1",
 					dbesc($item_id . '%')
 				);
+
 				if($r) {
 					http_status_exit(403, 'Forbidden');
 				}
@@ -36,17 +37,12 @@ class Activity extends \Zotlabs\Web\Controller {
 
 			$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1',
-				[ 'me' => 'http://salmon-protocol.org/ns/magic-env' ],
-				[ 'zot' => 'http://purl.org/zot/protocol' ]
+				'https://w3id.org/security/v1'
 				]], asencode_activity($items[0]));
 
 
 			$headers = [];
 			$headers['Content-Type'] = 'application/activity+json' ;
-			$ret = json_encode($x);
-			$y = pubcrawl_salmon_sign($ret,$chan);
-			$x['me:env'] = $y;
 			$ret = json_encode($x);
 			$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 			$headers['Digest'] = 'SHA-256=' . $hash;  
