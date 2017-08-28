@@ -280,7 +280,7 @@ function asencode_person($p) {
 
 		$ret['inbox']       = z_root() . '/inbox/' . $c['channel_address'];
 		$ret['outbox']      = z_root() . '/outbox/' . $c['channel_address'];
-		$ret['endpoints']   = [ 'publicInbox' => z_root() . '/inbox/[public]' ];
+		$ret['endpoints']   = [ 'sharedInbox' => z_root() . '/inbox/[public]' ];
 
 		$ret['publicKey'] = [
 			'id'           => $p['xchan_url'] . '/public_key_pem',
@@ -586,8 +586,8 @@ function as_actor_store($url,$person_obj) {
 		$collections['inbox'] = $inbox;
 		if($person_obj['outbox'])
 			$collections['outbox'] = $person_obj['outbox'];
-		if($person_obj['publicInbox'])
-			$collections['publicInbox'] = $person_obj['publicInbox'];
+		if($person_obj['sharedInbox'])
+			$collections['sharedInbox'] = $person_obj['sharedInbox'];
 		if($person_obj['followers'])
 			$collections['followers'] = $person_obj['followers'];
 		if($person_obj['following'])
