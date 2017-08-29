@@ -326,8 +326,8 @@ function activity_mapper($verb) {
 
 	if(strpos($verb,ACTIVITY_REACT) !== false)
 		return 'Create';
-//	if(strpos($verb,ACTIVITY_MOOD) !== false)
-//		return 'Create';
+	if(strpos($verb,ACTIVITY_MOOD) !== false)
+		return 'Create';
 
 	if(strpos($verb,ACTIVITY_POKE) !== false)
 		return 'Activity';
