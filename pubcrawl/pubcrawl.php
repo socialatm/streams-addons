@@ -215,6 +215,8 @@ function pubcrawl_channel_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::sign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
