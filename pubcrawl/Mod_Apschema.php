@@ -20,11 +20,20 @@ class Apschema extends \Zotlabs\Web\Controller {
 				'meAlgorithm'      => 'zot:meAlgorithm',
 				'meCreator'        => 'zot:meCreator',
 				'meSignatureValue' => 'zot:meSignatureValue',
+				'locationAddress'  => 'zot:locationAddress',
+				'locationPrimary'  => 'zot:locationPrimary',
+				'locationDeleted'  => 'zot:locationDeleted',
 
 				'magicEnv' => [
 					'@id'   => 'zot:magicEnv',
 					'@type' => '@id'
+				],
+
+				'nomadicLocations' => [
+					'@id'   => 'zot:nomadicLocations',
+					'@type' => '@id'
 				]
+
 			]
 		];
 
