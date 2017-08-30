@@ -277,9 +277,11 @@ function pubcrawl_notifier_process(&$arr) {
 
 	$msg = array_merge(['@context' => [
 		'https://www.w3.org/ns/activitystreams',
-		'https://w3id.org/security/v1'
+		'https://w3id.org/security/v1',
+		z_root() . '/apschema'
 	]], asencode_activity($target_item));
 	
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$arr['channel']);
 
 	$jmsg = json_encode($msg);
 
@@ -423,7 +425,9 @@ function pubcrawl_connection_remove(&$x) {
 
 		$msg = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1'
+				'https://w3id.org/security/v1',
+				z_root() . '/apschema'
+
 			]], 
 			[
 				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
@@ -440,7 +444,8 @@ function pubcrawl_connection_remove(&$x) {
 	else {
 		$msg = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1'
+				'https://w3id.org/security/v1',
+				z_root() . '/apschema'
 			]], 
 			[
 				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'] . '#Undo',
@@ -449,6 +454,8 @@ function pubcrawl_connection_remove(&$x) {
 				'object' => z_root() . '/follow/' . $recip[0]['abook_id']
 		]);
 	}
+
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$channel);
 
 	$jmsg = json_encode($msg);
 
@@ -488,7 +495,8 @@ function pubcrawl_permissions_create(&$x) {
 	if($accept) {
 		$msg = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1'
+				'https://w3id.org/security/v1',
+				z_root() . '/apschema'
 			]], 
 			[
 				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
@@ -514,6 +522,8 @@ function pubcrawl_permissions_create(&$x) {
 				'object' => asencode_person($x['recipient'])
 		]);
 	}
+
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$x['sender']);
 
 	$jmsg = json_encode($msg);
 
@@ -545,7 +555,8 @@ function pubcrawl_profile_mod_init($x) {
 			return;
 		$x = [
 			'@context' => [ 'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1'
+				'https://w3id.org/security/v1',
+				z_root() . '/apschema'
 			],
 			'type' => 'Profile',
 			'describes' => asencode_person($chan)
@@ -553,6 +564,7 @@ function pubcrawl_profile_mod_init($x) {
 				
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -604,12 +616,14 @@ function pubcrawl_item_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1'
+			'https://w3id.org/security/v1',
+			z_root() . '/apschema'
 			]], asencode_item($items[0]));
 
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -640,7 +654,8 @@ function pubcrawl_thing_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1'
+			'https://w3id.org/security/v1',
+			z_root() . '/apschema'
 			]],
 			[ 
 				'type' => 'Object',
@@ -655,6 +670,7 @@ function pubcrawl_thing_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -701,6 +717,7 @@ function pubcrawl_locs_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
@@ -728,7 +745,8 @@ function pubcrawl_follow_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1'
+				'https://w3id.org/security/v1',
+				z_root() . '/apschema'
 			]], 
 			[
 				'id' => z_root() . '/follow/' . $r[0]['abook_id'],
@@ -740,6 +758,7 @@ function pubcrawl_follow_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
