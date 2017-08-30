@@ -288,18 +288,18 @@ function asencode_person($p) {
 			'publicKeyPem' => $p['xchan_pubkey']
 		];
 
-		$locs = zot_encode_locations($c);
-		if($locs) {
-			$ret['nomadicLocations'] = [];
-			foreach($locs as $loc) {
-				$ret['nomadicLocations'][] = [
-					'id'      => $loc['url'] . '/channel/' . substr($loc['address'],0,strpos($loc['address'],'@')),
-					'locationAddress' => $loc['address'],
-					'locationPrimary' => (boolean) $loc['primary'],
-					'locationDeleted' => (boolean) $loc['deleted']
-				];
-			}
-		}
+//		$locs = zot_encode_locations($c);
+//		if($locs) {
+//			$ret['nomadicLocations'] = [];
+//			foreach($locs as $loc) {
+//				$ret['nomadicLocations'][] = [
+//					'id'      => $loc['url'] . '/channel/' . substr($loc['address'],0,strpos($loc['address'],'@')),
+//					'locationAddress' => 'acct:' . $loc['address'],
+//					'locationPrimary' => (boolean) $loc['primary'],
+//					'locationDeleted' => (boolean) $loc['deleted']
+//				];
+//			}
+//		}
 	}
 	else {
 		$collections = get_xconfig($p['xchan_hash'],'activitystreams','collections',[]);
