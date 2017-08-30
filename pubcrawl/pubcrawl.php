@@ -143,6 +143,11 @@ function pubcrawl_load_module(&$b) {
 		$b['controller'] = new \Zotlabs\Module\Ap_probe();
 		$b['installed'] = true;
 	}
+	if($b['module'] === 'apschema') {
+		require_once('addon/pubcrawl/Mod_Apschema.php');
+		$b['controller'] = new \Zotlabs\Module\Apschema();
+		$b['installed'] = true;
+	}
 }
 
 
@@ -209,14 +214,15 @@ function pubcrawl_channel_mod_init($x) {
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
-			'https://w3id.org/security/v1'
+			'https://w3id.org/security/v1',
+			z_root() . '/apschema'
 			]], asencode_person($chan));
 
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
 
-		$x['signature'] = \Zotlabs\Lib\LDSignatures::sign($x,$chan);
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
