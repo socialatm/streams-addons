@@ -23,6 +23,8 @@ class Apschema extends \Zotlabs\Web\Controller {
 				'locationAddress'  => 'zot:locationAddress',
 				'locationPrimary'  => 'zot:locationPrimary',
 				'locationDeleted'  => 'zot:locationDeleted',
+				'nomadicLocation'  => 'zot:nomadicLocation',
+				'nomadicHubs'      => 'zot:nomadicHubs',
 
 				'magicEnv' => [
 					'@id'   => 'zot:magicEnv',

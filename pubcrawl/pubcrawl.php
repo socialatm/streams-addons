@@ -25,6 +25,7 @@ function pubcrawl_load() {
 		'follow_mod_init'            => 'pubcrawl_follow_mod_init',
 		'item_mod_init'              => 'pubcrawl_item_mod_init',
 		'thing_mod_init'             => 'pubcrawl_thing_mod_init',
+		'locs_mod_init'              => 'pubcrawl_locs_mod_init',
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
@@ -651,6 +652,52 @@ function pubcrawl_thing_mod_init($x) {
 		if($r[0]['obj_image'])
 			$x['image'] = $r[0]['obj_image'];
 
+
+		$headers = [];
+		$headers['Content-Type'] = 'application/activity+json' ;
+		$ret = json_encode($x);
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
+		echo $ret;
+		killme();
+	}
+}
+
+
+function pubcrawl_locs_mod_init($x) {
+	
+	if(pubcrawl_is_as_request()) {
+		$channel_address = argv(1);
+		if(! $channel_address)
+			return;
+
+		$chan = channelx_by_nick($channel_address);
+
+		$x = array_merge(['@context' => [
+			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1',
+			z_root() . '/apschema'
+			]],
+			[ 
+				'type' => 'nomadicHubs',
+				'id'   => z_root() . '/locs/' . $chan['channel_address']
+			]
+		);
+
+		$locs = zot_encode_locations($chan);
+		if($locs) {
+			$x['nomadicLocations'] = [];
+			foreach($locs as $loc) {
+				$x['nomadicLocations'][] = [
+					'id'      => $loc['url'] . '/locs/' . substr($loc['address'],0,strpos($loc['address'],'@')),
+					'type'            => 'nomadicLocation',
+					'locationAddress' => 'acct:' . $loc['address'],
+					'locationPrimary' => (boolean) $loc['primary'],
+					'locationDeleted' => (boolean) $loc['deleted']
+				];
+			}
+		}
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
