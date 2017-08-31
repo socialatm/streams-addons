@@ -194,12 +194,12 @@ function pubcrawl_salmon_sign($data,$channel) {
     $signature  = base64url_encode(rsa_sign($data . $precomputed,$channel['channel_prvkey']));
 
     return ([
-        'data'      => $data,
-		'data_type' => $data_type,
-        'encoding'  => $encoding,
-        'alg'       => $algorithm,
-		'sigs'      => [
-			'value' => $signature,
+        'data'       => $data,
+		'data_type'  => $data_type,
+        'encoding'   => $encoding,
+        'alg'        => $algorithm,
+		'sigs'       => [
+			'value'  => $signature,
 			'key_id' => $keyhash
 		]
 	]);
@@ -211,7 +211,10 @@ function pubcrawl_channel_mod_init($x) {
 	if(pubcrawl_is_as_request()) {
 		$chan = channelx_by_nick(argv(1));
 		if(! $chan)
-			return;
+			http_status_exit(404, 'Not found');
+
+		if(! get_pconfig($chan['channel_id'],'system','activitypub_allowed'))
+			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
@@ -552,7 +555,12 @@ function pubcrawl_profile_mod_init($x) {
 	if(pubcrawl_is_as_request()) {
 		$chan = channelx_by_nick(argv(1));
 		if(! $chan)
-			return;
+			http_status_exit(404, 'Not found');
+
+		if(! get_pconfig($chan['channel_id'],'system','activitypub_allowed'))
+			http_status_exit(404, 'Not found');
+
+
 		$x = [
 			'@context' => [ 'https://www.w3.org/ns/activitystreams',
 				'https://w3id.org/security/v1',
@@ -581,7 +589,8 @@ function pubcrawl_item_mod_init($x) {
 	if(pubcrawl_is_as_request()) {
 		$item_id = argv(1);
 		if(! $item_id)
-			return;
+			http_status_exit(404, 'Not found');
+
 
 		$item_normal = " and item.item_hidden = 0 and item.item_type = 0 and item.item_unpublished = 0 
 			and item.item_delayed = 0 and item.item_blocked = 0 ";
@@ -606,13 +615,18 @@ function pubcrawl_item_mod_init($x) {
 
 		// Wrong object type
 
-
-
 		if(activity_obj_mapper($items[0]['obj_type']) !== 'Note') {
 			http_status_exit(418, "I'm a teapot"); 
 		}
 
 		$chan = channelx_by_n($items[0]['uid']);
+
+		if(! $chan)
+			http_status_exit(404, 'Not found');
+
+		if(! perm_is_allowed($chan['channel_id'],get_observer_hash(),'view_stream'))
+			http_status_exit(403, 'Forbidden');
+
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
@@ -652,6 +666,9 @@ function pubcrawl_thing_mod_init($x) {
 
 		$chan = channelx_by_n($r[0]['obj_channel']);
 
+		if(! $chan)
+			http_status_exit(404, 'Not found');
+
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
 			'https://w3id.org/security/v1',
@@ -689,6 +706,9 @@ function pubcrawl_locs_mod_init($x) {
 			return;
 
 		$chan = channelx_by_nick($channel_address);
+
+		if(! $chan)
+			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
 			'https://www.w3.org/ns/activitystreams',
@@ -742,6 +762,9 @@ function pubcrawl_follow_mod_init($x) {
 			return;
 
 		$chan = channelx_by_n($r[0]['abook_channel']);
+
+		if(! $chan)
+			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
