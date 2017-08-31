@@ -572,6 +572,9 @@ function as_unfollow($channel,$act) {
 
 function as_actor_store($url,$person_obj) {
 
+	if(! is_array($person_obj))
+		return;
+
 	$name = $person_obj['name'];
 	if(! $name)
 		$name = t('unknown');

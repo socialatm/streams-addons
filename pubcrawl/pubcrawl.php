@@ -112,7 +112,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 		return;
 	}
 
-	as_actor_store($person_obj);
+	as_actor_store($url,$person_obj);
 
 
 }
