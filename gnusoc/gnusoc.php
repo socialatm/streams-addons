@@ -813,6 +813,9 @@ function gnusoc_discover_channel_webfinger($a,&$b) {
 				}
 			}
 		}
+		if((! $address) && array_key_exists('subject',$x) && substr($x['subject'],0,5) === 'acct:') {
+			$address = substr($x['subject'],5);
+		}
 	}
 	if($x && array_key_exists('links',$x) && $x['links']) {
 		foreach($x['links'] as $link) {
