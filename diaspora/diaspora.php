@@ -276,15 +276,23 @@ function diaspora_process_outbound(&$arr) {
 
 	$prv_recips = $arr['env_recips'];
 
-	// The Diaspora profile message is unusual in that it is sent privately. 
+	// The Diaspora profile message is unusual and must be handled independently
+
+	$is_profile = false;
 
 	if($arr['cmd'] === 'refresh_all' && $arr['recipients']) {
-		$prv_recips = array();
-		foreach($arr['recipients'] as $r) {
-			$prv_recips[] = array('hash' => trim($r,"'"));
+		$is_profile = true;
+		$profile_visible = perm_is_allowed($arr['channel']['channel_id'],'','view_profile');
+
+		if(! $profile_visible) {
+			$prv_recips = array();
+			foreach($arr['recipients'] as $r) {
+				$prv_recips[] = array('hash' => trim($r,"'"));
+			}
 		}
 	}
-			
+
+
 	if($prv_recips) {
 		$hashes = array();
 
@@ -310,7 +318,8 @@ function diaspora_process_outbound(&$arr) {
 			$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
 	
 			if($arr['packet_type'] == 'refresh' && $single) {
-				$qi = diaspora_profile_change($arr['channel'],$contact);
+				// This packet is sent privately to contacts, so we can always send the full profile (the last argument)
+				$qi = diaspora_profile_change($arr['channel'],$contact,false,true);
 				if($qi)
 					$arr['queued'][] = $qi;
 				return;
@@ -381,6 +390,7 @@ function diaspora_process_outbound(&$arr) {
 		}
 	}
 	else {
+
 		// public message
 
 		$contact = $arr['hub'];
@@ -421,6 +431,24 @@ function diaspora_process_outbound(&$arr) {
 			}
 		}
 	}
+
+	if($is_profile) {
+
+		// with either a public or private profile, send a profile message to the public endpoint of 
+		// each hub. $profile_visible indicates if the recipients can see all the data or a limited subset.
+		// @todo also find any other Diaspora pods who should get this message.
+
+		$contact = $arr['hub'];
+		$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
+	
+		if($arr['packet_type'] == 'refresh' && $single) {
+			$qi = diaspora_profile_change($arr['channel'],$contact,true,$profile_visible);
+			if($qi)
+				$arr['queued'][] = $qi;
+			return;
+		}
+	}
+
 }
 
 
