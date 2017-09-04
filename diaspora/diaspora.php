@@ -46,7 +46,8 @@ function diaspora_load() {
 		'personal_xrd'                => 'diaspora_personal_xrd',
 		'author_is_pmable'            => 'diaspora_author_is_pmable',
 		'can_comment_on_post'         => 'diaspora_can_comment_on_post',
-		'queue_deliver'               => 'diaspora_queue_deliver'
+		'queue_deliver'               => 'diaspora_queue_deliver',
+		'webfinger'                   => 'diaspora_webfinger'
 	]);
 
 	diaspora_init_relay();
@@ -119,7 +120,6 @@ function diaspora_well_known(&$b) {
 	}
 }
 
-
 function diaspora_personal_xrd(&$b) {
 
 	if(! intval(get_pconfig($b['user']['channel_id'],'system','diaspora_allowed')))
@@ -138,6 +138,18 @@ function diaspora_personal_xrd(&$b) {
 }
 
 
+function diaspora_webfinger(&$b) {
+
+	if(! intval(get_pconfig($b['channel']['channel_id'],'system','diaspora_allowed')))
+		return;
+
+	$b['result']['links'][] = [ 
+		'rel'  => 'http://joindiaspora.com/seed_location',
+		'type' => 'text/html',
+		'href' => z_root()
+	];
+
+}
 
 
 function diaspora_permissions_create(&$b) {
