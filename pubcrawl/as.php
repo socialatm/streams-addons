@@ -152,10 +152,64 @@ function asencode_item($i) {
 
 	$ret['actor']     = asencode_person($i['author']);
 
+	$t = asencode_taxonomy($i);
+	if($t) {
+		$ret['tag']       = $t;
+	}
+
+
+	$a = asencode_attachments($i);
+	if($a) {
+		$ret['attachment'] = $a;
+	}
 
 	return $ret;
 }
 
+function asencode_taxonomy($item) {
+
+	$ret = [];
+
+	if($item($term)) {
+		foreach($item_term as $t) {
+			switch($t['ttype']) {
+				case TERM_HASHTAG:
+					$ret[] = [ 'id' => $t['url'], 'name' => '#' . $t['term'] ];
+					break;
+
+				case TERM_MENTION:
+					$ret[] = [ 'type' => 'Mention', 'href' => $t['url'], 'name' => '@' . $t['term'] ];
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
+
+	return $ret;
+}
+
+function asencode_attachment($item) {
+
+	$ret = [];
+
+	if($item['attach']) {
+		$atts = json_decode($item['attach'],true);
+		if($atts) {
+			foreach($atts as $att) {
+				if(strpos($att['type'],'image')) {
+					$ret[] = [ 'type' => 'Image', 'url' => $att['href'] ];
+				}
+				else {
+					$ret[] = [ 'type' => 'Link', 'mediaType' => $att['type'], 'href' => $att['href'] ];
+				}
+			}
+		}
+	}
+
+	return $ret;
+}
 
 
 

@@ -25,6 +25,7 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 			$redirects = 0;
 		    $x = z_fetch_url($addr,true,$redirects, [ 'headers' => [ $headers ]]);
 	    	if($x['success'])
+
 				$o .= '<pre>' . $x['header'] . '</pre>' . EOL;
 
 
