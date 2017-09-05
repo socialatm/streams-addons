@@ -631,7 +631,9 @@ function as_actor_store($url,$person_obj) {
 
 	$name = $person_obj['name'];
 	if(! $name)
-		$name = t('unknown');
+		$name = $person_obj['preferredUsername'];
+	if(! $name)
+		$name = t('Unknown');
 
 	if($person_obj['icon']) {
 		if(is_array($person_obj['icon'])) {
@@ -644,7 +646,7 @@ function as_actor_store($url,$person_obj) {
 			$icon = $person_obj['icon'];
 	}
 
-	if($person_obj['url'] && $person_obj['url']['href'])
+	if(is_array($person_obj['url']) && array_key_exists('href', $person_obj['url']))
 		$profile = $person_obj['url']['href'];
 	else
 		$profile = $url;
