@@ -400,7 +400,7 @@ class Diaspora_Receiver {
 		logger('diaspora_reshare: init: ' . print_r($this->xmlbase,true), LOGGER_DATA);
 
 		$guid = notags($this->get_property('guid'));
-		$diaspora_handle = notags($this->get_author())
+		$diaspora_handle = notags($this->get_author());
 
 		$text = notags($this->get_property('text'));
 
