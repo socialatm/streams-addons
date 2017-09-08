@@ -140,6 +140,9 @@ function diaspora_personal_xrd(&$b) {
 
 function diaspora_webfinger(&$b) {
 
+	if(! $b['channel'])
+		return;
+
 	if(! intval(get_pconfig($b['channel']['channel_id'],'system','diaspora_allowed')))
 		return;
 

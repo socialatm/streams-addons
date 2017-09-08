@@ -56,6 +56,9 @@ function pubcrawl_follow_allow(&$b) {
 }
 
 function pubcrawl_webfinger(&$b) {
+	if(! $b['channel'])
+		return;
+
 	$b['result']['links'][] = [ 
 		'rel'  => 'self', 
 		'type' => 'application/activity+json', 
