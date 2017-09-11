@@ -170,8 +170,8 @@ function asencode_taxonomy($item) {
 
 	$ret = [];
 
-	if($item($term)) {
-		foreach($item_term as $t) {
+	if($item['term']) {
+		foreach($item['term'] as $t) {
 			switch($t['ttype']) {
 				case TERM_HASHTAG:
 					$ret[] = [ 'id' => $t['url'], 'name' => '#' . $t['term'] ];
