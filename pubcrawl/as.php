@@ -158,7 +158,7 @@ function asencode_item($i) {
 	}
 
 
-	$a = asencode_attachments($i);
+	$a = asencode_attachment($i);
 	if($a) {
 		$ret['attachment'] = $a;
 	}
