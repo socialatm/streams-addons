@@ -1027,7 +1027,12 @@ function diaspora_markdown_to_bb_init(&$s) {
 
 	$s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}\+/','diaspora_md_mention_callback2',$s);
 	$s = preg_replace_callback('/\@\{(.+?)\@(.+?)\}/','diaspora_md_mention_callback2',$s);
-	$s = preg_replace('#diaspora://(.*?)/([^\s\]]*)#ism', z_root() . '/display/$2', $s);
+
+	// replace diaspora://$author_handle/$post_type/$guid with a local representation.
+	// Ideally we should eventually pass the author_handle and post_type to mod_display and from a hook
+	// fetch the post from the source if it isn't already available locally. 
+
+	$s = preg_replace('#diaspora://(.*?)/(.*?)/([^\s\]]*)#ism', z_root() . '/display/$3', $s);
 
 }
 
