@@ -131,7 +131,7 @@ function push_notifier_process(&$a,&$b) {
 		return;
 	}
 
-	$feed = get_feed_for($channel,'', 'compat' => 1, 'start' => 0, 'records' => 10 ));
+	$feed = get_feed_for($channel,'', [ 'compat' => 1, 'start' => 0, 'records' => 10 ]);
 
 	foreach($r as $rr) {
 
