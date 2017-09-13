@@ -257,7 +257,7 @@ function wppost_send(&$a,&$b) {
 
 		ob_start();
 
-		if(substr($wp_blog,0,5) === 'https')) {
+		if(substr($wp_blog,0,5) === 'https') {
 			$port = 443;
 		}
 		else {
@@ -387,7 +387,7 @@ function wppost_post_remote_end(&$a,&$b) {
 		else
 			$data['red_avatar'] = $x[0]['xchan_photo_m'];
 
-		if(substr($wp_blog,0,5) === 'https')) {
+		if(substr($wp_blog,0,5) === 'https') {
 			$port = 443;
 		}
 		else {
@@ -452,7 +452,7 @@ function wppost_drop_item(&$a,&$b) {
 
 	if($post_id && $wp_username && $wp_password && $wp_blog) {
 
-		if(substr($wp_blog,0,5) === 'https')) {
+		if(substr($wp_blog,0,5) === 'https') {
 			$port = 443;
 		}
 		else {
