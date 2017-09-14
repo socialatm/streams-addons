@@ -6,7 +6,8 @@
  * Version: 1.0
  * Author: Jeroen van Riet Paap <jeroenpraat@hubzilla.nl>, Mike Macgirvin <mike@zothub.com>
  * Maintainer: Jeroen van Riet Paap <jeroenpraat@hubzilla.nl>
- * 
+ * Committer
+ *
  */
 
 function noembed_load() {
@@ -19,7 +20,7 @@ function noembed_unload() {
 
 function noembed_oembed_probe(&$a,&$b) {
 	// try noembed service
-	$ourl = 'https://noembed.com/embed?url=' . urlencode($b['url']);  
+	$ourl = 'https://noembed.com/embed?url=' . urlencode($b['url']);
 	$result = z_fetch_url($ourl);
 	if($result['success'])
 		$b['embed'] = $result['body'];

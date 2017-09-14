@@ -5,6 +5,7 @@
  * Version: 1.1
  * MinVersion: 1.14
  * Author: Klaus Weidenbach <http://friendica.dszdw.net/profile/klaus>
+ * Maintainer: Sergey Lukin <mailto:sergey.lukin@cybergnosis.su>
  */
 
 /**
@@ -41,12 +42,16 @@ function gravatar_get_profile_photo($a, &$b) {
             intval(PHOTO_PROFILE)
     );
     if (count($r)) {
-        $b['data'] = dbunescbin($r[0]['content']);
-        $b['mimetype'] = $r[0]['mimetype'];
-        if(intval($r[0]['os_storage'])) {
-            $b['data'] = file_get_contents($data);
-        }
-        return;
+		$data = dbunescbin($r[0]['content']);
+		$mimetype = $r[0]['mimetype'];
+		if(intval($r[0]['os_storage'])) {
+			$data = file_get_contents($data);
+		}
+		if ($data) {
+			$b['data'] = $data;
+			$b['mimetype'] = $mimetype;
+			return;
+		}
     }
     $r = q("SELECT channel_account_id
             FROM channel
@@ -66,9 +71,8 @@ function gravatar_get_profile_photo($a, &$b) {
     $email = '';
     if(count($r)) {
         $email = $r[0]['account_email'];
-    } else {
-        return;
     }
+
     $resolutions = [300, 300, 300, 300, 300, 80, 48];
     $imgscale = $b['imgscale'];
     if ($imgscale > 6) {
@@ -80,18 +84,23 @@ function gravatar_get_profile_photo($a, &$b) {
 
 	// setting default value if nothing configured
 	if (!$default_avatar) {
-		$default_avatar = 'identicon'; // default image will be a random pattern
+		$default_avatar = 'hub_default'; // default image will be a hub default profile photo
     }
 	if (!$rating) {
 		$rating = 'g'; // suitable for display on all websites with any audience type
     }
     $hash = md5(trim(strtolower($email)));
 	$url = 'https://secure.gravatar.com/avatar/' . $hash . '.jpg?s=' . $resolutions[$imgscale] .'&r=' . $rating;
-	if ($default_avatar != "gravatar") {
+	if ($default_avatar != "gravatar" && $default_avatar != "hub_default") {
 		$url .= '&d=' . $default_avatar;
-    }
-    $b['mimetype'] = 'image/jpg';
-	$b['data'] = file_get_contents($url);
+    } elseif ($default_avatar == "hub_default") {
+		$url .= '&d=' . App::$config['system']['baseurl'] . "/" . get_default_profile_photo($resolutions[$imgscale]);
+	}
+	$data = file_get_contents($url);
+	if ($data) {
+    	$b['mimetype'] = 'image/jpg';
+		$b['data'] = $data;
+	}
 }
 
 /**
@@ -104,7 +113,7 @@ function gravatar_plugin_admin (&$a, &$o) {
 
 	// set default values for first configuration
     if (!$default_avatar) {
-		$default_avatar = 'identicon'; // pseudo-random geometric pattern based on email hash
+		$default_avatar = 'hub_default'; // default profile photo for your hub
     }
 	if (!$rating) {
 		$rating = 'g'; // suitable for display on all websites with any audience type
@@ -116,6 +125,7 @@ function gravatar_plugin_admin (&$a, &$o) {
 		'monsterid' => t('monster face'),
 		'wavatar' => t('computer generated face'),
 		'retro' => t('retro arcade style face'),
+		'hub_default' => t('Hub default profile photo'),
 	);
 	$ratings = array(
 		'g' => 'g',
@@ -128,6 +138,7 @@ function gravatar_plugin_admin (&$a, &$o) {
 	$r = q("SELECT * FROM addon WHERE aname = '%s' and installed = 1",
 		dbesc('libravatar')
 	);
+
 	if (count($r)) {
 		$o = '<h5>' .t('Information') .'</h5><p>' .t('Libravatar addon is installed, too. Please disable Libravatar addon or this Gravatar addon.<br>The Libravatar addon will fall back to Gravatar if nothing was found at Libravatar.') .'</p><br><br>';
 	}

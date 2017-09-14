@@ -1,5 +1,6 @@
 # Gravatar Plugin
-by [Klaus Weidenbach](http://friendica.dszdw.net/profile/klaus)
+Autor: [Klaus Weidenbach](http://friendica.dszdw.net/profile/klaus)
+Maintainer: [Sergey Lukin](mailto:sergey.lukin@cybergnosis.su)
 
 This addon allows you to look up an avatar image for new users and contacts at [Gravatar](http://www.gravatar.com). This will be used if there have not been found any other avatar images yet for example through OpenID.
 
@@ -17,6 +18,7 @@ If no avatar was found for an email Gravatar can create some pseudo-random gener
 * __Monsterid__: a generated 'monster' with different colors, faces, etc. based on email hash
 * __Wavatar__: faces with different features and backgrounds based on email hash
 * __Retro__: 8-bit arcade-styled pixelated faces based on email hash
+* __Hub_Default__: default profile photo for your hub
 
 See examples at [Gravatar][1].
 ## Avatar Rating
@@ -28,15 +30,5 @@ Gravatar lets users self-rate their images to be used at appropriate audiences. 
 * __x__: may contain hardcore sexual imagery or extremely disurbing violence
 
 See more information at [Gravatar][1].
-
-## Alternative Configuration
-Open the .htconfig.php file and add "gravatar" to the list of activated addons:
-
-        $a->config['system']['addon'] = "..., gravatar";
-
-You can add two configuration variables for the addon:
-
-        $a->config['gravatar']['default_avatar'] = "identicon";
-        $a->config['gravatar']['rating'] = "g";
 
 [1]: http://www.gravatar.com/site/implement/images/ "See documentation at Gravatar for more information"
