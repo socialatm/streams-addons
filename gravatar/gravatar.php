@@ -5,7 +5,7 @@
  * Version: 1.1
  * MinVersion: 1.14
  * Author: Klaus Weidenbach <http://friendica.dszdw.net/profile/klaus>
- * Maintainer: Sergey Lukin <mailto:sergey.lukin@cybergnosis.su>
+ * Portig to Hubzilla: Sergey Lukin <mailto:sergey.lukin@cybergnosis.su>
  */
 
 /**

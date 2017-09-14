@@ -1,6 +1,6 @@
 # Gravatar Plugin
 Autor: [Klaus Weidenbach](http://friendica.dszdw.net/profile/klaus)
-Maintainer: [Sergey Lukin](mailto:sergey.lukin@cybergnosis.su)
+Portig to Hubzilla: [Sergey Lukin](mailto:sergey.lukin@cybergnosis.su)
 
 This addon allows you to look up an avatar image for new users and contacts at [Gravatar](http://www.gravatar.com). This will be used if there have not been found any other avatar images yet for example through OpenID.
 
