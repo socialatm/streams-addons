@@ -525,7 +525,7 @@ function pubcrawl_permissions_create(&$x) {
 				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
 				'type' => 'Follow',
 				'actor' => asencode_person($x['sender']),
-				'object' => asencode_person($x['recipient'])
+				'object' => $x['recipient']['xchan_url']
 		]);
 	}
 

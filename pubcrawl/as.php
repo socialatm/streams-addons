@@ -362,8 +362,8 @@ function asencode_person($p) {
 			$ret = array_merge($ret,$collections);
 		}
 		else {
-			$ret['inbox'] = z_root() . '/nullbox';
-			$ret['outbox'] = z_root() . '/nullbox';
+			$ret['inbox'] = null;
+			$ret['outbox'] = null;
 		}
 	}
 
