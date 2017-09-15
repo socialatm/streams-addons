@@ -166,6 +166,35 @@ function asencode_item($i) {
 	return $ret;
 }
 
+function asdecode_taxonomy($item) {
+
+	$ret = [];
+
+	if($item['tag']) {
+		foreach($item['tag'] as $t) {
+			if(! array_key_exists('type',$t))
+				$t['type'] = 'Hashtag';
+
+			switch($t['type']) {
+				case 'Hashtag':
+					$ret[] = [ 'ttype' => TERM_HASHTAG, 'url' => $t['id'], 'term' => ((substr($t['name'],0,1) === '#') ? substr($t['name'],1) : $t['name']) ];
+					break;
+
+				case 'Mention':
+TERM_MENTION:
+					$ret[] = [ 'ttype' => TERM_MENTION, 'url' => $t['href'], 'term' => ((substr($t['name'],0,1) === '@') ? substr($t['name'],1) : $t['name']) ];
+					break;
+
+				default:
+					break;
+			}
+		}
+	}
+
+	return $ret;
+}
+
+
 function asencode_taxonomy($item) {
 
 	$ret = [];
@@ -204,6 +233,30 @@ function asencode_attachment($item) {
 				else {
 					$ret[] = [ 'type' => 'Link', 'mediaType' => $att['type'], 'href' => $att['href'] ];
 				}
+			}
+		}
+	}
+
+	return $ret;
+}
+
+
+function asdecode_attachment($item) {
+
+	$ret = [];
+
+	if($item['attachment']) {
+		foreach($item['attachment'] as $att) {
+			switch($att['type']) {
+				case 'Image':
+					$ret[] = [ 'href' => $att['url'] ];
+					break;
+				case 'Link':
+					$ret[] = [ 'type' => $att['mediaType'], 'href' => $att['href'] ]; 
+					break;
+				default:
+					break;
+				
 			}
 		}
 	}
