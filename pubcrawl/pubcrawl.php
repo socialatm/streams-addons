@@ -778,7 +778,7 @@ function pubcrawl_follow_mod_init($x) {
 				'id' => z_root() . '/follow/' . $r[0]['abook_id'],
 				'type' => 'Follow',
 				'actor' => asencode_person($chan),
-				'object' => asencode_person($r[0])
+				'object' => $r[0]['xchan_url']
 		]);
 				
 
@@ -815,7 +815,7 @@ function pubcrawl_queue_deliver(&$b) {
 		$ret = $outq['outq_msg'];
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
-		$xhead = \Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . argv(1),false);
+		$xhead = \Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . channel['channel_address'],false);
 	
 		$result = z_post_url($outq['outq_posturl'],$outq['outq_msg'],$retries,[ 'headers' => $xhead ]);
 
