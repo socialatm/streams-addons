@@ -364,14 +364,11 @@ function pubcrawl_queue_message($msg,$sender,$recip,$message_id = '') {
     if(! intval($allowed)) {
         return false;
     }
-
-//    if($public_batch)
-  //      $dest_url = $recip['hubloc_callback'] . '/public';
-//    else
         
 	$dest_url = $recip['hubloc_callback'];
 
     logger('URL: ' . $dest_url, LOGGER_DEBUG);
+	logger('DATA: ' . $msg, LOGGER_DATA);
 
     if(intval(get_config('system','activitypub_test')) || intval(get_pconfig($sender['channel_id'],'system','activitypub_test'))) {
         logger('test mode - delivery disabled');
@@ -464,8 +461,6 @@ function pubcrawl_connection_remove(&$x) {
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$channel);
 
 	$jmsg = json_encode($msg);
-
-	// @fixme - sign this message
 
 	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
 	$single = deliverable_singleton($channel['channel_id'],$recip[0]);
