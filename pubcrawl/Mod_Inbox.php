@@ -88,6 +88,16 @@ class Inbox extends \Zotlabs\Web\Controller {
 						continue;
 					}
 					break;
+				case 'Accept':
+					if($AS->obj & $AS->obj['type'] === 'Follow') {
+						// do follow activity
+						as_follow($channel,$AS);
+						continue;
+					}
+					break;
+
+				case 'Reject':
+
 				default:
 					break;
 

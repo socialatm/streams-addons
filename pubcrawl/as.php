@@ -507,11 +507,11 @@ function as_follow($channel,$act) {
 	/* actor is now following $channel */
 
 	$person_obj = $act->actor;
+	$follow_id = $act->id;
+
 	if(is_array($person_obj)) {
 
 		as_actor_store($person_obj['id'],$person_obj);
-
-		set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','follow_id', $act->id);
 
 		// Do we already have an abook record? 
 
@@ -521,8 +521,15 @@ function as_follow($channel,$act) {
 		);
 		if($r) {
 			$contact = $r[0];
+
+			if($act->type === 'Accept' && $act->obj['type'] === 'Follow') {
+				$follow_id = z_root() . '/follow/' . $contact['id'];
+			}
 		}
+
 	}
+
+	set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','follow_id', $follow_id);
 
 	$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
 	$their_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
