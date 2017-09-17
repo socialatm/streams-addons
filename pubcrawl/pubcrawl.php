@@ -451,7 +451,7 @@ function pubcrawl_connection_remove(&$x) {
 				z_root() . '/apschema'
 			]], 
 			[
-				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'] . '#Undo',
+				'id' => z_root() . '/follow/' . $recip[0]['abook_id'] . '#Undo',
 				'type' => 'Undo',
 				'actor' => asencode_person($channel),
 				'object' => z_root() . '/follow/' . $recip[0]['abook_id']
