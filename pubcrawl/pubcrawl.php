@@ -433,12 +433,14 @@ function pubcrawl_connection_remove(&$x) {
 
 			]], 
 			[
-				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
-				'type' => 'Reject',
+				'id'    => z_root() . '/follow/' . $x['recip'][0]['abook_id'] . '#reject',
+				'type'  => 'Reject',
 				'actor' => asencode_person($channel),
-				'object' => [
-					'type' => 'Follow',
-					'id' => $orig_activity
+				'object'     => [
+					'type'   => 'Follow',
+					'id'     => $orig_activity,
+					'actor'  => $x['recip'][0]['xchan_hash'],
+					'object' => asencode_person($channel)
 				]
 		]);
 		del_abconfig($recip[0]['abook_channel'],$recip[0]['xchan_hash'],'pubcrawl','follow_id');
@@ -451,11 +453,17 @@ function pubcrawl_connection_remove(&$x) {
 				z_root() . '/apschema'
 			]], 
 			[
-				'id' => z_root() . '/follow/' . $recip[0]['abook_id'] . '#Undo',
-				'type' => 'Undo',
+				'id'    => z_root() . '/follow/' . $recip[0]['abook_id'] . '#Undo',
+				'type'  => 'Undo',
 				'actor' => asencode_person($channel),
-				'object' => z_root() . '/follow/' . $recip[0]['abook_id']
-		]);
+				'object'     => [
+					'id'     => z_root() . '/follow/' . $recip[0]['abook_id'],
+					'type'   => 'Follow',
+					'actor'  => asencode_person($channel),
+					'object' => $recip[0]['xchan_hash']
+				]
+			]
+		);
 	}
 
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$channel);
@@ -500,12 +508,14 @@ function pubcrawl_permissions_create(&$x) {
 				z_root() . '/apschema'
 			]], 
 			[
-				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
-				'type' => 'Accept',
-				'actor' => asencode_person($x['sender']),
+				'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
+				'type'   => 'Accept',
+				'actor'  => asencode_person($x['sender']),
 				'object' => [
-					'type' => 'Follow',
-					'id' => $accept
+					'type'   => 'Follow',
+					'id'     => $accept,
+					'actor'  => $x['recipient']['xchan_hash'],
+					'object' => z_root() . '/channel/' . $x['sender']['channel_address']
 				]
 		]);
 		del_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','follow_id');
@@ -517,9 +527,9 @@ function pubcrawl_permissions_create(&$x) {
 				'https://w3id.org/security/v1'
 			]], 
 			[
-				'id' => z_root() . '/follow/' . $x['recipient']['abook_id'],
-				'type' => 'Follow',
-				'actor' => asencode_person($x['sender']),
+				'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
+				'type'   => 'Follow',
+				'actor'  => asencode_person($x['sender']),
 				'object' => $x['recipient']['xchan_url']
 		]);
 	}
