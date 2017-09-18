@@ -368,7 +368,7 @@ function pubcrawl_queue_message($msg,$sender,$recip,$message_id = '') {
 	$dest_url = $recip['hubloc_callback'];
 
     logger('URL: ' . $dest_url, LOGGER_DEBUG);
-	logger('DATA: ' . $msg, LOGGER_DATA);
+	logger('DATA: ' . jindent($msg), LOGGER_DATA);
 
     if(intval(get_config('system','activitypub_test')) || intval(get_pconfig($sender['channel_id'],'system','activitypub_test'))) {
         logger('test mode - delivery disabled');

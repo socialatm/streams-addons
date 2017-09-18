@@ -268,7 +268,8 @@ function asdecode_attachment($item) {
 
 function asencode_activity($i) {
 
-	$ret = array();
+	$ret   = [];
+	$reply = false;
 
 	if(intval($i['item_deleted'])) {
 		$ret['type'] = 'Tombstone';
@@ -303,6 +304,7 @@ function asencode_activity($i) {
 
 	if($i['id'] != $i['parent']) {
 		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
+		$reply = true;
 	}
 
 	$ret['content']   = bbcode($i['body']);
@@ -319,14 +321,28 @@ function asencode_activity($i) {
 		$ret['target'] = asencode_object($i['target']);
 	}
 
+	$recips = null;
 
-	if(! $i['item_private']) {
-		$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
-		if($i['item_origin'])
-			$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['xchan_addr'],0,strpos($i['owner']['xchan_addr'],'@')) ];
+	if($reply) {
+		$recips = get_iconfig($i,'activitypub','recips');
+		if($recips) {
+			foreach($recips as $k => $v) {
+				$i[$k] = $v;
+			}
+		}
+		if(! $i['to']) {
+			$i['to'] = [ $i['author']['xchan_addr'] ];
+		} 
 	}
-	else {
-		$ret['bto'] = as_map_acl($i);
+	if(! $recips) {
+		if(! $i['item_private']) {
+			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
+			if($i['item_origin'])
+				$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['address'],0,strpos($i['owner']['address'],'@')) ];
+		}
+		else {
+			$ret['bto'] = as_map_acl($i);
+		}
 	} 
 
 
@@ -929,6 +945,8 @@ function as_create_note($channel,$observer_hash,$act) {
 		}
 	}
 
+	set_iconfig($s,'activitypub','recips',$act->raw_recips);
+
 	$x = item_store($s);
 
 }
@@ -1040,6 +1058,8 @@ function as_like_note($channel,$observer_hash,$act) {
 	$s['item_private'] = $parent_item['item_private'];
 	$s['obj_type'] = $objtype;
 	$s['obj'] = $object;
+
+	set_iconfig($s,'activitypub','recips',$act->raw_recips);
 
 
 	$result = item_store($s);

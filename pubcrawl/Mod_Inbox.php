@@ -74,11 +74,13 @@ class Inbox extends \Zotlabs\Web\Controller {
 			return;
 
 		$saved_recips = [];
-		foreach( [ 'to', 'cc', 'audience' ] as $x ) {
+		foreach( [ 'to', 'cc', 'bto', 'bcc', 'audience' ] as $x ) {
 			if(array_key_exists($x,$AS->data)) {
 				$saved_recips[$x] = $AS->data[$x];
 			}
 		}
+		$AS->set_recips($saved_recips);
+
 
 		foreach($channels as $channel) {
 
