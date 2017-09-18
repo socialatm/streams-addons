@@ -152,6 +152,16 @@ function pubcrawl_load_module(&$b) {
 		$b['controller'] = new \Zotlabs\Module\Apschema();
 		$b['installed'] = true;
 	}
+	if($b['module'] === 'followers') {
+		require_once('addon/pubcrawl/Mod_Followers.php');
+		$b['controller'] = new \Zotlabs\Module\Followers();
+		$b['installed'] = true;
+	}
+	if($b['module'] === 'following') {
+		require_once('addon/pubcrawl/Mod_Following.php');
+		$b['controller'] = new \Zotlabs\Module\Following();
+		$b['installed'] = true;
+	}
 }
 
 

@@ -102,6 +102,41 @@ function asencode_item_collection($items,$id,$type,$extra = null) {
 	return $ret;
 }
 
+function asencode_follow_collection($items,$id,$type,$extra = null) {
+
+	$ret = [
+		'id' => z_root() . '/' . $id,
+		'type' => $type,
+		'totalItems' => count($items),
+	];
+	if($extra)
+		$ret = array_merge($ret,$extra);
+
+	if($items) {
+		$x = [];
+		foreach($items as $i) {
+			if($i['xchan_network'] === 'activitypub' ) {
+				if($i['xchan_url']) {
+					$x[] = $i['xchan_url'];
+				}
+			}
+			else {
+				if($i['xchan_addr']) {
+					$x[] = 'acct:' . $i['xchan_addr'];
+				}
+			}
+		}
+		if($type === 'OrderedCollection')
+			$ret['orderedItems'] = $x;
+		else
+			$ret['items'] = $x;
+	}
+
+	return $ret;
+}
+
+
+
 
 function asencode_item($i) {
 
@@ -144,11 +179,15 @@ function asencode_item($i) {
 		'href' => $i['plink']
 	];
 
+	$cnv = null;
+
 	if($i['id'] != $i['parent']) {
 		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
+		$cnv = get_iconfig($i['parent'],'ostatus','conversation');
 	}
-	
-	$cnv = get_iconfig($i,'ostatus','conversation');
+	if(! $cnv) {
+		$cnv = get_iconfig($i,'ostatus','conversation');
+	}
 	if($cnv) {
 		$ret['conversation'] = $cnv;
 	}
@@ -309,12 +348,21 @@ function asencode_activity($i) {
 
 	if($i['id'] != $i['parent']) {
 		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
+
+		$d = q("select xchan_url from item left join xchan on xchan_hash = author_xchan where id = %d limit 1",
+			intval($i['parent'])
+		);
+		if($d) {
+			$reply_url = $d[0]['xchan_url'];
+		}
+
 		$reply = true;
+
 	}
 
-	$ret['content']   = bbcode($i['body']);
 
-	$ret['actor']     = asencode_person($i['author']);
+	$ret['actor'] = asencode_person($i['author']);
+
 	if($i['obj']) {
 		$ret['object'] = asencode_object($i['obj']);
 	}
@@ -322,31 +370,22 @@ function asencode_activity($i) {
 		$ret['object'] = asencode_item($i);
 	}
 
+
 	if($i['target']) {
 		$ret['target'] = asencode_object($i['target']);
 	}
 
-	$recips = null;
-
 	if($reply) {
-		$recips = get_iconfig($i,'activitypub','recips');
-		if($recips) {
-			foreach($recips as $k => $v) {
-				$i[$k] = $v;
-			}
-		}
-		if(! $i['to']) {
-			$i['to'] = [ $i['author']['xchan_addr'] ];
-		} 
+		$ret['to'] = [ $reply_url ];
 	}
-	if(! $recips) {
-		if(! $i['item_private']) {
-			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
-			if($i['item_origin'])
-				$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['address'],0,strpos($i['owner']['address'],'@')) ];
+	else {
+		if($i['item_private']) {
+			$ret['bto'] = as_map_acl($i);
 		}
 		else {
-			$ret['bto'] = as_map_acl($i);
+			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
+			if($i['item_origin'])
+				$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['xchan_addr'],0,strpos($i['owner']['xchan_addr'],'@')) ];
 		}
 	} 
 
@@ -406,8 +445,11 @@ function asencode_person($p) {
 
 	if($c) {
 
-		$ret['inbox']       = z_root() . '/inbox/' . $c['channel_address'];
-		$ret['outbox']      = z_root() . '/outbox/' . $c['channel_address'];
+		$ret['inbox']       = z_root() . '/inbox/'     . $c['channel_address'];
+		$ret['outbox']      = z_root() . '/outbox/'    . $c['channel_address'];
+		$ret['followers']   = z_root() . '/followers/' . $c['channel_address'];
+		$ret['following']   = z_root() . '/following/' . $c['channel_address'];
+
 		$ret['endpoints']   = [ 'sharedInbox' => z_root() . '/inbox/[public]' ];
 
 		$ret['publicKey'] = [
@@ -955,7 +997,7 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	set_iconfig($s,'activitypub','recips',$act->raw_recips);
 
-	$r = q("select created, edited * from item where mid = '%s' and uid = %d limit 1",
+	$r = q("select created, edited from item where mid = '%s' and uid = %d limit 1",
 		dbesc($s['mid']),
 		intval($s['uid'])
 	);
