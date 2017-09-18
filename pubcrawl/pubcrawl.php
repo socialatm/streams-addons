@@ -422,7 +422,7 @@ function pubcrawl_connection_remove(&$x) {
 
 	$orig_activity = get_abconfig($recip[0]['abook_channel'],$recip[0]['xchan_hash'],'pubcrawl','follow_id');
 
-	if($orig_activity) {
+	if($orig_activity && $recip[0]['abook_pending']) {
 
 		// was never approved
 
@@ -433,20 +433,24 @@ function pubcrawl_connection_remove(&$x) {
 
 			]], 
 			[
-				'id'    => z_root() . '/follow/' . $x['recip'][0]['abook_id'] . '#reject',
+				'id'    => z_root() . '/follow/' . $recip[0]['abook_id'] . '#reject',
 				'type'  => 'Reject',
 				'actor' => asencode_person($channel),
 				'object'     => [
 					'type'   => 'Follow',
 					'id'     => $orig_activity,
-					'actor'  => $x['recip'][0]['xchan_hash'],
+					'actor'  => $recip[0]['xchan_hash'],
 					'object' => asencode_person($channel)
-				]
+				],
+				'to' => [ $recip[0]['xchan_hash'] ]
 		]);
 		del_abconfig($recip[0]['abook_channel'],$recip[0]['xchan_hash'],'pubcrawl','follow_id');
 
 	}
 	else {
+
+		// send an unfollow
+
 		$msg = array_merge(['@context' => [
 				'https://www.w3.org/ns/activitystreams',
 				'https://w3id.org/security/v1',
@@ -461,7 +465,8 @@ function pubcrawl_connection_remove(&$x) {
 					'type'   => 'Follow',
 					'actor'  => asencode_person($channel),
 					'object' => $recip[0]['xchan_hash']
-				]
+				],
+				'to' => [ $recip[0]['xchan_hash'] ]
 			]
 		);
 	}
@@ -516,7 +521,8 @@ function pubcrawl_permissions_create(&$x) {
 					'id'     => $accept,
 					'actor'  => $x['recipient']['xchan_hash'],
 					'object' => z_root() . '/channel/' . $x['sender']['channel_address']
-				]
+				],
+				'to' => [ $x['recipient']['xchan_hash'] ]
 		]);
 		del_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','follow_id');
 
@@ -530,7 +536,8 @@ function pubcrawl_permissions_create(&$x) {
 				'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
 				'type'   => 'Follow',
 				'actor'  => asencode_person($x['sender']),
-				'object' => $x['recipient']['xchan_url']
+				'object' => $x['recipient']['xchan_url'],
+				'to'     => [ $x['recipient']['xchan_hash'] ]
 		]);
 	}
 
@@ -780,9 +787,9 @@ function pubcrawl_follow_mod_init($x) {
 				z_root() . '/apschema'
 			]], 
 			[
-				'id' => z_root() . '/follow/' . $r[0]['abook_id'],
-				'type' => 'Follow',
-				'actor' => asencode_person($chan),
+				'id'     => z_root() . '/follow/' . $r[0]['abook_id'],
+				'type'   => 'Follow',
+				'actor'  => asencode_person($chan),
 				'object' => $r[0]['xchan_url']
 		]);
 				
