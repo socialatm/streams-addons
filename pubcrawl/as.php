@@ -147,6 +147,11 @@ function asencode_item($i) {
 	if($i['id'] != $i['parent']) {
 		$ret['inReplyTo'] = ((strpos($i['parent_mid'],'http') === 0) ? $i['parent_mid'] : z_root() . '/item/' . urlencode($i['parent_mid']));
 	}
+	
+	$cnv = get_iconfig($i,'ostatus','conversation');
+	if($cnv) {
+		$ret['conversation'] = $cnv;
+	}
 
 	$ret['content']   = bbcode($i['body']);
 
@@ -931,12 +936,11 @@ function as_create_note($channel,$observer_hash,$act) {
 	if(! $s['parent_mid'])
 		$s['parent_mid'] = $s['mid'];
 	
-	$s['title'] = as_bb_content($content,'name');
-	$s['body'] = as_bb_content($content,'content');
-	$s['verb'] = ACTIVITY_POST;
+	$s['title']    = as_bb_content($content,'name');
+	$s['body']     = as_bb_content($content,'content');
+	$s['verb']     = ACTIVITY_POST;
 	$s['obj_type'] = ACTIVITY_OBJ_NOTE;
-	$s['app'] = t('ActivityPub');
-
+	$s['app']      = t('ActivityPub');
 
 	if($abook) {
 		if(! post_is_importable($s,$abook[0])) {
@@ -945,9 +949,27 @@ function as_create_note($channel,$observer_hash,$act) {
 		}
 	}
 
+	if($act->obj['conversation']) {
+		set_iconfig($s,'ostatus','conversation',$act->obj['conversation'],1);
+	}
+
 	set_iconfig($s,'activitypub','recips',$act->raw_recips);
 
-	$x = item_store($s);
+	$r = q("select created, edited * from item where mid = '%s' and uid = %d limit 1",
+		dbesc($s['mid']),
+		intval($s['uid'])
+	);
+	if($r) {
+		if($s['edited'] > $r[0]['edited']) {
+			$x = item_store_update($s);
+		}
+		else {
+			return;
+		}
+	}
+	else {
+		$x = item_store($s);
+	}
 
 }
 
@@ -1059,8 +1081,11 @@ function as_like_note($channel,$observer_hash,$act) {
 	$s['obj_type'] = $objtype;
 	$s['obj'] = $object;
 
-	set_iconfig($s,'activitypub','recips',$act->raw_recips);
+	if($act->obj['conversation']) {
+		set_iconfig($s,'ostatus','conversation',$act->obj['conversation'],1);
+	}
 
+	set_iconfig($s,'activitypub','recips',$act->raw_recips);
 
 	$result = item_store($s);
 
