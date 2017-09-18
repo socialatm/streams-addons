@@ -377,15 +377,25 @@ function asencode_activity($i) {
 
 	if($reply) {
 		$ret['to'] = [ $reply_url ];
+		if($ret['object']['type'] === 'Note')
+			$ret['object']['to'] = $ret['to'];
 	}
 	else {
 		if($i['item_private']) {
 			$ret['bto'] = as_map_acl($i);
+			if($ret['object']['type'] === 'Note')
+				$ret['object']['bto'] = $ret['bto'];
 		}
 		else {
 			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
-			if($i['item_origin'])
+			if($ret['object']['type'] === 'Note')
+				$ret['object']['to'] = $ret['to'];
+
+			if($i['item_origin']) {
 				$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['xchan_addr'],0,strpos($i['owner']['xchan_addr'],'@')) ];
+				if($ret['object']['type'] === 'Note')
+					$ret['object']['cc'] = $ret['cc'];
+			}				
 		}
 	} 
 
