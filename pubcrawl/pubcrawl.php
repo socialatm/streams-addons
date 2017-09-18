@@ -301,6 +301,7 @@ function pubcrawl_notifier_process(&$arr) {
 
 	$jmsg = json_encode($msg);
 
+
 	if($prv_recips) {
 		$hashes = array();
 
@@ -340,25 +341,43 @@ function pubcrawl_notifier_process(&$arr) {
 
 		// public message
 
-		$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_url = '%s' and xchan_network = 'activitypub' ",
-			dbesc($arr['hub']['hubloc_url'])
-		);
+		// See if we can deliver all of them at once
 
-		if(! $r) {
-			logger('activitypub_process_outbound: no recipients');
-			return;
-		}
-
-		foreach($r as $contact) {
-
-			$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
-
-			if($single) {
-				$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
-				if($qi)
-					$arr['queued'][] = $qi;
+		$x = get_xconfig($arr['hub']['hubloc_hash'],'activitypub','collections');
+		if($x && $x['sharedInbox']) {
+			logger('using publicInbox delivery for ' . $arr['hub']['hubloc_url'], LOGGER_DEBUG);
+			$contact['hubloc_callback'] = $x['sharedInbox'];
+			$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
+			if($qi) {
+				$arr['queued'][] = $qi;
 			}
-		}	
+		}
+		else {
+
+			$r = q("select * from xchan left join hubloc on xchan_hash = hubloc_hash where hubloc_url = '%s' and xchan_network = 'activitypub' ",
+				dbesc($arr['hub']['hubloc_url'])
+			);
+
+			if(! $r) {
+				logger('activitypub_process_outbound: no recipients');
+				return;
+			}
+
+		
+
+
+
+			foreach($r as $contact) {
+
+				$single = deliverable_singleton($arr['channel']['channel_id'],$contact);
+
+				if($single) {
+					$qi = pubcrawl_queue_message($jmsg,$arr['channel'],$contact,$target_item['mid']);
+					if($qi)
+						$arr['queued'][] = $qi;
+				}
+			}	
+		}
 	}
 	
 	return;

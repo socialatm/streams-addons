@@ -783,12 +783,12 @@ function as_actor_store($url,$person_obj) {
 		$collections['inbox'] = $inbox;
 		if($person_obj['outbox'])
 			$collections['outbox'] = $person_obj['outbox'];
-		if($person_obj['sharedInbox'])
-			$collections['sharedInbox'] = $person_obj['sharedInbox'];
 		if($person_obj['followers'])
 			$collections['followers'] = $person_obj['followers'];
 		if($person_obj['following'])
 			$collections['following'] = $person_obj['following'];
+		if($person_obj['endpoints'] && $person_obj['endpoints']['sharedInbox'])
+			$collections['sharedInbox'] = $person_obj['endpoints']['sharedInbox'];
 	}
 
 	if(array_key_exists('publicKey',$person_obj) && array_key_exists('publicKeyPem',$person_obj['publicKey'])) {
