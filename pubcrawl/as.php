@@ -1111,7 +1111,7 @@ function as_like_note($channel,$observer_hash,$act) {
 				array('rel' => 'alternate', 'type' => 'text/html', 'href' => $item_author['xchan_url']),
 				array('rel' => 'photo', 'type' => $item_author['xchan_photo_mimetype'], 'href' => $item_author['xchan_photo_m'])),
 			),
-		)
+		), JSON_UNESCAPED_SLASHES
 	);
 
 	if($act->type === 'Like')

@@ -46,7 +46,7 @@ class Activity extends \Zotlabs\Web\Controller {
 			$headers['Content-Type'] = 'application/activity+json' ;
 
 			$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-			$ret = json_encode($x);
+			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 			$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 			$headers['Digest'] = 'SHA-256=' . $hash;  
 			\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);

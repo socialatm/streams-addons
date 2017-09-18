@@ -240,7 +240,7 @@ function pubcrawl_channel_mod_init($x) {
 		$headers['Content-Type'] = 'application/activity+json' ;
 
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-		$ret = json_encode($x);
+		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
@@ -299,7 +299,7 @@ function pubcrawl_notifier_process(&$arr) {
 	
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$arr['channel']);
 
-	$jmsg = json_encode($msg);
+	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
 
 	if($prv_recips) {
@@ -502,7 +502,7 @@ function pubcrawl_connection_remove(&$x) {
 
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$channel);
 
-	$jmsg = json_encode($msg);
+	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
 	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
 	$single = deliverable_singleton($channel['channel_id'],$recip[0]);
@@ -572,7 +572,7 @@ function pubcrawl_permissions_create(&$x) {
 
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$x['sender']);
 
-	$jmsg = json_encode($msg);
+	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
 	// @fixme - sign this message
 
@@ -617,7 +617,7 @@ function pubcrawl_profile_mod_init($x) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-		$ret = json_encode($x);
+		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
@@ -682,7 +682,7 @@ function pubcrawl_item_mod_init($x) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-		$ret = json_encode($x);
+		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
@@ -732,7 +732,7 @@ function pubcrawl_thing_mod_init($x) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-		$ret = json_encode($x);
+		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
@@ -782,7 +782,7 @@ function pubcrawl_locs_mod_init($x) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-		$ret = json_encode($x);
+		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
@@ -826,7 +826,7 @@ function pubcrawl_follow_mod_init($x) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/activity+json' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
-		$ret = json_encode($x);
+		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
