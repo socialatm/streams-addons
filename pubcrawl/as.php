@@ -477,7 +477,7 @@ function asencode_person($p) {
 		$ret['followers']   = z_root() . '/followers/' . $c['channel_address'];
 		$ret['following']   = z_root() . '/following/' . $c['channel_address'];
 
-		$ret['endpoints']   = [ 'sharedInbox' => z_root() . '/inbox/[public]' ];
+		$ret['endpoints']   = [ 'sharedInbox' => z_root() . '/inbox' ];
 
 		$ret['publicKey'] = [
 			'id'           => $p['xchan_url'] . '/public_key_pem',

@@ -5,8 +5,6 @@ namespace Zotlabs\Module;
 class Inbox extends \Zotlabs\Web\Controller {
 
 	function post() {
-		if(argc() <= 1)
-			return;
 
 		$sys_disabled = false;
 
@@ -16,7 +14,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		$is_public = false;
 
-		if(argv(1) === '[public]') {
+		if(argc() == 1 || argv(1) === '[public]') {
 			$is_public = true;
 		}
 		else {
