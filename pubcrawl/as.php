@@ -377,23 +377,23 @@ function asencode_activity($i) {
 
 	if($reply) {
 		$ret['to'] = [ $reply_url ];
-		if($ret['object']['type'] === 'Note')
+		if(in_array($ret['object']['type'], [ 'Note', 'Article' ])
 			$ret['object']['to'] = $ret['to'];
 	}
 	else {
 		if($i['item_private']) {
 			$ret['bto'] = as_map_acl($i);
-			if($ret['object']['type'] === 'Note')
+			if(in_array($ret['object']['type'], [ 'Note', 'Article' ])
 				$ret['object']['bto'] = $ret['bto'];
 		}
 		else {
 			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
-			if($ret['object']['type'] === 'Note')
+			if(in_array($ret['object']['type'], [ 'Note', 'Article' ])
 				$ret['object']['to'] = $ret['to'];
 
 			if($i['item_origin']) {
 				$ret['cc'] = [ z_root() . '/followers/' . substr($i['owner']['xchan_addr'],0,strpos($i['owner']['xchan_addr'],'@')) ];
-				if($ret['object']['type'] === 'Note')
+				if(in_array($ret['object']['type'], [ 'Note', 'Article' ])
 					$ret['object']['cc'] = $ret['cc'];
 			}				
 		}
@@ -893,7 +893,7 @@ function as_actor_store($url,$person_obj) {
 
 function as_create_action($channel,$observer_hash,$act) {
 
-	if($act->obj['type'] === 'Note') {
+	if(in_array($act->obj['type'], [ 'Note', 'Article' ])) {
 		as_create_note($channel,$observer_hash,$act);
 	}
 
@@ -902,7 +902,7 @@ function as_create_action($channel,$observer_hash,$act) {
 
 function as_like_action($channel,$observer_hash,$act) {
 
-	if($act->obj['type'] === 'Note') {
+	if(in_array($act->obj['type'], [ 'Note', 'Article' ])) {
 		as_like_note($channel,$observer_hash,$act);
 	}
 

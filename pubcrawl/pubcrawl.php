@@ -659,7 +659,7 @@ function pubcrawl_item_mod_init($x) {
 
 		// Wrong object type
 
-		if(activity_obj_mapper($items[0]['obj_type']) !== 'Note') {
+		if(! in_array(activity_obj_mapper($items[0]['obj_type']), [ 'Note', 'Article' ])) {
 			http_status_exit(418, "I'm a teapot"); 
 		}
 
