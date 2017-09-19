@@ -308,17 +308,17 @@ function asdecode_attachment($item) {
 
 	if($item['attachment']) {
 		foreach($item['attachment'] as $att) {
-			switch($att['type']) {
-				case 'Image':
-					$ret[] = [ 'href' => $att['url'] ];
-					break;
-				case 'Link':
-					$ret[] = [ 'type' => $att['mediaType'], 'href' => $att['href'] ]; 
-					break;
-				default:
-					break;
-				
-			}
+			$entry = [];
+			if($att['href'])
+				$entry['href'] = $att['href'];
+			elseif($att['url'])
+				$entry['href'] = $att['url'];
+			if($att['mediaType'])
+				$entry['type'] = $att['mediaType'];
+			elseif($att['type'] === 'Image')
+				$entry['type'] = 'image/jpeg';
+			if($entry)
+				$ret[] = $entry;
 		}
 	}
 
@@ -1094,8 +1094,8 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	if($act->obj['type'] === 'Note' && $s['attach']) {
 		foreach($s['attach'] as $img) {
-			if($img['type'] === 'Image') {
-				$s['body'] .= "\n\n" . '[img]' . $img['url'] . '[/img]';
+			if(strpos($img['type'],'image') !== false) {
+				$s['body'] .= "\n\n" . '[img]' . $img['href'] . '[/img]';
 			}
 		}
 	}
