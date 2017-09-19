@@ -628,6 +628,10 @@ function as_follow($channel,$act) {
 				intval($channel['channel_id'])
 			);
 		}
+
+		// Send back a follow notification to them if we were already sharing
+		\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_create', $contact['abook_id'] ]);
+
 		return;
 	}
 
