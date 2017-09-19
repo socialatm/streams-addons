@@ -1087,7 +1087,7 @@ function as_create_note($channel,$observer_hash,$act) {
 		$s['term'] = $a;
 	}
 
-	$a = asdecode_attachments($act->obj);
+	$a = asdecode_attachment($act->obj);
 	if($a) {
 		$s['attach'] = $a;
 	}
