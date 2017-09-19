@@ -691,6 +691,8 @@ function as_follow($channel,$act) {
 
 	// From here on out we assume a Follow activity to somebody we have no existing relationship with
 
+	set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','their_follow_id', $their_follow_id);
+
 	// The xchan should have been created by as_actor_store() above
 
 	$r = q("select * from xchan where xchan_hash = '%s' and xchan_network = 'activitypub' limit 1",
@@ -753,15 +755,10 @@ function as_follow($channel,$act) {
 			);
 
 			if($my_perms && $automatic) {
-
 				// send an Accept for this Follow activity
-
-				set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','their_follow_id', $their_follow_id);
 				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_accept', $new_connection[0]['abook_id'] ]);
-
 				// Send back a Follow notification to them
 				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_create', $new_connection[0]['abook_id'] ]);
-
 			}
 
 			$clone = array();
