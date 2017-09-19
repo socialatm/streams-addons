@@ -140,7 +140,7 @@ function asencode_follow_collection($items,$id,$type,$extra = null) {
 
 function asencode_item($i) {
 
-	$ret = array();
+	$ret = [];
 
 	if(intval($i['item_deleted'])) {
 		$ret['type'] = 'Tombstone';
@@ -149,7 +149,14 @@ function asencode_item($i) {
 		return $ret;
 	}
 
-	$ret['type'] = 'Note';
+	$images = false;
+	$has_images = preg_match_all('/\[[zi]mg(.*?)\](.*?)\[/ism',$i['body'],$images,PREG_SET_ORDER); 
+
+	if((! $has_images) || get_pconfig($i['uid'],'activitypub','downgrade_media',true))
+		$ret['type'] = 'Note';
+	else
+		$ret['type'] = 'Article';
+
 	$ret['id']   = ((strpos($i['mid'],'http') === 0) ? $i['mid'] : z_root() . '/item/' . urlencode($i['mid']));
 
 	if($i['title'])
@@ -201,11 +208,21 @@ function asencode_item($i) {
 		$ret['tag']       = $t;
 	}
 
-
 	$a = asencode_attachment($i);
 	if($a) {
 		$ret['attachment'] = $a;
 	}
+
+    if($has_images && $ret['type'] === 'Note') {
+		$img = [];
+        foreach($images as $match) {
+			$img[] =  [ 'type' => 'Image', 'url' => $match[2] ]; 
+        }
+		if(! $ret['attachment'])
+			$ret['attachment'] = [];
+
+		$ret['attachment'] = array_merge($img,$ret['attachment']);
+    }
 
 	return $ret;
 }
@@ -1063,6 +1080,24 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	if($act->obj['conversation']) {
 		set_iconfig($s,'ostatus','conversation',$act->obj['conversation'],1);
+	}
+
+	$a = asdecode_taxonomy($act->obj);
+	if($a) {
+		$s['term'] = $a;
+	}
+
+	$a = asdecode_attachments($act->obj);
+	if($a) {
+		$s['attach'] = $a;
+	}
+
+	if($act->obj['type'] === 'Note' && $s['attach']) {
+		foreach($s['attach'] as $img) {
+			if($img['type'] === 'Image') {
+				$s['body'] .= "\n\n" . '[img]' . $img['url'] . '[/img]';
+			}
+		}
 	}
 
 	set_iconfig($s,'activitypub','recips',$act->raw_recips);
