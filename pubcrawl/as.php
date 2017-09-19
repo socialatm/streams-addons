@@ -599,10 +599,8 @@ function as_follow($channel,$act) {
 				$follow_id = z_root() . '/follow/' . $contact['id'];
 			}
 		}
-
 	}
 
-	set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','follow_id', $follow_id);
 
 	$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
 	$their_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
@@ -634,6 +632,11 @@ function as_follow($channel,$act) {
 
 		return;
 	}
+
+	// The permissions_create hook will look for this and send an 'Accept' rather than a 'Follow'
+
+	set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','follow_id', $follow_id);
+
 
 	$r = q("select * from xchan where xchan_hash = '%s' and xchan_network = 'activitypub' limit 1",
 		dbesc($person_obj['id'])
