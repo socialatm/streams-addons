@@ -576,17 +576,31 @@ function as_fetch($url) {
 function as_follow($channel,$act) {
 
 	$contact = null;
+	$their_follow_id = null;
 
-	/* actor is now following $channel */
+	/*
+	 * 
+	 * if $act->type === 'Follow', actor is now following $channel 
+	 * if $act->type === 'Accept', actor has approved a follow request from $channel 
+	 *	 
+	 */
 
 	$person_obj = $act->actor;
-	$follow_id = $act->id;
 
+	if($act->type === 'Follow') {
+		$their_follow_id  = $act->id;
+	}
+	elseif($act->type === 'Accept') {
+		$my_follow_id = z_root() . '/follow/' . $contact['id'];
+	}
+	
 	if(is_array($person_obj)) {
+
+		// store their xchan and hubloc
 
 		as_actor_store($person_obj['id'],$person_obj);
 
-		// Do we already have an abook record? 
+		// Find any existing abook record 
 
 		$r = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_xchan = '%s' and abook_channel = %d limit 1",
 			dbesc($person_obj['id']),
@@ -594,49 +608,73 @@ function as_follow($channel,$act) {
 		);
 		if($r) {
 			$contact = $r[0];
-
-			if($act->type === 'Accept' && $act->obj['type'] === 'Follow') {
-				$follow_id = z_root() . '/follow/' . $contact['id'];
-			}
 		}
 	}
-
 
 	$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
 	$their_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
 
 	if($contact && $contact['abook_id']) {
 
-		// perhaps we were already sharing with this person. Now they're sharing with us.
-		// That makes us friends. Maybe.
+		// A relationship of some form already exists on this site. 
 
-		foreach($their_perms as $k => $v)
-			set_abconfig($channel['channel_id'],$contact['abook_xchan'],'their_perms',$k,$v);
+		switch($act->type) {
 
-		$abook_instance = $contact['abook_instance'];
+			case 'Follow':
 
-		if(strpos($abook_instance,z_root()) === false) {
-			if($abook_instance) 
-				$abook_instance .= ',';
-			$abook_instance .= z_root();
+				// A second Follow request, but we haven't approved the first one
 
-			$r = q("update abook set abook_instance = '%s', abook_not_here = 0 where abook_id = %d and abook_channel = %d",
-				dbesc($abook_instance),
-				intval($contact['abook_id']),
-				intval($channel['channel_id'])
-			);
+				if($contact['abook_pending']) {
+					return;
+				}
+
+				// We've already approved them or followed them first
+				// Send an Accept back to them
+
+				set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','their_follow_id', $their_follow_id);
+				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_accept', $contact['abook_id'] ]);
+				return;
+
+			case 'Accept':
+
+				// They accepted our Follow request - set default permissions
+
+				foreach($their_perms as $k => $v) {
+					set_abconfig($channel['channel_id'],$contact['abook_xchan'],'their_perms',$k,$v);
+				}
+
+				$abook_instance = $contact['abook_instance'];
+
+				if(strpos($abook_instance,z_root()) === false) {
+					if($abook_instance) 
+						$abook_instance .= ',';
+					$abook_instance .= z_root();
+
+					$r = q("update abook set abook_instance = '%s', abook_not_here = 0 
+						where abook_id = %d and abook_channel = %d",
+						dbesc($abook_instance),
+						intval($contact['abook_id']),
+						intval($channel['channel_id'])
+					);
+				}
+		
+				return;
+			default:
+				return;
+
 		}
+	}
 
-		// Send back a follow notification to them if we were already sharing
-		\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_create', $contact['abook_id'] ]);
+	// No previous relationship exists.
 
+	if($act->type === 'Accept') {
+		// This should not happen unless we deleted the connection before it was accepted.
 		return;
 	}
 
-	// The permissions_create hook will look for this and send an 'Accept' rather than a 'Follow'
+	// From here on out we assume a Follow activity to somebody we have no existing relationship with
 
-	set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','follow_id', $follow_id);
-
+	// The xchan should have been created by as_actor_store() above
 
 	$r = q("select * from xchan where xchan_hash = '%s' and xchan_network = 'activitypub' limit 1",
 		dbesc($person_obj['id'])
@@ -647,7 +685,6 @@ function as_follow($channel,$act) {
 		return;
 	}
 	$ret = $r[0];
-
 
 	$p = \Zotlabs\Access\Permissions::connect_perms($channel['channel_id']);
 	$my_perms  = $p['perms'];
@@ -699,8 +736,15 @@ function as_follow($channel,$act) {
 			);
 
 			if($my_perms && $automatic) {
-				// Send back a follow notification to them
+
+				// send an Accept for this Follow activity
+
+				set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','their_follow_id', $their_follow_id);
+				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_accept', $new_connection[0]['abook_id'] ]);
+
+				// Send back a Follow notification to them
 				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_create', $new_connection[0]['abook_id'] ]);
+
 			}
 
 			$clone = array();
@@ -732,6 +776,7 @@ function as_follow($channel,$act) {
 			group_add_member($channel['channel_id'],'',$ret['xchan_hash'],$g['id']);
 	}
 
+
 	return;
 
 }
@@ -754,7 +799,15 @@ function as_unfollow($channel,$act) {
 			intval($channel['channel_id'])
 		);
 		if($r) {
-			contact_remove($channel['channel_id'],$r[0]['abook_id']);
+			// This is just to get a list of permission names, we don't care about the values
+			$x = \Zotlabs\Access\PermissionRoles::role_perms('social');
+			$my_perms = \Zotlabs\Access\Permissions::FilledPerms($x['perms_connect']);
+
+			// remove all permissions they provided
+
+			foreach($my_perms as $k => $v) {
+				del_abconfig($channel['channel_id'],$r[0]['xchan_hash'],'their_perms',$k);
+			}
 		}
 	}
 

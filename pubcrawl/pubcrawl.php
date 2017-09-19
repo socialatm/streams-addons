@@ -29,6 +29,7 @@ function pubcrawl_load() {
 		'follow_allow'               => 'pubcrawl_follow_allow',
 		'discover_channel_webfinger' => 'pubcrawl_discover_channel_webfinger',
 		'permissions_create'         => 'pubcrawl_permissions_create',
+		'permissions_accept'         => 'pubcrawl_permissions_accept',
 		'connection_remove'          => 'pubcrawl_connection_remove',
 		'notifier_hub'               => 'pubcrawl_notifier_process',
 		'feature_settings_post'      => 'pubcrawl_feature_settings_post',
@@ -531,50 +532,76 @@ function pubcrawl_permissions_create(&$x) {
 		return;
 	}
 
-	// we currently are not handling send of reject follow activities; this is permitted by protocol
+	$msg = array_merge(['@context' => [
+			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1'
+		]], 
+		[
+			'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
+			'type'   => 'Follow',
+			'actor'  => asencode_person($x['sender']),
+			'object' => $x['recipient']['xchan_url'],
+			'to'     => [ $x['recipient']['xchan_hash'] ]
+	]);
 
-	$accept = get_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','follow_id');
-
-	if($accept) {
-		$msg = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1',
-				z_root() . '/apschema'
-			]], 
-			[
-				'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
-				'type'   => 'Accept',
-				'actor'  => asencode_person($x['sender']),
-				'object' => [
-					'type'   => 'Follow',
-					'id'     => $accept,
-					'actor'  => $x['recipient']['xchan_hash'],
-					'object' => z_root() . '/channel/' . $x['sender']['channel_address']
-				],
-				'to' => [ $x['recipient']['xchan_hash'] ]
-		]);
-		del_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','follow_id');
-
-	}
-	else {
-		$msg = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams',
-				'https://w3id.org/security/v1'
-			]], 
-			[
-				'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
-				'type'   => 'Follow',
-				'actor'  => asencode_person($x['sender']),
-				'object' => $x['recipient']['xchan_url'],
-				'to'     => [ $x['recipient']['xchan_hash'] ]
-		]);
-	}
 
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$x['sender']);
 
 	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
-	// @fixme - sign this message
+	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
+	$single = deliverable_singleton($x['sender']['channel_id'],$x['recipient']);
+
+	$h = q("select * from hubloc where hubloc_hash = '%s' limit 1",
+		dbesc($x['recipient']['xchan_hash'])
+	);
+
+	if($single && $h) {
+		$qi = pubcrawl_queue_message($jmsg,$x['sender'],$h[0]);
+		if($qi)
+			$x['deliveries'] = $qi;
+	}
+		
+	$x['success'] = true;
+
+}
+
+
+function pubcrawl_permissions_accept(&$x) {
+
+	// send an accept activity to the followee's inbox
+
+	if($x['recipient']['xchan_network'] !== 'activitypub') {
+		return;
+	}
+
+	// we currently are not handling send of reject follow activities; this is permitted by protocol
+
+	$accept = get_abconfig($x['recipient']['abook_channel'],$x['recipient']['xchan_hash'],'pubcrawl','their_follow_id');
+	if(! $accept)
+		return;
+
+	$msg = array_merge(['@context' => [
+			'https://www.w3.org/ns/activitystreams',
+			'https://w3id.org/security/v1',
+			z_root() . '/apschema'
+		]], 
+		[
+			'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
+			'type'   => 'Accept',
+			'actor'  => asencode_person($x['sender']),
+			'object' => [
+				'type'   => 'Follow',
+				'id'     => $accept,
+				'actor'  => $x['recipient']['xchan_hash'],
+				'object' => z_root() . '/channel/' . $x['sender']['channel_address']
+			],
+			'to' => [ $x['recipient']['xchan_hash'] ]
+	]);
+
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$x['sender']);
+
+	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
 	// is $contact connected with this channel - and if the channel is cloned, also on this hub?
 	$single = deliverable_singleton($x['sender']['channel_id'],$x['recipient']);
