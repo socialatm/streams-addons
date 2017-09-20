@@ -33,9 +33,9 @@ class Following extends \Zotlabs\Web\Controller {
 		if(pubcrawl_is_as_request()) {
 
 			$x = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
-				z_root() . '/apschema'
+				z_root() . ZOT_APSCHEMA_REV
 				]], asencode_follow_collection($r, \App::$query_string, 'OrderedCollection'));
 
 

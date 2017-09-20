@@ -231,9 +231,9 @@ function pubcrawl_channel_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+			ACTIVITYSTREAMS_JSONLD_REV,
 			'https://w3id.org/security/v1',
-			z_root() . '/apschema'
+			z_root() . ZOT_APSCHEMA_REV
 			]], asencode_person($chan));
 
 
@@ -293,9 +293,9 @@ function pubcrawl_notifier_process(&$arr) {
 	$prv_recips = $arr['env_recips'];
 
 	$msg = array_merge(['@context' => [
-		'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+		ACTIVITYSTREAMS_JSONLD_REV,
 		'https://w3id.org/security/v1',
-		z_root() . '/apschema'
+		z_root() . ZOT_APSCHEMA_REV
 	]], asencode_activity($target_item));
 	
 	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$arr['channel']);
@@ -457,9 +457,9 @@ function pubcrawl_connection_remove(&$x) {
 		// was never approved
 
 		$msg = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
-				z_root() . '/apschema'
+				z_root() . ZOT_APSCHEMA_REV
 
 			]], 
 			[
@@ -482,9 +482,9 @@ function pubcrawl_connection_remove(&$x) {
 		// send an unfollow
 
 		$msg = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
-				z_root() . '/apschema'
+				z_root() . ZOT_APSCHEMA_REV
 			]], 
 			[
 				'id'    => z_root() . '/follow/' . $recip[0]['abook_id'] . '#Undo',
@@ -533,7 +533,7 @@ function pubcrawl_permissions_create(&$x) {
 	}
 
 	$msg = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+			ACTIVITYSTREAMS_JSONLD_REV,
 			'https://w3id.org/security/v1'
 		]], 
 		[
@@ -582,9 +582,9 @@ function pubcrawl_permissions_accept(&$x) {
 		return;
 
 	$msg = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+			ACTIVITYSTREAMS_JSONLD_REV,
 			'https://w3id.org/security/v1',
-			z_root() . '/apschema'
+			z_root() . ZOT_APSCHEMA_REV
 		]], 
 		[
 			'id'     => z_root() . '/follow/' . $x['recipient']['abook_id'],
@@ -634,9 +634,9 @@ function pubcrawl_profile_mod_init($x) {
 
 		$x = [
 			'@context' => [ 
-				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
-				z_root() . '/apschema'
+				z_root() . ZOT_APSCHEMA_REV
 			],
 			'type' => 'Profile',
 			'describes' => asencode_person($chan)
@@ -701,9 +701,9 @@ function pubcrawl_item_mod_init($x) {
 
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+			ACTIVITYSTREAMS_JSONLD_REV,
 			'https://w3id.org/security/v1',
-			z_root() . '/apschema'
+			z_root() . ZOT_APSCHEMA_REV
 			]], asencode_item($items[0]));
 
 
@@ -742,9 +742,9 @@ function pubcrawl_thing_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+			ACTIVITYSTREAMS_JSONLD_REV,
 			'https://w3id.org/security/v1',
-			z_root() . '/apschema'
+			z_root() . ZOT_APSCHEMA_REV
 			]],
 			[ 
 				'type' => 'Object',
@@ -783,9 +783,9 @@ function pubcrawl_locs_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+			ACTIVITYSTREAMS_JSONLD_REV,
 			'https://w3id.org/security/v1',
-			z_root() . '/apschema'
+			z_root() . ZOT_APSCHEMA_REV
 			]],
 			[ 
 				'type' => 'nomadicHubs',
@@ -839,9 +839,9 @@ function pubcrawl_follow_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
+				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
-				z_root() . '/apschema'
+				z_root() . ZOT_APSCHEMA_REV
 			]], 
 			[
 				'id'     => z_root() . '/follow/' . $r[0]['abook_id'],
