@@ -231,7 +231,7 @@ function pubcrawl_channel_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
+			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 			'https://w3id.org/security/v1',
 			z_root() . '/apschema'
 			]], asencode_person($chan));
@@ -293,7 +293,7 @@ function pubcrawl_notifier_process(&$arr) {
 	$prv_recips = $arr['env_recips'];
 
 	$msg = array_merge(['@context' => [
-		'https://www.w3.org/ns/activitystreams',
+		'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 		'https://w3id.org/security/v1',
 		z_root() . '/apschema'
 	]], asencode_activity($target_item));
@@ -457,7 +457,7 @@ function pubcrawl_connection_remove(&$x) {
 		// was never approved
 
 		$msg = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams',
+				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 				'https://w3id.org/security/v1',
 				z_root() . '/apschema'
 
@@ -482,7 +482,7 @@ function pubcrawl_connection_remove(&$x) {
 		// send an unfollow
 
 		$msg = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams',
+				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 				'https://w3id.org/security/v1',
 				z_root() . '/apschema'
 			]], 
@@ -533,7 +533,7 @@ function pubcrawl_permissions_create(&$x) {
 	}
 
 	$msg = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
+			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 			'https://w3id.org/security/v1'
 		]], 
 		[
@@ -582,7 +582,7 @@ function pubcrawl_permissions_accept(&$x) {
 		return;
 
 	$msg = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
+			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 			'https://w3id.org/security/v1',
 			z_root() . '/apschema'
 		]], 
@@ -633,7 +633,8 @@ function pubcrawl_profile_mod_init($x) {
 
 
 		$x = [
-			'@context' => [ 'https://www.w3.org/ns/activitystreams',
+			'@context' => [ 
+				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 				'https://w3id.org/security/v1',
 				z_root() . '/apschema'
 			],
@@ -700,7 +701,7 @@ function pubcrawl_item_mod_init($x) {
 
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
+			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 			'https://w3id.org/security/v1',
 			z_root() . '/apschema'
 			]], asencode_item($items[0]));
@@ -741,7 +742,7 @@ function pubcrawl_thing_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
+			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 			'https://w3id.org/security/v1',
 			z_root() . '/apschema'
 			]],
@@ -782,7 +783,7 @@ function pubcrawl_locs_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-			'https://www.w3.org/ns/activitystreams',
+			'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 			'https://w3id.org/security/v1',
 			z_root() . '/apschema'
 			]],
@@ -838,7 +839,7 @@ function pubcrawl_follow_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		$x = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams',
+				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 				'https://w3id.org/security/v1',
 				z_root() . '/apschema'
 			]], 

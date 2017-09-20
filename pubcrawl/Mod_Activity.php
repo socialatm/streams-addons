@@ -36,7 +36,7 @@ class Activity extends \Zotlabs\Web\Controller {
 			$chan = channelx_by_n($items[0]['uid']);
 
 			$x = array_merge(['@context' => [
-				'https://www.w3.org/ns/activitystreams',
+				'https://www.w3.org/ns/activitystreams-history/v1.8.jsonld',
 				'https://w3id.org/security/v1',
 				z_root() . '/apschema'
 				]], asencode_activity($items[0]));
