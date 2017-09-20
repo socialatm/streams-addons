@@ -457,7 +457,7 @@ function asencode_person($p) {
 	$ret['name']  = $p['xchan_name'];
 	$ret['icon']  = [ 
 		'type'      => 'Image',
-		'mediaType' => $p['xchan_photo_mimetype'],
+		'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
 		'url'       => $p['xchan_photo_l'],
 		'height'    => 300,
 		'width'     => 300,
