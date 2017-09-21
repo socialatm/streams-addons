@@ -147,7 +147,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 
 function pubcrawl_load_module(&$b) {
 
-	logger('module: ' . \App::$query_string);
+	//logger('module: ' . \App::$query_string);
 
 	if($b['module'] === 'inbox') {
 		require_once('addon/pubcrawl/Mod_Inbox.php');
