@@ -35,6 +35,7 @@ function pubcrawl_load() {
 		'feature_settings_post'      => 'pubcrawl_feature_settings_post',
 		'feature_settings'           => 'pubcrawl_feature_settings',
 		'channel_links'              => 'pubcrawl_channel_links',
+		'personal_xrd'               => 'pubcrawl_personal_xrd',
 		'queue_deliver'              => 'pubcrawl_queue_deliver'
 	]);
 }
@@ -79,6 +80,16 @@ function pubcrawl_webfinger(&$b) {
 	];
 }
 
+function pubcrawl_personal_xrd(&$b) {
+
+	if(! intval(get_pconfig($b['user']['channel_id'],'system','activitypub_allowed')))
+		return;
+
+	$s = '<Link rel="self" type="application/activity+json" href="' . z_root() . '/channel/' . $b['user']['channel_address'] . '" />';
+
+	$b['xml'] = str_replace('</XRD>', $s . "\n" . '</XRD>',$b['xml']);
+
+}
 
 function pubcrawl_discover_channel_webfinger(&$b) {
 
