@@ -152,6 +152,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 
 	as_actor_store($url,$person_obj);
 
+	$b['success'] = true;
 
 }
 
