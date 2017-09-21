@@ -194,7 +194,9 @@ function pubcrawl_load_module(&$b) {
 
 function pubcrawl_is_as_request() {
 
-	logger('Accept: ' . $_SERVER['HTTP_ACCEPT'], LOGGER_DATA);
+	if(strpos($_SERVER['HTTP_ACCEPT'],'activity') !== false) {
+		logger('Accept: ' . $_SERVER['HTTP_ACCEPT'], LOGGER_DATA);
+	}
 
 	if($_REQUEST['module_format'] === 'json')
 		return true;
