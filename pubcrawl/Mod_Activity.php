@@ -43,7 +43,7 @@ class Activity extends \Zotlabs\Web\Controller {
 
 
 			$headers = [];
-			$headers['Content-Type'] = 'application/activity+json' ;
+			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 
 			$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);

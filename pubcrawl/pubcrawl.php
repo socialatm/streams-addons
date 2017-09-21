@@ -63,7 +63,7 @@ function pubcrawl_channel_links(&$b) {
 	if($c && get_pconfig($c['channel_id'],'system','activitypub_allowed')) {
 		$b['channel_links'][] = [
 			'rel' => 'alternate',
-			'type' => 'application/activity+json',
+			'type' => 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
 			'url' => z_root() . '/channel/' . $c['channel_address']
 		];
 	}
@@ -75,7 +75,7 @@ function pubcrawl_webfinger(&$b) {
 
 	$b['result']['links'][] = [ 
 		'rel'  => 'self', 
-		'type' => 'application/activity+json', 
+		'type' => 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
 		'href' => z_root() . '/channel/' . $b['channel']['channel_address']
 	];
 }
@@ -85,6 +85,7 @@ function pubcrawl_personal_xrd(&$b) {
 	if(! intval(get_pconfig($b['user']['channel_id'],'system','activitypub_allowed')))
 		return;
 
+	$s = '<Link rel="self" type="application/ld+json" href="' . z_root() . '/channel/' . $b['user']['channel_address'] . '" />';
 	$s = '<Link rel="self" type="application/activity+json" href="' . z_root() . '/channel/' . $b['user']['channel_address'] . '" />';
 
 	$b['xml'] = str_replace('</XRD>', $s . "\n" . '</XRD>',$b['xml']);
@@ -103,7 +104,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
     if(strpos($url,'@') && $x && array_key_exists('links',$x) && $x['links']) {
         foreach($x['links'] as $link) {
             if(array_key_exists('rel',$link) && array_key_exists('type',$link)) {
-                if($link['rel'] === 'self' && $link['type'] === 'application/activity+json') {
+                if($link['rel'] === 'self' && ($link['type'] === 'application/activity+json' || strpos($link['type'],'ld+json') !== false)) {
 					$url = $x['href'];
                 }
             }
@@ -202,8 +203,8 @@ function pubcrawl_is_as_request() {
 		return true;
 
 	$x = getBestSupportedMimeType([
-		'application/activity+json',
 		'application/ld+json;profile="https://www.w3.org/ns/activitystreams"',
+		'application/activity+json',
 		'application/ld+json;profile="http://www.w3.org/ns/activitystreams"'
 	]);
 
@@ -268,7 +269,7 @@ function pubcrawl_channel_mod_init($x) {
 
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json' ;
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
@@ -674,7 +675,7 @@ function pubcrawl_profile_mod_init($x) {
 		];
 				
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json' ;
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
@@ -739,7 +740,7 @@ function pubcrawl_item_mod_init($x) {
 
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json' ;
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
@@ -789,7 +790,7 @@ function pubcrawl_thing_mod_init($x) {
 
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json' ;
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
@@ -839,7 +840,7 @@ function pubcrawl_locs_mod_init($x) {
 		}
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json' ;
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
@@ -883,7 +884,7 @@ function pubcrawl_follow_mod_init($x) {
 				
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json' ;
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
@@ -911,7 +912,7 @@ function pubcrawl_queue_deliver(&$b) {
 		$retries = 0;
 
 		$headers = [];
-		$headers['Content-Type'] = 'application/activity+json';
+		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 		$ret = $outq['outq_msg'];
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
