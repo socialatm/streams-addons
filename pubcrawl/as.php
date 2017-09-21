@@ -370,11 +370,10 @@ function asencode_activity($i) {
 			intval($i['parent'])
 		);
 		if($d) {
-			$reply_url = $d[0]['xchan_url'];
+			$reply_url = (($i['item_private']) ? $d[0]['xchan_url'] : ACTIVITY_PUBLIC_INBOX);
 		}
 
 		$reply = true;
-
 	}
 
 
