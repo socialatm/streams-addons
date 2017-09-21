@@ -66,6 +66,11 @@ function pubcrawl_channel_links(&$b) {
 			'type' => 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
 			'url' => z_root() . '/channel/' . $c['channel_address']
 		];
+		$b['channel_links'][] = [
+			'rel' => 'alternate',
+			'type' => 'application/activity+json',
+			'url' => z_root() . '/channel/' . $c['channel_address']
+		];
 	}
 }
 
@@ -76,6 +81,11 @@ function pubcrawl_webfinger(&$b) {
 	$b['result']['links'][] = [ 
 		'rel'  => 'self', 
 		'type' => 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',
+		'href' => z_root() . '/channel/' . $b['channel']['channel_address']
+	];
+	$b['result']['links'][] = [ 
+		'rel'  => 'self', 
+		'type' => 'application/activity+json',
 		'href' => z_root() . '/channel/' . $b['channel']['channel_address']
 	];
 }
