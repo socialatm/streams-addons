@@ -34,6 +34,7 @@ function pubcrawl_load() {
 		'notifier_hub'               => 'pubcrawl_notifier_process',
 		'feature_settings_post'      => 'pubcrawl_feature_settings_post',
 		'feature_settings'           => 'pubcrawl_feature_settings',
+		'channel_links'              => 'pubcrawl_channel_links',
 		'queue_deliver'              => 'pubcrawl_queue_deliver'
 	]);
 }
@@ -54,6 +55,17 @@ function pubcrawl_follow_allow(&$b) {
 	$b['allowed'] = $allowed;
 	$b['singleton'] = 1;  // this network does not support channel clones
 
+}
+
+function pubcrawl_channel_links(&$b) {
+	$c = channelx_by_nick($b['channel_address']);
+	if($c && get_pconfig($c['channel_id'],'system','activitypub_allowed')) {
+		$b['channel_links'][] = [
+			'rel' => 'alternate',
+			'type' => 'application/activity+json',
+			'url' => z_root() . '/channel/' . $c['channel_address']
+		];
+	}
 }
 
 function pubcrawl_webfinger(&$b) {
@@ -123,6 +135,9 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 
 
 function pubcrawl_load_module(&$b) {
+
+	logger('module: ' . \App::$query_string);
+
 	if($b['module'] === 'inbox') {
 		require_once('addon/pubcrawl/Mod_Inbox.php');
 		$b['controller'] = new \Zotlabs\Module\Inbox();
@@ -246,6 +261,7 @@ function pubcrawl_channel_mod_init($x) {
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		\Zotlabs\Web\HTTPSig::create_sig('',$headers,$chan['channel_prvkey'],z_root() . '/channel/' . $chan['channel_address'],true);
 		echo $ret;
+		logger('channel: ' . $ret, LOGGER_DATA);
 		killme();
 	}
 }

@@ -26,10 +26,10 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 		    $x = z_fetch_url($addr,true,$redirects, [ 'headers' => [ $headers ]]);
 	    	if($x['success'])
 
-				$o .= '<pre>' . $x['header'] . '</pre>' . EOL;
+				$o .= '<pre>' . htmlspecialchars($x['header']) . '</pre>' . EOL;
 
 
-				$o .= '<pre>' . $x['body'] . '</pre>' . EOL;
+				$o .= '<pre>' . htmlspecialchars($x['body']) . '</pre>' . EOL;
 				
 				$o .= 'verify returns: ' . str_replace("\n",EOL,print_r(\Zotlabs\Web\HTTPSig::verify($x),true)) . EOL;
 
@@ -40,10 +40,10 @@ class Ap_probe extends \Zotlabs\Web\Controller {
 	//				$o .= '<pre>' . json_encode($normalized1, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . '</pre>';
 //				}
 
-				$o .= '<pre>' . str_replace(['\\n','\\'],["\n",''],jindent($x['body'])) . '</pre>';
+				$o .= '<pre>' . str_replace(['\\n','\\'],["\n",''],htmlspecialchars(jindent($x['body']))) . '</pre>';
 
 				$AP = new \Zotlabs\Lib\ActivityStreams($x['body']);	
-				$o .= '<pre>' . $AP->debug() . '</pre>';
+				$o .= '<pre>' . htmlspecialchars($AP->debug()) . '</pre>';
 
 
 		}
