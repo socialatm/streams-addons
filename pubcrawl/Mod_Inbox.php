@@ -52,21 +52,10 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 			if($parent) {
 				//this is a comment - deliver to everybody who owns the parent
-				$uids = q("SELECT uid from item where ( mid = '%s' || mid = '%s' ) and parent_mid = mid",
+				$channels = q("SELECT * from channel where channel_id in ( SELECT uid from item where ( mid = '%s' || mid = '%s' ) and parent_mid = mid )",
 					dbesc($parent),
 					dbesc(basename($parent))
 				);
-
-				if($uids) {
-					foreach($uids as $uid)
-						$str_uids .= $uid['uid'] . ', ';
-
-					$str_uids = rtrim($str_uids, ', ');
-
-					$channels = q("SELECT * from channel where channel_id in ( %s )",
-						dbesc($str_uids)
-					);
-				}
 			}
 			else {
 				$channels = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network = 'activitypub' and xchan_hash = '%s' ) and channel_removed = 0 ",
