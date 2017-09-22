@@ -61,9 +61,9 @@ class Inbox extends \Zotlabs\Web\Controller {
 					foreach($uids as $uid)
 						$str_uids .= $uid['uid'] . ', ';
 
-					rtrim($str_uids, ', ');
+					$str_uids = rtrim($str_uids, ', ');
 
-					$channels = q("SELECT * from channel where channel_id in ( '%s' )",
+					$channels = q("SELECT * from channel where channel_id in ( %s )",
 						dbesc($str_uids)
 					);
 				}
