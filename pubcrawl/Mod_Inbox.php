@@ -28,6 +28,8 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		logger('inbox_activity: ' . jindent($data), LOGGER_DATA);
 
+		\Zotlabs\Web\HTTPSig::verify($data);
+
 		$AS = new \Zotlabs\Lib\ActivityStreams($data);
 
 		//		logger('debug: ' . $AS->debug());
