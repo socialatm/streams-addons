@@ -242,7 +242,6 @@ function asdecode_taxonomy($item) {
 					break;
 
 				case 'Mention':
-TERM_MENTION:
 					$ret[] = [ 'ttype' => TERM_MENTION, 'url' => $t['href'], 'term' => ((substr($t['name'],0,1) === '@') ? substr($t['name'],1) : $t['name']) ];
 					break;
 
