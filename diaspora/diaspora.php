@@ -822,20 +822,21 @@ function diaspora_post_local(&$item) {
 		$handle = channel_reddress($author);
 		$meta = null;
 
-		if($item['verb'] === ACTIVITY_LIKE || $item['verb'] === ACTIVITY_DISLIKE) {
-			if($item['thr_parent'] === $item['parent_mid'] && $item['obj_type'] == ACTIVITY_OBJ_NOTE) {
+		if(activity_match($item['verb'], [ ACTIVITY_LIKE, ACTIVITY_DISLIKE ])) {
+			if(activity_match($item['obj_type'], [ ACTIVITY_OBJ_NOTE, ACTIVITY_OBJ_ACTIVITY, ACTIVITY_OBJ_COMMENT ])){
 				$meta = [
 					'positive'        => (($item['verb'] === ACTIVITY_LIKE) ? 'true' : 'false'),
 					'guid'            => $item['mid'],
-					'parent_guid'     => $item['parent_mid'],
 				];
 				if(defined('DIASPORA_V2')) {
 					$meta['author']      = $handle;
-					$meta['parent_type'] = 'Post';
+					$meta['parent_type'] = (($item['thr_parent'] === $item['parent_mid']) ? 'Post' : 'Comment');
+					$meta['parent_guid'] = $item['thr_parent'];
 				}
 				else {
 					$meta['diaspora_handle'] = $handle;
 					$meta['target_type']     = 'Post';
+					$meta['parent_guid']     = $item['parent_mid'];
 				}
 			}
 		}
