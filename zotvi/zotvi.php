@@ -14,6 +14,7 @@ function zotvi_load() {
 		'channel_mod_init'           => 'zotvi_channel_mod_init',
 		'home_mod_init'              => 'zotvi_home_mod_init',
 		'zot_revision'               => 'zotvi_zot_revision',
+		'queue_deliver'              => 'zotvi_queue_deliver',
 	]);
 
 }
@@ -140,3 +141,46 @@ function zot_getzotkey($url) {
 	return false;
 
 }
+
+
+
+function zotvi_queue_deliver(&$x) {
+
+	// fixme
+	if($x['outq']['driver'] !== 'zotvi')
+		return;
+
+	$v = get_sconfig($x['base'],'system','zot_revision');
+	if($v && version_compare($v,'6.0') >= 0) {
+
+		$s = q("select * from site where site_url = '%s' and site_dead = 0",
+			dbesc($x['base'])
+		);
+		if(! $s)
+			return;
+
+		$sitekey = get_sconfig($x['base'],'system','pubkey');
+		if(! $sitekey)
+			return;
+
+		$channel = channelx_by_n($x['outq']['outq_channel']);
+
+		$retries = 0;
+
+		$headers = [];
+		$headers['Content-Type'] = 'application/x-zot+json';
+		$data = [ 'notify' => $x['outq_notify'], 'message' => $x['outq_msg'] ];
+
+		$algorithm = zot_best_algorithm($s[0]['site_crypto']);
+        $ret = json_encode(crypto_encapsulate(json_encode($data,JSON_UNESCAPE_SLASHES),$sitekey, $algorithm), JSON_UNESCAPE_SLASHES);		
+		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
+		$headers['Digest'] = 'SHA-256=' . $hash;  
+		$xhead = \Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . $channel['channel_address'],false, false, 'sha256',$sitekey,$algorithm);
+ 	
+		$result = z_post_url($x['outq']['outq_posturl'],$ret,$retries,[ 'headers' => $xhead ]);
+
+		zot_process_response($x['base'],$result,$x['outq']);
+		$x['handled'] = true;
+	}
+}
+
