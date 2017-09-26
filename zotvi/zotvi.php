@@ -159,20 +159,31 @@ function zotvi_queue_deliver(&$x) {
 		if(! $s)
 			return;
 
-		$sitekey = get_sconfig($x['base'],'system','pubkey');
-		if(! $sitekey)
-			return;
-
 		$channel = channelx_by_n($x['outq']['outq_channel']);
 
 		$retries = 0;
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/x-zot+json';
-		$data = [ 'notify' => $x['outq_notify'], 'message' => $x['outq_msg'] ];
 
-		$algorithm = zot_best_algorithm($s[0]['site_crypto']);
-        $ret = json_encode(crypto_encapsulate(json_encode($data,JSON_UNESCAPE_SLASHES),$sitekey, $algorithm), JSON_UNESCAPE_SLASHES);		
+
+		$data = [ 'notify' => $x['outq']['outq_notify'], 'message' => $x['outq']['outq_msg'] ];
+
+		// The envelope and message data should have been encrypted in ZDaemon\Notifier if the contents are sensitive.
+		// Presence of encrypted data means we need to encrypt the HTTPSignature header so as not to
+		// leak any sender metadata through the header fields. 
+
+		if(array_key_exists('iv',$x['outq']['outq_notify'])) {
+			$sitekey = get_sconfig($x['base'],'system','pubkey');
+			$algorithm = zot_best_algorithm($s[0]['site_crypto']);
+		}
+		else {
+			$sitekey = '';
+			$algorithm = '';
+		}
+
+		$ret = json_encode($data, JSON_UNESCAPE_SLASHES);
+
 		$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 		$headers['Digest'] = 'SHA-256=' . $hash;  
 		$xhead = \Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . $channel['channel_address'],false, false, 'sha256',$sitekey,$algorithm);
