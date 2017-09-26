@@ -13,6 +13,7 @@ function zotvi_load() {
 		'webfinger'                  => 'zotvi_webfinger',
 		'channel_mod_init'           => 'zotvi_channel_mod_init',
 		'home_mod_init'              => 'zotvi_home_mod_init',
+		'zot_revision'               => 'zotvi_zot_revision',
 	]);
 
 }
@@ -34,6 +35,12 @@ function zotvi_load_module(&$b) {
 		$b['controller'] = new \Zotlabs\Module\Zot();
 		$b['installed'] = true;
 	}
+}
+
+
+function zotvi_zot_revision(&$b) {
+//  Do not enable yet.
+//	$b['revision'] = '6.0';
 }
 
 function zotvi_webfinger(&$b) {
