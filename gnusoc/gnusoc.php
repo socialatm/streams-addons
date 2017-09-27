@@ -533,6 +533,7 @@ function gnusoc_notifier_process(&$a,&$b) {
 		return;
 
 	$slap = atom_entry($b['target_item'],'html',null,null,false);
+
 	if($b['upstream']) {
 
 		foreach($recips as $rv) {
