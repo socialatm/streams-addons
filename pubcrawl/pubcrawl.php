@@ -144,7 +144,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 		$person_obj = $AS->data;
 	}
 	elseif($AS->obj && $AS->obj['type'] === 'Person') {
-		$person_obj = $AS->object;
+		$person_obj = $AS->obj;
 	}
 	else {
 		return;

@@ -40,7 +40,22 @@ class Inbox extends \Zotlabs\Web\Controller {
 		if(is_array($AS->actor) && array_key_exists('id',$AS->actor))
 			as_actor_store($AS->actor['id'],$AS->actor);
 
+		if($AS->type == 'Announce' && is_array($AS->obj) && array_key_exists('attributedTo',$AS->obj)) {
+			$sharee = asfetch_profile([ 'id' => $AS->obj['attributedTo'] ]);
+			if(! $sharee) {
+				$arr = [
+					'address' => $AS->obj['attributedTo']
+				];
 
+				$x = pubcrawl_discover_channel_webfinger($arr);
+
+				if($x['success']) {
+					$sharee = asfetch_profile([ 'id' => $AS->obj['attributedTo'] ]);
+				}
+			}
+			if($sharee)
+				$AS->sharee = $sharee;
+		}
 
 		$observer_hash = $AS->actor['id'];
 		if(! $observer_hash)
@@ -142,10 +157,11 @@ class Inbox extends \Zotlabs\Web\Controller {
 				case 'Delete':
 				case 'Add':
 				case 'Remove':
-				case 'Announce':
-
-
 					break;
+
+				case 'Announce':
+					as_announce_action($channel,$observer_hash,$AS);
+					continue;
 				default:
 					break;
 
