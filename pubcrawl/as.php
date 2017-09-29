@@ -991,7 +991,7 @@ function as_create_action($channel,$observer_hash,$act) {
 
 function as_announce_action($channel,$observer_hash,$act) {
 
-	if(in_array($act->obj['type'], [ 'Announce' ])) {
+	if(in_array($act->type, [ 'Announce' ])) {
 		as_announce_note($channel,$observer_hash,$act);
 	}
 
@@ -1142,8 +1142,6 @@ function as_create_note($channel,$observer_hash,$act) {
 }
 
 function as_announce_note($channel,$observer_hash,$act) {
-
-	logger(print_r($act,true));
 
 	$s = [];
 
