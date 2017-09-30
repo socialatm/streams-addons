@@ -32,7 +32,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 		$AS = new \Zotlabs\Lib\ActivityStreams($data);
 
-		//		logger('debug: ' . $AS->debug());
+		//logger('debug: ' . $AS->debug());
 
 		if(! $AS->is_valid())
 			return;
@@ -46,11 +46,15 @@ class Inbox extends \Zotlabs\Web\Controller {
 				$arr = [
 					'address' => $AS->obj['attributedTo']
 				];
-
 				$x = pubcrawl_discover_channel_webfinger($arr);
 
 				if($x['success']) {
 					$sharee = asfetch_profile([ 'id' => $AS->obj['attributedTo'] ]);
+				}
+				else {
+					//TODO: what do we do with sharees from other networks (for now mainly gnusocial)?
+					logger('could not fetch profile');
+					return;
 				}
 			}
 			if($sharee)
