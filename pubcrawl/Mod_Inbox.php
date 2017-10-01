@@ -57,7 +57,7 @@ class Inbox extends \Zotlabs\Web\Controller {
 			}
 			else {
 				//TODO: what do we do with sharees from other networks (for now mainly gnusocial)?
-				logger('got announce activity but could not fetch sharee profile');
+				logger('got announce activity but could not import share author');
 				return;
 			}
 
