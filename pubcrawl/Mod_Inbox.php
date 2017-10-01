@@ -37,35 +37,31 @@ class Inbox extends \Zotlabs\Web\Controller {
 		if(! $AS->is_valid())
 			return;
 
-		if(is_array($AS->actor) && array_key_exists('id',$AS->actor))
-			as_actor_store($AS->actor['id'],$AS->actor);
-
-		if($AS->type == 'Announce' && is_array($AS->obj) && array_key_exists('attributedTo',$AS->obj)) {
-			$sharee = asfetch_profile([ 'id' => $AS->obj['attributedTo'] ]);
-			if(! $sharee) {
-				$arr = [
-					'address' => $AS->obj['attributedTo']
-				];
-				$x = pubcrawl_discover_channel_webfinger($arr);
-
-				if($x['success']) {
-					$sharee = asfetch_profile([ 'id' => $AS->obj['attributedTo'] ]);
-				}
-				else {
-					//TODO: what do we do with sharees from other networks (for now mainly gnusocial)?
-					logger('could not fetch profile');
-					return;
-				}
-			}
-			if($sharee)
-				$AS->sharee = $sharee;
-		}
-
 		$observer_hash = $AS->actor['id'];
 		if(! $observer_hash)
 			return;
 
+		if(is_array($AS->actor) && array_key_exists('id',$AS->actor))
+			as_actor_store($AS->actor['id'],$AS->actor);
 
+		if($AS->type == 'Announce' && is_array($AS->obj) && array_key_exists('attributedTo',$AS->obj)) {
+
+			$arr = [
+				'url' => $AS->obj['attributedTo']
+			];
+
+			$x = pubcrawl_import_author($arr);
+
+			if($x) {
+				$AS->sharee = $x;
+			}
+			else {
+				//TODO: what do we do with sharees from other networks (for now mainly gnusocial)?
+				logger('got announce activity but could not fetch sharee profile');
+				return;
+			}
+
+		}
 
 		if($is_public) {
 

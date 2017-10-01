@@ -232,7 +232,6 @@ function asdecode_taxonomy($item) {
 	$ret = [];
 
 	if($item['tag']) {
-		logger(print_r($item['tag'],true));
 		foreach($item['tag'] as $t) {
 			if(! array_key_exists('type',$t))
 				$t['type'] = 'Hashtag';
@@ -1202,9 +1201,9 @@ function as_announce_note($channel,$observer_hash,$act) {
 		$s['attach'] = $a;
 	}
 
-	$body = "[share author='" . $act->sharee['name'] . 
-		"' profile='" . $act->sharee['id'] . 
-		"' avatar='" . $act->sharee['icon'][2]['url'] . 
+	$body = "[share author='" . $act->sharee['xchan_name'] . 
+		"' profile='" . $act->sharee['xchan_url'] . 
+		"' avatar='" . $act->sharee['xchan_photo_s'] . 
 		"' link='" . $act->obj['url'] . 
 		"' posted='" . $act->obj['published'] . 
 		"' message_id='" . $act->obj['id'] . 
