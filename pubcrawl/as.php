@@ -454,27 +454,11 @@ function asencode_person($p) {
 		$ret['preferredUsername'] = substr($p['xchan_addr'],0,strpos($p['xchan_addr'],'@'));
 	$ret['name']  = $p['xchan_name'];
 	$ret['icon']  = [
-		[
-			'type'      => 'Image',
-			'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
-			'url'       => $p['xchan_photo_l'],
-			'height'    => 300,
-			'width'     => 300,
-		],
-		[
-			'type'      => 'Image',
-			'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
-			'url'       => $p['xchan_photo_m'],
-			'height'    => 80,
-			'width'     => 80,
-		],
-		[
-			'type'      => 'Image',
-			'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
-			'url'       => $p['xchan_photo_s'],
-			'height'    => 48,
-			'width'     => 48,
-		]
+		'type'      => 'Image',
+		'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
+		'url'       => $p['xchan_photo_l'],
+		'height'    => 300,
+		'width'     => 300,
         ];
 	$ret['url'] = [
 		'type'      => 'Link',
