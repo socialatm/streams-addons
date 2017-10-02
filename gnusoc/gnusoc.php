@@ -97,6 +97,10 @@ function gnusoc_load_module(&$a, &$b) {
 function gnusoc_webfinger(&$a,&$b) {
 	if(! $b['channel'])
 		return;
+	
+	if(! get_pconfig($b['channel']['channel_id'],'system','gnusoc_allowed'))
+		return;
+
 	$b['result']['links'][] = array('rel' => 'salmon', 'href' => z_root() . '/salmon/' . $b['channel']['channel_address']);
 	$b['result']['links'][] = array('rel' => 'http://salmon-protocol.org/ns/salmon-replies', 'href' => z_root() . '/salmon/' . $b['channel']['channel_address']);
 	$b['result']['links'][] = array('rel' => 'http://salmon-protocol.org/ns/salmon-mention', 'href' => z_root() . '/salmon/' . $b['channel']['channel_address']);
@@ -574,6 +578,9 @@ function gnusoc_follow_from_feed(&$a,&$b) {
 	$author   = $b['author'];
 
 	if($b['caught'])
+		return;
+
+	if(! get_pconfig($importer['channel_id'],'system','gnusoc_allowed'))
 		return;
 
 	$b['caught'] = true;
