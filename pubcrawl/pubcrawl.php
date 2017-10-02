@@ -36,7 +36,8 @@ function pubcrawl_load() {
 		'feature_settings'           => 'pubcrawl_feature_settings',
 		'channel_links'              => 'pubcrawl_channel_links',
 		'personal_xrd'               => 'pubcrawl_personal_xrd',
-		'queue_deliver'              => 'pubcrawl_queue_deliver'
+		'queue_deliver'              => 'pubcrawl_queue_deliver',
+		'import_author'              => 'pubcrawl_import_author'
 	]);
 }
 
@@ -153,6 +154,47 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 	as_actor_store($url,$person_obj);
 
 	$b['success'] = true;
+
+}
+
+function pubcrawl_import_author(&$b) {
+
+	if(! $b['url'])
+		return;
+
+	$url = $b['url'];
+
+	// let somebody upgrade from an 'unknown' connection which has no xchan_addr
+	$r = q("select xchan_hash, xchan_url, xchan_name, xchan_photo_s from xchan where xchan_url = '%s' limit 1",
+		dbesc($url)
+	);
+	if(! $r) {
+		$r = q("select xchan_hash, xchan_url, xchan_name, xchan_photo_s from xchan where xchan_hash = '%s' limit 1",
+			dbesc($url)
+		);
+	}
+	if($r) {
+		logger('in_cache: ' . $r[0]['xchan_name'], LOGGER_DATA);
+		return $r[0];
+	}
+
+	$x = discover_by_webbie($url);
+
+	if($x) {
+		$r = q("select xchan_hash, xchan_url, xchan_name, xchan_photo_s from xchan where xchan_url = '%s' limit 1",
+			dbesc($url)
+		);
+		if(! $r) {
+			$r = q("select xchan_hash, xchan_url, xchan_name, xchan_photo_s from xchan where xchan_hash = '%s' limit 1",
+				dbesc($url)
+			);
+		}
+		if($r) {
+			return $r[0];
+		}
+	}
+
+	return;
 
 }
 

@@ -232,7 +232,6 @@ function asdecode_taxonomy($item) {
 	$ret = [];
 
 	if($item['tag']) {
-		logger(print_r($item['tag'],true));
 		foreach($item['tag'] as $t) {
 			if(! array_key_exists('type',$t))
 				$t['type'] = 'Hashtag';
@@ -455,27 +454,11 @@ function asencode_person($p) {
 		$ret['preferredUsername'] = substr($p['xchan_addr'],0,strpos($p['xchan_addr'],'@'));
 	$ret['name']  = $p['xchan_name'];
 	$ret['icon']  = [
-		[
-			'type'      => 'Image',
-			'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
-			'url'       => $p['xchan_photo_l'],
-			'height'    => 300,
-			'width'     => 300,
-		],
-		[
-			'type'      => 'Image',
-			'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
-			'url'       => $p['xchan_photo_m'],
-			'height'    => 80,
-			'width'     => 80,
-		],
-		[
-			'type'      => 'Image',
-			'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
-			'url'       => $p['xchan_photo_s'],
-			'height'    => 48,
-			'width'     => 48,
-		]
+		'type'      => 'Image',
+		'mediaType' => (($p['xchan_photo_mimetype']) ? $p['xchan_photo_mimetype'] : 'image/png' ),
+		'url'       => $p['xchan_photo_l'],
+		'height'    => 300,
+		'width'     => 300,
         ];
 	$ret['url'] = [
 		'type'      => 'Link',
@@ -1202,9 +1185,9 @@ function as_announce_note($channel,$observer_hash,$act) {
 		$s['attach'] = $a;
 	}
 
-	$body = "[share author='" . $act->sharee['name'] . 
-		"' profile='" . $act->sharee['id'] . 
-		"' avatar='" . $act->sharee['icon'][2]['url'] . 
+	$body = "[share author='" . $act->sharee['xchan_name'] . 
+		"' profile='" . $act->sharee['xchan_url'] . 
+		"' avatar='" . $act->sharee['xchan_photo_s'] . 
 		"' link='" . $act->obj['url'] . 
 		"' posted='" . $act->obj['published'] . 
 		"' message_id='" . $act->obj['id'] . 
