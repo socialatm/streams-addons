@@ -1185,7 +1185,7 @@ function as_announce_note($channel,$observer_hash,$act) {
 		$s['attach'] = $a;
 	}
 
-	$body = "[share author='" . $act->sharee['xchan_name'] . 
+	$body = "[share author='" . urlencode($act->sharee['xchan_name']) . 
 		"' profile='" . $act->sharee['xchan_url'] . 
 		"' avatar='" . $act->sharee['xchan_photo_s'] . 
 		"' link='" . $act->obj['url'] . 
