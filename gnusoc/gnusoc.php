@@ -160,6 +160,10 @@ function gnusoc_cron_daily($a,&$b) {
 		foreach($r as $rv) {
 			$channel = channelx_by_n($rv['abook_channel']);
 			if($channel) {
+
+				if(! get_pconfig($channel['channel_id'],'system','gnusoc_allowed'))
+					continue;
+
 				$hubs = get_xconfig($rv['abook_xchan'],'system','push_hubs');
 				if($hubs) {
 					foreach($hubs as $hub) {
@@ -202,7 +206,33 @@ function gnusoc_connection_remove(&$a,&$b) {
 function gnusoc_feature_settings_post(&$a,&$b) {
 
 	if($_POST['gnusoc-submit']) {
+		$was_enabled = get_pconfig(local_channel(),'system','gnusoc_allowed');
+
 		set_pconfig(local_channel(),'system','gnusoc_allowed',intval($_POST['gnusoc_allowed']));
+
+		if($was_enabled && (! intval($_POST['gnusoc_allowed']))) {
+
+			// plugin is now disabled, if it was enabled before, unsubscribe to all followed hubs
+
+			require_once('addon/pubsubhubbub/pubsubhubbub.php');
+
+			$channel = channelx_by_n(local_channel());
+
+			$r = q("select * from abook left join xchan on abook_xchan = xchan_hash where abook_channel = %d and xchan_network = 'gnusoc' ",
+				intval(local_channel())
+			);
+			if($r) {
+				foreach($r as $rv) {
+					$hubs = get_xconfig($rv['xchan_hash'],'system','push_hubs');
+					if($hubs) {
+						foreach($hubs as $hub) {
+							pubsubhubbub_subscribe($hub,$channel,$rv,'','unsubscribe');
+						}
+					}
+				}
+			}
+		}
+
 		info( t('GNU-Social Protocol Settings updated.') . EOL);
 	}
 }
