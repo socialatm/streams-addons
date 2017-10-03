@@ -764,6 +764,8 @@ function gnusoc_atom_entry($a,&$b) {
 		$conv = $item['parent_mid'];
 	}
 
+logger('atom_entry_item: ' . print_r($item,true));
+
 	$conv_link = z_root() . '/display/' . $conv;
 
 	if(! strpos($conv,':'))
@@ -771,6 +773,18 @@ function gnusoc_atom_entry($a,&$b) {
 
 	$o = '<link rel="ostatus:conversation" href="' . xmlify($conv_link) . '"/>' . "\r\n";
 	$o .= '<ostatus:conversation>' . xmlify($conv) . '</ostatus:conversation>' . "\r\n";
+
+	if(is_array($item['term']) && $item['term']) {
+		foreach($item['term'] as $t) {
+			if($t['ttype'] == TERM_MENTION) {
+				$o .=  '<link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/person" href="' . $t['url'] . '"/>' . "\r\n";		
+			}
+		}
+	}
+
+	if(! $item['item_private']) {
+		$o .= '<link rel="mentioned" ostatus:object-type="http://activitystrea.ms/schema/1.0/collection" href="http://activityschema.org/collection/public"/>' . "\r\n" ;
+	}
 
 	$b['entry'] = str_replace('</entry>', $o . '</entry>', $b['entry']);
 
