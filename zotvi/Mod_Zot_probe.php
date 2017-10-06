@@ -26,11 +26,11 @@ class Zot_probe extends \Zotlabs\Web\Controller {
 
 	    	if($x['success']) {
 
-				$o .= '<pre>' . $x['header'] . '</pre>' . EOL;
+				$o .= '<pre>' . htmlspecialchars($x['header']) . '</pre>' . EOL;
 
 				$o .= 'verify returns: ' . str_replace("\n",EOL,print_r(\Zotlabs\Web\HTTPSig::verify($x,'zot_getzotkey'),true)) . EOL;
 
-				$o .= '<pre>' . json_encode(json_decode($x['body']),JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) . '</pre>' . EOL;
+				$o .= '<pre>' . htmlspecialchars(json_encode(json_decode($x['body']),JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)) . '</pre>' . EOL;
 
 			}				
 

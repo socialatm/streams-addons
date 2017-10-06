@@ -16,6 +16,7 @@ function zotvi_load() {
 		'home_mod_init'              => 'zotvi_home_mod_init',
 		'zot_revision'               => 'zotvi_zot_revision',
 		'queue_deliver'              => 'zotvi_queue_deliver',
+		'channel_links'              => 'zotvi_channel_links',
 	]);
 
 }
@@ -38,6 +39,17 @@ function zotvi_load_module(&$b) {
 		$b['installed'] = true;
 	}
 }
+
+
+function zotvi_channel_links(&$b) {
+	$c = channelx_by_nick($b['channel_address']);
+	$b['channel_links'][] = [
+		'rel'  => 'alternate',
+		'type' => 'application/x-zot+json',
+		'url'  => z_root() . '/channel/' . $c['channel_address']
+	];
+}
+
 
 
 function zotvi_zot_revision(&$b) {
@@ -99,7 +111,7 @@ function zotvi_home_mod_init($x) {
 
 		$channel = [ 'channel_prvkey' => get_config('system','prvkey') ];
 		
-		$x = zot_site_info();
+		$x = zot6::zot_site_info();
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/x-zot+json' ;
