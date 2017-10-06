@@ -5,6 +5,7 @@
  *
  */
 
+require_once('addon/zotvi/zot6.php');
 
 function zotvi_load() {
 
@@ -77,7 +78,7 @@ function zotvi_channel_mod_init($x) {
 			http_status_exit(404, 'Not found');
 
 		
-		$x = zotinfo([ 'address' => $channel['channel_address'] ]);
+		$x = zot6::zotinfo([ 'address' => $channel['channel_address'] ]);
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/x-zot+json' ;
