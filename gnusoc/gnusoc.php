@@ -764,7 +764,7 @@ function gnusoc_atom_entry($a,&$b) {
 		$conv = $item['parent_mid'];
 	}
 
-logger('atom_entry_item: ' . print_r($item,true));
+	// logger('atom_entry_item: ' . print_r($item,true),LOGGER_DATA);
 
 	$conv_link = z_root() . '/display/' . $conv;
 
@@ -831,7 +831,7 @@ function gnusoc_parse_atom($a,&$b) {
 function gnusoc_discover_channel_webfinger($a,&$b) {
 
 	// allow more advanced protocols to win, use this as last resort
-	// if there more than one protocol is supported
+	// if more than one protocol is supported
 
 	if($b['success'])
 		return;
@@ -998,7 +998,7 @@ function gnusoc_discover_channel_webfinger($a,&$b) {
 
 	$photos = import_xchan_photo($avatar,$address);
 	$r = q("update xchan set xchan_photo_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s'",
-		dbescdate(datetime_convert('UTC','UTC',$arr['photo_updated'])),
+		dbesc(datetime_convert()),
 		dbesc($photos[0]),
 		dbesc($photos[1]),
 		dbesc($photos[2]),
@@ -1036,8 +1036,12 @@ function gnusoc_import_author(&$a,&$b) {
 	}
 	if($r) {
 		logger('in_cache: ' . $r[0]['xchan_name'], LOGGER_DATA);
-		$b['result'] = $r[0]['xchan_hash'];
-		return;
+
+		if($r[0]['xchan_photo_date'] > datetime_convert('UTC','UTC','now - 1 month'))
+			$b['result'] = $r[0]['xchan_hash'];
+			return;
+		}
+		logger('cache is more than 1 month old - refreshing');
 	}
 
 	$search = (($x['address']) ? $x['address'] : $x['url']);
