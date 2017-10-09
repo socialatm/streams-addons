@@ -1037,10 +1037,11 @@ function gnusoc_import_author(&$a,&$b) {
 	if($r) {
 		logger('in_cache: ' . $r[0]['xchan_name'], LOGGER_DATA);
 
-		if($r[0]['xchan_photo_date'] > datetime_convert('UTC','UTC','now - 1 month'))
+		if($r[0]['xchan_photo_date'] > datetime_convert('UTC','UTC','now - 1 month')) {
 			$b['result'] = $r[0]['xchan_hash'];
 			return;
 		}
+
 		logger('cache is more than 1 month old - refreshing');
 	}
 
