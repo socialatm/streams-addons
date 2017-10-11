@@ -50,7 +50,7 @@ function gnusoc_load() {
 	register_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
 	register_hook('can_comment_on_post','addon/gnusoc/gnusoc.php','gnusoc_can_comment_on_post');
 	register_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
-
+	register_hook('channel_protocols','addon/gnusoc/gnusoc.php','gnusoc_channel_protocols');
 
 //	register_hook('notifier_hub', 'addon/gnusoc/gnusoc.php', 'gnusoc_process_outbound');
 //	register_hook('permissions_update', 'addon/gnusoc/gnusoc.php', 'gnusoc_permissions_update');
@@ -79,6 +79,7 @@ function gnusoc_unload() {
 	unregister_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
 	unregister_hook('can_comment_on_post','addon/gnusoc/gnusoc.php','gnusoc_can_comment_on_post');
 	unregister_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
+	unregister_hook('channel_protocols','addon/gnusoc/gnusoc.php','gnusoc_channel_protocols');
 
 }
 
@@ -92,6 +93,12 @@ function gnusoc_load_module(&$a, &$b) {
 	}
 }
 
+function gnusoc_channel_protocols($a,&$b) {
+
+	if(intval(get_pconfig($b['channel_id'],'system','gnusoc_allowed')))
+		$b['protocols'][] = 'ostatus';
+
+}
 
 
 function gnusoc_webfinger(&$a,&$b) {

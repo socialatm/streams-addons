@@ -47,7 +47,8 @@ function diaspora_load() {
 		'author_is_pmable'            => 'diaspora_author_is_pmable',
 		'can_comment_on_post'         => 'diaspora_can_comment_on_post',
 		'queue_deliver'               => 'diaspora_queue_deliver',
-		'webfinger'                   => 'diaspora_webfinger'
+		'webfinger'                   => 'diaspora_webfinger',
+		'channel_protocols'           => 'diaspora_channel_protocols'
 	]);
 
 	diaspora_init_relay();
@@ -118,6 +119,14 @@ function diaspora_well_known(&$b) {
 		killme();			
 
 	}
+}
+
+
+function diaspora_channel_protocols(&$b) {
+
+	if(intval(get_pconfig($b['channel_id'],'system','diaspora_allowed')))
+		$b['protocols'][] = 'diaspora';
+
 }
 
 function diaspora_personal_xrd(&$b) {

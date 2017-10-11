@@ -37,12 +37,21 @@ function pubcrawl_load() {
 		'channel_links'              => 'pubcrawl_channel_links',
 		'personal_xrd'               => 'pubcrawl_personal_xrd',
 		'queue_deliver'              => 'pubcrawl_queue_deliver',
-		'import_author'              => 'pubcrawl_import_author'
+		'import_author'              => 'pubcrawl_import_author',
+		'channel_protocols'          => 'pubcrawl_channel_protocols'
 	]);
 }
 
 function pubcrawl_unload() {
 	Zotlabs\Extend\Hook::unregister_by_file('addon/pubcrawl/pubcrawl.php');
+}
+
+
+function pubcrawl_channel_protocols(&$b) {
+
+	if(intval(get_pconfig($b['channel_id'],'system','activitypub_allowed')))
+		$b['protocols'][] = 'activitypub';
+
 }
 
 
