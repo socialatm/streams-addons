@@ -321,6 +321,35 @@ class Diaspora_Receiver {
 			}
 		}
 
+		$cnt = preg_match_all('/\!\[url=(.*?)\](.*?)\[\/url\]/ism',$body,$matches,PREG_SET_ORDER);
+		if($cnt) {
+			foreach($matches as $mtch) {
+				$datarray['term'][] = [
+					'uid'   => $this->importer['channel_id'],
+					'ttype' => TERM_FORUM,
+					'otype' => TERM_OBJ_POST,
+					'term'  => $mtch[2],
+					'url'   => $mtch[1]
+				];
+			}
+		}
+
+		$cnt = preg_match_all('/\!\[zrl=(.*?)\](.*?)\[\/zrl\]/ism',$body,$matches,PREG_SET_ORDER);
+		if($cnt) {
+			foreach($matches as $mtch) {
+				// don't include plustags in the term
+				$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
+				$datarray['term'][] = [
+					'uid'   => $this->importer['channel_id'],
+					'ttype' => TERM_FORUM,
+					'otype' => TERM_OBJ_POST,
+					'term'  => $term,
+					'url'   => $mtch[1]
+				];
+			}
+		}
+
+
 		$plink = service_plink($xchan,$guid);
 
 		if(is_array($raw_location)) {

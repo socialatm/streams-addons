@@ -125,7 +125,7 @@ function pubcrawl_discover_channel_webfinger(&$b) {
         foreach($x['links'] as $link) {
             if(array_key_exists('rel',$link) && array_key_exists('type',$link)) {
                 if($link['rel'] === 'self' && ($link['type'] === 'application/activity+json' || strpos($link['type'],'ld+json') !== false)) {
-					$url = $x['href'];
+					$url = $link['href'];
                 }
             }
         }
