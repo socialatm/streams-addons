@@ -911,7 +911,7 @@ class Diaspora_Receiver {
 
 		$parent_uri = $guid;
  
-		$messages = $this->xmlbase['message'];
+		$messages = [ $this->xmlbase['message'] ];
 
 		if(! count($messages)) {
 			logger('diaspora_conversation: empty conversation');
