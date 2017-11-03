@@ -1177,7 +1177,7 @@ function diaspora_queue_deliver(&$b) {
 					if($interval)
 						@time_sleep_until(microtime(true) + (float) $interval);
 
-					do_delivery($piled_up);
+					do_delivery($piled_up,true);
 				}
 			}
 		}
