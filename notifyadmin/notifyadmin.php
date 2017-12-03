@@ -2,7 +2,7 @@
 
 /**
  * Name: notifyadmin
- * Description: Notify admin when certain events occur
+ * Description: When enabled, this addon will notify the admin by email when a new account is registered.
  * Version: 1.0
  * Author: Andrew Manning <andrew@reticu.li>
  * MinVersion: 2.8
