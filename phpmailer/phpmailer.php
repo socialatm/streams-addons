@@ -27,7 +27,7 @@ function phpmailer_email_send(&$x) {
 	/**
 	 * @brief Send a multipart/alternative message with Text and HTML versions.
 	 *
-	 * @param array $params an assoziative array with:
+	 * @param array $params an associative array with:
 	 *  * \e string \b fromName        name of the sender
 	 *  * \e string \b fromEmail       email of the sender
 	 *  * \e string \b replyTo         replyTo address to direct responses
@@ -41,6 +41,26 @@ function phpmailer_email_send(&$x) {
 	require('addon/phpmailer/PHPMailerAutoload.php');
 
 	$mail = new PHPMailer;
+
+	$s = intval(get_config('phpmailer','smtpdebug'));
+	if($s) {
+		// 1: debug client
+		// 2: debug server (most useful setting)
+		// 3: debug connection (useful for STARTTLS issues)
+		// 4: debug lowlevel (very verbose)
+
+		$mail->SMTPDebug = intval($s);
+		$mail->Debugoutput = function($str,$level) { logger('phpmailer: ' . $str); };	
+	}
+
+	$s = intval(get_config('phpmailer','noverify'));
+	if($s) {
+		$mail->SMTPOptions = [ 'ssl' => [ 
+			'verify_peer' => false, 
+			'verify_peer_name' => false, 
+			'allow_self_signed' => true ]
+		];
+	}
 
 	if(get_config('phpmailer','mailer') === 'smtp') {
 		$mail->IsSMTP();
