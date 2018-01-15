@@ -468,10 +468,17 @@ function chess_content($a) {
 				}
 				// Verify that observer is a valid player
 				$game = json_decode($g['game']['obj'], true);
-				$observer_is_player = true;
+				$game_ended = ((!x($game, 'ended') || $game['ended'] === 0) ? 0 : 1);
 				if (!in_array($observer['xchan_hash'], $game['players'])) {
 					if($game['public_visible']) {
-						$observer_is_player = false;
+						$o = replace_macros(get_markup_template('chess_game_spectator.tpl', 'addon/chess'), array(
+							'$game_id' => $game_id,
+							'$position' => $game['position'],
+							'$ended' => $game_ended,
+							// TODO: populate player information 
+							'$players' => array()
+						));
+						return $o;
 					} else {
 						notice(t('You are not a player in this game.') . EOL);
 						goaway('/chess');
@@ -480,7 +487,6 @@ function chess_content($a) {
 				$player = array_search($observer['xchan_hash'], $game['players']);
 				$color = $game['colors'][$player];
 				$active = ($game['active'] === $game['players'][$player] ? true : false);
-				$game_ended = ((!x($game, 'ended') || $game['ended'] === 0) ? 0 : 1);
 				$enforce_legal_moves = ((!x($game, 'enforce_legal_moves') || $game['enforce_legal_moves'] === 0) ? 0 : 1);
 				$notify = intval(get_xconfig($observer['xchan_hash'], 'chess', 'notifications'));
 				logger('xconfig notifications: ' . $notify);
