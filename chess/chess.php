@@ -4,7 +4,7 @@
  *
  * Name: Chess
  * Description: Hubzilla plugin for decentralized, identity-aware chess games powered by chessboard.js
- * Version: 0.8.6
+ * Version: 0.9.0
  * Author: Andrew Manning <https://grid.reticu.li/channel/andrewmanning/>
  * MinVersion: 2.2
  *
@@ -17,7 +17,7 @@ define('ACTIVITY_OBJ_CHESSGAME', NAMESPACE_ZOT . '/activity/chessgame');
  * @return string Current plugin version
  */
 function chess_get_version() {
-	return '0.8.6';
+	return '0.9.0';
 }
 
 function chess_load() {
@@ -368,7 +368,8 @@ function chess_post(&$a) {
 						return;
 					}
 					$enforce_legal_moves = isset($_POST['playmode']) ? 1 : 0;
-					$game = chess_create_game($channel, $color, $acl, $enforce_legal_moves);
+					$public_visible = isset($_POST['public_visible']) ? 1 : 0;
+					$game = chess_create_game($channel, $color, $acl, $enforce_legal_moves, $public_visible);
 					if ($game['status']) {
 						goaway('/chess/' . $channel['channel_address'] . '/' . $game['item']['resource_id']);
 					} else {
@@ -467,9 +468,14 @@ function chess_content($a) {
 				}
 				// Verify that observer is a valid player
 				$game = json_decode($g['game']['obj'], true);
+				$observer_is_player = true;
 				if (!in_array($observer['xchan_hash'], $game['players'])) {
-					notice(t('You are not a player in this game.') . EOL);
-					goaway('/chess');
+					if($game['public_visible']) {
+						$observer_is_player = false;
+					} else {
+						notice(t('You are not a player in this game.') . EOL);
+						goaway('/chess');
+					}
 				}
 				$player = array_search($observer['xchan_hash'], $game['players']);
 				$color = $game['colors'][$player];
@@ -508,7 +514,7 @@ function chess_content($a) {
  *
  * @return array Status and parameters of the new game post
  */
-function chess_create_game($channel, $color, $acl, $enforce_legal_moves) {
+function chess_create_game($channel, $color, $acl, $enforce_legal_moves, $public_visible) {
 
 	$resource_type = 'chess';
 	// Generate unique resource_id using the same method as item_message_id()
@@ -548,6 +554,7 @@ function chess_create_game($channel, $color, $acl, $enforce_legal_moves) {
 		'position' => 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
 		'ended' => 0,
 		'enforce_legal_moves' => (($enforce_legal_moves === 0 || $enforce_legal_moves === 1) ? $enforce_legal_moves : 0),
+		'public_visible' => (($public_visible === 0 || $public_visible === 1) ? $public_visible : 0),
 		'version' => chess_get_version()	// Potential compatability issues
 	));
 	$item_hidden = 0; // TODO: Allow form creator to send post to ACL about new game automatically
