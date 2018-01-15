@@ -53,14 +53,8 @@ function phpmailer_email_send(&$x) {
 		$mail->Debugoutput = function($str,$level) { logger('phpmailer: ' . $str); };	
 	}
 
-	$s = intval(get_config('phpmailer','noverify'));
-	if($s) {
-		$mail->SMTPOptions = [ 'ssl' => [ 
-			'verify_peer' => false, 
-			'verify_peer_name' => false, 
-			'allow_self_signed' => true ]
-		];
-	}
+
+	$mail->Hostname = \App::get_hostname();
 
 	if(get_config('phpmailer','mailer') === 'smtp') {
 		$mail->IsSMTP();
@@ -94,10 +88,26 @@ function phpmailer_email_send(&$x) {
 		if($s) 
 			$mail->Password = $s;
 
+
+		$s = intval(get_config('phpmailer','noverify'));
+		if($s) {
+			$mail->SMTPOptions = [ 'ssl' => [ 
+				'verify_peer' => false, 
+				'verify_peer_name' => false, 
+				'allow_self_signed' => true ]
+			];
+		}
+
 	}
 	else {    
 
 		$mail->isSendmail();
+
+		$s = intval(get_config('phpmailer','usesendmailoptions'));
+		if($s)
+			$mail->UseSendmailOptions = (boolean) $s;
+
+
 
 	}
 
