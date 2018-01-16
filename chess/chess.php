@@ -443,10 +443,10 @@ function chess_content($a) {
 					  'Select "Custom selection" and choose a <i>single</i> channel '
 					  . 'to select your opponent by pressing the "Show" button for '
 					  . 'the desired channel.'),
-					'$allow_cid' => acl2json(array()),
-					'$allow_gid' => acl2json(array()),
+					'$allow_cid' => '',
+					'$allow_gid' => '',
 					'$deny_cid' => acl2json($channel['channel_hash']),
-					'$deny_gid' => acl2json(array()),
+					'$deny_gid' => '',
 					'$channel' => $channel['channel_address']
 				));
 				return $o;
