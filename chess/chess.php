@@ -366,7 +366,7 @@ function chess_post(&$a) {
 					} else {
 						$randomValue = mt_rand();
 						$color = (($randomValue % 2 == 0) ? 'white' : 'black');
-						info(t('Random color chosen.') . EOL)
+						info(t('Random color chosen.') . EOL);
 					}
 					$enforce_legal_moves = isset($_POST['playmode']) ? 1 : 0;
 					$game = chess_create_game($channel, $color, $acl, $enforce_legal_moves);
