@@ -364,8 +364,9 @@ function chess_post(&$a) {
 					if ($_POST['color'] === 'white' || $_POST['color'] === 'black') {
 						$color = $_POST['color'];
 					} else {
-						notice(t('You must select white or black.') . EOL);
-						return;
+						$randomValue = mt_rand();
+						$color = (($randomValue % 2 == 0) ? 'white' : 'black');
+						info(t('Random color chosen.') . EOL)
 					}
 					$enforce_legal_moves = isset($_POST['playmode']) ? 1 : 0;
 					$game = chess_create_game($channel, $color, $acl, $enforce_legal_moves);
