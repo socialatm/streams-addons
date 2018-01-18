@@ -214,14 +214,19 @@ function diaspora_build_status($item,$owner) {
 
 	$myaddr = channel_reddress($owner);
 
-	if(intval($item['id']) != intval($item['parent'])) {
+	if($item['mid'] !== $item['parent_mid']) {
 		logger('attempted to send a comment as a top-level post');
-		return;
+		return '';
 	}
 
-	if(($item['item_wall']) && ($item['owner_xchan'] != $item['author_xchan']) &&
-		get_pconfig($owner['channel_id'],'diaspora','sign_unsigned')) {
-		diaspora_share_unsigned($item,(($item['author']) ? $item['author'] : null));
+	if(($item['item_wall']) && ($item['owner_xchan'] != $item['author_xchan'])) {
+		if(get_pconfig($owner['channel_id'],'diaspora','sign_unsigned')) {
+			diaspora_share_unsigned($item,(($item['author']) ? $item['author'] : null));
+		}
+		else {
+			logger('cannot sign wall-to-wall post for Diaspora');
+			return '';
+		}
 	}
 
 	$images = array();
