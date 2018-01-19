@@ -29,12 +29,8 @@ function sendzid_get_features(&$x) {
 		feature_level('sendzid',4),          
 	];
 
-	if(($x['filtered'] == false) || ($x['filtered'] == true && intval($x['techlevel']) >= intval($entry[5]))) {
-		if(! is_array($x['features']['general'])) {
-			$x['features']['general'] = [ t('General Features') ];
-		}
-		$x['features']['general'][] = $entry;
-	}
+	$x['features']['general'][] = $entry;
+
 
 }
 
