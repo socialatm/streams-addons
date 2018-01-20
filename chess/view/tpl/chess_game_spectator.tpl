@@ -10,7 +10,7 @@ var chess_viewing_mid = '';
 var chess_game_ended = {{$ended}};
 var chess_game = null;
 var chess_game_move = null;
-
+window.console.log("3");
 var chess_init = function () {
 	$("#chess-verify-move").hide();
 	if($("#chess-game-" + chess_game_id).length) {
@@ -28,19 +28,18 @@ var chess_init = function () {
 		$("#chess-resume-game").hide();
 	}
 	var cfg = {
-		sparePieces: true,
+		//sparePieces: true,
 		position: '{{$position}}',
 		orientation: 'white',
-		dropOffBoard: 'snapback',
-		onDragStart: false;
+		//dropOffBoard: 'snapback',
+		onDragStart: false
 	};
 	chess_board = new ChessBoard('chessboard', cfg);
 	chess_game = new Chess(chess_original_pos);
 	
 	$(window).resize(chess_fit_board);
 	setTimeout(chess_fit_board,300);
-	setTimeout(chess_get_history,300);
-	chess_timer = setTimeout(chess_update_game,300);
+	chess_timer = setTimeout(chess_update_game,15000);
 };
 
 var chess_fit_board = function () {
@@ -59,8 +58,14 @@ var chess_fit_board = function () {
 	var centerRegionWidth = $('#region_2').width();
 	if (viewportHeight < centerRegionWidth * 1.25) {
 		$("#chessboard").css('width', viewportHeight / 1.25);
+		$("#white-player-name").css('margin-top', viewportHeight / 1.2);
+		$("#white-player-name").css('margin-left', centerRegionWidth * 0.2);
+		$("#black-player-name").css('margin-left', centerRegionWidth * 0.2);
 	} else {
 		$("#chessboard").css('width', centerRegionWidth * 1.0);
+		$("#white-player-name").css('margin-top', centerRegionWidth * 1.05);
+		$("#white-player-name").css('margin-left', centerRegionWidth * 0.2);
+		$("#black-player-name").css('margin-left', centerRegionWidth * 0.2);
 	}
 	chess_board.resize();
 };
@@ -74,13 +79,13 @@ var chess_onDragStart = function(source, piece, position, orientation) {
 var chess_update_game = function () {
 	$.post("chess/update", {game_id: chess_game_id} ,
 	function(data) {
+		window.console.log('update received: '+JSON.stringify(data));
 		if (data['status']) {
 			chess_game = new Chess(data['position']);
-			chess_original_pos = data['position'];
+			chess_board.position(data['position']);
 			chess_game_ended = data['ended'];
 			if (chess_game_ended) {
 				$('#chess-turn-indicator').html("Game Over");
-				$("#chess-resume-game").show();
 				return false;
 			}
 		} else {
@@ -89,50 +94,8 @@ var chess_update_game = function () {
 		return false;
 	},
 	'json');
-	chess_timer = setTimeout(chess_update_game,5000);
+	chess_timer = setTimeout(chess_update_game,15000);
 };
-
-var chess_get_history = function () {
-	$.post("chess/history", {game_id: chess_game_id} , function(data) {
-		if (data['status']) {
-			var move_history = data['history'];
-			var moves = [];
-			$("#chess-move-history").empty();
-			for(var i=move_history.length-1; i>=0; i--) {
-				var move = JSON.parse(move_history[i]['obj']);
-				moves.push(move['position']);
-				var moveListElem = '';
-				if (i === move_history.length-1) {
-					moveListElem = '<li class="nav-item"><a class="btn btn-sm btn-success" href="#" onclick="clearTimeout(chess_timer); \n\
-					chess_viewing_history = false; \n\
-					chess_viewing_position = \'\'; \n\
-					chess_viewing_mid = \'\'; \n\
-					chess_board.position(\'' + move['position'] + '\'); \n\
-					$(\'#chess-revert\').hide(); \n\
-					chess_timer = setTimeout(chess_update_game,300); \n\
-					return false;">';
-					moveListElem += '<b>Current Position</b>';
-				} else {
-					moveListElem = '<li class="nav-item"><a class="btn btn-sm btn-warning" href="#" onclick="clearTimeout(chess_timer); \n\
-					chess_viewing_history = true; \n\
-					chess_viewing_position = \'' + move['position'] + '\'; \n\
-					chess_viewing_mid = \'' + move_history[i]['mid'] + '\'; \n\
-					chess_board.position(\'' + move['position'] + '\'); \n\
-					$(\'#chess-revert-info\').html(\'<h4>Revert game to position:</h4>' + move['position'] + '\'); \n\
-					$(\'#chess-revert\').show(); \n\
-					return false;">';
-					moveListElem += 'Position ' + (i+1).toString();
-				}
-				moveListElem += '</a></li>';
-				$("#chess-move-history").append(moveListElem);
-			}
-		} else {
-			window.console.log('Error: ' + data['errormsg']);
-		}
-		return false;
-	},
-	'json');
-}
 
 
 $(document).ready(chess_init);
@@ -143,4 +106,10 @@ $(document).ready(chess_init);
 	{{/if}}
 </h2>
 <div id="chess-enforce-legal-moves"></div>
+<div id="black-player-name">
+	<h2>{{$blackplayer}}</h2>
+</div>
 <div id="chessboard" style="width: 400px; position: fixed;"></div>
+<div id="white-player-name" style="margin-top: 400px;">
+<h2>{{$whiteplayer}}</h2>
+</div>

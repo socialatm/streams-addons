@@ -93,7 +93,7 @@ var chess_init = function () {
 	$(window).resize(chess_fit_board);
 	setTimeout(chess_fit_board,300);
 	setTimeout(chess_get_history,300);
-	chess_timer = setTimeout(chess_update_game,300);
+	chess_timer = setTimeout(chess_update_game,15000);
 };
 
 var chess_update_settings = function () {
@@ -236,7 +236,7 @@ var chess_update_game = function () {
 		return false;
 	},
 	'json');
-	chess_timer = setTimeout(chess_update_game,5000);
+	chess_timer = setTimeout(chess_update_game,15000);
 };
 
 var chess_verify_move = function () {

@@ -4,7 +4,7 @@
  *
  * Name: Chess
  * Description: Hubzilla plugin for decentralized, identity-aware chess games powered by chessboard.js
- * Version: 0.9.0
+ * Version: 0.9.1
  * Author: Andrew Manning <https://grid.reticu.li/channel/andrewmanning/>
  * MinVersion: 2.2
  *
@@ -17,7 +17,7 @@ define('ACTIVITY_OBJ_CHESSGAME', NAMESPACE_ZOT . '/activity/chessgame');
  * @return string Current plugin version
  */
 function chess_get_version() {
-	return '0.9.0';
+	return '0.9.1';
 }
 
 function chess_load() {
@@ -50,52 +50,116 @@ function chess_module() {
 }
 
 /**
+ * @brief Returns game ID from second URL argument
+ * @return string
+ */
+function chess_game_id_from_url() {
+	if (argc() > 1) {
+		return(argv(2));
+	} else {
+		return null;
+	}
+}
+
+/**
+ * @brief Returns game ID from second URL argument
+ * array|boolean
+ *   - array with channel entry
+ *   - false if no channel with $nick was found
+ */
+function chess_owner_from_url() {
+	if (argc() > 1) {
+		return channelx_by_nick(argv(1));
+	} else {
+		return false;
+	}
+}
+
+/**
+ * @brief Returns information about the observer's role
+ * @param array $owner Game owner channel info
+ * @param string $game_id game ID
+ * @return array
+ *         - role => null, 'spectator', 'opponent', 'owner'
+ */
+function chess_observer_role($owner, $game_id) {
+	$role = null;
+	$status = false;
+	$observer = App::get_observer();
+	$g = chess_get_game($game_id);
+	if ($g['status']) {
+		$game = json_decode($g['game']['obj'], true);
+		if (!in_array($observer['xchan_hash'], $game['players'])) {
+			// Observer is not a game player
+			if($game['public_visible']) {
+				$role = 'spectator';
+				$status = true;
+			}
+		} else {
+			// Observer is a player in the game
+			if($observer['xchan_hash'] === $owner['xchan_hash']) {
+				$role = 'owner';
+				$status = true;
+			} else {
+				$role = 'opponent';
+				$status = true;
+			}
+		}
+	}
+	return(array('role' => $role, 'observer' => $observer, 'status' => $status));
+}
+
+/**
  * @brief Defines the widget for the page layout, providing the game controls
  *
  * @return string HTML content of the aside region
  */
 function widget_chess_controls() {
 
-	$which = null;
-	$owner = false;
-	if (argc() > 1) {
-		$which = argv(1);
-		if (local_channel()) {
-			$channel = App::get_channel();
-			if ($channel['channel_address'] === $which) {
-				$owner = true;
-			}
-		}
+	$game_id = chess_game_id_from_url();
+	$owner = chess_owner_from_url();
+
+	$obs_role = chess_observer_role($owner, $game_id);
+	$observer = $obs_role['observer'];
+	$role = $obs_role['role'];
+	$o = '';
+	switch ($role) {
+		case 'owner':
+			
+			$obs_nick = explode('@', $observer['xchan_addr'])[0];
+			$g = chess_get_games($observer, $obs_nick);
+			$games = $g['games'];
+			$gameinfo = chess_get_info($observer, $game_id);
+			$o .= replace_macros(get_markup_template('chess_controls.tpl', 'addon/chess'), array(
+				'$owner' => 1,
+				'$channel' => $owner['channel_address'],
+				'$games' => $games,
+				'$gameinfo' => $gameinfo,
+				'$historyviewer' => 1,
+				'$notify_toggle' => chess_game_settings(),
+				'$version' => 'v' . chess_get_version()
+			));
+			break;
+		case 'opponent':
+			$gameinfo = chess_get_info($observer, $game_id);
+			$o .= replace_macros(get_markup_template('chess_controls.tpl', 'addon/chess'), array(
+				'$owner' => 0,
+				'$channel' => $owner['channel_address'],
+				'$games' => 0,
+				'$gameinfo' => $gameinfo,
+				'$historyviewer' => 1,
+				'$notify_toggle' => chess_game_settings(),
+				'$version' => 'v' . chess_get_version()
+			));
+			break;
+		case 'spectator':
+			// TODO: Allow viewing the history viewer
+			break;
+		default:
+			break;
 	}
-	if (!$which) {
-		if (local_channel()) {
-			$channel = App::get_channel();
-			if ($channel && $channel['channel_address'])
-				$which = $channel['channel_address'];
-			$owner = true;
-		}
-	}
-	$observer = App::get_observer();
-	$games = null;
-	if ($which) {
-		$g = chess_get_games($observer, $which);
-		$games = $g['games'];
-	}
-	$historyviewer = false;
-	$gameinfo = null;
-	if (argc() > 2 && argv(2) !== 'new') {
-		$historyviewer = true;
-		$gameinfo = chess_get_info($observer, argv(2));
-	}
-	$o .= replace_macros(get_markup_template('chess_controls.tpl', 'addon/chess'), array(
-		'$owner' => $owner,
-		'$channel' => $which, //$channel['channel_address'],
-		'$games' => $games,
-		'$gameinfo' => $gameinfo,
-		'$historyviewer' => $historyviewer,
-		'$notify_toggle' => chess_game_settings(),
-		'$version' => 'v' . chess_get_version()
-	));
+	
+	
 	return $o;
 }
 
@@ -261,7 +325,11 @@ function chess_post(&$a) {
 				// Verify that observer is a valid player
 				$game = json_decode($g['game']['obj'], true);
 				if (!in_array($observer['xchan_hash'], $game['players'])) {
-					json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
+					if($game['public_visible']) {
+						json_return_and_die(array('position' => $game['position'], 'ended' => $game['ended'], 'status' => true));
+					} else {
+						json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
+					}
 				}
 				$player = array_search($observer['xchan_hash'], $game['players']);
 				$active = ($game['active'] === $game['players'][$player] ? true : false);
@@ -470,6 +538,25 @@ function chess_content($a) {
 				// Verify that observer is a valid player
 				$game = json_decode($g['game']['obj'], true);
 				$game_ended = ((!x($game, 'ended') || $game['ended'] === 0) ? 0 : 1);
+				$white_xchan_hash = $game['players'][0];
+				$r = q("SELECT xchan_name FROM xchan WHERE xchan_hash = '%s' LIMIT 1",
+					dbesc($white_xchan_hash)
+				);
+				if($r) { 
+					$whiteplayer = $r[0]['xchan_name'];
+				} else {
+					$whiteplayer = 'White player';
+				}
+				
+				$black_xchan_hash = $game['players'][1];
+				$r = q("SELECT xchan_name FROM xchan WHERE xchan_hash = '%s' LIMIT 1",
+					dbesc($black_xchan_hash)
+				);
+				if($r) { 
+					$blackplayer = $r[0]['xchan_name'];
+				} else {
+					$blackplayer = 'Black player';
+				}
 				if (!in_array($observer['xchan_hash'], $game['players'])) {
 					if($game['public_visible']) {
 						$o = replace_macros(get_markup_template('chess_game_spectator.tpl', 'addon/chess'), array(
@@ -477,7 +564,8 @@ function chess_content($a) {
 							'$position' => $game['position'],
 							'$ended' => $game_ended,
 							// TODO: populate player information 
-							'$players' => array()
+							'$whiteplayer' => $whiteplayer,
+							'$blackplayer' => $blackplayer
 						));
 						return $o;
 					} else {
@@ -490,7 +578,6 @@ function chess_content($a) {
 				$active = ($game['active'] === $game['players'][$player] ? true : false);
 				$enforce_legal_moves = ((!x($game, 'enforce_legal_moves') || $game['enforce_legal_moves'] === 0) ? 0 : 1);
 				$notify = intval(get_xconfig($observer['xchan_hash'], 'chess', 'notifications'));
-				logger('xconfig notifications: ' . $notify);
 				$o = replace_macros(get_markup_template('chess_game.tpl', 'addon/chess'), array(
 					'$myturn' => ($active ? 'true' : 'false'),
 					'$active' => $active,
@@ -792,7 +879,6 @@ function chess_revert_position($g, $observer, $mid) {
 function chess_get_games($observer, $owner_address) {
 	$g = [];
 	$g['owner_active'] = $g['player_active'] = $g['owner_ended'] = $g['player_ended'] = [];
-
 	$hash = q("select channel_hash from channel where channel_address = '%s' AND "
 		. "channel_removed = 0  limit 1", 
 		  dbesc($owner_address)
@@ -802,7 +888,7 @@ function chess_get_games($observer, $owner_address) {
 		return array('games' => $g, 'status' => false);
 	}
 	$owner_hash = $hash[0]['channel_hash'];
-// This is a potentially expensive query if there are many chess games
+	// This is a potentially expensive query if there are many chess games
 	$games = q("SELECT * FROM item WHERE resource_type = '%s' AND title = '%s' AND "
 		. "owner_xchan = '%s' AND obj LIKE '%s' AND item_deleted = 0 order by id desc", 
 		dbesc('chess'), 
@@ -876,26 +962,15 @@ function chess_delete_game($game_id, $channel) {
  */
 function chess_toggle_legal_moves($g) {
 	$game = json_decode($g['game']['obj'], true);
-	logger('current game object: ' . json_encode($game), LOGGER_DEBUG);
-	logger('current enforce legal moves: ' . $game['enforce_legal_moves'], LOGGER_DEBUG);
-	
-	if (!x($game, 'enforce_legal_moves') || $game['enforce_legal_moves'] === 0) {
-		logger('Legal move enforcement is currently DISABLED', LOGGER_DEBUG);
-	} else {
-		logger('Legal move enforcement is currently ENABLED', LOGGER_DEBUG);
-	}
 	$game['enforce_legal_moves'] = ((!x($game, 'enforce_legal_moves') || $game['enforce_legal_moves'] === 0) ? 1 : 0);
 	$gameobj = json_encode($game);
-	logger('updated game object: ' . $gameobj, LOGGER_DEBUG);
 	$r = q("UPDATE item set obj = '%s' WHERE resource_id = '%s' AND resource_type = '%s'", 
 		dbesc($gameobj), 
 		dbesc($g['game']['resource_id']), 
 		dbesc('chess')
 	);	
-	logger('toggled enforce legal moves: ' . $game['enforce_legal_moves'], LOGGER_DEBUG);
 	$g = chess_get_game($g['game']['resource_id']);
 	$game = json_decode($g['game']['obj'], true);
-	logger('current game object after UPDATE query: ' . json_encode($game), LOGGER_DEBUG);
 	if (!$r) {
 		return array('enforce_legal_moves' => null, 'status' => false);
 	} else {
@@ -951,8 +1026,6 @@ function chess_resume_game($g) {
  * @return array Success of retrieval and the game info
  */
 function chess_get_info($observer, $game_id) {
-	// Get the game by game_id and
-
 	$g = chess_get_game($game_id);
 	if (!$g) {
 		return array('players' => null, 'status' => false);
