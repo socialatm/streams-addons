@@ -721,7 +721,7 @@ function chess_make_move($observer, $newPosFEN, $g) {
 	if ($r) {
 		$channel_address = $r[0]['channel_address'];
 	}
-
+	$game_url = z_root() . '/chess/' . $channel_address . '/' . $resource_id;
 	$arr['aid'] = $g['aid'];
 	$arr['uid'] = $g['uid'];
 	$arr['mid'] = $mid;
@@ -742,7 +742,7 @@ function chess_make_move($observer, $newPosFEN, $g) {
 	$arr['verb'] = ACTIVITY_POST;
 	$arr['obj_type'] = $objtype;
 	$arr['obj'] = $object;
-	$arr['body'] = 'New position (FEN format): ' . $newPosFEN;
+	$arr['body'] = 'New position (FEN format): [zrl=' . $game_url. ']' . $newPosFEN. '[/zrl]';
 
 	$post = item_store($arr);
 	$item_id = $post['item_id'];
