@@ -545,7 +545,7 @@ function chess_content($a) {
 				// Verify that observer is a valid player
 				$game = json_decode($g['game']['obj'], true);
 				$game_ended = ((!x($game, 'ended') || $game['ended'] === 0) ? 0 : 1);
-				$white_xchan_hash = $game['players'][0];
+				$white_xchan_hash = $game['players'][array_search('white', $game['colors'])];
 				$r = q("SELECT xchan_name FROM xchan WHERE xchan_hash = '%s' LIMIT 1",
 					dbesc($white_xchan_hash)
 				);
@@ -555,7 +555,7 @@ function chess_content($a) {
 					$whiteplayer = 'White player';
 				}
 				
-				$black_xchan_hash = $game['players'][1];
+				$black_xchan_hash = $game['players'][array_search('black', $game['colors'])];
 				$r = q("SELECT xchan_name FROM xchan WHERE xchan_hash = '%s' LIMIT 1",
 					dbesc($black_xchan_hash)
 				);
