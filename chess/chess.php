@@ -54,7 +54,7 @@ function chess_module() {
  * @return string
  */
 function chess_game_id_from_url() {
-	if (argc() > 1) {
+	if (argc() > 2 && argv(2) !== 'new') {
 		return(argv(2));
 	} else {
 		return null;
@@ -82,31 +82,34 @@ function chess_owner_from_url() {
  * @return array
  *         - role => null, 'spectator', 'opponent', 'owner'
  */
-function chess_observer_role($owner, $game_id) {
-	$role = null;
-	$status = false;
+function chess_observer_role() {
+
+	$game_id = chess_game_id_from_url();
+	$owner = chess_owner_from_url();
 	$observer = App::get_observer();
-	$g = chess_get_game($game_id);
-	if ($g['status']) {
-		$game = json_decode($g['game']['obj'], true);
-		if (!in_array($observer['xchan_hash'], $game['players'])) {
-			// Observer is not a game player
-			if($game['public_visible']) {
-				$role = 'spectator';
-				$status = true;
-			}
-		} else {
-			// Observer is a player in the game
-			if($observer['xchan_hash'] === $owner['xchan_hash']) {
-				$role = 'owner';
-				$status = true;
+	$role = null;
+	// /chess/channel_name/*
+	if ($observer !== null && $observer['xchan_hash'] === $owner['xchan_hash']) {
+		$role = 'owner';
+	}
+	// /chess/channel_name/game_id
+	// If there is a game ID and the channel owner is not the observer
+	if ($game_id && !$role) {
+		$g = chess_get_game($game_id);
+		if ($g['status']) {
+			$game = json_decode($g['game']['obj'], true);
+			if (!in_array($observer['xchan_hash'], $game['players'])) {
+				// Observer is not a game player
+				if ($game['public_visible']) {
+					$role = 'spectator';
+				}
 			} else {
+				// Observer is the opponent
 				$role = 'opponent';
-				$status = true;
 			}
 		}
 	}
-	return(array('role' => $role, 'observer' => $observer, 'status' => $status));
+	return(array('role' => $role, 'observer' => $observer));
 }
 
 /**
@@ -116,16 +119,14 @@ function chess_observer_role($owner, $game_id) {
  */
 function widget_chess_controls() {
 
-	$game_id = chess_game_id_from_url();
 	$owner = chess_owner_from_url();
-
-	$obs_role = chess_observer_role($owner, $game_id);
+	$game_id = chess_game_id_from_url();
+	$obs_role = chess_observer_role();
 	$observer = $obs_role['observer'];
 	$role = $obs_role['role'];
 	$o = '';
 	switch ($role) {
 		case 'owner':
-			
 			$obs_nick = explode('@', $observer['xchan_addr'])[0];
 			$g = chess_get_games($observer, $obs_nick);
 			$games = $g['games'];
@@ -185,7 +186,13 @@ function chess_load_pdl($a, &$b) {
  * @return null
  */
 function chess_init($a) {
-	
+	$channel = App::get_channel();
+	if(argc() === 1 && $channel['channel_address']) {
+		goaway(z_root() . '/chess/' . $channel['channel_address'] );
+	}
+	if(argc() === 3 && argv(2) === 'new' && $channel['channel_address'] !== argv(1)) {
+		goaway(z_root() . '/chess/');
+	}
 }
 
 /**
