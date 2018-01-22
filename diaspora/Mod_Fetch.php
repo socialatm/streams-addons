@@ -32,7 +32,7 @@ class Fetch extends \Zotlabs\Web\Controller {
 			$owner = channelx_by_hash($item[0]['owner_xchan']);
 			if(($owner) && ($item[0]['item_wall']) && ($item[0]['owner_xchan'] != $item[0]['author_xchan'])) {
 				if(get_pconfig($owner['channel_id'],'diaspora','sign_unsigned')) {
-					diaspora_share_unsigned($item,(($item[0]['author']) ? $item[0]['author'] : null));
+					diaspora_share_unsigned($item[0],(($item[0]['author']) ? $item[0]['author'] : null));
 					$channel = $owner;
 				}
 			}
