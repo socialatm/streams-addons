@@ -241,6 +241,7 @@ function diaspora_build_status($item,$owner) {
 	$created = datetime_convert('UTC','UTC',$item['created'],'Y-m-d H:i:s \U\T\C');
 
 	$created_at = datetime_convert('UTC','UTC',$item['created'],ATOM_TIME);
+	$edited_at  = datetime_convert('UTC','UTC',$item['edited'],ATOM_TIME);
 
 	if(defined('DIASPORA_V2')) {
 
@@ -251,6 +252,10 @@ function diaspora_build_status($item,$owner) {
 			'guid'       => $item['mid'],
 			'created_at' => $created_at,
 		];
+
+		if($edited_at > $created_at)
+			$arr['edited_at'] = $edited_at;
+
 
 		// context specific attributes
 

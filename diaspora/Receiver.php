@@ -206,7 +206,9 @@ class Diaspora_Receiver {
 		}
 
 		$created = notags($this->get_property('created_at'));
+		$edited  = notags($this->get_property('edited_at'));
 		$private = (($this->get_property('public') === 'false') ? 1 : 0);
+		$updated = false;
 
 
 		$r = q("SELECT id FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
@@ -214,13 +216,11 @@ class Diaspora_Receiver {
 			dbesc($guid)
 		);
 
-		$updated = false;
 
 		if($r) {
-			// check dates if post editing is implemented
 
-			$edited = datetime_convert('UTC','UTC',$created);
-			if($edited > $r[0]['edited']) { 
+			$edited_str = datetime_convert('UTC','UTC',(($edited) ? $edited : $created));
+			if($edited_str > $r[0]['edited']) { 
 				$updated = true;
 			}
 			else {
