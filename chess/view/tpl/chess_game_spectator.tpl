@@ -10,8 +10,10 @@ var chess_viewing_mid = '';
 var chess_game_ended = {{$ended}};
 var chess_game = null;
 var chess_game_move = null;
-window.console.log("3");
+var chess_init_active = '{{$active}}';
+
 var chess_init = function () {
+	$('#'+chess_init_active).show();
 	$("#chess-verify-move").hide();
 	if($("#chess-game-" + chess_game_id).length) {
 		$("#chess-game-" + chess_game_id).css("font-weight","bold");
@@ -59,13 +61,13 @@ var chess_fit_board = function () {
 	if (viewportHeight < centerRegionWidth * 1.25) {
 		$("#chessboard").css('width', viewportHeight / 1.25);
 		$("#white-player-name").css('margin-top', viewportHeight / 1.2);
-		$("#white-player-name").css('margin-left', centerRegionWidth * 0.2);
-		$("#black-player-name").css('margin-left', centerRegionWidth * 0.2);
+		$("#white-player-name").css('margin-left', 20);
+		$("#black-player-name").css('margin-left', 20);
 	} else {
 		$("#chessboard").css('width', centerRegionWidth * 1.0);
 		$("#white-player-name").css('margin-top', centerRegionWidth * 1.05);
-		$("#white-player-name").css('margin-left', centerRegionWidth * 0.2);
-		$("#black-player-name").css('margin-left', centerRegionWidth * 0.2);
+		$("#white-player-name").css('margin-left', 20);
+		$("#black-player-name").css('margin-left', 20);
 	}
 	chess_board.resize();
 };
@@ -79,7 +81,7 @@ var chess_onDragStart = function(source, piece, position, orientation) {
 var chess_update_game = function () {
 	$.post("chess/update", {game_id: chess_game_id} ,
 	function(data) {
-		window.console.log('update received: '+JSON.stringify(data));
+		//window.console.log('update received: '+JSON.stringify(data));
 		if (data['status']) {
 			chess_game = new Chess(data['position']);
 			chess_board.position(data['position']);
@@ -87,6 +89,11 @@ var chess_update_game = function () {
 			if (chess_game_ended) {
 				$('#chess-turn-indicator').html("Game Over");
 				return false;
+			} else {
+				$('.turn-indicator').hide();
+				$('.player-name').css('font-weight', 'normal');
+				$('#'+data['active']+'_name').css('font-weight', 'bold');
+				$('#'+data['active']).show();
 			}
 		} else {
 			window.console.log('Error updating: ' + data['errormsg']);
@@ -107,9 +114,21 @@ $(document).ready(chess_init);
 </h2>
 <div id="chess-enforce-legal-moves"></div>
 <div id="black-player-name">
-	<h2>{{$blackplayer}}</h2>
+	<h2>
+		<span class="turn-indicator" id="{{$black_xchan_hash}}" style="display: none;">
+			<img src="/addon/chess/view/img/chesspieces/wikipedia/bN.png" height="40" style="padding-right: 5px;">
+		</span>
+		<span class="player-name" id="{{$black_xchan_hash}}_name">{{$blackplayer}}</span>
+	</h2>
 </div>
+
 <div id="chessboard" style="width: 400px; position: fixed;"></div>
+
 <div id="white-player-name" style="margin-top: 400px;">
-<h2>{{$whiteplayer}}</h2>
+	<h2>
+		<span class="turn-indicator" id="{{$white_xchan_hash}}" style="display: none;">
+			<img src="/addon/chess/view/img/chesspieces/wikipedia/wN.png" height="40" style="padding-right: 5px;">
+		</span>
+		<span class="player-name" id="{{$white_xchan_hash}}_name">{{$whiteplayer}}</span>
+	</h2>
 </div>

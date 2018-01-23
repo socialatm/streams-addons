@@ -333,7 +333,7 @@ function chess_post(&$a) {
 				$game = json_decode($g['game']['obj'], true);
 				if (!in_array($observer['xchan_hash'], $game['players'])) {
 					if($game['public_visible']) {
-						json_return_and_die(array('position' => $game['position'], 'ended' => $game['ended'], 'status' => true));
+						json_return_and_die(array('position' => $game['position'], 'ended' => $game['ended'], 'active' => $game['active'], 'status' => true));
 					} else {
 						json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
 					}
@@ -572,7 +572,10 @@ function chess_content($a) {
 							'$ended' => $game_ended,
 							// TODO: populate player information 
 							'$whiteplayer' => $whiteplayer,
-							'$blackplayer' => $blackplayer
+							'$white_xchan_hash' => $white_xchan_hash,
+							'$blackplayer' => $blackplayer,
+							'$black_xchan_hash' => $black_xchan_hash,
+							'$active' => $game['active']
 						));
 						return $o;
 					} else {
