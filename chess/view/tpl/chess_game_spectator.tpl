@@ -146,7 +146,7 @@ var chess_update_game = function () {
 		return false;
 	},
 	'json');
-	chess_timer = setTimeout(chess_update_game,5000);
+	chess_timer = setTimeout(chess_update_game,15000);
 	chess_get_history();
 	
 };
