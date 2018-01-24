@@ -1747,6 +1747,10 @@ class Diaspora_Receiver {
 	
 		// Generic birthday. We don't know the timezone. The year is irrelevant. 
 
+		if(intval(substr($birthday,0,4)) <= 1004)
+			$birthday = '1901-' . substr($birthday,5);
+
+
 		$birthday = str_replace('1000','1901',$birthday);
 
 		$birthday = datetime_convert('UTC','UTC',$birthday,'Y-m-d');
@@ -1754,8 +1758,13 @@ class Diaspora_Receiver {
 		// this is to prevent multiple birthday notifications in a single year
 		// if we already have a stored birthday and the 'm-d' part hasn't changed, preserve the entry, which will preserve the notify year
 
-		if(substr($birthday,5) === substr($contact['bd'],5))
-			$birthday = $contact['bd'];
+		// @fixme Diaspora birthdays are not currently stored and $contact['bd'] does not exist in the current implementation
+		// This represents legacy code from Friendica where Diaspora birthdays were stored and managed separately from Friendica birthdays due to 
+		// incompatible differences in implementation.
+		// It may be possible to implement a similar scheme going forward using abconfg or xconfig for platform dependent storage. 
+
+		//		if(substr($birthday,5) === substr($contact['bd'],5))
+		//			$birthday = $contact['bd'];
 
 		$r = q("update xchan set xchan_name = '%s', xchan_name_date = '%s', xchan_photo_l = '%s', xchan_photo_m = '%s', xchan_photo_s = '%s', xchan_photo_mimetype = '%s' where xchan_hash = '%s' ",
 			dbesc($name),
