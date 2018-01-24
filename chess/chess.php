@@ -310,10 +310,10 @@ function chess_post(&$a) {
 				}
 				// Verify that observer is a valid player
 				$game = json_decode($g['game']['obj'], true);
-				if (!in_array($observer['xchan_hash'], $game['players'])) {
+				if (!in_array($observer['xchan_hash'], $game['players']) && !$game['public_visible']) {
 					json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
 				}
-				$player = array_search($observer['xchan_hash'], $game['players']);
+				//$player = array_search($observer['xchan_hash'], $game['players']);
 				$h = chess_get_history($g['game']);
 				if (!$h['status']) {
 					json_return_and_die(array('errormsg' => 'Error retrieving game history', 'status' => false));
@@ -333,7 +333,7 @@ function chess_post(&$a) {
 				$game = json_decode($g['game']['obj'], true);
 				if (!in_array($observer['xchan_hash'], $game['players'])) {
 					if($game['public_visible']) {
-						json_return_and_die(array('position' => $game['position'], 'ended' => $game['ended'], 'status' => true));
+						json_return_and_die(array('position' => $game['position'], 'ended' => $game['ended'], 'active' => $game['active'], 'status' => true));
 					} else {
 						json_return_and_die(array('errormsg' => 'You are not a valid player', 'status' => false));
 					}
@@ -572,7 +572,10 @@ function chess_content($a) {
 							'$ended' => $game_ended,
 							// TODO: populate player information 
 							'$whiteplayer' => $whiteplayer,
-							'$blackplayer' => $blackplayer
+							'$white_xchan_hash' => $white_xchan_hash,
+							'$blackplayer' => $blackplayer,
+							'$black_xchan_hash' => $black_xchan_hash,
+							'$active' => $game['active']
 						));
 						return $o;
 					} else {
