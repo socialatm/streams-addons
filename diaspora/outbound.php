@@ -750,7 +750,7 @@ function diaspora_profile_change($channel,$recip,$public_batch = false,$profile_
 		$dob = '1000-00-00';
 
 		if(($profile['dob']) && ($profile['dob'] != '0000-00-00'))
-			$dob = ((intval($profile['dob'])) ? intval($profile['dob']) : '1000') . '-' . datetime_convert('UTC','UTC',$profile['dob'],'m-d');
+			$dob = ((intval(substr($profile['dob'],0,4))) ? intval($profile['dob']) : '1000') . '-' . datetime_convert('UTC','UTC',$profile['dob'],'m-d');
 		if($dob === '1000-00-00')
 			$dob = '';
 		$gender = xmlify($profile['gender']);
