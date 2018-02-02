@@ -805,10 +805,10 @@ function gnusoc_atom_feed($a,&$b) {
 
 	if($b['channel'] && $b['params']['compat']) {
         $b['xml'] = str_replace('</generator>','</generator>' . "\r\n  " .
-        '<link rel="salmon" href="' . z_root() . '/salmon/' . $b['channel']['channel_address'] . ' />' . "\r\n  " .
-        '<link rel="http://salmon-protocol.org/ns/salmon-replies" href="' . z_root() . '/salmon/' . $b['channel']['channel_address'] . ' />' . 
+        '<link rel="salmon" href="' . z_root() . '/salmon/' . $b['channel']['channel_address'] . '" />' . "\r\n  " .
+        '<link rel="http://salmon-protocol.org/ns/salmon-replies" href="' . z_root() . '/salmon/' . $b['channel']['channel_address'] . '" />' . 
 		"\r\n  " .
-        '<link rel="http://salmon-protocol.org/ns/salmon-mention" href="' . z_root() . '/salmon/' . $b['channel']['channel_address'] . ' />',$b['xml']);
+        '<link rel="http://salmon-protocol.org/ns/salmon-mention" href="' . z_root() . '/salmon/' . $b['channel']['channel_address'] . '" />',$b['xml']);
 
 		$b['xml'] = str_replace('</generator>','</generator>' . "\r\n  " .
 		'<logo>' . z_root() . '/photo/profile/l/' . $b['channel']['channel_id'] . '</logo>',$b['xml']);
