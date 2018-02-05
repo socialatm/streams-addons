@@ -113,6 +113,11 @@ function salmon_post(&$a) {
  
 	$datarray = process_salmon_feed($data,$importer);
 
+	if((! is_array($datarray)) || (empty($datarray))) {
+		logger('feed parse error');
+		http_status_exit(400);
+	}
+
 	$author_link = $datarray['author']['author_link'];
 	$item = $datarray['item'];
 
