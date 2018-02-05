@@ -46,7 +46,7 @@ function gnusoc_load() {
 	register_hook('atom_entry','addon/gnusoc/gnusoc.php','gnusoc_atom_entry');
 	register_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	register_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
-	register_hook('atom_feed_top','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
+	register_hook('atom_feed_top','addon/gnusoc/gnusoc.php','gnusoc_atom_feed_top');
 	register_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
 	register_hook('can_comment_on_post','addon/gnusoc/gnusoc.php','gnusoc_can_comment_on_post');
 	register_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
@@ -75,7 +75,7 @@ function gnusoc_unload() {
 	unregister_hook('atom_entry','addon/gnusoc/gnusoc.php','gnusoc_atom_entry');
 	unregister_hook('import_author','addon/gnusoc/gnusoc.php','gnusoc_import_author');
 	unregister_hook('parse_atom','addon/gnusoc/gnusoc.php','gnusoc_parse_atom');
-	unregister_hook('atom_feed_top','addon/gnusoc/gnusoc.php','gnusoc_atom_feed');
+	unregister_hook('atom_feed_top','addon/gnusoc/gnusoc.php','gnusoc_atom_feed_top');
 	unregister_hook('cron_daily','addon/gnusoc/gnusoc.php','gnusoc_cron_daily');
 	unregister_hook('can_comment_on_post','addon/gnusoc/gnusoc.php','gnusoc_can_comment_on_post');
 	unregister_hook('connection_remove','addon/gnusoc/gnusoc.php','gnusoc_connection_remove');
@@ -801,7 +801,7 @@ function gnusoc_atom_entry($a,&$b) {
 
 }
 
-function gnusoc_atom_feed($a,&$b) {
+function gnusoc_atom_feed_top($a,&$b) {
 
 	if($b['channel'] && $b['params']['compat']) {
         $b['xml'] = str_replace('</generator>','</generator>' . "\r\n  " .
