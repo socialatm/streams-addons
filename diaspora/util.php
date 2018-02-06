@@ -104,7 +104,7 @@ function diaspora_sign_fields($fields,$prvkey) {
 			$n[$k] = $v;
 	}
 
-	$s = implode($n,';');
+	$s = implode(';',$n);
 	logger('signing_string: ' . $s);
 	return base64_encode(rsa_sign($s,$prvkey));
 
@@ -122,7 +122,7 @@ function diaspora_verify_fields($fields,$sig,$pubkey) {
 			$n[$k] = $v;
 	}
 
-	$s = implode($n,';');
+	$s = implode(';',$n);
 	logger('signing_string: ' . $s);
 	return rsa_verify($s,base64_decode($sig),$pubkey);
 
