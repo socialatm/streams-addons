@@ -290,8 +290,8 @@ function salmon_post(&$a) {
 			$importer['send_downstream'] = true;
 		}
 		
-		consume_feed($data,$importer,$xchan,0);
 		consume_feed($data,$importer,$xchan,1);
+		consume_feed($data,$importer,$xchan,2);
 
 		if(! $importer['system'])
 			$status = 200;
