@@ -25,8 +25,8 @@ function statistics_unload() {
 
 function statistics_well_known() {
 	if(argc() > 1 && argv(1) === 'nodeinfo') {
-		$arr = [
-			'links' => [
+		$arr = [ 'links' => [
+			[
 				'rel' => 'http://nodeinfo.diaspora.software/ns/schema/1.0',
 				'href' => z_root() . '/nodeinfo/1.0'
 			],
@@ -35,7 +35,7 @@ function statistics_well_known() {
 				'href' => z_root() . '/nodeinfo/2.0'
 			],
 
-		];
+		]];
 
 		header('Content-type: application/json');
 		echo json_encode($arr);
