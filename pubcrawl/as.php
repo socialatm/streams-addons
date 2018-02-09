@@ -997,6 +997,11 @@ function as_create_note($channel,$observer_hash,$act) {
 
 	$s = [];
 
+	// Mastodon only allows visibility in public timelines if the public inbox is listed in the 'to' field.
+	// They are hidden in the public timeline if the public inbox is listed in the 'cc' field.
+	// This is not part of the activitypub protocol - we might change this to show all public posts in pubstream at some point.
+	$pubstream = ((array_key_exists('to', $act->obj) && in_array(ACTIVITY_PUBLIC_INBOX, $act->obj['to'])) ? true : false);
+	$is_sys_channel = is_sys_channel($channel['channel_id']);
 
 	$parent = ((array_key_exists('inReplyTo',$act->obj)) ? urldecode($act->obj['inReplyTo']) : '');
 	if($parent) {
@@ -1011,8 +1016,9 @@ function as_create_note($channel,$observer_hash,$act) {
 			logger('parent not found.');
 			return;
 		}
+
 		if($r[0]['owner_xchan'] === $channel['channel_hash']) {
-			if(! perm_is_allowed($channel['channel_id'],$observer_hash,'post_comments')) {
+			if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream') && ! ($is_sys_channel && $pubstream)) {
 				logger('no comment permission.');
 				return;
 			}
@@ -1021,13 +1027,14 @@ function as_create_note($channel,$observer_hash,$act) {
 		$s['parent_mid'] = $r[0]['mid'];
 		$s['owner_xchan'] = $r[0]['owner_xchan'];
 		$s['author_xchan'] = $observer_hash;
+
 	}
 	else {
-		if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream')) {
+		if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream') && ! ($is_sys_channel && $pubstream)) {
 			logger('no permission');
 			return;
 		}
-		$s['owner_xchan'] = $s['author_xchan'] = $observer_hash;		
+		$s['owner_xchan'] = $s['author_xchan'] = $observer_hash;
 	}
 	
 	$abook = q("select * from abook where abook_xchan = '%s' and abook_channel = %d limit 1",
@@ -1132,7 +1139,14 @@ function as_announce_note($channel,$observer_hash,$act) {
 
 	$s = [];
 
-	if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream')) {
+	$is_sys_channel = is_sys_channel($channel['channel_id']);
+
+	// Mastodon only allows visibility in public timelines if the public inbox is listed in the 'to' field.
+	// They are hidden in the public timeline if the public inbox is listed in the 'cc' field.
+	// This is not part of the activitypub protocol - we might change this to show all public posts in pubstream at some point.
+	$pubstream = ((array_key_exists('to', $act->obj) && in_array(ACTIVITY_PUBLIC_INBOX, $act->obj['to'])) ? true : false);
+
+	if(! perm_is_allowed($channel['channel_id'],$observer_hash,'send_stream') && ! ($is_sys_channel && $pubstream)) {
 		logger('no permission');
 		return;
 	}
