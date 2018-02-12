@@ -1074,6 +1074,8 @@ function diaspora_bb_to_markdown_bb(&$x) {
 		'diaspora_bb_to_markdown_mention_callback', $Text);
 
 
+	$Text = str_replace( [ '[event','[/event' ], [ '[zot-event', '[/zot-event' ], $Text);
+
 	// strip map and embed tags, as the rendering is performed in bbcode() and the resulting output
 	// is not compatible with Diaspora (at least in the case of openstreetmap and probably
 	// due to the inclusion of an html iframe)
