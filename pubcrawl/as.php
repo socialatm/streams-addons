@@ -517,6 +517,7 @@ function activity_mapper($verb) {
 
 	$acts = [
 		'http://activitystrea.ms/schema/1.0/post'      => 'Create',
+		'http://activitystrea.ms/schema/1.0/share'     => 'Announce',
 		'http://activitystrea.ms/schema/1.0/update'    => 'Update',
 		'http://activitystrea.ms/schema/1.0/like'      => 'Like',
 		'http://activitystrea.ms/schema/1.0/favorite'  => 'Like',
