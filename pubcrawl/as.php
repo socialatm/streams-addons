@@ -542,7 +542,12 @@ function activity_mapper($verb) {
 	if(strpos($verb,ACTIVITY_POKE) !== false)
 		return 'Activity';
 
-	return false;
+	// We should return false, however this will trigger an uncaught execption  and crash 
+	// the delivery system if encountered by the JSON-LDSignature library
+ 
+	logger('Unmapped activity: ' . $verb);
+	return 'Create';
+//	return false;
 }
 
 
@@ -569,7 +574,12 @@ function activity_obj_mapper($obj) {
 	if(array_key_exists($obj,$objs)) {
 		return $objs[$obj];
 	}
-	return false;
+
+	logger('Unmapped activity object: ' . $obj);
+	return 'Note';
+
+//	return false;
+
 }
 
 
