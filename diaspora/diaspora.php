@@ -1073,9 +1073,6 @@ function diaspora_bb_to_markdown_bb(&$x) {
 	$Text = preg_replace_callback('/\@\!?\[([zu])rl\=(\w+.*?)\](\w+.*?)\[\/([zu])rl\]/i', 
 		'diaspora_bb_to_markdown_mention_callback', $Text);
 
-
-	$Text = str_replace( [ '[event','[/event' ], [ '[zot-event', '[/zot-event' ], $Text);
-
 	// strip map and embed tags, as the rendering is performed in bbcode() and the resulting output
 	// is not compatible with Diaspora (at least in the case of openstreetmap and probably
 	// due to the inclusion of an html iframe)
@@ -1191,4 +1188,33 @@ function diaspora_queue_deliver(&$b) {
 			}
 		}
 	}
+}
+
+
+function diaspora_create_event($ev, $author) {
+
+	require_once('include/html2plain.php');
+	require_once('include/markdown.php');
+
+	$ret = [];
+
+	if(! ((is_array($ev)) && count($ev)))
+		return null;
+
+	$ret['author']  = $author;
+	$ret['guid']    = $ev['event_hash'];
+	$ret['summary'] = html2plain($ev['summary']);
+	$ret['start']   = $ev['dtstart'];
+	if(! $ev['nofinish'])
+		$ret['end'] = $ev['dtend'];
+	if(! $ev['adjust'])
+		$ret['all_day'] = true;
+
+	$ret['description'] = html2markdown($ev['description'] . (($ev['location']) ? "\n\n" . $ev['location'] : ''));
+	if($ev['created'] !== $ev['edited'])
+		$ret['edited_at'] = datetime_convert('UTC','UTC',$ev['edited'], ATOM_TIME);
+
+	return $ret;
+
+
 }
