@@ -52,6 +52,11 @@ function statistics_load_module(&$a, &$b) {
 }
 
 
+/**
+ * Commenting out the old statistics.json interface
+ * use nodeinfo instead
+ *
+
 function statistics_module() {}
 
 function statistics_init() {
@@ -89,6 +94,10 @@ function statistics_init() {
 	logger("statistics_init: printed " . print_r($statistics, true));
 	killme();
 }
+
+ *
+ * End commenting out old statistics.json interface
+ */
 
 function statistics_cron_weekly($a,$b) {
 
