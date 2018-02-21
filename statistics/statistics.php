@@ -75,11 +75,11 @@ function statistics_init() {
 		"network" => Zotlabs\Lib\System::get_platform_name(),
 		"version" => (($hidden) ? '0.0' : Zotlabs\Lib\System::get_project_version()),
 		"registrations_open" => (($hidden) ? false : (bool) (get_config('system','register_policy') != 0)),
-		"total_users" => (($hidden) ? 1 : intval(get_config('system','channels_total_stat'))),
-		"active_users_halfyear" => (($hidden) ? 1 : intval(get_config('system','channels_active_halfyear_stat'))),
-		"active_users_monthly" => (($hidden) ? 1 : intval(get_config('system','channels_active_monthly_stat'))),
-		"local_posts" => (($hidden) ? 1 : intval(get_config('system','local_posts_stat'))),
-		"local_comments" => (($hidden) ? 1 : intval(get_config('system','local_comments_stat'))),
+		"total_users" => (($hidden) ? "1" : (string) get_config('system','channels_total_stat')),
+		"active_users_halfyear" => (($hidden) ? "1" : (string) get_config('system','channels_active_halfyear_stat')),
+		"active_users_monthly" => (($hidden) ? "1" : (string) get_config('system','channels_active_monthly_stat')),
+		"local_posts" => (($hidden) ? "1" : (string) get_config('system','local_posts_stat')),
+		"local_comments" => (($hidden) ? "1" : (string) get_config('system','local_comments_stat')),
 		"twitter" => (($hidden) ? false : (bool) get_config('statistics','twitter')),
 		"wordpress" => (($hidden) ? false : (bool) get_config('statistics','wordpress'))
 	);
