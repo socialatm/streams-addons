@@ -845,7 +845,7 @@ function diaspora_post_local(&$item) {
 		$meta = null;
 
 		if(activity_match($item['verb'], [ ACTIVITY_LIKE, ACTIVITY_DISLIKE ])) {
-			if(activity_match($item['obj_type'], [ ACTIVITY_OBJ_NOTE, ACTIVITY_OBJ_ACTIVITY, ACTIVITY_OBJ_COMMENT ])){
+			if(activity_match($item['obj_type'], [ ACTIVITY_OBJ_NOTE, ACTIVITY_OBJ_ACTIVITY, ACTIVITY_OBJ_COMMENT ])) {
 				$meta = [
 					'positive'        => (($item['verb'] === ACTIVITY_LIKE) ? 'true' : 'false'),
 					'guid'            => $item['mid'],
@@ -859,6 +859,28 @@ function diaspora_post_local(&$item) {
 					$meta['diaspora_handle'] = $handle;
 					$meta['target_type']     = 'Post';
 					$meta['parent_guid']     = $item['parent_mid'];
+				}
+			}
+		}
+		elseif(activity_match($item['verb'], [ ACTIVITY_ATTEND, ACTIVITY_ATTENDNO, ACTVITY_ATTENDMAYBE ])) {
+			if(activity_match($item['obj_type'], [ ACTIVITY_OBJ_NOTE ])) {
+				$status = 'tentative';
+				if(activity_match($item['verb'], [ ACTIVITY_ATTEND ]))
+					$status = 'accepted';
+				if(activity_match($item['verb'], [ ACTIVITY_ATTENDNO ]))
+					$status = 'declined';
+
+				$rawobj = ((is_array($item['obj'])) ? $item['obj'] : json_decode($item['obj'],true));
+				if($rawobj) {
+					$ev = bb2event($rawobj);
+					if($ev && $ev['hash'] && defined('DIASPORA_V2')) {
+						$meta = [
+							'author' => $handle,
+							'guid'   => $item['mid'],
+							'parent_guid' => $ev['hash'],
+							'status'      => $status
+						];
+					}
 				}
 			}
 		}
