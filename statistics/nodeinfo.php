@@ -66,10 +66,10 @@ function nodeinfo_content(&$a) {
 			$arr['protocols']['outbound'][] = 'gnusocial';
 		}
 
-		if(in_array('friendica',App::$plugins)) {
-			$arr['protocols']['inbound'][] = 'friendica';
-			$arr['protocols']['outbound'][] = 'friendica';
-		}
+//		if(in_array('friendica',App::$plugins)) {
+//			$arr['protocols']['inbound'][] = 'friendica';
+//			$arr['protocols']['outbound'][] = 'friendica';
+//		}
 
 		$services = array();
 		$iservices = array();
@@ -139,9 +139,9 @@ function nodeinfo_content(&$a) {
 			$arr['protocols'][] = 'ostatus';
 		}
 
-		if(in_array('friendica',App::$plugins)) {
-			$arr['protocols'][] = 'friendica';
-		}
+//		if(in_array('friendica',App::$plugins)) {
+//			$arr['protocols'][] = 'friendica';
+//		}
 
 		if(in_array('pubcrawl',App::$plugins)) {
 			$arr['protocols'][] = 'activitypub';
