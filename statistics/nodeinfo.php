@@ -185,7 +185,9 @@ function nodeinfo_content(&$a) {
 		if($iservices)
 			$arr['services']['inbound'] = $iservices;
 
-
+		$arr['metadata'] = [
+			'nodeName' => get_config('system','sitename')
+		];
 
 	}
 
