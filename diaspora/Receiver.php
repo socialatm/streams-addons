@@ -254,6 +254,49 @@ class Diaspora_Receiver {
 			$body = scale_external_images($body);
 		}
 
+		$event = $this->get_property('event');
+		if(is_array($event) && array_key_exists('guid',$event)) {
+			$ev = [];
+			$dts = $this->get_property('start',$event);
+			if($dts) {
+				$ev['dtstart'] = datetime_convert('UTC','UTC', $dts);
+			}
+			$dte = $this->get_property('end',$event);
+			if($dte) {
+				$ev['dtend'] = datetime_convert('UTC','UTC', $dte);
+			}
+			else {
+				$ev['nofinish'] = true;
+			}
+
+			// if an event is created we will use the author of the post.
+			
+//			$ev_author = notags($this->get_author($event));
+//			$ev_xchan = find_diaspora_person_by_handle($ev_author);
+			$ev['event_hash'] = notags($this->get_property('guid',$event));
+			$ev['summary'] = escape_tags($this->get_property('summary',$event));
+			$ev['adjust'] = (($this->get_property('all_day',$event)) ? false : true);
+			$ev_timezone = notags($this->get_property('timezone',$event));
+			$ev['description'] = markdown_to_bb($this->get_property('description',$event));
+			$ev_loc = $this->get_property('location',$event);
+			if($ev_loc) {
+				$ev_address = escape_tags($this->get_property('address',$ev_loc));
+				$ev_lat = notags($this->get_property('lat',$ev_loc));
+				$ev_lon = notags($this->get_property('lon',$ev_loc));
+			}
+			$ev['location'] = '';
+			if($ev_address) {
+				$ev['location'] .=  '[map]' . $ev_address . '[/map]' . "\n\n";
+			}
+			if(! (is_null($ev_lat) || is_null($ev_lon))) {
+				$ev['location'] .= '[map=' . $ev_lat . ',' . $ev_lon . ']';
+			}
+
+			if($ev['start'] && $ev['event_hash'] && $ev['summary']) {
+				$body .= format_event_bbcode($ev);
+			}
+		}
+
 		$maxlen = get_max_import_size();
 
 		if($maxlen && mb_strlen($body) > $maxlen) {
