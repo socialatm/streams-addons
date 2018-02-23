@@ -1843,17 +1843,32 @@ class Diaspora_Receiver {
 
 		logger('event_participation: ' . print_r($this->xmlbase,true), LOGGER_DATA);
 
-// not yet ready for prime time
-return;
-
 		$guid = notags($this->get_property('guid'));
 		$parent_guid = notags($this->get_property('parent_guid'));
 		$diaspora_handle = notags($this->get_author());
 		$status = notags($this->get_property('status'));
 
+		switch ($status) {
+			case 'accepted':
+				$activity = ACTIVITY_ATTEND;
+				break;
+			case 'declined':
+				$activity = ACTIVITY_ATTENDNO;
+				break;
+			case 'tentative':
+			default:
+				$activity = ACTIVITY_ATTENDMAYBE;
+				break;
+		}
+
+
 		$author_signature = notags($this->get_property('author_signature'));
 		$parent_author_signature = $this->get_property('parent_author_signature');
 
+		$edited = false;
+		$edited_at = notags($this->get_property('edited_at'));
+		if($edited_at)
+			$edited = datetime_convert($edited_at);
 
 		$xchan = find_diaspora_person_by_handle($diaspora_handle);
 
@@ -1874,9 +1889,9 @@ return;
 
 		// find a message owned by this channel and holding the referenced event
 
-		$r = q("select item.mid, item.id from item left join iconfig on iconfig.iid = item.id where cat = 'system' and k = 'event_id' and v = '%s' and item.uid = '%d' limit 1",
+		$r = q("select item.* from item left join iconfig on iconfig.iid = item.id where cat = 'system' and k = 'event_id' and v = '%s' and item.uid = %d limit 1",
 			dbesc($parent_guid),
-			dbesc($this->importer['channel_id'])
+			intval($this->importer['channel_id'])
 		);
 			
 		if(! $r) {
@@ -1885,39 +1900,7 @@ return;
 		}
 		$item_id = $r[0]['id'];
 
-		if(! $contact) {
-			logger('cannot find contact: ' . $this->msg['author'] . ' for channel ' . $this->importer['channel_name']);
-			return;
-		}
 
-		switch ($status) {
-			case 'accepted':
-				$verb = ACTIVITY_ATTEND;
-				break;
-			case 'declined':
-				$verb = ACTIVITY_ATTENDNO;
-				break;
-			case 'tentative':
-			default:
-				$verb = ACTIVITY_ATTENDMAYBE;
-				break;
-		}
-
-
-
-//		if((! $this->importer['system']) && (! perm_is_allowed($this->importer['channel_id'],$contact['xchan_hash'],'post_comments'))) {
-//			logger('diaspora_like: Ignoring this author.');
-//			return 202;
-//		}
-
-		$r = q("SELECT * FROM item WHERE uid = %d AND id = '%s' LIMIT 1",
-			intval($this->importer['channel_id']),
-			intval($item_id)
-		);
-		if(! $r) {
-			logger('parent post not found: ' . $guid);
-			return;
-		}
 
 		xchan_query($r);
 		$parent_item = $r[0];
@@ -1928,25 +1911,29 @@ return;
 			return;
 		}
 
-		$r = q("SELECT * FROM item WHERE uid = %d AND mid = '%s' LIMIT 1",
+		$orig_item = false;
+
+		$r = q("SELECT * FROM item WHERE verb in ( '%s', '%s' , '%s') and uid = %d and parent_mid = '%s' and author_xchan = '%s'",
+			dbesc(ACTIVITY_ATTEND),
+			dbesc(ACTIVITY_ATTENDNO),
+			dbesc(ACTIVITY_ATTENDMAYBE),
 			intval($this->importer['channel_id']),
-			dbesc($guid)
+			dbesc($parent_item['mid']),
+			dbesc($xchan['xchan_hash'])
 		);
+
 		if($r) {
-			if($positive === 'true') {
-				logger('diaspora_like: duplicate like: ' . $guid);
-				return;
-			}
-
-			// Note: I don't think "Like" objects with positive = "false" are ever actually used
-			// It looks like "RelayableRetractions" are used for "unlike" instead
-
-			if($positive === 'false') {
-				logger('diaspora_like: received a like with positive set to "false"...ignoring');
-				// perhaps call drop_item()
-				// FIXME--actually don't unless it turns out that Diaspora does indeed send out "false" likes
-				//  send notification via proc_run()
-				return;
+			foreach($r as $rv) {
+				if(($edited) && ($rv['mid'] === $guid)) {
+					if($edited > $rv['created']) {
+						$orig_item = $rv;
+						continue;
+					}
+					else {
+						return;
+					}
+				}
+				drop_item($rv['id'],false);
 			}
 		}
 
@@ -1956,16 +1943,6 @@ return;
 		if($i)
 			$item_author = $i[0];
 
-		// Note: I don't think "Like" objects with positive = "false" are ever actually used
-		// It looks like "RelayableRetractions" are used for "unlike" instead
-
-		if($positive === 'true')
-			$activity = ACTIVITY_LIKE;
-		else
-			$activity = ACTIVITY_DISLIKE;
-
-		// old style signature
-		$signed_data = $positive . ';' . $guid . ';' . $target_type . ';' . $parent_guid . ';' . $diaspora_handle;
 
 		$key = $this->msg['key'];
 
@@ -2000,9 +1977,10 @@ return;
 
 		// Phew! Everything checks out. Now create an item.
 
-		// Find the original comment author information.
-		// We need this to make sure we display the comment author
+		// Find the original author information.
+		// We need this to make sure we display the author
 		// information (name and avatar) correctly.
+
 		if(strcasecmp($diaspora_handle,$this->msg['author']) == 0)
 			$person = $contact;
 		else {
@@ -2017,13 +1995,15 @@ return;
 		$uri = $diaspora_handle . ':' . $guid;
 
 
-		$post_type = (($parent_item['resource_type'] === 'photo') ? t('photo') : t('status'));
+		$post_type = ('event');
 
 		$links = array(array('rel' => 'alternate','type' => 'text/html', 'href' => $parent_item['plink']));
-		$objtype = (($parent_item['resource_type'] === 'photo') ? ACTIVITY_OBJ_PHOTO : ACTIVITY_OBJ_NOTE );
+		$objtype = (($item['resource_type'] === 'photo') ? ACTIVITY_OBJ_PHOTO : ACTIVITY_OBJ_NOTE );
+
+		if($objtype === ACTIVITY_OBJ_NOTE && (! intval($item['item_thread_top'])))
+			$objtype = ACTIVITY_OBJ_COMMENT;
 
 		$body = $parent_item['body'];
-
 
 		$object = json_encode(array(
 			'type'    => $post_type,
@@ -2041,12 +2021,18 @@ return;
 				'guid_sig' => $item_author['xchan_guid_sig'],
 				'link'     => array(
 					array('rel' => 'alternate', 'type' => 'text/html', 'href' => $item_author['xchan_url']),
-					array('rel' => 'photo', 'type' => $item_author['xchan_photo_mimetype'], 'href' => $item_author['xchan_photo_m'])),
+					array('rel' => 'photo', 'type' => $item_author['xchan_photo_mimetype'], 'href' => $item_author['xchan_photo_m'])
 				),
-			));
+			),
+		));
 
 
-		$bodyverb = t('%1$s likes %2$s\'s %3$s');
+		if($activity === ACTIVITY_ATTEND)
+			$bodyverb = t('%1$s is attending %2$s\'s %3$s');
+		if($activity === ACTIVITY_ATTENDNO)
+			$bodyverb = t('%1$s is not attending %2$s\'s %3$s');
+		if($activity === ACTIVITY_ATTENDMAYBE)
+			$bodyverb = t('%1$s may attend %2$s\'s %3$s');
 
 		$arr = array();
 
@@ -2089,10 +2075,12 @@ return;
 			}
 		}
 
-
 		set_iconfig($arr,'diaspora','fields',$unxml,true);
 
-		$result = item_store($arr);
+		if($orig_item)
+			$result = item_store_update($arr);
+		else
+			$result = item_store($arr);
 
 		if($result['success']) {
 			// if the message isn't already being relayed, notify others
@@ -2105,10 +2093,6 @@ return;
 		}
 
 		return;
-
-
-
-
 
 	}
 
