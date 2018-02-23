@@ -295,6 +295,7 @@ class Diaspora_Receiver {
 			if($ev['start'] && $ev['event_hash'] && $ev['summary']) {
 				$body .= format_event_bbcode($ev);
 			}
+			set_iconfig($datarray,'system','event_id',$ev['event_hash'],true);
 		}
 
 		$maxlen = get_max_import_size();
