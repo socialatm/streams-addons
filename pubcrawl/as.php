@@ -977,7 +977,7 @@ function as_actor_store($url,$person_obj) {
 
 function as_create_action($channel,$observer_hash,$act) {
 
-	if(in_array($act->obj['type'], [ 'Note', 'Article' ])) {
+	if(in_array($act->obj['type'], [ 'Note', 'Article', 'Video' ])) {
 		as_create_note($channel,$observer_hash,$act);
 	}
 
@@ -995,7 +995,7 @@ function as_announce_action($channel,$observer_hash,$act) {
 
 function as_like_action($channel,$observer_hash,$act) {
 
-	if(in_array($act->obj['type'], [ 'Note', 'Article' ])) {
+	if(in_array($act->obj['type'], [ 'Note', 'Article', 'Video' ])) {
 		as_like_note($channel,$observer_hash,$act);
 	}
 
