@@ -1002,7 +1002,13 @@ function as_like_action($channel,$observer_hash,$act) {
 
 }
 
+// sort function width decreasing
 
+function as_vid_sort($a,$b) {
+	if($a['width'] === $b['width'])
+		return 0;
+	return (($a['width'] > $b['width']) ? -1 : 1);
+}
 
 function as_create_note($channel,$observer_hash,$act) {
 
@@ -1119,6 +1125,39 @@ function as_create_note($channel,$observer_hash,$act) {
 		foreach($s['attach'] as $img) {
 			if(strpos($img['type'],'image') !== false) {
 				$s['body'] .= "\n\n" . '[img]' . $img['href'] . '[/img]';
+			}
+			if(array_key_exists('mediaType',$img) && strpos('video',$img['mediaType']) === 0) {
+				$s['body'] .= "\n\n" . '[video]' . $img['href'] . '[/video]';
+ 			}
+			if(array_key_exists('mediaType',$img) && strpos('audio',$img['mediaType']) === 0) {
+				$s['body'] .= "\n\n" . '[audio]' . $img['href'] . '[/audio]';
+ 			}
+		}
+	}
+
+	// we will need a hook here to extract magnet links e.g. peertube
+	// right now just link to the largest mp4 we find that will fit in our
+	// standard content region
+
+	if($act->obj['type'] === 'Video') {
+		$mps = [];
+		if(array_key_exists('url',$act->obj) && is_array($act->obj['url'])) {
+			foreach($act->obj['url'] as $vurl) {
+				if($vurl['mediaType'] === 'video/mp4') {
+					if(! array_key_exists('width',$vurl)) {
+						$vurl['width'] = 0;
+					}
+					$mps[] = $vurl;
+				}
+			}
+		}
+		if($mps) {
+			usort($mps,'as_vid_sort');
+			foreach($mps as $m) {
+				if(intval($m['width']) < 500) {
+					$s['body'] .= "\n\n" . '[video]' . $m['href'] . '[/video]';
+					break;
+				}
 			}
 		}
 	}
