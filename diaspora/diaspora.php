@@ -1070,6 +1070,8 @@ function diaspora_markdown_to_bb_init(&$s) {
 	// if empty link text replace with the url
 	$s = preg_replace("/\[\]\((.*?)\)/ism",'[$1]($1)',$s);
 
+	$s = preg_replace_callback("/\!*\[(.*?)\]\((.*?)\)/ism",'diaspora_markdown_media_cb',$s);
+
   	$s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}\+/','diaspora_md_mention_callback',$s);
 	$s = preg_replace_callback('/\@\{(.+?)\; (.+?)\@(.+?)\}/','diaspora_md_mention_callback',$s);
 
@@ -1084,6 +1086,24 @@ function diaspora_markdown_to_bb_init(&$s) {
 
 }
 
+
+function diaspora_markdown_media_cb($matches) {
+
+	$audios = [ '.mp3', '.ogg', '.oga', '.m4a' ];
+	$videos = [ '.mp4', '.ogv', '.ogm', '.webm', '.opus' ];
+
+	foreach($audios as $aud) {
+		if(strpos(strtolower($matches[2]),$aud) !== false)
+			return '[audio]' . $matches[2] . '[/audio]';
+	}
+	foreach($videos as $vid) {
+		if(strpos(strtolower($matches[2]),$vid) !== false)
+			return '[video]' . $matches[2] . '[/video]';
+	}
+
+	return $matches[0];
+
+}
 
 function diaspora_bb_to_markdown_bb(&$x) {
 
