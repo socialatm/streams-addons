@@ -1,8 +1,9 @@
 <?php
 
 /**
- * Name: cavatar
- * Description: create cat-avatar for default profile photo
+ * Name: Cavatar
+ * Description: create random cat-avatar for default profile photo (primarily for reference and entertainment use: generated images are grainy)
+ * Version: 1.0
  *
  */
 
