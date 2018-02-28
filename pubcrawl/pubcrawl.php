@@ -1049,9 +1049,8 @@ function pubcrawl_feature_settings(&$s) {
 		'$field'	=> array('activitypub_send_media', t('Send multi-media HTML articles'), 1 - intval(get_pconfig(local_channel(),'activitypub','downgrade_media',true)), t('Not supported by some microblog services such as Mastodon'), $yes_no),
 	));
 
-
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
-		'$addon' 	=> array('pubcrawl', t('ActivityPub Protocol Settings'), '', t('Submit')),
+		'$addon' 	=> array('pubcrawl', '<img src="addon/pubcrawl/pubcrawl.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('ActivityPub Protocol Settings'), '', t('Submit')),
 		'$content'	=> $sc
 	));
 
