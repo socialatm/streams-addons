@@ -88,6 +88,11 @@ function pubcrawl_webfinger(&$b) {
 	if(! $b['channel'])
 		return;
 
+	if(! get_pconfig($b['channel']['channel_id'],'system','activitypub_allowed'))
+		return;
+
+	$b['result']['properties']['http://purl.org/zot/federation'] .= ',activitypub';
+
 	$b['result']['links'][] = [ 
 		'rel'  => 'self', 
 		'type' => 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"',

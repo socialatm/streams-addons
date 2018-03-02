@@ -167,6 +167,8 @@ function diaspora_webfinger(&$b) {
 		'href' => z_root()
 	];
 
+	$b['result']['properties']['http://purl.org/zot/federation'] .= ',diaspora';
+
 	// Diaspora requires a salmon link. 
 	// Use this *only* if the gnusoc plugin is not installed and enabled
 
