@@ -63,8 +63,7 @@ function diaspora_init_relay() {
 	if(! get_config('diaspora','relay_handle')) {
 		if(plugin_is_installed('statistics')) {
 			$x = ['author' => [ 'address' => 'relay@relay.iliketoast.net', 'network' => 'diaspora' ], 'result' => false ];
-			$placeholder = 'placeholder';
-			diaspora_import_author($placeholder, $x);
+			diaspora_import_author($x);
 			if($x['result']) {
 				set_config('diaspora','relay_handle',$x['result']);
 				// Now register
