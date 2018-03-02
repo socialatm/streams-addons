@@ -38,7 +38,8 @@ function pubcrawl_load() {
 		'personal_xrd'               => 'pubcrawl_personal_xrd',
 		'queue_deliver'              => 'pubcrawl_queue_deliver',
 		'import_author'              => 'pubcrawl_import_author',
-		'channel_protocols'          => 'pubcrawl_channel_protocols'
+		'channel_protocols'          => 'pubcrawl_channel_protocols',
+		'create_identity'            => 'pubcrawl_create_identity'
 	]);
 }
 
@@ -1063,3 +1064,10 @@ function pubcrawl_feature_settings(&$s) {
 
 }
 
+function pubcrawl_create_identity($b) {
+
+	if(get_config('system','activitypub_allowed')) {
+		set_pconfig($b,'system','activitypub_allowed','1');
+	}
+
+}
