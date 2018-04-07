@@ -416,13 +416,12 @@ function asencode_activity($i) {
 		$ret['bto'] = as_map_acl($i);
 	}
 
-
 	if(in_array($ret['object']['type'], [ 'Note', 'Article' ])) {
-		if ($ret['to'])
+		if($ret['to'])
 			$ret['object']['to'] = $ret['to'];
-		if ($ret['bto'])
+		if($ret['bto'])
 			$ret['object']['bto'] = $ret['bto'];
-		if ($ret['cc'])
+		if($ret['cc'])
 			$ret['object']['cc'] = $ret['cc'];
 	}
 
