@@ -226,7 +226,6 @@ function asencode_item($i) {
 		$ret['attachment'] = array_merge($img,$ret['attachment']);
 	}
 
-
 	return $ret;
 }
 
