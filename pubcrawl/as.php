@@ -398,12 +398,7 @@ function asencode_activity($i) {
 			$ret['object']['to'] = $ret['to'];
 	}
 	else {
-		if($i['item_private']) {
-			$ret['bto'] = as_map_acl($i);
-			if(in_array($ret['object']['type'], [ 'Note', 'Article' ]))
-				$ret['object']['bto'] = $ret['bto'];
-		}
-		else {
+		if(! $i['item_private']) {
 			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
 			if(in_array($ret['object']['type'], [ 'Note', 'Article' ]))
 				$ret['object']['to'] = $ret['to'];
@@ -414,6 +409,13 @@ function asencode_activity($i) {
 					$ret['object']['cc'] = $ret['cc'];
 			}				
 		}
+		else {
+//			$ret['bto'] = as_map_acl($i);
+//			if(in_array($ret['object']['type'], [ 'Note', 'Article' ]))
+//				$ret['object']['bto'] = $ret['bto'];
+		}
+
+
 	} 
 
 
