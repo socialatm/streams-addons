@@ -155,7 +155,7 @@ function cart_dbUpgrade () {
 				return UPDATE_FAILED;
 			}
 		}
-		cart_setsysconfig("dbver".$ver);
+		cart_setsysconfig("dbver",$ver);
 	}
 	notice ('[cart] dbUpgrade to ('.$ver.') Successful.');
 	return UPDATE_SUCCESS;
