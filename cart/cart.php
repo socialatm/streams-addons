@@ -155,7 +155,7 @@ function cart_dbUpgrade () {
 				return UPDATE_FAILED;
 			}
 		}
-		cart_setsysconfig("dbver".$ver);
+		cart_setsysconfig("dbver",$ver);
 	}
 	notice ('[cart] dbUpgrade to ('.$ver.') Successful.');
 	return UPDATE_SUCCESS;
@@ -946,7 +946,7 @@ function cart_setcartconfig($param,$val) {
 	return set_pconfig(local_channel(),"cart",$param);
 }
 
-function cart_install(&$a) {
+function cart_install() {
 		logger ('[cart] Install start.',LOGGER_DEBUG);
 	if (cart_dbUpgrade () == UPDATE_FAILED) {
 		notice ('[cart] Install error - Abort installation.');
