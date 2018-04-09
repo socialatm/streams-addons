@@ -413,14 +413,14 @@ function asencode_activity($i) {
 		$ret['to'] = [ $reply_url ];
 	}
 	else {
-		$ret['bto'] = as_map_acl($i);
+		//$ret['bto'] = as_map_acl($i);
 	}
 
 	if(in_array($ret['object']['type'], [ 'Note', 'Article' ])) {
 		if($ret['to'])
 			$ret['object']['to'] = $ret['to'];
-		if($ret['bto'])
-			$ret['object']['bto'] = $ret['bto'];
+		//if($ret['bto'])
+		//	$ret['object']['bto'] = $ret['bto'];
 		if($ret['cc'])
 			$ret['object']['cc'] = $ret['cc'];
 	}
