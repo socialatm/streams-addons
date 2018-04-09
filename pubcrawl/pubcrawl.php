@@ -387,7 +387,7 @@ function pubcrawl_notifier_process(&$arr) {
 
 		// AP does not allow any messages where the sender is different from the actor
 
-		if($arr['channel']['channel_hash'] != $targe_item['author_xchan']) {
+		if($arr['channel']['channel_hash'] != $arr['target_item']['author_xchan']) {
 			return;
 		}
 
