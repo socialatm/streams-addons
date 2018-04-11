@@ -186,7 +186,7 @@ function asencode_item($i) {
 		'href' => $i['plink']
 	];
 
-	$ret['attributedTo'] = $i['owner']['xchan_addr'];
+	$ret['attributedTo'] = $i['author']['xchan_addr'];
 
 	$cnv = null;
 
