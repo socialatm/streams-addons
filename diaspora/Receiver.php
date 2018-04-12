@@ -1755,7 +1755,13 @@ class Diaspora_Receiver {
 			return 202;
 		}
 
-		$name = unxmlify($this->xmlbase['first_name'] . (($this->xmlbase['last_name']) ? ' ' . $this->xmlbase['last_name'] : ''));
+		// full_name added to protocol 2018-04
+		if(array_key_exists('full_name',$this->xmlbase) && $this->xmlbase['full_name']) {
+			$name = unxmlify($this->xmlbase['full_name']);
+		}
+		else {
+			$name = unxmlify($this->xmlbase['first_name'] . (($this->xmlbase['last_name']) ? ' ' . $this->xmlbase['last_name'] : ''));
+		}
 		$image_url = unxmlify($this->xmlbase['image_url']);
 		$birthday = unxmlify($this->xmlbase['birthday']);
 
