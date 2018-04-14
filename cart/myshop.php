@@ -1,11 +1,14 @@
 <?php
 
 function cart_myshop_load(){
-	Zotlabs\Extend\Hook::register('cart_main_myshop', 'addon/cart/cart.php', 'cart_construct_page');
+	Zotlabs\Extend\Hook::register('cart_main_myshop','addon/cart/myshop.php','cart_myshop_main',1,99);
+	Zotlabs\Extend\Hook::register('cart_aside_filter','addon/cart/myshop.php','cart_myshop_aside',1,99);
 }
 
 function cart_myshop_unload(){
-	Zotlabs\Extend\Hook::unregister('cart_main_myshop', 'addon/cart/cart.php', 'cart_construct_page');
+
+	Zotlabs\Extend\Hook::unregister('cart_main_myshop','addon/cart/myshop.php','cart_myshop_main');
+	Zotlabs\Extend\Hook::unregister('cart_aside_filter','addon/cart/myshop.php','cart_myshop_aside');
 }
 
 /* FUTURE/TODO
@@ -42,6 +45,33 @@ function cart_myshop_searchparams ($search) {
 	}
 }
 */
+
+function cart_myshop_main ($pagecontent) {
+
+	$template = get_markup_template('myshop.tpl','addon/cart/');
+	$pagecontent = replace_macros($template, $templatevalues);
+
+	return ($pagecontent);
+}
+
+function cart_myshop_aside ($aside) {
+	$is_seller = ((local_channel()) && (local_channel() == \App::$profile['profile_uid']) ? true : false);
+
+	    // Determine if the observer is the channel owner so the ACL dialog can be populated
+    if (!$is_seller) {
+  		// DO Seller Specific Setup
+			return $aside;
+	  }
+
+	$rendered = '';
+
+	$templatevalues["content"]=$rendered;
+	$template = get_markup_template('myshop_aside.tpl','addon/cart/');
+	$rendered = replace_macros($template, $templatevalues);
+	$aside = $rendered . $aside;
+
+	return ($aside);
+}
 
 function cart_myshop_allorders ($search=null,$limit=100,$offset=1) {
 /**

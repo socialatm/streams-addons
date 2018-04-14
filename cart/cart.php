@@ -996,6 +996,7 @@ function cart_load(){
 	Zotlabs\Extend\Hook::register('cart_post_add_item','addon/cart/cart.php','cart_post_add_item');
 	Zotlabs\Extend\Hook::register('cart_checkout_start','addon/cart/cart.php','cart_checkout_start');
 	Zotlabs\Extend\Hook::register('cart_post_checkout_choosepayment','addon/cart/cart.php','cart_post_choose_payment',1,32000);
+	Zotlabs\Extend\Hook::register('cart_aside_filter','addon/cart/cart.php','cart_render_aside',1,10000);
 
 	//$manualpayments = get_pconfig ($id,'cart','enable_manual_payments');
 	//if ($manualpayments) {
@@ -1003,7 +1004,7 @@ function cart_load(){
 	require_once("manual_payments.php");
 	cart_manualpayments_load();
 	require_once("myshop.php");
-	cart_myshop_unload();
+	cart_myshop_load();
 }
 
 function cart_unload(){
@@ -1018,13 +1019,14 @@ function cart_unload(){
 	Zotlabs\Extend\Hook::unregister('cart_do_checkout','addon/cart/cart.php','cart_do_checkout');
 	Zotlabs\Extend\Hook::unregister('cart_orderpaid','addon/cart/cart.php','cart_orderpaid_hook');
 	Zotlabs\Extend\Hook::unregister('cart_do_orderpaid','addon/cart/cart.php','cart_do_orderpaid');
-	Zotlabs\Extend\Hook::unregister('cart_before_checkout','addon/cart/cart.php','cart_calc_totals',1,10);
-	Zotlabs\Extend\Hook::unregister('cart_calc_totals','addon/cart/cart.php','cart_calc_totals',1,10);
-	Zotlabs\Extend\Hook::unregister('cart_display_after','addon/cart/cart.php','cart_display_totals',1,99);
-	Zotlabs\Extend\Hook::unregister('cart_mod_content','addon/cart/cart.php','cart_mod_content',1,99);
+	Zotlabs\Extend\Hook::unregister('cart_before_checkout','addon/cart/cart.php','cart_calc_totals');
+	Zotlabs\Extend\Hook::unregister('cart_calc_totals','addon/cart/cart.php','cart_calc_totals');
+	Zotlabs\Extend\Hook::unregister('cart_display_after','addon/cart/cart.php','cart_display_totals');
+	Zotlabs\Extend\Hook::unregister('cart_mod_content','addon/cart/cart.php','cart_mod_content');
 	Zotlabs\Extend\Hook::unregister('cart_post_add_item','addon/cart/cart.php','cart_post_add_item');
 	Zotlabs\Extend\Hook::unregister('cart_checkout_start','addon/cart/cart.php','cart_checkout_start');
-	Zotlabs\Extend\Hook::unregister('cart_post_checkout_choosepayment','addon/cart/cart.php','cart_post_choose_payment',1,32000);
+	Zotlabs\Extend\Hook::unregister('cart_post_checkout_choosepayment','addon/cart/cart.php','cart_post_choose_payment');
+	Zotlabs\Extend\Hook::unregister('cart_aside_filter','addon/cart/cart.php','cart_render_aside');
 	require_once("manual_payments.php");
 	cart_manualpayments_unload();
 	require_once('myshop.php');
@@ -1213,7 +1215,7 @@ function cart_pagecontent($a=null) {
     if ($is_seller) {
 		// DO Seller Specific Setup
 		nav_set_selected('Cart');
-	}
+	  }
 
 	if ((argc() >= 3) && (argv(2) === 'order')) {
 		$orderhash=argv(3);
@@ -1241,8 +1243,8 @@ function cart_pagecontent($a=null) {
 
 		if ($testcatalog) {
 			Zotlabs\Extend\Hook::insert('cart_get_catalog','cart_get_test_catalog',1,0);
+			logger ("TESTCATALOG: $testcatalog");
 		}
-		logger ("TESTCATALOG: $testcatalog");
 		call_hooks('cart_get_catalog',$items);
 		call_hooks('cart_filter_catalog',$items);
 		if (count($items)<1) {
@@ -1289,9 +1291,9 @@ function cart_pagecontent($a=null) {
 		call_hooks('cart_main_'.$hookname,$page);
   }
 
-	$aside = cart_render_aside();
-  $aside .= \App::$page['aside'];
-  call_hooks ('cart_aside_filter',$aside);
+	$aside = \App::$page['aside'];
+	call_hooks ('cart_aside_filter',$aside);
+
 	\App::$page['aside'] =  $aside;
 
 	return $page;
@@ -1317,27 +1319,21 @@ function cart_del_aside ($slug) {
 	unset($cart_aside['slug']);
 }
 
-function cart_render_aside () {
+function cart_render_aside ($aside) {
 	global $cart_aside;
 
-	$rendered_aside='';
-
-	$items=Array();
-	foreach ($cart_aside as $key=>$item) {
-		$slug=$key;
-		$iteminfo=each($item);
-	  $priority=$iteminfo["key"];
-		$items[$priority][$slug]=$iteminfo["value"];
+	$rendered='';
+  $orderhash = cart_getorderhash(false);
+	if ($orderhash) {
+		$order=cart_loadorder($orderhash);
+		$itemcount = count($orderhash["items"]);
+		$rendered .= "<li><a href=''>Checkout (".$itemcount." items)</li>";
 	}
-
-	if (ksort($items)) {
-    foreach ($items as $item) {
-			foreach ($item as $html) {
-				$rendered .= $html."\n.";
-			}
-		}
-	return ($rendered);
-	}
+	$templatevalues["content"]=$rendered;
+  $template = get_markup_template('cart_aside.tpl','addon/cart/');
+  $rendered = replace_macros($template, $templatevalues);
+  $aside = $rendered . $aside;
+	return ($aside);
 }
 
 function cart_checkout_pay (&$hookdata) {
