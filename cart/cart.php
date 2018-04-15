@@ -1176,10 +1176,10 @@ function cart_post(&$a) {
 /* @todo: rework as filter
 */
 function cart_mod_content(&$arr) {
+  $arr['content'] = cart_pagecontent($a);
   $aside = "";
   call_hooks ('cart_aside_filter',$aside);
   \App::$page['aside'] =  $aside;
-  $arr['content'] = cart_pagecontent($a);
   $arr['replace'] = true;
   return ;
 }
@@ -1290,12 +1290,6 @@ function cart_pagecontent($a=null) {
     $hookname=preg_replace('/[^a-zA-Z0-9\_]/','',argv(2));
 		call_hooks('cart_main_'.$hookname,$page);
   }
-
-	$aside = \App::$page['aside'];
-	call_hooks ('cart_aside_filter',$aside);
-
-	\App::$page['aside'] =  $aside;
-
 	return $page;
 
 }
@@ -1319,21 +1313,20 @@ function cart_del_aside ($slug) {
 	unset($cart_aside['slug']);
 }
 
-function cart_render_aside ($aside) {
-	global $cart_aside;
+function cart_render_aside (&$aside) {
 
 	$rendered='';
   $orderhash = cart_getorderhash(false);
 	if ($orderhash) {
 		$order=cart_loadorder($orderhash);
-		$itemcount = count($orderhash["items"]);
-		$rendered .= "<li><a href=''>Checkout (".$itemcount." items)</li>";
+		$itemcount = count($order["items"]);
+		$rendered .= "<li><a href='".z_root() . '/cart/' . argv(1) . '/checkout/start'."'>Checkout (".$itemcount." items)</a></li>";
 	}
-	$templatevalues["content"]=$rendered;
+	$templatevalues['content']=$rendered;
   $template = get_markup_template('cart_aside.tpl','addon/cart/');
   $rendered = replace_macros($template, $templatevalues);
-  $aside = $rendered . $aside;
-	return ($aside);
+  $rendered .= $aside;
+  $aside = $rendered;
 }
 
 function cart_checkout_pay (&$hookdata) {

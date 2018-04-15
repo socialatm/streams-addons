@@ -54,14 +54,13 @@ function cart_myshop_main ($pagecontent) {
 	return ($pagecontent);
 }
 
-function cart_myshop_aside ($aside) {
+function cart_myshop_aside (&$aside) {
 	$is_seller = ((local_channel()) && (local_channel() == \App::$profile['profile_uid']) ? true : false);
 
 	    // Determine if the observer is the channel owner so the ACL dialog can be populated
-    if (!$is_seller) {
-  		// DO Seller Specific Setup
+        if (!$is_seller) {
 			return $aside;
-	  }
+	}
 
 	$rendered = '';
 
