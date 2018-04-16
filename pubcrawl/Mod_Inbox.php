@@ -79,6 +79,9 @@ class Inbox extends \Zotlabs\Web\Controller {
 				);
 			}
 			else {
+
+				// deliver to anybody following $AS->actor
+
 				$channels = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network = 'activitypub' and xchan_hash = '%s' ) and channel_removed = 0 ",
 					dbesc($observer_hash)
 				);
@@ -87,8 +90,6 @@ class Inbox extends \Zotlabs\Web\Controller {
 			if($channels === false)
 				$channels = [];
 
-			if(! $sys_disabled)
-				$channels[] = get_sys_channel();
 
 			if(in_array(ACTIVITY_PUBLIC_INBOX,$AS->recips)) {
 
@@ -98,6 +99,11 @@ class Inbox extends \Zotlabs\Web\Controller {
 				if($r) {
 					$channels = array_merge($channels,$r);
 				}
+
+				if(! $sys_disabled) {
+					$channels[] = get_sys_channel();
+				}
+
 			}
 
 		}
