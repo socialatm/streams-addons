@@ -4,6 +4,11 @@
   <div class='section-title-wrapper'>
     <div class="title">{{if $title}}{{$title}}{{else}}Order{{/if}}</div>
   </div>
+  <form method="post">
+      <input type=hidden name="cart_posthook" value="myshop_order">
+      <input type=hidden name="orderhash" value="{{$order_hash}}">
+      <button class="btn btn-primary" type="submit" name="Confirm" id="cart-submit-button" value="Confirm">Confirm Order</button>
+  </form>
   <div class='section-content-wrapper' style="width:100%;">
     <table style="width:100%;">
         <tr>
@@ -14,8 +19,7 @@
     {{foreach $items as $item}}
         <tr {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>
             <td {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>{{$item.item_desc}}
-            {{if $item.xtrahtml}}
-            {{/if}}
+            {{if $item.xtrahtml}}<div class="cart-item-xtrahtml">{{$item.xtrahtml}}</div>{{/if}}
             </td>
             <td style="text-align:right;" {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>{{$item.item_price}}</td>
             <td style="text-align:right;" {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>{{$item.extended}}</td>
