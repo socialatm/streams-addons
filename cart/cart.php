@@ -170,11 +170,17 @@ function cart_loadorder ($orderhash) {
 	$order = $r[0];
 	$order["order_meta"]=cart_maybeunjson($order["order_meta"]);
 	$order["totals"]=$order["order_meta"]["totals"];
-
+        $xchan = xchan_fetch(Array('hash'=>$order["buyer_xchan"]));
+        $order["buyer_channelname"]=$xchan["name"]." (".$xchan["address"].")";
 	$r = q ("select * from cart_orderitems where order_hash = '%s'",dbesc($orderhash));
+        $flags=Array("confirmed"=>true,"fulfilled"=>true,"exception"=>false,"lastupdate"=>"0000-00-00");
 
 	if (!$r) {
                 logger ("[cart] Cart Has No Items");
+                $order["items"]=Array();
+                $order["flags"]["confirmed"]=false;
+                $order["flags"]["fulfilled"]=false;
+                $order["flags"]=$flags;
                 $hookdata=$order;
 	        call_hooks("cart_loadorder",$hookdata);
                 return $hookdata;
@@ -183,9 +189,14 @@ function cart_loadorder ($orderhash) {
 	foreach ($r as $key=>$iteminfo) {
 		$items[$iteminfo["id"]]=$iteminfo;
 		$items[$iteminfo["id"]]["extended"]=$iteminfo["item_qty"]*$iteminfo["item_price"];
+                if($iteminfo["item_confirmed"] == false) $flags["confirmed"]=false;
+                if($iteminfo["item_fulfilled"] == false) $flags["fulfilled"]=false;
+                if($iteminfo["item_exception"] == true) $flags["exception"]=true;
+                if($iteminfo["item_lastupdate"] > $flags["lastupdate"]) $flags["lastupdate"]=$iteminfo["item_lastupdate"];
 	}
 	$order["items"]=$items;
-    $hookdata=$order;
+        $order["flags"]=$flags;
+        $hookdata=$order;
 	call_hooks("cart_loadorder",$hookdata);
 	return $hookdata;
 }
@@ -408,7 +419,7 @@ function cart_getorder_meta ($orderhash=null) {
 		return null;
 	}
 
-	$r=q("select order_meta from cart_order where order_hash = '%s'",
+	$r=q("select order_meta from cart_orders where order_hash = '%s'",
 			dbesc($orderhash));
 
 	if (!$r) {return Array();}
@@ -432,7 +443,8 @@ function cart_getitem_meta ($itemid,$orderhash=null) {
 }
 
 function cart_updateorder_meta ($meta,$orderhash=null) {
-	$orderhash = $orderhash ? $orderhash : cart_getorderhash();
+
+        if (!$orderhash) { cart_getorderhash(); }
 
 	if (!$orderhash) {
 		return null;
@@ -658,6 +670,7 @@ function cart_calc_totals(&$hookdata) {
 	//Save order meta data with new totals
 	cart_updateorder_meta($ordermeta,$orderhash);
 	//set return values
+        $hookdata["order_meta"]=$ordermeta;
 	$hookdata["totals"]=$order["order_meta"]["totals"];
 }
 
@@ -1236,7 +1249,7 @@ function cart_pagecontent($a=null) {
 		$template = get_markup_template($templateinfo['name'],$templateinfo['path']);
 		call_hooks('cart_show_order_filter',$cart_template);
 		$order = cart_loadorder($orderhash);
-    call_hooks('cart_calc_totals',$order);
+                call_hooks('cart_calc_totals',$order);
 		return replace_macros($cart_template, $order);
 	}
 
@@ -1388,7 +1401,7 @@ function cart_checkout_start (&$hookdata) {
 	 $ordermeta = cart_getorder_meta($orderhash);
 	 unset($ordermeta["paytype"]);
 	 cart_updateorder_meta($ordermeta,$orderhash);
-
+         $hookdata["order_meta"]=$ordermeta;
 	call_hooks('cart_before_checkout',$hookdata);
 
 	$template = get_markup_template('basic_checkout_start.tpl','addon/cart/');

@@ -4,11 +4,6 @@
   <div class='section-title-wrapper'>
     <div class="title">{{if $title}}{{$title}}{{else}}Order{{/if}}</div>
   </div>
-  <form method="post">
-      <input type=hidden name="cart_posthook" value="myshop_order">
-      <input type=hidden name="orderhash" value="{{$order_hash}}">
-      <button class="btn btn-primary" type="submit" name="Confirm" id="cart-submit-button" value="Confirm">Confirm Order</button>
-  </form>
   <div class='section-content-wrapper' style="width:100%;">
     <table style="width:100%;">
         <tr>
@@ -48,5 +43,22 @@
     </tr>
     {{/if}}
     </table>
+    <div>
+      {{if !$order.order_paid}}
+      <form method="post">
+        <input type=hidden name="security" value="{{$security_token}}">
+        <input type=hidden name="cart_posthook" value="myshop_order">
+        <input type=hidden name="orderhash" value="{{$order_hash}}">
+        <input type=hidden name="action" value="markpaid">
+        <button class="btn btn-primary" type="submit" name="Confirm" id="cart-payment-button" class="cart-payment-button" value="Confirm">Mark Paid</button>
+      </form>
+      {{/if}}
+      <hr>
+      <h3>Record Manual Payment</h3>
+      <hr>
+      <h3>Order Notes</h3>
+      <hr>
+      <h3>Add Order Note</h3>
+    </div>
   </div>
 </div>

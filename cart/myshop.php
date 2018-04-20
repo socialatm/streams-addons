@@ -7,6 +7,9 @@ function cart_myshop_load(){
 	Zotlabs\Extend\Hook::register('cart_post_myshop_item_fulfill','addon/cart/myshop.php','cart_myshop_item_fulfill',1,99);
 	Zotlabs\Extend\Hook::register('cart_post_myshop_clear_item_exception','addon/cart/myshop.php','cart_myshop_clear_item_exception',1,99);
 	Zotlabs\Extend\Hook::register('cart_post_myshop_add_itemnote','addon/cart/myshop.php','cart_myshop_add_itemnote',1,99);
+	Zotlabs\Extend\Hook::register('cart_myshop_allorders','addon/cart/myshop.php','cart_myshop_allorders',1,99);
+	Zotlabs\Extend\Hook::register('cart_myshop_openorders','addon/cart/myshop.php','cart_myshop_openorders',1,99);
+	Zotlabs\Extend\Hook::register('cart_myshop_closedorders','addon/cart/myshop.php','cart_myshop_closedorders',1,99);
 }
 
 function cart_myshop_unload(){
@@ -17,6 +20,9 @@ function cart_myshop_unload(){
 	Zotlabs\Extend\Hook::unregister('cart_post_myshop_item_fulfill','addon/cart/myshop.php','cart_myshop_item_fulfill');
 	Zotlabs\Extend\Hook::unregister('cart_post_myshop_clear_item_exception','addon/cart/myshop.php','cart_myshop_clear_item_exception');
 	Zotlabs\Extend\Hook::unregister('cart_post_myshop_add_itemnote','addon/cart/myshop.php','cart_myshop_add_itemnote');
+	Zotlabs\Extend\Hook::register('cart_myshop_allorders','addon/cart/myshop.php','cart_myshop_allorders');
+	Zotlabs\Extend\Hook::register('cart_myshop_openorders','addon/cart/myshop.php','cart_myshop_openorders');
+	Zotlabs\Extend\Hook::register('cart_myshop_closedorders','addon/cart/myshop.php','cart_myshop_closedorders');
 }
 
 /* FUTURE/TODO
@@ -54,9 +60,14 @@ function cart_myshop_searchparams ($search) {
 }
 */
 
-function cart_myshop_main ($pagecontent) {
+function cart_myshop_main (&$pagecontent) {
 
 	$sellernick = argv(1);
+
+        if (argv(2)!='myshop') {
+		notice( t('Access Denied.') . EOL);
+		goaway('/' . argv(0) . '/' . argv(1));
+        }
 
 	$seller = channelx_by_nick($sellernick);
 
@@ -69,27 +80,19 @@ function cart_myshop_main ($pagecontent) {
 
 	$is_seller = ((local_channel()) && (local_channel() == \App::$profile['profile_uid']) ? true : false);
 
-  if(! $is_seller) {
-		notice( t('') . EOL);
-		goaway('/' . argv(0) . '/' . argv(1));
-	}
 
 	$urlroot = '/' . argv(0) . '/' . argv(1) . '/myshop';
-  $rendered = '';
+        $rendered = '';
 
-	if ((argc() > 3) && (strtolower(argv(2))=='myshop')) {
-    $hookname=preg_replace('/[^a-zA-Z0-9\_]/','',argv(3));
-		call_hooks('cart_myshop_'.$hookname,$rendered);
-  } else {
-		notice( t('Unknown Operation') . EOL);
-		logger( "[cart-myshop] Unknown Operation (we should never get here!)");
-		goaway($urlroot);
-	}
+        if (argc() > 3) {
+           $hookname=preg_replace('/[^a-zA-Z0-9\_]/','',argv(3));
+  	   call_hooks('cart_myshop_'.$hookname,$rendered);
+        }
 
 	if ($rendered == '') {
-		$rendered = cart_myshop_menu();
+	   $rendered = cart_myshop_menu();
 	}
-
+        $templatevalues=Array('content'=>$rendered);
 	$template = get_markup_template('myshop.tpl','addon/cart/');
 	$pagecontent = replace_macros($template, $templatevalues);
 
@@ -97,13 +100,16 @@ function cart_myshop_main ($pagecontent) {
 }
 
 function cart_myshop_menu() {
-	$openorders=cart_myshop_get_openorders(null,10000,1);
-	$allorders=cart_myshop_get_allorders(null,10000,1);
-	$closedorders=cart_myshop_get_closedorders(null,10000,1);
-	$rendered = "<a href='".$urlroot."/openorders'>Open Orders (".count($openorders).")<BR />";
-	$rendered = "<a href='".$urlroot."/closedorders'>Closed Orders (".count($closedorders).")<BR />";
-	$rendered = "<a href='".$urlroot."/allorders'>All Orders (".count($allorders).")<BR />";
+	$urlroot = '/' . argv(0) . '/' . argv(1) . '/myshop';
+	$openorders=cart_myshop_get_openorders(null,10000,0);
+	$allorders=cart_myshop_get_allorders(null,10000,0);
+	$closedorders=cart_myshop_get_closedorders(null,10000,0);
+        $rendered = '';
+	$rendered .= "<a href='".$urlroot."/openorders'>Open Orders (".count($openorders).")</a><BR />";
+	$rendered .= "<a href='".$urlroot."/closedorders'>Closed Orders (".count($closedorders).")</a><BR />";
+	$rendered .= "<a href='".$urlroot."/allorders'>All Orders (".count($allorders).")</a><BR />";
 	call_hooks('cart_myshop_menufilter',$rendered);
+        return $rendered;
 }
 
 function cart_myshop_openorders (&$pagecontent) {
@@ -116,6 +122,19 @@ function cart_myshop_closedorders (&$pagecontent) {
 
 function cart_myshop_allorders (&$pagecontent) {
   $pagecontent.="<h1>ALL ORDERS</h1>";
+/*
+  myshop_orderlist.tpl variables
+    $orders - results of cart_myshop_get_(.*)orders
+*/
+  $templatevalues=Array();
+  $templatevalues["urlprefix"]="/".argv(0)."/".argv(1)."/myshop/order";
+  $templatevalues["orders"] = cart_myshop_get_allorders(null,100000,0);
+  $templatevalues["debug"] = print_r($templatevalues,true);
+  $templateinfo = array('name'=>'myshop_orderlist.tpl','path'=>'addon/cart/');
+  call_hooks('cart_filter_myshop_orderlist_template',$templateinfo);
+  $template = get_markup_template($templateinfo['name'],$templateinfo['path']);
+  $rendered = replace_macros($template, $templatevalues);
+  $pagecontent = $rendered;
 }
 
 function cart_myshop_order(&$pagecontent) {
@@ -268,12 +287,13 @@ function cart_myshop_aside (&$aside) {
 	}
 
 	$rendered = '';
-  $openorders=cart_myshop_get_openorders(null,10000,1);
-	$allorders=cart_myshop_get_allorders(null,10000,1);
-	$closedorders=cart_myshop_get_closedorders(null,10000,1);
-  $rendered = "<li><a href=''>Open Orders (".count($openorders).")</li>";
-	$rendered = "<li><a href=''>Closed Orders (".count($closedorders).")</li>";
-	$rendered = "<li><a href=''>All Orders (".count($allorders).")</li>";
+	$urlroot = '/' . argv(0) . '/' . argv(1) . '/myshop';
+        $openorders=cart_myshop_get_openorders(null,10000,0);
+	$allorders=cart_myshop_get_allorders(null,10000,0);
+	$closedorders=cart_myshop_get_closedorders(null,10000,0);
+        $rendered .= "<li><a href='".$urlroot."/openorders'>Open Orders (".count($openorders).")</a></li>";
+	$rendered .= "<li><a href='".$urlroot."/closedorders'>Closed Orders (".count($closedorders).")</a></li>";
+	$rendered .= "<li><a href='".$urlroot."/allorders'>All Orders (".count($allorders).")</a></li>";
 	$templatevalues["content"]=$rendered;
 	$template = get_markup_template('myshop_aside.tpl','addon/cart/');
 	$rendered = replace_macros($template, $templatevalues);
@@ -282,21 +302,20 @@ function cart_myshop_aside (&$aside) {
 	return ($aside);
 }
 
-function cart_myshop_get_allorders ($search=null,$limit=100,$offset=1) {
+function cart_myshop_get_allorders ($search=null,$limit=100000,$offset=0) {
 /**
   * search = Array of search terms:  //NOT YET IMPLEMENTED
   *   [""]
 ***/
   $seller_hash=get_observer_hash();
-  $r=q("select unique(cart_order.order_hash) from cart_order,cart_orderitems
-        where cart_order.order_hash = cart_orderitems.orderhash and
+  $r=q("select distinct cart_orders.order_hash from cart_orders,cart_orderitems
+        where cart_orders.order_hash = cart_orderitems.order_hash and
         seller_channel = '%s'
-        limit=%i offset=%i",
+        limit %d offset %d",
       dbesc($seller_hash),
       intval($limit), intval($offset));
-
+  $orders=Array();
   if (!$r) {return Array();}
-
   foreach ($r as $order) {
     $orders[] = cart_loadorder($order["order_hash"]);
   }
@@ -309,16 +328,17 @@ function cart_myshop_get_openorders ($search=null,$limit=100,$offset=1) {
   *   [""]
 ***/
   $seller_hash=get_observer_hash();
-  $r=q("select unique(cart_order.order_hash) from cart_order,cart_orderitems
-        where cart_order.order_hash = cart_orderitems.orderhash and
+  $r=q("select distinct cart_orders.order_hash from cart_orders,cart_orderitems
+        where cart_orders.order_hash = cart_orderitems.order_hash and
         seller_channel = '%s' and cart_orderitems.item_fulfilled is NULL
         and cart_orderitems.item_confirmed is not NULL
-        limit=%i offset=%i",
+        limit %d offset %d",
       dbesc($seller_hash),
       intval($limit), intval($offset));
 
   if (!$r) {return Array();}
 
+  $orders=Array();
   foreach ($r as $order) {
     $orders[] = cart_loadorder($order["order_hash"]);
   }
@@ -328,11 +348,11 @@ function cart_myshop_get_openorders ($search=null,$limit=100,$offset=1) {
 function cart_myshop_get_closedorders ($search=null,$limit=100,$offset=1) {
 
   $seller_hash=get_observer_hash();
-  $r=q("select order_hash from cart_orders where
+  $r=q("select distinct order_hash from cart_orders where
         seller_channel = '%s' and
         cart_orders.order_hash not in (select order_hash from cart_orderitems
         where item_fulfilled is not null)
-        limit=%i offset=%i",
+        limit %d offset %d",
       dbesc($seller_hash),
       intval($limit), intval($offset));
 
