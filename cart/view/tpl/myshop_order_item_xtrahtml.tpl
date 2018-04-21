@@ -5,7 +5,7 @@
 {{/if}}
 <div class="cart-myshop-itemfulfill-form">
 <form method="post">
-<input type=hidden name="security" value="{{$security_token}}">
+<input type=hidden name="form_security_token" value="{{$security_token}}">
 <input type="hidden" name="cart_posthook" value="myshop_item_fulfill">
 <input type="hidden" name="itemid" value="{{$item.id}}">
 <button class="btn btn-primary" type="submit" name="cart-myshop-fullfill-item" id="newchannel-submit-button" value="{{$item.item_sku}}">Fulfill</button>
@@ -16,7 +16,7 @@
 {{if $item_fulfilled}}<div class="warning">Item Exception: Please review notes.</div>{{/if}}
 <div class="cart-myshop-itemexception-form">
 <form method="post">
-<input type=hidden name="security" value="{{$security_token}}">
+<input type=hidden name="form_security_token" value="{{$security_token}}">
 <input type="hidden" name="cart_posthook" value="myshop_clear_item_exception">
 <input type="hidden" name="itemid" value="{{$item.id}}">
 <input type="hidden" name="exception" value="false">
@@ -26,7 +26,7 @@
 {{/if}}
 <div class="cart-myshop-itemnotes-form">
 <form method="post">
-<input type=hidden name="security" value="{{$security_token}}">
+<input type=hidden name="form_security_token" value="{{$security_token}}">
 <input type="hidden" name="cart_posthook" value="myshop_add_itemnote">
 <input type="hidden" name="itemid" value="{{$item.id}}">
 <textarea name="notetext" rows=3 cols=80></textarea>

@@ -151,25 +151,8 @@ function cart_myshop_order(&$pagecontent) {
 	call_hooks('cart_myshop_order_permissions',$permissions);
 	$templatevalues=$order;
 	$templatevalues['permissions']=$permissions;
+	$templatevalues["security_token"]=get_form_security_token();
 
-
-  foreach ($order['items'] as $item) {
-		$itemrender='';
-/*
-		`item_confirmed` bool default false,
-		`item_fulfilled` bool default false,
-		`item_exception` bool default false,
-		`item_meta` text
-*/
-  // fulfillment
-	// exceptions
-	// confirmation notice
-	  if (!$item['item_fulfilled']) {
-      if ($permissions['manualfulfillment_permitted']) {
-		      $itemrender.='';
-      }
-	  }
-  }
 	$templateinfo = array('name'=>'myshop_order.tpl','path'=>'addon/cart/');
 	call_hooks('cart_filter_myshop_order',$templateinfo);
 	$template = get_markup_template($templateinfo['name'],$templateinfo['path']);
@@ -179,6 +162,10 @@ function cart_myshop_order(&$pagecontent) {
 }
 
 function cart_myshop_item_fulfill () {
+	if (!check_form_security_token()) {
+		notice (check_form_security_std_err_msg());
+		return;
+	}
 	$itemid = preg_replace('/[^0-9]/','',$_POST["itemid"]);
 	$orderhash = argv(4);
 	$orderhash = preg_replace('/[^a-z0-9]/','',$orderhash);
@@ -214,6 +201,11 @@ function cart_myshop_item_fulfill () {
 }
 
 function cart_myshop_clear_item_exception () {
+	if (!check_form_security_token()) {
+		notice (check_form_security_std_err_msg());
+		return;
+	}
+
 	$itemid = preg_replace('/[^0-9]/','',$_POST["itemid"]);
 	$orderhash = argv(4);
 	$orderhash = preg_replace('/[^a-z0-9]/','',$orderhash);
@@ -245,6 +237,11 @@ function cart_myshop_clear_item_exception () {
 }
 
 function cart_myshop_add_itemnote () {
+	if (!check_form_security_token()) {
+		notice (check_form_security_std_err_msg());
+		return;
+	}
+
 	$itemid = preg_replace('/[^0-9]/','',$_POST["itemid"]);
 	$orderhash = argv(4);
 	$orderhash = preg_replace('/[^a-z0-9]/','',$orderhash);
@@ -272,7 +269,7 @@ function cart_myshop_add_itemnote () {
   	$r=q("update cart_orderitems set item_exception = false where order_hash = '%s' and id = %d",
 			dbesc($orderhash),intval($itemid));
 		$item_meta["notes"][]=date("Y-m-d h:i:sa T - ")."Exception Set";
-	}	
+	}
 	cart_updateitem_meta($itemid,$item_meta,$orderhash);
 	return;
 }
