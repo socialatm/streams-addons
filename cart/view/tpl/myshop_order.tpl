@@ -14,10 +14,13 @@
     {{foreach $items as $item}}
         <tr {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>
             <td {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>{{$item.item_desc}}
-            {{include "./myshop_order_item_xtrahtml.tpl"}}
             </td>
             <td style="text-align:right;" {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>{{$item.item_price}}</td>
             <td style="text-align:right;" {{if $item.item_exeption}} class="cart-item-exception"{{/if}}>{{$item.extended}}</td>
+        </tr>
+        <tr><td colspan=3>
+            {{include "./myshop_order_item_xtrahtml.tpl"}}
+            </td>
         </tr>
     {{/foreach}}
     <tr>

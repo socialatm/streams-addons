@@ -1,5 +1,4 @@
-{{if $permissions.manualfulfillment_permitted}}
-{{if !$item_fulfilled}}
+<div style="margin-left:5em;">{{if !$item.fulfilled}}
 <div><span style="font-weight:bold;">Item Not Fulfilled</span></div>
 {{else}}
 <div><span style="font-weight:bold;">Item Fulfilled</span></div>
@@ -13,7 +12,6 @@
 </form>
 </div>
 {{if $item_fulfilled}}<div class="warning">Warning: May result in duplicate product being sent.</div>{{/if}}
-{{/if}}
 {{if $item.item_exception}}
 {{if $item_fulfilled}}<div class="warning">Item Exception: Please review notes.</div>{{/if}}
 <div class="cart-myshop-itemexception-form">
@@ -31,8 +29,8 @@
 <input type=hidden name="security" value="{{$security_token}}">
 <input type="hidden" name="cart_posthook" value="myshop_add_itemnote">
 <input type="hidden" name="itemid" value="{{$item.id}}">
-<textarea name="notetext" rows=7 cols=40></textarea>
-<input type="checkbox" name="exception">EXCEPTION<br>
+<textarea name="notetext" rows=3 cols=80></textarea>
+<br><input type="checkbox" name="exception">EXCEPTION<br>
 <button class="btn btn-primary" type="submit" name="add" id="cart-myshop-add-item-note" value="add">Add Note</button>
 </form>
 </div>
@@ -43,3 +41,4 @@
 {{/foreach}}
 </ul>
 {{/if}}
+</div>
