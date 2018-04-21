@@ -30,6 +30,5 @@
         </tr>
     {{/foreach}}
     </table>
-    <pre>{{$debug}}</pre>
   </div>
 </div>

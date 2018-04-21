@@ -189,6 +189,7 @@ function cart_loadorder ($orderhash) {
 	foreach ($r as $key=>$iteminfo) {
 		$items[$iteminfo["id"]]=$iteminfo;
 		$items[$iteminfo["id"]]["extended"]=$iteminfo["item_qty"]*$iteminfo["item_price"];
+                $items[$iteminfo["id"]]["item_meta"]=cart_maybeunjson($iteminfo["item_meta"]);
                 if($iteminfo["item_confirmed"] == false) $flags["confirmed"]=false;
                 if($iteminfo["item_fulfilled"] == false) $flags["fulfilled"]=false;
                 if($iteminfo["item_exception"] == true) $flags["exception"]=true;
@@ -208,7 +209,6 @@ function cart_getorderhash ($create=false) {
 	$cartemail = isset($_SESSION["cart_email_addy"]) ? $_SESSION["cart_email_addy"] : null;
 
 	if ($orderhash) {
-                logger ("orderhash in SESSION = ".$orderhash);
 		$r = q("select * from cart_orders where order_hash = '%s' limit 1",dbesc($orderhash));
 		if (!$r) {
 			$orderhash=null;
@@ -249,7 +249,8 @@ function cart_getorderhash ($create=false) {
         }
 
 	if (!$orderhash && $create === true) {
-		$channel=\App::get_channel();
+		//$channel=\App::get_channel();
+		$channel=channelx_by_n(\App::$profile_uid);
 		$channel_hash=$channel["channel_hash"];
 		$orderhash=hash('whirlpool',microtime().$observerhash.$channel_hash);
 		q("insert into cart_orders (seller_channel,buyer_xchan,order_hash) values ('%s', '%s', '%s')",
@@ -467,7 +468,7 @@ function cart_updateitem_meta ($itemid,$meta,$orderhash=null) {
 
 	$storemeta = cart_maybejson($meta);
 
-	$r=q("update order_items set item_meta = '%s' where order_hash = '%s' and id = %d",
+	$r=q("update cart_orderitems set item_meta = '%s' where order_hash = '%s' and id = %d",
 			dbesc($storemeta),dbesc($orderhash),intval($itemid));
 
 	return;
@@ -808,7 +809,6 @@ function cart_do_checkout_before (&$hookdata) {
 
 function cart_do_checkout (&$hookdata) {
 
-        notice ("[cart] call: cart_do_checkout" . EOL );
 	$orderhash = isset($hookdata["order_hash"]) ? $hookdata["order_hash"] : cart_getorderhash();
 
 	if (!$orderhash) {
@@ -833,7 +833,6 @@ function cart_do_checkout (&$hookdata) {
 
 function cart_do_checkout_after (&$hookdata) {
 
-        notice ("[cart] call: cart_do_checkout_after" . EOL );
 
 	$orderhash = isset($hookdata["order_hash"]) ? $hookdata["order_hash"] : cart_getorderhash();
 	if (!$orderhash) {
@@ -865,12 +864,16 @@ function cart_do_checkout_after (&$hookdata) {
 
 function cart_orderpaid_hook (&$hookdata) {
 	$items = $hookdata["order"]["items"];
+/*
 	foreach ($items as $item) {
 		q ("update cart_orderitems set `paid` = NOW() where order_hash = `%s` and id = %d",
 				dbesc($hookdata["order"]["order_hash"]),
 				intval($item["id"])
 		);
 	}
+*/
+		q ("update cart_orders set `order_paid` = NOW() where order_hash = '%s'",
+				dbesc($hookdata["order"]["order_hash"]));
 }
 
 function cart_do_orderpaid (&$hookdata) {
@@ -1011,6 +1014,7 @@ function cart_load(){
 	Zotlabs\Extend\Hook::register('cart_post_checkout_choosepayment','addon/cart/cart.php','cart_post_choose_payment',1,32000);
 	Zotlabs\Extend\Hook::register('cart_aside_filter','addon/cart/cart.php','cart_render_aside',1,10000);
 	Zotlabs\Extend\Hook::register('cart_after_fulfill','addon/cart/cart.php','cart_after_fulfill_finishorder',1,32000);
+	Zotlabs\Extend\Hook::register('cart_after_fulfill','addon/cart/cart.php','cart_fulfillitem_markfulfilled',1,31000);
 
 	//cart_after_fullfill_finishorder
 
@@ -1043,6 +1047,7 @@ function cart_unload(){
 	Zotlabs\Extend\Hook::unregister('cart_checkout_start','addon/cart/cart.php','cart_checkout_start');
 	Zotlabs\Extend\Hook::unregister('cart_post_checkout_choosepayment','addon/cart/cart.php','cart_post_choose_payment');
 	Zotlabs\Extend\Hook::unregister('cart_aside_filter','addon/cart/cart.php','cart_render_aside');
+	Zotlabs\Extend\Hook::unregister('cart_after_fulfill','addon/cart/cart.php','cart_fulfillitem_markfulfilled',1,31000);
 	require_once("manual_payments.php");
 	cart_manualpayments_unload();
 	require_once('myshop.php');
@@ -1153,7 +1158,6 @@ function cart_getnick () {
         notice( t('Profile Unavailable.') . EOL);
         goaway(z_root());
     }
-
     return $nick;
 
 }
@@ -1180,7 +1184,7 @@ function cart_post_add_item () {
 
 function cart_post(&$a) {
 	$cart_formname=preg_replace('/[^a-zA-Z0-9\_]/','',$_POST["cart_posthook"]);
-        notice (t("Call cart_post_".$cart_formname) . EOL);
+        //notice (t("Call cart_post_".$cart_formname) . EOL);
 	$formhook = "cart_post_".$cart_formname;
 	call_hooks($formhook);
 	$base_url = ( isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']=='on' ? 'https' : 'http' ) . '://' .  $_SERVER['HTTP_HOST'];
@@ -1289,7 +1293,6 @@ function cart_pagecontent($a=null) {
 		$hookname='cart_checkout_'.argv(3);
 		$order["checkoutdisplay"]='';
 		call_hooks($hookname,$order);
-			notice(t("call: ".$hookname) . EOL );
                 //logger("[cart] HOOK ($hookname) : ".print_r($order,true));
 		if ($order["checkoutdisplay"]=='' && argc(3)!='start') {
 			notice(t("An unknown error has occurred Please start again.") . EOL );
@@ -1467,8 +1470,8 @@ function cart_do_fulfillitem ($iteminfo) {
 	}
 
 	$calldata=Array();
-  $calldata["orderid"]=$order["id"];
-  $calldata['item']=$iteminfo;
+        $calldata["orderid"]=$order["id"];
+        $calldata['item']=$iteminfo;
 
 	if ($itemtype) {
 		$itemtypehook='cart_before_fulfill_'.$itemtype;
@@ -1502,6 +1505,18 @@ function cart_do_fulfillitem ($iteminfo) {
 	call_hooks('cart_after_fulfill',$calldata);
 }
 
+function cart_fulfillitem_markfulfilled(&$hookdata) {
+
+  $orderhash=$hookdata["item"]["order_hash"];
+  $itemid=$hookdata["item"]["id"];
+  $r=q("update cart_orderitems set item_fulfilled = 1 where order_hash = '%s' and id=%d",
+			dbesc($orderhash),intval($itemid));
+  $item_meta=cart_getitem_meta ($itemid,$orderhash);
+  $item_meta["notes"][]=date("Y-m-d h:i:sa T - ")."Item Fulfilled";
+  cart_updateitem_meta($itemid,$item_meta,$orderhash);
+
+}
+
 function cart_fulfillitem_error($error,$itemid,$orderhash) {
 	$item_meta=cart_getitem_meta ($itemid,$orderhash);
 	$item_meta["notes"][]=date("Y-m-d h:i:sa T - ")."Error fulfilling item: ".$itemtofulfill["error"];
@@ -1523,6 +1538,7 @@ function cart_after_fullfill_finishorder(&$hookdata) {
 			dbesc($orderhash));
 
 	if ($r) {
+                notice("Order Completely Fulfilled".EOL);
 		return;
 	}
 

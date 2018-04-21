@@ -1,4 +1,4 @@
-<div style="margin-left:5em;">{{if !$item.fulfilled}}
+<div style="margin-left:5em;">{{if !$item.item_fulfilled}}
 <div><span style="font-weight:bold;">Item Not Fulfilled</span></div>
 {{else}}
 <div><span style="font-weight:bold;">Item Fulfilled</span></div>
@@ -11,9 +11,8 @@
 <button class="btn btn-primary" type="submit" name="cart-myshop-fullfill-item" id="newchannel-submit-button" value="{{$item.item_sku}}">Fulfill</button>
 </form>
 </div>
-{{if $item_fulfilled}}<div class="warning">Warning: May result in duplicate product being sent.</div>{{/if}}
-{{if $item.item_exception}}
-{{if $item_fulfilled}}<div class="warning">Item Exception: Please review notes.</div>{{/if}}
+{{if $item.item_fulfilled}}<div class="warning">Warning: May result in duplicate product being sent.</div>{{/if}}
+{{if $item.item_exception}}<div class="warning">Item Exception: Please review notes.</div>
 <div class="cart-myshop-itemexception-form">
 <form method="post">
 <input type=hidden name="form_security_token" value="{{$security_token}}">
@@ -24,6 +23,11 @@
 </form>
 </div>
 {{/if}}
+<div class="cart-myshop-itemnotes">
+{{foreach $item.item_meta.notes as $note}}
+<li>{{$note}}</li>
+{{/foreach}}
+</div>
 <div class="cart-myshop-itemnotes-form">
 <form method="post">
 <input type=hidden name="form_security_token" value="{{$security_token}}">
