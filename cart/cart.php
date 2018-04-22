@@ -3,7 +3,7 @@
 /**
  * Name: cart
  * Description: Core cart utilities for orders and payments
- * Version: 0.5
+ * Version: 0.8
  * Author: Matthew Dent <dentm42@dm42.net>
  * MinVersion: 2.8
  */
