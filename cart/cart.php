@@ -1247,7 +1247,18 @@ function cart_pagecontent($a=null) {
 		if (!$orderhash) {
 			notice ( t('Order not found.' . EOL));
 			return "<h1>Order Not Found</h1>";
-		}
+		} else {
+	                $observerhash = get_observer_hash();
+	                if ($observerhash === '') { $observerhash = null; }
+		        $r = q("select * from cart_orders where order_hash = '%s' and buyer_xchan = '%s' limit 1",
+                                 dbesc($orderhash),dbesc($observerhash));
+                        //return print_r($r,true);
+                        if (!$r) {
+			  notice ( t('Access denied.' . EOL));
+			  return "<h1>Access denied</h1>";
+
+                        }
+                }
 		$templateinfo = array('name'=>'basic_cart.tpl','path'=>'addon/cart/');
 		call_hooks('cart_filter_carttemplate',$templateinfo);
 		$template = get_markup_template($templateinfo['name'],$templateinfo['path']);
