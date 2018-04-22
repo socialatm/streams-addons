@@ -96,14 +96,12 @@ function cart_dbCleanup () {
 
 function cart_dbUpgrade () {
 	$dbverconfig = cart_getsysconfig("dbver");
-	logger ('[cart] get sysconfig.');
+	logger ('[cart] get sysconfig dbver:'.$dbverconfig);
 
 	$dbver = $dbverconfig ? $dbverconfig : 0;
-	notice ('[cart] current dbver = '.$dbver.'.');
 
 	$dbsql = Array (
 		1 => Array (
-			"DROP TABLE IF EXISTS cart_orders",
 			// order_currency = ISO4217 currency alphabetic code
 			// buyer_altid = email address or other unique identifier for the buyer
 			"CREATE TABLE `cart_orders` (
@@ -121,7 +119,6 @@ function cart_dbUpgrade () {
 				) ENGINE = MYISAM DEFAULT CHARSET=utf8;
 			",
 			"alter table `cart_orders` add index (`seller_channel`)",
-			"DROP TABLE IF EXISTS cart_orderitems",
 			"CREATE TABLE cart_orderitems (
 				`id` int(10) UNSIGNED NOT NULL PRIMARY KEY AUTO_INCREMENT,
 				`order_hash` varchar(255),
@@ -143,7 +140,7 @@ function cart_dbUpgrade () {
 	);
 
    	foreach ($dbsql as $ver => $sql) {
-		if ($ver < $dbver) {
+		if ($ver <= $dbver) {
 			continue;
 		}
 		foreach ($sql as $query) {
@@ -157,7 +154,6 @@ function cart_dbUpgrade () {
 		}
 		cart_setsysconfig("dbver",$ver);
 	}
-	notice ('[cart] dbUpgrade to ('.$ver.') Successful.');
 	return UPDATE_SUCCESS;
 }
 
@@ -411,6 +407,8 @@ function cart_do_additem (&$hookdata) {
 		$hookdata["error"][]=$calldata["error"];
 		unset($calldata["error"]);
 	}
+        notice (t('[cart] Item Added').EOL);
+        logger ("[cart] Added Item: ".print_r($calldata),LOGGER_DEBUG);
 }
 
 function cart_getorder_meta ($orderhash=null) {
@@ -812,7 +810,7 @@ function cart_do_checkout (&$hookdata) {
 	$orderhash = isset($hookdata["order_hash"]) ? $hookdata["order_hash"] : cart_getorderhash();
 
 	if (!$orderhash) {
-                notice ("[cart] cart_do_checkout - no \$hookdata[order_hash]" . EOL);
+                notice ("[cart] Order not found." . EOL);
 		return;
 	}
 
@@ -820,7 +818,7 @@ function cart_do_checkout (&$hookdata) {
 
 
 	if ($order["order_checkedout"] != null) {
-		notice ( t('Order cannot be checked out.') . EOL );
+		notice ( t('Order already checked out.') . EOL );
 		logger ('[cart] Attempt to check out already checked out cart (order id:'.$order["id"].')');
 		return;
 	}
@@ -836,7 +834,7 @@ function cart_do_checkout_after (&$hookdata) {
 
 	$orderhash = isset($hookdata["order_hash"]) ? $hookdata["order_hash"] : cart_getorderhash();
 	if (!$orderhash) {
-                notice ("[cart] cart_do_checkout_after - no \$hookdata[order_hash]");
+                logger ("[cart] cart_do_checkout_after - no \$hookdata[order_hash]",LOGGER_ERROR);
 		return;
 	}
 
@@ -966,7 +964,7 @@ function cart_install() {
 		logger ('[cart] Install start.',LOGGER_DEBUG);
 	if (cart_dbUpgrade () == UPDATE_FAILED) {
 		notice ('[cart] Install error - Abort installation.');
-		logger ('[cart] Install error - Abort installation.');
+		logger ('[cart] Install error - Abort installation.',LOGGER_ERROR);
 		cart_setsysconfig("status","install error");
 		return;
 	}
@@ -980,7 +978,7 @@ function cart_install() {
 function cart_uninstall() {
 	$dropTablesOnUninstall = intval(cart_getsysconfig("dropTablesOnUninstall"));
   	logger ('[cart] Uninstall start.',LOGGER_DEBUG);
-	if ($dropTablesOnUinstall === 1) {
+	if ($dropTablesOnUinstall == 1) {
   	        logger ('[cart] DB Cleanup table.',LOGGER_DEBUG);
 		cart_dbCleanup ();
 	        cart_delsysconfig("dbver");
@@ -1170,9 +1168,7 @@ function cart_init() {
 }
 
 function cart_post_add_item () {
-	notice (t('Add Item') . EOL);
 	$items=Array();
-        // HERE!!!
 	Zotlabs\Extend\Hook::insert('cart_get_catalog','cart_get_test_catalog',1,0);
 	call_hooks('cart_get_catalog',$items);
 
@@ -1184,7 +1180,6 @@ function cart_post_add_item () {
 
 function cart_post(&$a) {
 	$cart_formname=preg_replace('/[^a-zA-Z0-9\_]/','',$_POST["cart_posthook"]);
-        //notice (t("Call cart_post_".$cart_formname) . EOL);
 	$formhook = "cart_post_".$cart_formname;
 	call_hooks($formhook);
 	$base_url = ( isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']=='on' ? 'https' : 'http' ) . '://' .  $_SERVER['HTTP_HOST'];
