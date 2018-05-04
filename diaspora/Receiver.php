@@ -308,7 +308,7 @@ class Diaspora_Receiver {
 		$datarray = array();
 
 		// Look for tags and linkify them
-		$results = linkify_tags('', $body, $this->importer['channel_id'], true);
+		$results = linkify_tags('', $body, $this->importer['channel_id'], false);
 
 		$datarray['term'] = array();
 
@@ -355,8 +355,6 @@ class Diaspora_Receiver {
 		$cnt = preg_match_all('/@\[zrl=(.*?)\](.*?)\[\/zrl\]/ism',$body,$matches,PREG_SET_ORDER);
 		if($cnt) {
 			foreach($matches as $mtch) {
-				// don't include plustags in the term
-				$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 				$datarray['term'][] = [
 					'uid'   => $this->importer['channel_id'],
 					'ttype' => TERM_MENTION,
@@ -573,7 +571,7 @@ class Diaspora_Receiver {
 		$datarray = array();
 
 		// Look for tags and linkify them
-		$results = linkify_tags('', $body, $this->importer['channel_id'], true);
+		$results = linkify_tags('', $body, $this->importer['channel_id'], false);
 
 		$datarray['term'] = array();
 
@@ -609,7 +607,6 @@ class Diaspora_Receiver {
 		if($cnt) {
 			foreach($matches as $mtch) {
 				// don't include plustags in the term
-				$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 				$datarray['term'][] = array(
 					'uid'   => $this->importer['channel_id'],
 					'ttype'  => TERM_MENTION,
@@ -850,7 +847,7 @@ class Diaspora_Receiver {
 		$datarray = array();
 
 		// Look for tags and linkify them
-		$results = linkify_tags('', $body, $this->importer['channel_id'], true);
+		$results = linkify_tags('', $body, $this->importer['channel_id'], false);
 
 		$datarray['term'] = array();
 
@@ -885,8 +882,6 @@ class Diaspora_Receiver {
 		$cnt = preg_match_all('/@\[zrl=(.*?)\](.*?)\[\/zrl\]/ism',$body,$matches,PREG_SET_ORDER);
 		if($cnt) {
 			foreach($matches as $mtch) {
-				// don't include plustags in the term
-				$term = ((substr($mtch[2],-1,1) === '+') ? substr($mtch[2],0,-1) : $mtch[2]);
 				$datarray['term'][] = [
 					'uid'   => $this->importer['channel_id'],
 					'ttype' => TERM_MENTION,
