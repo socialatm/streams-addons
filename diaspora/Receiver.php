@@ -604,12 +604,11 @@ class Diaspora_Receiver {
 		$cnt = preg_match_all('/@\[zrl=(.*?)\](.*?)\[\/zrl\]/ism',$body,$matches,PREG_SET_ORDER);
 		if($cnt) {
 			foreach($matches as $mtch) {
-				// don't include plustags in the term
 				$datarray['term'][] = array(
 					'uid'   => $this->importer['channel_id'],
 					'ttype'  => TERM_MENTION,
 					'otype' => TERM_OBJ_POST,
-					'term'  => $term,
+					'term'  => $mtch[2],
 					'url'   => $mtch[1]
 				);
 			}
@@ -884,7 +883,7 @@ class Diaspora_Receiver {
 					'uid'   => $this->importer['channel_id'],
 					'ttype' => TERM_MENTION,
 					'otype' => TERM_OBJ_POST,
-					'term'  => $term,
+					'term'  => $mtch[2],
 					'url'   => $mtch[1]
 				];
 			}
