@@ -308,7 +308,7 @@ class Diaspora_Receiver {
 		$datarray = array();
 
 		// Look for tags and linkify them
-		$results = linkify_tags('', $body, $this->importer['channel_id'], true);
+		$results = linkify_tags('', $body, $this->importer['channel_id'], false);
 
 		$datarray['term'] = array();
 
@@ -573,7 +573,7 @@ class Diaspora_Receiver {
 		$datarray = array();
 
 		// Look for tags and linkify them
-		$results = linkify_tags('', $body, $this->importer['channel_id'], true);
+		$results = linkify_tags('', $body, $this->importer['channel_id'], false);
 
 		$datarray['term'] = array();
 
@@ -850,7 +850,7 @@ class Diaspora_Receiver {
 		$datarray = array();
 
 		// Look for tags and linkify them
-		$results = linkify_tags('', $body, $this->importer['channel_id'], true);
+		$results = linkify_tags('', $body, $this->importer['channel_id'], false);
 
 		$datarray['term'] = array();
 
