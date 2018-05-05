@@ -3,7 +3,7 @@
 /**
  * Name: cart
  * Description: Core cart utilities for orders and payments
- * Version: 0.8
+ * Version: 0.9
  * Author: Matthew Dent <dentm42@dm42.net>
  * MinVersion: 2.8
  */
@@ -22,7 +22,7 @@
   */
 
 
-$cart_version = 0.8;
+$cart_version = 0.9;
 load_config("cart");
 //global $cart_submodules;
 $cart_submodules=Array("hzservices");
