@@ -123,7 +123,7 @@ class Cart_hzservices {
     // 		"sku-1"=>Array("item_sku"=>"sku-1","item_desc"=>"Description Item 1","item_price"=>5.55),
     $itemlist = Cart_hzservices::get_itemlist();
     foreach ($itemlist as $item) {
-      $active = isset($item["item_active"]) ? true : false;
+      $active = isset($item["item_active"]) ? $item["item_active"] : false;
       if ($active) {
         $catalog[$item["item_sku"]] = Array("item_sku"=>$item["item_sku"],
           "item_desc"=>$item["item_description"],
