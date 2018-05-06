@@ -218,9 +218,7 @@ class Cart_hzservices {
     $item["item_locked"] = isset($_POST["item_locked"]) ? true : false;
     $skus[$sku]=$item;
     if ($item["item_active"]) {
-       $valid_itemtypes = cart_maybeunjson(get_pconfig(local_channel(),'cart','cart_itemtypes'));
-       $valid_itemtypes[] = "hzservices";
-       set_pconfig(local_channel(),'cart',"cart_itemtypes",cart_maybejson($valid_itemtypes));
+       cart_config_additemtype('hzservices');
     }
     set_pconfig( local_channel(), 'cart-hzservices', 'skus', cart_maybejson($skus));
   }

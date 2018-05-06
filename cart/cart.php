@@ -73,7 +73,7 @@ function cart_maybejson ($value,$options=0) {
 function cart_config_additemtype ($itemtype) {
 	$itemtypes=cart_getsysconfig("itemtypes");
 	$itemtypes["$itemtype"]=$itemtype;
-  cart_setsysconfig($itemtypes);
+        cart_setsysconfig("itemtypes",$itemtypes);
 }
 
 function cart_dbCleanup () {
@@ -318,7 +318,8 @@ function cart_do_additem (&$hookdata) {
 
   $startcontent = $hookdata["content"];
 	$iteminfo=$hookdata["iteminfo"];
-	$cart_itemtypes = cart_maybeunjson(get_pconfig(\App::$profile_uid,'cart',"cart_itemtypes"));
+	//$cart_itemtypes = cart_maybeunjson(get_pconfig(\App::$profile_uid,'cart',"cart_itemtypes"));
+	$cart_itemtypes = cart_getsysconfig("itemtypes");
 	$required = Array("item_sku","item_qty","item_desc","item_price");
 	foreach ($required as $key) {
 		if (!array_key_exists($key,$iteminfo)) {
@@ -936,7 +937,7 @@ function cart_checkver() {
 function cart_getsysconfig($param) {
 	logger ('[cart] getconfig ('.$param.')');
 	$val = get_config("cart",$param);
-	$val=cart_unmaybejson($val);
+	$val=cart_maybeunjson($val);
 	return $val;
 }
 
@@ -1503,7 +1504,8 @@ function cart_do_fulfillitem ($iteminfo) {
 	$orderhash=$iteminfo["order_hash"];
 	$order=cart_loadorder($orderhash);
         $iteminfo = $order["items"][$iteminfo["id"]];
-	$valid_itemtypes = cart_maybeunjson(get_pconfig(local_channel(),'cart','cart_itemtypes'));
+	//$valid_itemtypes = cart_maybeunjson(get_pconfig(local_channel(),'cart','cart_itemtypes'));
+	$valid_itemtypes = cart_getsysconfig("itemtypes");
 	$itemtype = isset($iteminfo["item_type"]) ? $iteminfo["item_type"] : null;
         logger ("[cart] Fulfill Item: ".print_r($iteminfo,true),LOGGER_DEBUG);
         logger ("[cart] Valid Item Types: ".print_r($valid_itemtypes,true),LOGGER_DEBUG);
