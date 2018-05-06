@@ -70,6 +70,12 @@ function cart_maybejson ($value,$options=0) {
     }
 }
 
+function cart_config_additemtype ($itemtype) {
+	$itemtypes=cart_getsysconfig("itemtypes");
+	$itemtypes["$itemtype"]=$itemtype;
+  cart_setsysconfig($itemtypes);
+}
+
 function cart_dbCleanup () {
 	$dbverconfig = get_config("dm42cart","dbver");
 
@@ -929,10 +935,13 @@ function cart_checkver() {
 
 function cart_getsysconfig($param) {
 	logger ('[cart] getconfig ('.$param.')');
-	return get_config("cart",$param);
+	$val = get_config("cart",$param);
+	$val=cart_unmaybejson($val);
+	return $val;
 }
 
 function cart_setsysconfig($param,$val) {
+	  $val=cart_maybejson($val);
 		logger ('[cart] setsysconfig ('.$param.') as ('.$val.').',LOGGER_DEBUG);
 		return set_config("cart",$param,$val);
 }
@@ -1075,6 +1084,7 @@ function cart_unload(){
 		$moduleclass = 'Cart_'.$module;
 		$moduleclass::unload();
 	}
+	cart_delsysconfig("itemtypes");
 }
 
 function cart_module() { return; }
