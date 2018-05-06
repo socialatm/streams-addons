@@ -70,6 +70,12 @@ function cart_maybejson ($value,$options=0) {
     }
 }
 
+function cart_config_additemtype ($itemtype) {
+	$itemtypes=cart_getsysconfig("itemtypes");
+	$itemtypes["$itemtype"]=$itemtype;
+        cart_setsysconfig("itemtypes",$itemtypes);
+}
+
 function cart_dbCleanup () {
 	$dbverconfig = get_config("dm42cart","dbver");
 
@@ -312,7 +318,8 @@ function cart_do_additem (&$hookdata) {
 
   $startcontent = $hookdata["content"];
 	$iteminfo=$hookdata["iteminfo"];
-	$cart_itemtypes = cart_maybeunjson(get_pconfig(\App::$profile_uid,'cart',"cart_itemtypes"));
+	//$cart_itemtypes = cart_maybeunjson(get_pconfig(\App::$profile_uid,'cart',"cart_itemtypes"));
+	$cart_itemtypes = cart_getsysconfig("itemtypes");
 	$required = Array("item_sku","item_qty","item_desc","item_price");
 	foreach ($required as $key) {
 		if (!array_key_exists($key,$iteminfo)) {
@@ -929,10 +936,13 @@ function cart_checkver() {
 
 function cart_getsysconfig($param) {
 	logger ('[cart] getconfig ('.$param.')');
-	return get_config("cart",$param);
+	$val = get_config("cart",$param);
+	$val=cart_maybeunjson($val);
+	return $val;
 }
 
 function cart_setsysconfig($param,$val) {
+	  $val=cart_maybejson($val);
 		logger ('[cart] setsysconfig ('.$param.') as ('.$val.').',LOGGER_DEBUG);
 		return set_config("cart",$param,$val);
 }
@@ -1075,6 +1085,7 @@ function cart_unload(){
 		$moduleclass = 'Cart_'.$module;
 		$moduleclass::unload();
 	}
+	cart_delsysconfig("itemtypes");
 }
 
 function cart_module() { return; }
@@ -1493,7 +1504,8 @@ function cart_do_fulfillitem ($iteminfo) {
 	$orderhash=$iteminfo["order_hash"];
 	$order=cart_loadorder($orderhash);
         $iteminfo = $order["items"][$iteminfo["id"]];
-	$valid_itemtypes = cart_maybeunjson(get_pconfig(local_channel(),'cart','cart_itemtypes'));
+	//$valid_itemtypes = cart_maybeunjson(get_pconfig(local_channel(),'cart','cart_itemtypes'));
+	$valid_itemtypes = cart_getsysconfig("itemtypes");
 	$itemtype = isset($iteminfo["item_type"]) ? $iteminfo["item_type"] : null;
         logger ("[cart] Fulfill Item: ".print_r($iteminfo,true),LOGGER_DEBUG);
         logger ("[cart] Valid Item Types: ".print_r($valid_itemtypes,true),LOGGER_DEBUG);

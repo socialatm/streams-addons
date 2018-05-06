@@ -26,9 +26,7 @@ class Cart_hzservices {
       Zotlabs\Extend\Hook::register('cart_post_hzservices_itemedit', 'addon/cart/submodules/hzservices.php', 'Cart_hzservices::itemedit_post',1,1000);
       Zotlabs\Extend\Hook::register('cart_post_hzservices_itemactivation', 'addon/cart/submodules/hzservices.php', 'Cart_hzservices::itemedit_activation_post',1,1000);
       Zotlabs\Extend\Hook::register('cart_post_hzservices_itemdeactivation', 'addon/cart/submodules/hzservices.php', 'Cart_hzservices::itemedit_deactivation_post',1,1000);
-      $cart_itemtypes = cart_maybeunjson(get_pconfig("cart_itemtypes"));
-      $cart_itemtypes['hzservices']='hzservices';
-      set_pconfig('cart_itemtypes',cart_maybejson($cart_itemtypes));
+      cart_config_additemtype("hzservices");
       notice('Loaded submodule "hzservices"'.EOL);
     }
 
@@ -43,9 +41,6 @@ class Cart_hzservices {
       Zotlabs\Extend\Hook::unregister('cart_post_hzservices_itemedit', 'addon/cart/submodules/hzservices.php', 'Cart_hzservices::itemedit_post');
       Zotlabs\Extend\Hook::unregister('cart_post_hzservices_itemactivation', 'addon/cart/submodules/hzservices.php', 'Cart_hzservices::itemedit_activation_post');
       Zotlabs\Extend\Hook::unregister('cart_post_hzservices_itemdeactivation', 'addon/cart/submodules/hzservices.php', 'Cart_hzservices::itemedit_deactivation_post');
-      $cart_itemtypes = cart_maybeunjson(get_pconfig("cart_itemtypes"));
-      unset($cart_itemtypes["hzservices"]);
-      set_pconfig('cart_itemtypes',cart_maybejson($cart_itemtypes));
     }
 
     static public function settings () {
@@ -223,9 +218,7 @@ class Cart_hzservices {
     $item["item_locked"] = isset($_POST["item_locked"]) ? true : false;
     $skus[$sku]=$item;
     if ($item["item_active"]) {
-       $valid_itemtypes = cart_maybeunjson(get_pconfig(local_channel(),'cart','cart_itemtypes'));
-       $valid_itemtypes[] = "hzservices";
-       set_pconfig(local_channel(),'cart',"cart_itemtypes",cart_maybejson($valid_itemtypes));
+       cart_config_additemtype('hzservices');
     }
     set_pconfig( local_channel(), 'cart-hzservices', 'skus', cart_maybejson($skus));
   }
