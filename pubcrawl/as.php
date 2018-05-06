@@ -448,11 +448,8 @@ function asencode_activity($i) {
 		$ret['to'] = [ $reply_url ];
 
 		if($i['item_private']) {
-			$ret['tag'] = [
-				'type' => 'Mention',
-				'href' => $reply_url,
-				'name' => '@' . $reply_addr
-			];
+			$m = as_map_acl($i,true);
+			$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
 		}
 	}
 	else {
