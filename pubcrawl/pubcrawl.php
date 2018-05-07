@@ -1143,7 +1143,7 @@ function pubcrawl_feature_settings(&$s) {
 	));
 
 	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
-		'$addon' 	=> array('pubcrawl', '<img src="addon/pubcrawl/pubcrawl.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('ActivityPub Protocol Settings'), '', t('Submit')),
+		'$addon' 	=> array('pubcrawl', '<img src="addon/pubcrawl/activitypub.png" style="width:auto; height:1em; margin:-3px 5px 0px 0px;">' . t('ActivityPub Protocol Settings'), '', t('Submit')),
 		'$content'	=> $sc
 	));
 
