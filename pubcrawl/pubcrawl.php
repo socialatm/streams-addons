@@ -39,6 +39,7 @@ function pubcrawl_load() {
 		'queue_deliver'              => 'pubcrawl_queue_deliver',
 		'import_author'              => 'pubcrawl_import_author',
 		'channel_protocols'          => 'pubcrawl_channel_protocols',
+		'federated_transports'       => 'pubcrawl_federated_transports',
 		'create_identity'            => 'pubcrawl_create_identity'
 	]);
 }
@@ -53,6 +54,10 @@ function pubcrawl_channel_protocols(&$b) {
 	if(intval(get_pconfig($b['channel_id'],'system','activitypub_allowed')))
 		$b['protocols'][] = 'activitypub';
 
+}
+
+function pubcrawl_federated_transports(&$x) {
+	$x[] = 'ActivityPub';
 }
 
 
