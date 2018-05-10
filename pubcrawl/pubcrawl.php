@@ -134,6 +134,9 @@ function pubcrawl_discover_channel_webfinger(&$b) {
 	if($protocol && strtolower($protocol) !== 'activitypub')
 		return;
 
+	if(! is_array($x))
+		return;
+
 	$address = EMPTY_STR;
 
 	if(array_key_exists('subject',$x) && strpos($x['subject'],'acct:') === 0)
