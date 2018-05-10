@@ -1113,7 +1113,7 @@ function diaspora_forum_mention_callback($matches) {
 function diaspora_markdown_to_bb_init(&$x) {
 
 	$s = $x['text'];
-	if(! array_key_exists('diaspora',$x['options']))
+	if(! (array_key_exists('diaspora',$x['options']) && intval($x['options']['diaspora'])))
 		return;
 
 	// if empty link text replace with the url
