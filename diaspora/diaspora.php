@@ -1110,7 +1110,11 @@ function diaspora_forum_mention_callback($matches) {
 
 
 
-function diaspora_markdown_to_bb_init(&$s) {
+function diaspora_markdown_to_bb_init(&$x) {
+
+	$s = $x['text'];
+	if(! array_key_exists('diaspora',$x['options']))
+		return;
 
 	// if empty link text replace with the url
 	$s = preg_replace("/\[\]\((.*?)\)/ism",'[$1]($1)',$s);
@@ -1131,6 +1135,8 @@ function diaspora_markdown_to_bb_init(&$s) {
 	// fetch the post from the source if it isn't already available locally. 
 
 	$s = preg_replace('#diaspora://(.*?)/(.*?)/([^\s\]]*)#ism', z_root() . '/display/$3', $s);
+
+	$x['text'] = $s;
 
 }
 
