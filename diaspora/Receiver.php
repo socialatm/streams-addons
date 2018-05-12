@@ -441,6 +441,14 @@ class Diaspora_Receiver {
 			return 202;
 		}
 
+		if($this->importer['system']) {
+			if(! \Zotlabs\Lib\MessageFilter::evaluate($datarray,get_config('system','pubstream_incl'),get_config('system','pubstream_excl'))) {
+
+				logger('diaspora_post: filtering this author.');
+				return 202;
+			}
+		}
+
 		// Diaspora allows anybody to comment on public posts in theory
 		// In fact the comment will be rejected unless it is correctly signed
 
@@ -643,6 +651,15 @@ class Diaspora_Receiver {
 			logger('diaspora_reshare: Ignoring this author.');
 			return 202;
 		}
+		if($this->importer['system']) {
+			if(! \Zotlabs\Lib\MessageFilter::evaluate($datarray,get_config('system','pubstream_incl'),get_config('system','pubstream_excl'))) {
+
+				logger('diaspora_reshare: filtering this author.');
+				return 202;
+			}
+		}
+
+
 
 		if(! post_is_importable($datarray,$contact)) {
 			logger('diaspora_reshare: filtering this author.');
