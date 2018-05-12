@@ -1305,7 +1305,7 @@ function as_create_note($channel,$observer_hash,$act) {
 				send_status_notifications($x['item_id'],$r[0]);
 			}
 		}
-		sync_an_item($this->importer['channel_id'],$x['item_id']);
+		sync_an_item($channel['channel_id'],$x['item_id']);
 	}
 
 }
