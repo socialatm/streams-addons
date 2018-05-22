@@ -961,6 +961,17 @@ class Diaspora_Receiver {
 			return 202;
 		}
 
+
+		if($this->importer['system']) {
+			if(! \Zotlabs\Lib\MessageFilter::evaluate($datarray,get_config('system','pubstream_incl'),get_config('system','pubstream_excl'))) {
+				logger('diaspora_comment: filtering this author.');
+				return 202;
+			}
+		}
+
+
+
+
 		set_iconfig($datarray,'diaspora','fields',$unxml,true);
 
 		if($editing) {
