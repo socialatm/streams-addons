@@ -432,22 +432,23 @@ function asencode_activity($i) {
 	if($i['item_private']) {
 		if($reply) {
 			if($i['author_xchan'] == $i['owner_xchan']) {
-				$ret['to'] = [ $reply_url ];
-				$ret['cc'] = as_map_acl($i);
+				//$ret['to'] = [ $reply_url ];
+				//$ret['cc'] = as_map_acl($i);
+
 				$m = as_map_acl($i,true);
 				$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
 			}
 			else {
-				$ret['to'] = [ $reply_url ];
-				$ret['tag'] = [
-					'type' => 'Mention',
-					'href' => $reply_url,
-					'name' => '@' . $reply_addr
-				];
+				$ret['to'] = [ z_root() . '/followers/' . substr($i['author']['xchan_addr'],0,strpos($i['author']['xchan_addr'],'@')) ];
+				//$ret['tag'] = [
+				//	'type' => 'Mention',
+				//	'href' => $reply_url,
+				//	'name' => '@' . $reply_addr
+				//];
 			}
 		}
 		else {
-			$ret['to'] = as_map_acl($i);
+			//$ret['to'] = as_map_acl($i);
 			$m = as_map_acl($i,true);
 			$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
 		}
@@ -461,6 +462,7 @@ function asencode_activity($i) {
 			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
 			$ret['cc'] = [ z_root() . '/followers/' . substr($i['author']['xchan_addr'],0,strpos($i['author']['xchan_addr'],'@')) ];
 		}
+/*
 		$mentions = as_map_mentions($i);
 		if(count($mentions) > 0) {
 			if(! $ret['cc']) {
@@ -469,6 +471,17 @@ function asencode_activity($i) {
 			else {
 				$ret['cc'] = array_merge($ret['cc'], $mentions);
 			}
+		}
+*/
+	}
+
+	$mentions = as_map_mentions($i);
+	if(count($mentions) > 0) {
+		if(! $ret['cc']) {
+			$ret['cc'] = $mentions;
+		}
+		else {
+			$ret['cc'] = array_merge($ret['cc'], $mentions);
 		}
 	}
 	
@@ -510,7 +523,8 @@ function as_map_acl($i,$mentions = false) {
 		if(! $x)
 			return;
 
-		$strict = get_config('activitypub','compliance');
+		$strict = (($mentions) ? true : get_config('activitypub','compliance'));
+
 		$sql_extra = (($strict) ? " and xchan_network = 'activitypub' " : '');
 
 		$details = q("select xchan_url, xchan_addr, xchan_name from xchan where xchan_hash in (" . implode(',',$x) . ") $sql_extra");
