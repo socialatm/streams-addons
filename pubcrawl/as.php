@@ -394,10 +394,21 @@ function asencode_activity($i) {
 				intval($i['parent'])
 			);
 			if($d) {
-				$reply_url = $d[0]['xchan_url'];
+				$is_directmessage = false;
+				$recips = get_iconfig($i['parent'], 'activitypub', 'recips');
+
+				if(in_array($i['author']['xchan_url'], $recips['to'])) {
+					$reply_url = $d[0]['xchan_url'];
+					$is_directmessage = true;
+				}
+				else {
+					$reply_url = z_root() . '/followers/' . substr($i['author']['xchan_addr'],0,strpos($i['author']['xchan_addr'],'@'));
+				}
+
 				$reply_addr = (($d[0]['xchan_addr']) ? $d[0]['xchan_addr'] : $d[0]['xchan_name']);
 			}
 		}
+
 	}
 
 	$actor = asencode_person($i['author']);
@@ -439,12 +450,17 @@ function asencode_activity($i) {
 				$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
 			}
 			else {
-				$ret['to'] = [ z_root() . '/followers/' . substr($i['author']['xchan_addr'],0,strpos($i['author']['xchan_addr'],'@')) ];
-				//$ret['tag'] = [
-				//	'type' => 'Mention',
-				//	'href' => $reply_url,
-				//	'name' => '@' . $reply_addr
-				//];
+				if($is_directmessage) {
+					$m = [
+						'type' => 'Mention',
+						'href' => $reply_url,
+						'name' => '@' . $reply_addr
+					];
+					$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
+				}
+				else {
+					$ret['to'] = [ $reply_url ];
+				}
 			}
 		}
 		else {
