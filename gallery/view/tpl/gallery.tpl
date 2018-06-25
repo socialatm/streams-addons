@@ -93,7 +93,6 @@
 			},
 			function(items) {
 
-				console.log(items);
 				var pswpElement = document.querySelectorAll('.pswp')[0];
 
 				// items array
