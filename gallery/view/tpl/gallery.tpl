@@ -86,10 +86,9 @@
 	$(document).on('click', '.init-gallery', function() {
 
 		$.post(
-			'gallery',
+			'gallery/{{$nick}}',
 			{
 				'album' : $(this).data('aid'),
-				'uid' : {{$uid}},
 				'unsafe' : {{$unsafe}}
 			},
 			function(items) {
@@ -105,10 +104,11 @@
 					index: 0, // start at first slide
 					preload: [1, 3],
 					shareButtons: [
-						{ id: 'download', label: 'Download fullsize image', url: '\{\{raw_image_url\}\}', download: true }
+						{ id: 'conv_link', label: 'View conversation', url: 'photos/{{$nick}}/image/\{\{raw_image_url\}\}' },
+						{ id: 'download', label: 'Download fullsize image', url: 'photo/\{\{raw_image_url\}\}', download: true }
 					],
 					getImageURLForShare: function( shareButtonData ) {
-						return gallery.currItem.orig_src;
+						return gallery.currItem.resource_id;
 					}
 				};
 

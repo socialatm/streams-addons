@@ -34,13 +34,13 @@ class Gallery extends \Zotlabs\Web\Controller {
 
 	function post() {
 
-		$owner_uid = intval($_POST['uid']);
+		$owner_uid = \App::$data['channel']['channel_id'];
 
 		$sql_extra = permissions_sql($owner_uid, get_observer_hash(), 'photo');
 
 		$unsafe = ((array_key_exists('unsafe', $_POST) && $_POST['unsafe']) ? 1 : 0);
 
-		$r = q("SELECT resource_id, width, height 
+		$r = q("SELECT resource_id, width, height, description  
 			FROM photo WHERE uid = %d AND album = '%s' AND photo_usage = %d  
 			AND is_nsfw = %d  AND imgscale = 1 $sql_extra 
 			ORDER by created DESC",
@@ -52,10 +52,11 @@ class Gallery extends \Zotlabs\Web\Controller {
 
 		$i = 0;
 		foreach($r as $rr) {
-			$items[$i]['orig_src'] = z_root() . '/photo/' . $rr['resource_id'];
+			$items[$i]['resource_id'] = $rr['resource_id'];
 			$items[$i]['src'] = z_root() . '/photo/' . $rr['resource_id'] . '-1';
 			$items[$i]['w'] = $rr['width'];
 			$items[$i]['h'] = $rr['height'];
+			$items[$i]['title'] = $rr['description'];
 			$i++;
 		}
 
@@ -77,8 +78,6 @@ class Gallery extends \Zotlabs\Web\Controller {
 		$sql_extra = permissions_sql($owner_uid, get_observer_hash(), 'photo');
 
 		$unsafe = ((array_key_exists('unsafe', $_GET) && $_GET['unsafe']) ? 1 : 0);
-
-
 
 		$albums = q("SELECT DISTINCT album FROM photo
 			WHERE uid = %d AND photo_usage = %d  
@@ -108,7 +107,7 @@ class Gallery extends \Zotlabs\Web\Controller {
 		$o = replace_macros($tpl, [
 			'$title' => t('Gallery'),
 			'$albums' => $items,
-			'$uid' => $owner_uid,
+			'$nick' => \App::$data['channel']['channel_address'],
 			'$unsafe' => $unsafe
 		]);
 
