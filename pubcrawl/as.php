@@ -443,9 +443,6 @@ function asencode_activity($i) {
 	if($i['item_private']) {
 		if($reply) {
 			if($i['author_xchan'] == $i['owner_xchan']) {
-				//$ret['to'] = [ $reply_url ];
-				//$ret['cc'] = as_map_acl($i);
-
 				$m = as_map_acl($i,true);
 				$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
 			}
@@ -464,7 +461,6 @@ function asencode_activity($i) {
 			}
 		}
 		else {
-			//$ret['to'] = as_map_acl($i);
 			$m = as_map_acl($i,true);
 			$ret['tag'] = (($ret['tag']) ? array_merge($ret['tag'],$m) : $m);
 		}
@@ -478,17 +474,6 @@ function asencode_activity($i) {
 			$ret['to'] = [ ACTIVITY_PUBLIC_INBOX ];
 			$ret['cc'] = [ z_root() . '/followers/' . substr($i['author']['xchan_addr'],0,strpos($i['author']['xchan_addr'],'@')) ];
 		}
-/*
-		$mentions = as_map_mentions($i);
-		if(count($mentions) > 0) {
-			if(! $ret['cc']) {
-				$ret['cc'] = $mentions;
-			}
-			else {
-				$ret['cc'] = array_merge($ret['cc'], $mentions);
-			}
-		}
-*/
 	}
 
 	$mentions = as_map_mentions($i);
@@ -533,7 +518,10 @@ function as_map_acl($i,$mentions = false) {
 
 	$private = false;
 	$list = [];
-	$x = collect_recipients($i,$private);
+
+	$g = intval(get_pconfig($i['uid'],'activitypub','include_groups'));
+
+	$x = collect_recipients($i,$private,$g);
 	if($x) {
 		stringify_array_elms($x);
 		if(! $x)
@@ -1140,6 +1128,7 @@ function as_create_note($channel,$observer_hash,$act) {
 	// Mastodon only allows visibility in public timelines if the public inbox is listed in the 'to' field.
 	// They are hidden in the public timeline if the public inbox is listed in the 'cc' field.
 	// This is not part of the activitypub protocol - we might change this to show all public posts in pubstream at some point.
+
 	$pubstream = ((is_array($act->obj) && array_key_exists('to', $act->obj) && in_array(ACTIVITY_PUBLIC_INBOX, $act->obj['to'])) ? true : false);
 	$is_sys_channel = is_sys_channel($channel['channel_id']);
 
@@ -1192,6 +1181,7 @@ function as_create_note($channel,$observer_hash,$act) {
 	$s['aid'] = $channel['channel_account_id'];
 	$s['uid'] = $channel['channel_id'];
 	$s['mid'] = urldecode($act->obj['id']);
+	$s['plink'] = urldecode($act->obj['id']);
 
 
 	if($act->data['published']) {
@@ -1368,6 +1358,7 @@ function as_announce_note($channel,$observer_hash,$act) {
 	$s['aid'] = $channel['channel_account_id'];
 	$s['uid'] = $channel['channel_id'];
 	$s['mid'] = urldecode($act->obj['id']);
+	$s['plink'] = urldecode($act->obj['id']);
 
 	if(! $s['created'])
 		$s['created'] = datetime_convert();
