@@ -28,11 +28,12 @@ function hzfiles_post(&$a) {
 	$until = datetime_convert(date_default_timezone_get(),date_default_timezone_get(),$_REQUEST['until']);
 
 	
-	$headers = [];
-	$headers['X-API-Token'] = random_string();
-	$headers['X-API-Request'] = $hz_server . '/api/z/1.0/files?f=&since=' . urlencode($since) . '&until=' . urlencode($until);
-	$headers = \Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],
-		'acct:' . $channel['channel_address'] . '@' . \App::get_hostname(),false,true,'sha512');
+	$headers = [ 
+		'X-API-Token' => random_string(),
+		'X-API-Request' => $hz_server . '/api/z/1.0/files?f=&since=' . urlencode($since) . '&until=' . urlencode($until),
+	];
+
+	$headers = \Zotlabs\Web\HTTPSig::create_sig($headers,$channel['channel_prvkey'], channel_url($channel),true,'sha512');
 		
 	$x = z_fetch_url($hz_server . '/api/z/1.0/files?f=&since=' . urlencode($since) . '&until=' . urlencode($until),false,$redirects,[ 'headers' => $headers ]);
 

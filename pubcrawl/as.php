@@ -779,7 +779,7 @@ function as_follow($channel,$act) {
 				// Send an Accept back to them
 
 				set_abconfig($channel['channel_id'],$person_obj['id'],'pubcrawl','their_follow_id', $their_follow_id);
-				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_accept', $contact['abook_id'] ]);
+				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permissions_accept', $contact['abook_id'] ]);
 				return;
 
 			case 'Accept':
@@ -886,9 +886,9 @@ function as_follow($channel,$act) {
 
 			if($my_perms && $automatic) {
 				// send an Accept for this Follow activity
-				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_accept', $new_connection[0]['abook_id'] ]);
+				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permissions_accept', $new_connection[0]['abook_id'] ]);
 				// Send back a Follow notification to them
-				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permission_create', $new_connection[0]['abook_id'] ]);
+				\Zotlabs\Daemon\Master::Summon([ 'Notifier', 'permissions_create', $new_connection[0]['abook_id'] ]);
 			}
 
 			$clone = array();
