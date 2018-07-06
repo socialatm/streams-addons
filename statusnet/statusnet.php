@@ -9,7 +9,7 @@
  */
 
 require_once('include/permissions.php');
-require_once('include/queue_fn.php');
+
  
 /*   GNU social Plugin for Hubzilla
  *

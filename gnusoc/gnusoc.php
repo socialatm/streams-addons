@@ -12,7 +12,6 @@
 
 require_once('include/crypto.php');
 require_once('include/items.php');
-require_once('include/queue_fn.php');
 require_once('include/feedutils.php');
 
 function gnusoc_install() {

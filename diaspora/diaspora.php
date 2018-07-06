@@ -15,7 +15,7 @@ define('DIASPORA_V2',1);
 require_once('include/crypto.php');
 require_once('include/items.php');
 require_once('include/markdown.php');
-require_once('include/queue_fn.php');
+
 
 require_once('addon/diaspora/inbound.php');
 require_once('addon/diaspora/outbound.php');

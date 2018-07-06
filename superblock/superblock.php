@@ -1,5 +1,7 @@
 <?php
 
+use Zotlabs\Extend\Route;
+use Zotlabs\Extend\Hook;
 
 /**
  * Name: superblock
@@ -19,34 +21,27 @@
 
 function superblock_load() {
 
-	register_hook('feature_settings', 'addon/superblock/superblock.php', 'superblock_addon_settings');
-	register_hook('feature_settings_post', 'addon/superblock/superblock.php', 'superblock_addon_settings_post');
-	register_hook('conversation_start', 'addon/superblock/superblock.php', 'superblock_conversation_start');
-	register_hook('thread_author_menu', 'addon/superblock/superblock.php', 'superblock_item_photo_menu');
-	register_hook('enotify_store', 'addon/superblock/superblock.php', 'superblock_enotify_store');
-	register_hook('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
-	register_hook('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
-	register_hook('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
-	register_hook('stream_item', 'addon/superblock/superblock.php', 'superblock_stream_item');
-	register_hook('post_mail', 'addon/superblock/superblock.php', 'superblock_post_mail');
-	register_hook('activity_widget', 'addon/superblock/superblock.php', 'superblock_activity_widget');
+	Route::register('addon/superblock/Mod_Superblock.php','superblock');
+
+	Hook::register('feature_settings', 'addon/superblock/superblock.php', 'superblock_addon_settings');
+	Hook::register('feature_settings_post', 'addon/superblock/superblock.php', 'superblock_addon_settings_post');
+	Hook::register('conversation_start', 'addon/superblock/superblock.php', 'superblock_conversation_start');
+	Hook::register('thread_author_menu', 'addon/superblock/superblock.php', 'superblock_item_photo_menu');
+	Hook::register('enotify_store', 'addon/superblock/superblock.php', 'superblock_enotify_store');
+	Hook::register('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
+	Hook::register('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
+	Hook::register('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
+	Hook::register('stream_item', 'addon/superblock/superblock.php', 'superblock_stream_item');
+	Hook::register('post_mail', 'addon/superblock/superblock.php', 'superblock_post_mail');
+	Hook::register('activity_widget', 'addon/superblock/superblock.php', 'superblock_activity_widget');
 
 }
 
 
 function superblock_unload() {
 
-	unregister_hook('feature_settings', 'addon/superblock/superblock.php', 'superblock_addon_settings');
-	unregister_hook('feature_settings_post', 'addon/superblock/superblock.php', 'superblock_addon_settings_post');
-	unregister_hook('conversation_start', 'addon/superblock/superblock.php', 'superblock_conversation_start');
-	unregister_hook('thread_author_menu', 'addon/superblock/superblock.php', 'superblock_item_photo_menu');
-	unregister_hook('enotify_store', 'addon/superblock/superblock.php', 'superblock_enotify_store');
-	unregister_hook('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
-	unregister_hook('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
-	unregister_hook('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
-	unregister_hook('stream_item', 'addon/superblock/superblock.php', 'superblock_stream_item');
-	unregister_hook('post_mail', 'addon/superblock/superblock.php', 'superblock_post_mail');
-	unregister_hook('activity_widget', 'addon/superblock/superblock.php', 'superblock_activity_widget');
+	Route::unregister('addon/superblock/Mod_Superblock.php','superblock');
+	Hook::unregister_by_file('addon/superblock/superblock.php');
 
 }
 
@@ -81,58 +76,14 @@ class Superblock {
 }
 
 
-
-
-
-function superblock_addon_settings(&$a,&$s) {
-
-	if(! local_channel())
-		return;
-
-	$cnf = get_pconfig(local_channel(),'system','blocked');
-	if(! $cnf)
-		$cnf = '';
-
-	$list = explode(',',$cnf);
-	stringify_array_elms($list,true);
-	$query_str = implode(',',$list);
-	if($query_str) {
-		$r = q("select * from xchan where xchan_hash in ( " . $query_str . " ) ");
-	}
-	else
-		$r = [];
-
-	if($r) {
-		for($x = 0; $x < count($r); $x ++) {
-			$r[$x]['encoded_hash'] = urlencode($r[$x]['xchan_hash']);
-		}
-	}
-
-	$sc = replace_macros(get_markup_template('superblock_list.tpl','addon/superblock'), [
-		'$blocked' => t('Currently blocked'),
-		'$entries' => $r,
-		'$nothing' => (($r) ? '' : t('No channels currently blocked')),
-		'$token' => get_form_security_token('superblock'),
-		'$remove' => t('Remove')
-	]);
-
-	$s .= replace_macros(get_markup_template('generic_addon_settings.tpl'), array(
-		'$addon' 	=> array('superblock', t('Superblock Settings'), '', t('Submit')),
-		'$content'	=> $sc
-	));
-
-	return;
-
-}
-
-function superblock_addon_settings_post(&$a,&$b) {
+function superblock_addon_settings_post(&$b) {
 
 	if(! local_channel())
 		return;
 
 }
 
-function superblock_stream_item(&$a,&$b) {
+function superblock_stream_item(&$b) {
 	if(! local_channel())
 		return;
 
@@ -163,7 +114,7 @@ function superblock_stream_item(&$a,&$b) {
 }
 
 
-function superblock_item_store(&$a,&$b) {
+function superblock_item_store(&$b) {
 
 	if(! $b['item_wall'])
 		return;
@@ -183,7 +134,7 @@ function superblock_item_store(&$a,&$b) {
 	return;
 }
 
-function superblock_post_mail(&$a,&$b) {
+function superblock_post_mail(&$b) {
 
 	$sb = new Superblock($b['channel_id']);
 
@@ -203,7 +154,7 @@ function superblock_post_mail(&$a,&$b) {
 
 
 
-function superblock_enotify_store(&$a,&$b) {
+function superblock_enotify_store(&$b) {
 
 	$sb = new Superblock($b['uid']);
 
@@ -224,7 +175,7 @@ function superblock_enotify_store(&$a,&$b) {
 	}
 }
 
-function superblock_api_format_items(&$a,&$b) {
+function superblock_api_format_items(&$b) {
 
 
 	$sb = new Superblock($b['api_user']);
@@ -248,7 +199,7 @@ function superblock_api_format_items(&$a,&$b) {
 }
 
 
-function superblock_directory_item(&$a,&$b) {
+function superblock_directory_item(&$b) {
 
 	if(! local_channel())
 		return;
@@ -268,7 +219,7 @@ function superblock_directory_item(&$a,&$b) {
 }
 
 
-function superblock_activity_widget(&$a,&$b) {
+function superblock_activity_widget(&$b) {
 
 	if(! local_channel())
 		return;
@@ -289,7 +240,7 @@ function superblock_activity_widget(&$a,&$b) {
 }
 
 
-function superblock_conversation_start(&$a,&$b) {
+function superblock_conversation_start(&$b) {
 
 	if(! local_channel())
 		return;
@@ -316,7 +267,7 @@ EOT;
 
 }
 
-function superblock_item_photo_menu(&$a,&$b) {
+function superblock_item_photo_menu(&$b) {
 
 	if(! local_channel())
 		return;
@@ -349,7 +300,6 @@ function superblock_item_photo_menu(&$a,&$b) {
 	];
 }
 
-function superblock_module() {}
 
 
 function superblock_init(&$a) {
