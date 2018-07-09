@@ -12,11 +12,11 @@ use Zotlabs\Extend\Route;
  */
 
 function hexit_load() {
-	Route::register('addon/hexit/Mod_Hexit.php','Hexit');
+	Route::register('addon/hexit/Mod_Hexit.php','hexit');
 }
 
 function hexit_unload() {
-	Route::unregister_by_file('addon/hexit/Mod_Hexit.php');
+	Route::unregister('addon/hexit/Mod_Hexit.php','hexit');
 }
 
 
