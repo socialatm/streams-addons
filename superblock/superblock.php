@@ -9,7 +9,6 @@ use Zotlabs\Extend\Hook;
  * Version: 2.0
  * Author: Mike Macgirvin
  * Maintainer: Mike Macgirvin <mike@macgirvin.com> 
- * MinVersion: 1.1.3
  */
 
 /**

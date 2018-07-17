@@ -59,7 +59,7 @@ function wiki_permission_limits_get(&$x) {
 	}
 
 	if($x['permission'] === 'write_wiki') {
-		$x['value'] = \Zotlabs\Access\PermissionLimits::Get($x['channel_id'],'post_wall');
+		$x['value'] = \Zotlabs\Access\PermissionLimits::Get($x['channel_id'],'write_storage');
 		\Zotlabs\Access\PermissionLimits::Set($x['channel_id'],$x['permission'],$x['value']);
 	}
 
