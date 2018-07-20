@@ -84,6 +84,12 @@ function zotpost_post_hook(&$b) {
 	if($b['mid'] != $b['parent_mid'])
 		return;
 
+	// for now, no forum or wall to wall posts
+
+	if($b['author_xchan'] !== $b['owner_xchan'])
+		return;
+
+
 	if((! is_item_normal($b)) || $b['item_private'] || ($b['created'] !== $b['edited']))
 		return;
 
