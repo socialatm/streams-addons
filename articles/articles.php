@@ -1,6 +1,8 @@
 <?php
 
 use Zotlabs\Extend\Route;
+use Zotlabs\Extend\Hook;
+use Zotlabs\Access\PermissionLimits;
 
 /**
  * Name: Articles
@@ -45,13 +47,13 @@ function articles_permission_limits_get(&$x) {
 	// and the post_wall permission for write access
 
 	if($x['permission'] === 'view_articles') {
-		$x['value'] = \Zotlabs\Access\PermissionLimits::Get($x['channel_id'],'view_stream');
-		\Zotlabs\Access\PermissionLimits::Set($x['channel_id'],$x['permission'],$x['value']);
+		$x['value'] = PermissionLimits::Get($x['channel_id'],'view_stream');
+		PermissionLimits::Set($x['channel_id'],$x['permission'],$x['value']);
 	}
 
 	if($x['permission'] === 'write_articles') {
-		$x['value'] = \Zotlabs\Access\PermissionLimits::Get($x['channel_id'],'write_storage');
-		\Zotlabs\Access\PermissionLimits::Set($x['channel_id'],$x['permission'],$x['value']);
+		$x['value'] = PermissionLimits::Get($x['channel_id'],'write_storage');
+		PermissionLimits::Set($x['channel_id'],$x['permission'],$x['value']);
 	}
 
 }
