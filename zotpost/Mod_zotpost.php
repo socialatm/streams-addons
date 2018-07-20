@@ -13,8 +13,6 @@ class Zotpost extends \Zotlabs\Web\Controller {
 			return;
 		}
 
-
-
 		$channel = \App::get_channel();
 
 		// Don't let somebody post to their self channel. Since we aren't passing message-id this would be very very bad.
@@ -41,7 +39,7 @@ class Zotpost extends \Zotlabs\Web\Controller {
 
 	function get() {
 
-		$desc = t('This addon app allows you to cross-post to other Zot services and channels.');
+		$desc = t('This addon app allows you to cross-post to other Zot services and channels. After installing the app, select it to configure the destination settings and preferences.');
 
 		$text =  '<div class="section-content-info-wrapper">' . $desc . '</div>';
 
