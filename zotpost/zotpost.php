@@ -41,8 +41,8 @@ function zotpost_jot_nets(&$b) {
 	if(Apps::addon_app_installed(local_channel(),'zotpost')) {
 		$zotpost_defpost = get_pconfig(local_channel(),'zotpost','post_by_default');
 		$selected = ((intval($zotpost_defpost) == 1) ? ' checked="checked" ' : '');
-		$b .= '<div class="profile-jot-net"><input type="checkbox" name="zotpost_enable"' . $selected . ' value="1" /> ' 
-			. '<img src="images/rm-32.png" /> ' . t('Post to Zot') . '</div>';
+		$b .= '<div class="profile-jot-net"><input type="checkbox" name="zotpost_enable"' . $selected . ' value="1" > ' 
+			. '<img src="images/zot-300.png" alt="zotpost" style="height: 32px; width: 32px;"> ' . t('Post to Zot') . '</div>';
 	}
 }
 
@@ -56,7 +56,7 @@ function zotpost_post_local(&$b) {
 
 	if((local_channel()) && (local_channel() == $b['uid']) && (! $b['item_private'])) {
 
-		$zotpost_post = Apps::addon_app_installed(local_channel(),'zotpost');
+		$zotpost_post   = Apps::addon_app_installed(local_channel(),'zotpost');
 		$zotpost_enable = (($zotpost_post && x($_REQUEST,'zotpost_enable')) ? intval($_REQUEST['zotpost_enable']) : 0);
 
 		// if API is used, default to the chosen settings
@@ -104,17 +104,16 @@ function zotpost_post_hook(&$b) {
 	load_pconfig($b['uid'], 'zotpost');
 
 	
-	$api      = get_pconfig($b['uid'], 'zotpost', 'baseapi');
-	if(substr($api,-1,1) != '/')
-		$api .= '/';
+	$api      = get_pconfig($b['uid'], 'zotpost', 'server');
+	$api      = rtrim($api,'/') . '/api';	
 
 	$password = z_unobscure(get_pconfig($b['uid'], 'zotpost', 'password'));
 	$channel  = get_pconfig($b['uid'], 'zotpost', 'channel');
 
-	$postdata = array('body' => $b['body'], 'title' => $b['title'], 'source' => (($b['app']) ? : 'ZAP/ZotPost'));
+	$postdata =  [ 'body' => $b['body'], 'title' => $b['title'], 'source' => (($b['app']) ? : 'ZAP/ZotPost') ];
 
 	if(strlen($b['body'])) {
-		$ret = z_post_url($api . '/red/item/update', $postdata, 0, array('http_auth' => $channel . ':' . $password));
+		$ret = z_post_url($api . '/red/item/update', $postdata, 0, [ 'http_auth' => $channel . ':' . $password ]);
 		if($ret['success'])
 			logger('zotpost: returns: ' . print_r($ret['body'],true));
 		else

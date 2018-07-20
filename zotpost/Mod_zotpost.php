@@ -27,10 +27,9 @@ class Zotpost extends \Zotlabs\Web\Controller {
 			return;
 		}
 
-		set_pconfig(local_channel(), 'zotpost', 'baseapi',         trim($_POST['zotpost_baseapi']));
+		set_pconfig(local_channel(), 'zotpost', 'server',          trim($_POST['zotpost_server']));
 		set_pconfig(local_channel(), 'zotpost', 'password',        z_obscure(trim($_POST['zotpost_password'])));
 		set_pconfig(local_channel(), 'zotpost', 'channel',         trim($_POST['zotpost_channel']));
-		set_pconfig(local_channel(), 'zotpost', 'post',            intval($_POST['zotpost_enable']));
 		set_pconfig(local_channel(), 'zotpost', 'post_by_default', intval($_POST['zotpost_default']));
         info( t('Zotpost Settings saved.') . EOL);
 
@@ -48,37 +47,37 @@ class Zotpost extends \Zotlabs\Web\Controller {
 			return $text;
 		}
 
-		nav_set_selected(t('Zotpost'));
+		nav_set_selected(t('ZotPost'));
 
-		$api     = get_pconfig(local_channel(), 'zotpost', 'baseapi');
-		$password = z_unobscure(get_pconfig(local_channel(), 'zotpost', 'password' ));
-		$channel = get_pconfig(local_channel(), 'zotpost', 'channel' );
-		$defenabled = get_pconfig(local_channel(),'zotpost','post_by_default');
+		$api        = get_pconfig(local_channel(), 'zotpost', 'server');
+		$password   = z_unobscure(get_pconfig(local_channel(), 'zotpost', 'password' ));
+		$channel    = get_pconfig(local_channel(), 'zotpost', 'channel' );
+		$defenabled = get_pconfig(local_channel(), 'zotpost', 'post_by_default');
 		$defchecked = (($defenabled) ? 1 : false);
 
 
 		$sc = $text;
 
-		$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
-			'$field'	=> array('zotpost_default', t('Send public postings to Zot channel by default'), $defchecked, '', array(t('No'),t('Yes'))),
-		));
+		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+			'$field'	=>  [ 'zotpost_server', t('Zot server URL'), $api, t('https://example.com') ]
+		]);
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
-			'$field'	=> array('zotpost_baseapi', t('Zot API Path'), $api, t('https://{sitename}/api'))
-		));
+		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+			'$field'	=>  [ 'zotpost_channel', t('Zot channel name'), $channel, t('Nickname') ]
+		]);
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
-			'$field'	=> array('zotpost_channel', t('Zot channel name'), $channel, t('Nickname'))
-		));
+		$sc .= replace_macros(get_markup_template('field_password.tpl'), [
+			'$field'	=>  [ 'zotpost_password', t('Zot password'), $password, '' ]
+		]);
 
-		$sc .= replace_macros(get_markup_template('field_password.tpl'), array(
-			'$field'	=> array('zotpost_password', t('Zot password'), $password, '')
-		));
+		$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), [
+			'$field'	=>  [ 'zotpost_default', t('Send public postings to Zot channel by default'), $defchecked, '', [ t('No'),t('Yes') ] ],
+		]);
 
-		return replace_macros(get_markup_template('generic_app_settings.tpl'), array(
-			'$addon' 	=> array('zotpost', t('Zotpost Settings'), '', t('Submit')),
+		return replace_macros(get_markup_template('generic_app_settings.tpl'), [
+			'$addon' 	=> [ 'zotpost', t('Zotpost Settings'), '', t('Submit') ],
 			'$content'	=> $sc
-		));
+		]);
 
 	}
 
