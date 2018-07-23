@@ -2,6 +2,7 @@
 
 use Zotlabs\Extend\Route;
 use Zotlabs\Extend\Hook;
+use Zotlabs\Lib\Libsync;
 
 /**
  * Name: superblock
@@ -338,7 +339,7 @@ function superblock_init(&$a) {
 
 
 	set_pconfig(local_channel(),'system','blocked',$words);
-	build_sync_packet();
+	Libsync::build_sync_packet();
 
 	info( t('superblock settings updated') . EOL );
 

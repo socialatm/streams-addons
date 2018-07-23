@@ -3,6 +3,7 @@
 namespace Zotlabs\Module;
 
 use Zotlabs\Lib\Apps;
+use Zotlabs\Lib\Libsync;
 
 class Superblock extends \Zotlabs\Web\Controller {
 
@@ -45,7 +46,7 @@ class Superblock extends \Zotlabs\Web\Controller {
 		if($handled) {
 
 			set_pconfig(local_channel(),'system','blocked',$words);
-			build_sync_packet();
+			Libsync::build_sync_packet();
 
 			info( t('superblock settings updated') . EOL );
 
