@@ -5,9 +5,9 @@ use Zotlabs\Extend\Route;
 use Zotlabs\Lib\Apps;
 
 /**
- * Name: NSFW
+ * Name: Not Safe For Work
  * Description: Collapse posts with inappropriate content
- * Version: 1.0
+ * Version: 2.0
  * Author: Mike Macgirvin <http://macgirvin.com/profile/mike>
  * Maintainer: Mike Macgirvin <mike@macgirvin.com> 
  */
@@ -147,6 +147,11 @@ function nsfw_prepare_body(&$b) {
 		}
 	}
 
+	if($b['item']['collapse']) {
+			$found = true;
+			$orig_word = t('Conversation muted');
+	}
+
 	$ob_hash = get_observer_hash();
 	if((! $ob_hash) 
 		&& (intval($b['item']['author']['xchan_censored']) || intval($b['item']['author']['xchan_selfcensored']))) {
@@ -170,3 +175,5 @@ function nsfw_prepare_body(&$b) {
 		$b['photo'] = (($b['photo']) ? '<div id="nsfw-photo-' . $rnd . '" style="display: none; " >' . $b['photo'] . '</div>' : '');
 	}
 }
+
+

@@ -15,6 +15,7 @@ class Nsfw extends \Zotlabs\Web\Controller {
 
 		if($_POST['nsfw-submit']) {
 			set_pconfig(local_channel(),'nsfw','words',trim($_POST['nsfw-words']));
+			set_pconfig(local_channel(),'nsfw','collapse_all',intval($_POST['nsfw-collapse']));
 			info( t('NSFW Settings saved.') . EOL);
 		}
 
@@ -36,6 +37,10 @@ class Nsfw extends \Zotlabs\Web\Controller {
 
 		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
 			'$field'	=> array('nsfw-words', t('Comma separated list of keywords to hide'), $words, t('Word, /regular-expression/, lang=xx, lang!=xx'))
+		));
+
+		$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+			'$field'	=> array('nsfw-collapse', t('Collapse entire conversation if a match is found'), get_pconfig(local_channel(),'nsfw','collapse_all',true), '' )
 		));
 
 		$s = replace_macros(get_markup_template('generic_app_settings.tpl'), array(
