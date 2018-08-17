@@ -3,6 +3,7 @@
 namespace Zotlabs\Module;
 
 use Zotlabs\Lib\Apps;
+use Zotlabs\Lib\Libsync;
 
 class Nsfw extends \Zotlabs\Web\Controller {
 
@@ -18,6 +19,8 @@ class Nsfw extends \Zotlabs\Web\Controller {
 			set_pconfig(local_channel(),'nsfw','collapse_all',intval($_POST['nsfw-collapse']));
 			info( t('NSFW Settings saved.') . EOL);
 		}
+
+		Libsync::build_sync_packet();
 
 	}
 

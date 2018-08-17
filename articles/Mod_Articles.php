@@ -96,30 +96,32 @@ class Articles extends \Zotlabs\Web\Controller {
 		if(perm_is_allowed($owner,$ob_hash,'write_pages')) {
 
 			$x = [
-				'webpage'           => ITEM_TYPE_ARTICLE,
-				'is_owner'          => true,
-				'content_label'     => t('Add Article'),
-				'button'            => t('Create'),
-				'nickname'          => $channel['channel_address'],
-				'lockstate'         => (($channel['channel_allow_cid'] || $channel['channel_allow_gid'] 
+				'webpage'             => ITEM_TYPE_ARTICLE,
+				'is_owner'            => true,
+				'content_label'       => t('Add Article'),
+				'button'              => t('Create'),
+				'nickname'            => $channel['channel_address'],
+				'lockstate'           => (($channel['channel_allow_cid'] || $channel['channel_allow_gid'] 
 					|| $channel['channel_deny_cid'] || $channel['channel_deny_gid']) ? 'lock' : 'unlock'),
-				'acl'               => (($is_owner) ? populate_acl($channel_acl, false, 
+				'acl'                 => (($is_owner) ? populate_acl($channel_acl, false, 
 					\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_pages')) : ''),
-				'permissions'       => $channel_acl,
-				'showacl'           => (($is_owner) ? true : false),
-				'visitor'           => true,
-				'body'              => EMPTY_STR,
-				'hide_location'     => false,
-				'hide_voting'       => false,
-				'profile_uid'       => intval($owner),
-				'mimetype'          => 'text/bbcode',
-				'mimeselect'        => false,
-				'layoutselect'      => false,
-				'expanded'          => false,
-				'novoting'          => false,
-				'catsenabled'       => feature_enabled($owner,'categories'),
-				'bbco_autocomplete' => 'bbcode',
-				'bbcode'            => true
+				'permissions'         => $channel_acl,
+				'showacl'             => (($is_owner) ? true : false),
+				'visitor'             => true,
+				'body'                => EMPTY_STR,
+				'hide_location'       => false,
+				'hide_voting'         => false,
+				'profile_uid'         => intval($owner),
+				'mimetype'            => 'text/bbcode',
+				'mimeselect'          => false,
+				'layoutselect'        => false,
+				'expanded'            => false,
+				'novoting'            => false,
+				'allow_summary'       => true,
+				'catsenabled'         => feature_enabled($owner,'categories'),
+				'bbco_autocomplete'   => 'bbcode',
+				'editor_autocomplete' => true,
+				'bbcode'              => true
 			];
 
 			if($_REQUEST['title'])
