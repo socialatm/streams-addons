@@ -3,7 +3,7 @@
 namespace Zotlabs\Module;
 
 use Zotlabs\Lib\Apps;
-
+use Zotlabs\Lib\Libsync;
 
 class Zotpost extends \Zotlabs\Web\Controller {
 
@@ -33,6 +33,7 @@ class Zotpost extends \Zotlabs\Web\Controller {
 		set_pconfig(local_channel(), 'zotpost', 'post_by_default', intval($_POST['zotpost_default']));
         info( t('Zotpost Settings saved.') . EOL);
 
+		Libsync::build_sync_packet();
 
 	}
 

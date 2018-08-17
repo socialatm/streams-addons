@@ -86,14 +86,14 @@ class Article_edit extends \Zotlabs\Web\Controller {
 		$mimetype = $itm[0]['mimetype'];
 
 		$content = $itm[0]['body'];
-
-
+		$summary = $itm[0]['summary'];
 
 		$rp = 'articles/' . $channel['channel_address'];
 
 		$x = array(
 			'nickname' => $channel['channel_address'],
 			'bbco_autocomplete'=> 'bbcode',
+			'editor_autocomplete' => true,
 			'return_path' => $rp,
 			'webpage' => ITEM_TYPE_ARTICLE,
 			'button' => t('Edit'),
@@ -116,6 +116,8 @@ class Article_edit extends \Zotlabs\Web\Controller {
 			'title' => htmlspecialchars($itm[0]['title'],ENT_COMPAT,'UTF-8'),
 			'placeholdertitle' => t('Title (optional)'),
 			'pagetitle' => $card_title,
+			'allow_summary' => true,
+			'summary' => undo_post_tagging($summary),
 			'profile_uid' => (intval($channel['channel_id'])),
 			'catsenabled' => $catsenabled,
 			'category' => $category,
