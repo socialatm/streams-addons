@@ -135,14 +135,14 @@ class Inbox extends \Zotlabs\Web\Controller {
 				case 'Follow':
 					if($AS->obj & $AS->obj['type'] === 'Person') {
 						// do follow activity
-						as_follow($channel,$AS);
+						Activity::follow($channel,$AS);
 						continue;
 					}
 					break;
 				case 'Accept':
 					if($AS->obj & $AS->obj['type'] === 'Follow') {
 						// do follow activity
-						as_follow($channel,$AS);
+						Activity::follow($channel,$AS);
 						continue;
 					}
 					break;
@@ -157,35 +157,37 @@ class Inbox extends \Zotlabs\Web\Controller {
 
 			// These activities require permissions		
 
+			$item = null;
+
 			switch($AS->type) {
 				case 'Create':
 				case 'Update':
-					as_create_action($channel,$observer_hash,$AS);
-					continue;
 				case 'Like':
 				case 'Dislike':
-					as_like_action($channel,$observer_hash,$AS);
-					continue;
+				case 'Announce':
+					$item = Activity::decode_note($AS);
+					break;
 				case 'Undo':
 					if($AS->obj & $AS->obj['type'] === 'Follow') {
 						// do unfollow activity
-						as_unfollow($channel,$AS);
-						continue;
+						Activity::unfollow($channel,$AS);
+						break;
 					}
 				case 'Delete':
 				case 'Add':
 				case 'Remove':
-					break;
-
-				case 'Announce':
-					as_announce_action($channel,$observer_hash,$AS);
-					continue;
 				default:
 					break;
 
 			}
 
+			if($item) {
+				Activity::store($channel,$observer_hash,$AS,$item);
+			}
+
 		}
+
+
 		http_status_exit(200,'OK');
 	}
 
