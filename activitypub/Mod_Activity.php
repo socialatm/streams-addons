@@ -45,7 +45,7 @@ class Activity extends \Zotlabs\Web\Controller {
 			$headers = [];
 			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 
-			$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
+			$x['signature'] = \Zotlabs\Lib\LDSignatures::sign($x,$chan);
 			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 			$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
 			$headers['Digest'] = 'SHA-256=' . $hash;  

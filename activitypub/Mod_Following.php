@@ -47,7 +47,7 @@ class Following extends \Zotlabs\Web\Controller {
 
 			$headers = [];
 			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
-			$x['signature'] = LDSignatures::dopplesign($x,$channel);
+			$x['signature'] = LDSignatures::sign($x,$channel);
 			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 			$headers['Digest'] = HTTPSig::generate_digest_header($ret);
 			$h = HTTPSig::create_sig($headers,$channel['channel_prvkey'],channel_url($channel));

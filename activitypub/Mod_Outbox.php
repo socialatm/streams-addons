@@ -64,12 +64,11 @@ class Outbox extends \Zotlabs\Web\Controller {
 				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
 				z_root() . ZOT_APSCHEMA_REV
-            	]], Activity::encode_item_collection($items, \App::$query_string, 'OrderedCollection'));
-
+            	]], Activity::encode_item_collection($items, \App::$query_string, 'OrderedCollection',true));
 
 			$headers = [];
 			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
-			$x['signature'] = LDSignatures::dopplesign($x,$channel);
+			$x['signature'] = LDSignatures::sign($x,$channel);
 			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 			$headers['Digest'] = HTTPSig::generate_digest_header($ret);
 			$h = HTTPSig::create_sig($headers,$channel['channel_prvkey'],channel_url($channel));

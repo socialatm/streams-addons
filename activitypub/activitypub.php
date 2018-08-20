@@ -328,7 +328,7 @@ function activitypub_channel_mod_init($x) {
 		$headers = [];
 		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 
-		$x['signature'] = LDSignatures::dopplesign($x,$chan);
+		$x['signature'] = LDSignatures::sign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$headers['Digest'] = HTTPSig::generate_digest_header($ret);
 		$h = HTTPSig::create_sig($headers,$chan['channel_prvkey'],channel_url($chan));
@@ -400,7 +400,7 @@ function activitypub_notifier_process(&$arr) {
 			z_root() . ZOT_APSCHEMA_REV
 		]], $ti);
 	
-		$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$arr['channel']);
+		$msg['signature'] = \Zotlabs\Lib\LDSignatures::sign($msg,$arr['channel']);
 
 		$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 	}
@@ -599,7 +599,7 @@ function activitypub_connection_remove(&$x) {
 		);
 	}
 
-	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$channel);
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::sign($msg,$channel);
 
 	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
@@ -648,7 +648,7 @@ function activitypub_permissions_create(&$x) {
 	]);
 
 
-	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$x['sender']);
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::sign($msg,$x['sender']);
 
 	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
@@ -706,7 +706,7 @@ function activitypub_permissions_accept(&$x) {
 			'to' => [ $x['recipient']['xchan_hash'] ]
 	]);
 
-	$msg['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($msg,$x['sender']);
+	$msg['signature'] = \Zotlabs\Lib\LDSignatures::sign($msg,$x['sender']);
 
 	$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 
@@ -751,7 +751,7 @@ function activitypub_profile_mod_init($x) {
 				
 		$headers = [];
 		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
-		$x['signature'] = LDSignatures::dopplesign($x,$chan);
+		$x['signature'] = LDSignatures::sign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$headers['Digest'] = HTTPSig::generate_digest_header($ret);
 		$h = HTTPSig::create_sig($headers,$chan['channel_prvkey'],channel_url($chan));
@@ -815,7 +815,7 @@ function activitypub_item_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
-		$x['signature'] = LDSignatures::dopplesign($x,$chan);
+		$x['signature'] = LDSignatures::sign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$headers['Digest'] = HTTPSig::generate_digest_header($ret);
 		$h = HTTPSig::create_sig($headers,$chan['channel_prvkey'],channel_url($chan));
@@ -864,7 +864,7 @@ function activitypub_follow_mod_init($x) {
 
 		$headers = [];
 		$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
-		$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$chan);
+		$x['signature'] = \Zotlabs\Lib\LDSignatures::sign($x,$chan);
 		$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
 		$headers['Digest'] = HTTPSig::generate_digest_header($ret);
 		$h = HTTPSig::create_sig($headers,$chan['channel_prvkey'],channel_url($chan));
