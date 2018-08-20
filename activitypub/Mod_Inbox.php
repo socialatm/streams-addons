@@ -82,11 +82,18 @@ class Inbox extends \Zotlabs\Web\Controller {
 			}
 			else {
 
-				// deliver to anybody following $AS->actor
+				if($AS->type === 'Follow' && $AS->obj && $AS->obj['type'] === 'Person') {
+					$channels = q("SELECT * from channel where channel_address = '%s' and channel_removed = 0 ",
+					dbesc(basename($AS->obj['id']))
+					);
+				}
+				else {
+					// deliver to anybody following $AS->actor
 
-				$channels = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network = 'activitypub' and xchan_hash = '%s' ) and channel_removed = 0 ",
-					dbesc($observer_hash)
-				);
+					$channels = q("SELECT * from channel where channel_id in ( SELECT abook_channel from abook left join xchan on abook_xchan = xchan_hash WHERE xchan_network = 'activitypub' and xchan_hash = '%s' ) and channel_removed = 0 ",
+						dbesc($observer_hash)
+					);
+				}
 			}
 
 			if($channels === false)

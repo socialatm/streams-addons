@@ -712,6 +712,9 @@ function as_follow($channel,$act) {
 	$person_obj = $act->actor;
 
 	if($act->type === 'Follow') {
+		if($act->obj['id'] !== channel_url($channel)) {
+			return;
+		}
 		$their_follow_id  = $act->id;
 	}
 	elseif($act->type === 'Accept') {

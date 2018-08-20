@@ -1,6 +1,11 @@
 <?php
-
 namespace Zotlabs\Module;
+
+
+use Zotlabs\Lib\ActivityStreams;
+use Zotlabs\Lib\LDSignatures;
+use Zotlabs\Lib\Activity;
+use Zotlabs\Web\HTTPSig;
 
 
 class Following extends \Zotlabs\Web\Controller {
@@ -26,26 +31,27 @@ class Following extends \Zotlabs\Web\Controller {
 			http_status_exit(403, 'Forbidden');
 		}
 
-		$r = q("select * from abconfig left join xchan on abconfig.xchan = xchan_hash where abconfig.chan = %d and abconfig.cat = 'my_perms' and abconfig.k = 'send_stream' and abconfig.v = '1'",
-			intval($channel['channel_id'])	
+		$r = q("select * from abconfig left join xchan on abconfig.xchan = xchan_hash where abconfig.chan = %d and abconfig.cat = 'system' and abconfig.k = 'my_perms' and abconfig.v like '%%send_stream%%' and xchan_hash != '%s'",
+			intval($channel['channel_id']),
+			dbesc($channel['channel_hash'])	
 		);
 			
-		if(activitypub_is_as_request()) {
+		if(ActivityStreams::is_as_request()) {
 
 			$x = array_merge(['@context' => [
 				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
 				z_root() . ZOT_APSCHEMA_REV
-				]], asencode_follow_collection($r, \App::$query_string, 'OrderedCollection'));
+				]], Activity::encode_follow_collection($r, \App::$query_string, 'OrderedCollection'));
 
 
 			$headers = [];
 			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
-			$x['signature'] = \Zotlabs\Lib\LDSignatures::dopplesign($x,$channel);
+			$x['signature'] = LDSignatures::dopplesign($x,$channel);
 			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
-			$hash = \Zotlabs\Web\HTTPSig::generate_digest($ret,false);
-			$headers['Digest'] = 'SHA-256=' . $hash;
-			\Zotlabs\Web\HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . $channel['channel_address'],true);
+			$headers['Digest'] = HTTPSig::generate_digest_header($ret);
+			$h = HTTPSig::create_sig($headers,$channel['channel_prvkey'],channel_url($channel));
+			HTTPSig::set_headers($h);
 			echo $ret;
 			killme();
 

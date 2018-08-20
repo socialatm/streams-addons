@@ -4,6 +4,7 @@ namespace Zotlabs\Module;
 use Zotlabs\Lib\ActivityStreams;
 use Zotlabs\Lib\LDSignatures;
 use Zotlabs\Web\HTTPSig;
+use Zotlabs\Lib\Activity;
 
 
 class Outbox extends \Zotlabs\Web\Controller {
@@ -63,16 +64,16 @@ class Outbox extends \Zotlabs\Web\Controller {
 				ACTIVITYSTREAMS_JSONLD_REV,
 				'https://w3id.org/security/v1',
 				z_root() . ZOT_APSCHEMA_REV
-            	]], asencode_item_collection($items, \App::$query_string, 'OrderedCollection'));
+            	]], Activity::encode_item_collection($items, \App::$query_string, 'OrderedCollection'));
 
 
 			$headers = [];
 			$headers['Content-Type'] = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"' ;
 			$x['signature'] = LDSignatures::dopplesign($x,$channel);
 			$ret = json_encode($x, JSON_UNESCAPED_SLASHES);
-			$hash = HTTPSig::generate_digest($ret,false);
-			$headers['Digest'] = 'SHA-256=' . $hash;  
-			HTTPSig::create_sig('',$headers,$channel['channel_prvkey'],z_root() . '/channel/' . $channel['channel_address'],true);
+			$headers['Digest'] = HTTPSig::generate_digest_header($ret);
+			$h = HTTPSig::create_sig($headers,$channel['channel_prvkey'],channel_url($channel));
+			HTTPSig::set_headers($h);
 			echo $ret;
 			killme();
 

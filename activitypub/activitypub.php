@@ -4,6 +4,7 @@ use Zotlabs\Web\HTTPSig;
 use Zotlabs\Lib\Queue;
 use Zotlabs\Lib\LDSignatures;
 use Zotlabs\Lib\ActivityStreams;
+use Zotlabs\Lib\Activity;
 
 /**
  * Name: ActivityPub
@@ -157,7 +158,7 @@ function activitypub_discover_channel_webfinger(&$b) {
     }
 	
 	if(($url) && (strpos($url,'http') === 0)) {
-		$x = as_fetch($url);
+		$x = ActivityStreams::fetch($url);
 		if(! $x) {
 			return;
 		}
@@ -166,7 +167,7 @@ function activitypub_discover_channel_webfinger(&$b) {
 		return;
 	}
 
-	$AS = new \Zotlabs\Lib\ActivityStreams($x);
+	$AS = new ActivityStreams($x);
 
 	if(! $AS->is_valid()) {
 		return;
@@ -185,7 +186,7 @@ function activitypub_discover_channel_webfinger(&$b) {
 		return;
 	}
 
-	as_actor_store($url,$person_obj);
+	Activity::actor_store($url,$person_obj);
 
 	if($address) {
 		q("update xchan set xchan_addr = '%s' where xchan_hash = '%s' and xchan_network = 'activitypub'",
@@ -314,7 +315,7 @@ function activitypub_channel_mod_init($x) {
 		if(! $chan)
 			http_status_exit(404, 'Not found');
 
-		$y = asencode_person($chan);
+		$y = Activity::encode_person($chan,true,true);
 		if(! $y)
 			http_status_exit(404, 'Not found');
 
@@ -729,15 +730,12 @@ function activitypub_permissions_accept(&$x) {
 
 function activitypub_profile_mod_init($x) {
 	
-	if(activitypub_is_as_request()) {
+	if(ActivityStreams::is_as_request()) {
 		$chan = channelx_by_nick(argv(1));
 		if(! $chan)
 			http_status_exit(404, 'Not found');
 
-		if(! get_pconfig($chan['channel_id'],'system','activitypub_allowed'))
-			http_status_exit(404, 'Not found');
-
-		$p = asencode_person($chan);
+		$p = Activity::encode_person($chan,true,true);
 		if(! $p)
 			http_status_exit(404, 'Not found');
 
@@ -767,7 +765,7 @@ function activitypub_profile_mod_init($x) {
 
 function activitypub_item_mod_init($x) {
 	
-	if(activitypub_is_as_request()) {
+	if(ActivityStream::is_as_request()) {
 		$item_id = argv(1);
 		if(! $item_id)
 			http_status_exit(404, 'Not found');
@@ -794,11 +792,6 @@ function activitypub_item_mod_init($x) {
 		xchan_query($r,true);
 		$items = fetch_post_tags($r,true);
 
-		// Wrong object type
-
-		if(! in_array(activity_obj_mapper($items[0]['obj_type']), [ 'Note', 'Article' ])) {
-			http_status_exit(418, "I'm a teapot"); 
-		}
 
 		$chan = channelx_by_n($items[0]['uid']);
 
@@ -808,7 +801,7 @@ function activitypub_item_mod_init($x) {
 		if(! perm_is_allowed($chan['channel_id'],get_observer_hash(),'view_stream'))
 			http_status_exit(403, 'Forbidden');
 
-		$i = asencode_item($items[0]);
+		$i = Activity::encode_item($items[0]);
 		if(! $i)
 			http_status_exit(404, 'Not found');
 
@@ -836,7 +829,7 @@ function activitypub_item_mod_init($x) {
 
 function activitypub_follow_mod_init($x) {
 
-	if(activitypub_is_as_request() && argc() == 2) {
+	if(ActivityStreams::is_as_request() && argc() == 2) {
 		$abook_id = intval(argv(1));
 		if(! $abook_id)
 			return;
@@ -851,7 +844,7 @@ function activitypub_follow_mod_init($x) {
 		if(! $chan)
 			http_status_exit(404, 'Not found');
 
-		$actor = asencode_person($chan);
+		$actor = Activity::encode_person($chan);
 		if(! $actor)
 			http_status_exit(404, 'Not found');
 
