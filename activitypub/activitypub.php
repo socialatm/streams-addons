@@ -390,7 +390,7 @@ function activitypub_notifier_process(&$arr) {
 		$jmsg = $signed_msg;
 	}
 	else {
-		$ti = asencode_activity($target_item);
+		$ti = Activity::encode_activity($target_item, true);
 		if(! $ti)
 			return;
 
@@ -401,6 +401,8 @@ function activitypub_notifier_process(&$arr) {
 		]], $ti);
 	
 		$msg['signature'] = \Zotlabs\Lib\LDSignatures::sign($msg,$arr['channel']);
+
+		logger('ActivityPub_encoded: ' . json_encode($msg,JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT));
 
 		$jmsg = json_encode($msg, JSON_UNESCAPED_SLASHES);
 	}
@@ -765,7 +767,7 @@ function activitypub_profile_mod_init($x) {
 
 function activitypub_item_mod_init($x) {
 	
-	if(ActivityStream::is_as_request()) {
+	if(ActivityStreams::is_as_request()) {
 		$item_id = argv(1);
 		if(! $item_id)
 			http_status_exit(404, 'Not found');
