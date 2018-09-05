@@ -57,6 +57,8 @@ class Articles extends \Zotlabs\Web\Controller {
 			$sql_extra2 .= protect_sprintf(term_item_parent_query(\App::$profile['profile_uid'],'item', $category, TERM_CATEGORY));
 		}
 
+		$datequery = ((x($_GET,'dend') && is_a_date_arg($_GET['dend'])) ? notags($_GET['dend']) : '');
+		$datequery2 = ((x($_GET,'dbegin') && is_a_date_arg($_GET['dbegin'])) ? notags($_GET['dbegin']) : '');
 
 		$which = argv(1);
 		
@@ -152,9 +154,21 @@ class Articles extends \Zotlabs\Web\Controller {
 			}
 		}
 				
+		if($datequery) {
+			$sql_extra2 .= protect_sprintf(sprintf(" AND item.created <= '%s' ", dbesc(datetime_convert(date_default_timezone_get(),'',$datequery))));
+			$order = 'post';
+		}
+		if($datequery2) {
+			$sql_extra2 .= protect_sprintf(sprintf(" AND item.created >= '%s' ", dbesc(datetime_convert(date_default_timezone_get(),'',$datequery2))));
+		}
+
+		if($datequery || $datequery2) {
+			$sql_extra2 .= " and item.item_thread_top != 0 ";
+		}
+
 		$r = q("select * from item 
 			where item.uid = %d and item_type = %d 
-			$sql_extra $sql_item order by item.created desc $pager_sql",
+			$sql_extra $sql_extra2 $sql_item order by item.created desc $pager_sql",
 			intval($owner),
 			intval(ITEM_TYPE_ARTICLE)
 		);

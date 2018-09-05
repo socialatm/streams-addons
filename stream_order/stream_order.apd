@@ -1,0 +1,6 @@
+version: 1
+url: $baseurl/stream_order
+requires: local_channel
+name: Stream Order
+photo: icon:sort-amount-asc
+categories: Networking
