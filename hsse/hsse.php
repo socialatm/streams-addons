@@ -42,7 +42,7 @@ class Hsse {
 			return;
 		}
 
-		$valid_modules = ['network','rpost','channel', 'editpost'];
+		$valid_modules = ['network','rpost','editpost'];
 		if (! in_array(argv(0),$valid_modules)) {
 			return;
 		}
