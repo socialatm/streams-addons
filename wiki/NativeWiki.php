@@ -248,7 +248,7 @@ class NativeWiki {
 			WHERE resource_type = '%s' AND iconfig.v = '%s' AND uid = %d 
 			AND item_deleted = 0 $sql_extra limit 1", 
 			dbesc(NWIKI_ITEM_RESOURCE_TYPE), 
-			dbesc($urlName), 
+			dbesc(self::name_decode($urlName)), 
 			intval($uid)
 		);
 

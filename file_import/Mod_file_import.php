@@ -25,8 +25,10 @@ class File_import extends Controller {
 
 	
 		$headers = [ 
-			'X-API-Token' => random_string(),
-			'X-API-Request' => $hz_server . '/api/z/1.0/files?f=&since=' . urlencode($since) . '&until=' . urlencode($until),
+			'X-API-Token'      => random_string(),
+			'X-API-Request'    => $hz_server . '/api/z/1.0/files?f=&since=' . urlencode($since) . '&until=' . urlencode($until),
+			'Host'             => \App::get_hostname(),
+			'(request-target)' => '/api/z/1.0/files?f=&since=' . urlencode($since) . '&until=' . urlencode($until),
 		];
 
 		$headers = HTTPSig::create_sig($headers,$channel['channel_prvkey'], channel_url($channel),true,'sha512');

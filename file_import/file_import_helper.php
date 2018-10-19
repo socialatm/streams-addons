@@ -22,7 +22,8 @@ $hz_server = urldecode($argv[3]);
 
 	$headers = [
 		'X-API-Token'    => random_string(),
-		'X-API-Request'  => $hz_server . '/api/z/1.0/file/export?f=&file_id=' . $attach_id
+		'X-API-Request'  => $hz_server . '/api/z/1.0/file/export?f=&file_id=' . $attach_id,
+		'Host'           => \App::get_hostname()
 	];
 
 	$headers = HTTPSig::create_sig($headers,$channel['channel_prvkey'],channel_url($channel),true,'sha512');		
