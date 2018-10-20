@@ -11,22 +11,17 @@ class Nodeinfo extends Controller {
 		$hidden = get_config('system','hide_in_statistics');
 
 		if($hidden) {
-logger("GETDATA");
+
 			$lastrun = get_config('system','hide_in_stats_lastrun');
 			$lastrun = (isset($lastrun) && (intval($lastrun) > 0)) ? intval($lastrun) : (time() - (60 * 60 * 24 * 30));
-logger("LASTRUN: ".$lastrun);
+
 			set_config('system','hide_in_stats_lastrun',time());
 			$timedelta = time() - intval($lastrun);
-logger("time: ".time());
-logger("timedelta: ".$timedelta);
-logger("month: ".intval(60*60*24*30));
 			$timeproportion = floatval($timedelta / intval(60 * 60 * 24 * 30));
-logger("timeproportion: ".$timeproportion);
-			
+
 			$prevusers = get_config('system','hide_in_stats_prevusers');
 			$prevusers = (isset($prevusers) && (intval($prevusers) > 0)) ? $prevusers : rand(1,50);
 			$maxusers = $prevusers + intval(200 * $timeproportion);
-logger("users: prev / max: ".$prevusers. " / " . $maxusers);
 
 			$users = rand($prevusers,$maxusers);
 			set_config('system','hide_in_stats_prevusers',$users);
