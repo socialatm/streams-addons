@@ -11,15 +11,23 @@ class Nodeinfo extends Controller {
 		$hidden = get_config('system','hide_in_statistics');
 
 		if($hidden) {
-
+logger("GETDATA");
 			$lastrun = get_config('system','hide_in_stats_lastrun');
-			$lastrun = (isset($lastrun) && (intval($prevusers) > 0)) ? $lastrun : (time() - (60 * 60 * 24 * 30));
+			$lastrun = (isset($lastrun) && (intval($lastrun) > 0)) ? intval($lastrun) : (time() - (60 * 60 * 24 * 30));
+logger("LASTRUN: ".$lastrun);
+			set_config('system','hide_in_stats_lastrun',time());
 			$timedelta = time() - intval($lastrun);
-			$timeproportion = $timedelta / (60 * 60 * 24 * 30);
+logger("time: ".time());
+logger("timedelta: ".$timedelta);
+logger("month: ".intval(60*60*24*30));
+			$timeproportion = floatval($timedelta / intval(60 * 60 * 24 * 30));
+logger("timeproportion: ".$timeproportion);
 			
 			$prevusers = get_config('system','hide_in_stats_prevusers');
 			$prevusers = (isset($prevusers) && (intval($prevusers) > 0)) ? $prevusers : rand(1,50);
-			$maxusers = $prevusers + intval(200 / $timeproportion);
+			$maxusers = $prevusers + intval(200 * $timeproportion);
+logger("users: prev / max: ".$prevusers. " / " . $maxusers);
+
 			$users = rand($prevusers,$maxusers);
 			set_config('system','hide_in_stats_prevusers',$users);
 
@@ -34,18 +42,16 @@ class Nodeinfo extends Controller {
 			set_config('system','hide_in_stats_prevactivehy',$activeHalfyear);
 
 			$prevPosts = get_config('system','hide_in_stats_prevposts');
-			$prevPosts = (isset($prevPosts) && intval($prevPosts) > 0) ? $prevPosts : 1;
-			$localPosts = $prevPosts + ($activeMonth * rand(1,30) * $timeproportion);
+			$prevPosts = (isset($prevPosts) && intval($prevPosts) > 0) ? $prevPosts : rand($users,$users * 15);
+			$localPosts = intval($prevPosts + ($activeMonth * rand(1,30) * $timeproportion));
 			set_config('system','hide_in_stats_prevposts',$localPosts);
 			$newPosts = $localPosts - $prevPosts;
 
 			$prevComments = get_config('system','hide_in_stats_prevcomments');
-			$prevComments = (isset($prevComments) && intval($prevComments) > 0) ? $prevComments : 1;
-			$localComments = $prevComments + ($newPosts * rand(1,10) * $timeproportion);
+			$prevComments = (isset($prevComments) && intval($prevComments) > 0) ? $prevComments : rand($localPosts,$localPosts * 3);
+			$localComments = intval($prevComments + ($newPosts * rand(1,10) * $timeproportion));
 			set_config('system','hide_in_stats_prevcomments',$localComments);
 			$prevComments = $localComments;
-
-
 
 
 			if(argc() > 1 && argv(1) === '2.0') {
