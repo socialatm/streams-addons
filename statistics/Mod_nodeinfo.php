@@ -12,6 +12,42 @@ class Nodeinfo extends Controller {
 
 		if($hidden) {
 
+			$lastrun = get_config('system','hide_in_stats_lastrun');
+			$lastrun = (isset($lastrun) && (intval($prevusers) > 0)) ? $lastrun : (time() - (60 * 60 * 24 * 30));
+			$timedelta = time() - intval($lastrun);
+			$timeproportion = $timedelta / (60 * 60 * 24 * 30);
+			
+			$prevusers = get_config('system','hide_in_stats_prevusers');
+			$prevusers = (isset($prevusers) && (intval($prevusers) > 0)) ? $prevusers : rand(1,50);
+			$maxusers = $prevusers + intval(200 / $timeproportion);
+			$users = rand($prevusers,$maxusers);
+			set_config('system','hide_in_stats_prevusers',$users);
+
+			$prevActiveMonth = get_config('system','hide_in_stats_prevactivemonth');
+			$prevActiveMonth = (isset($prevActiveMonth) && (intval($prevActiveMonth) > 0)) ? $prevActiveMonth : $users;
+			$activeMonth = $prevActiveMonth + intval(rand(1,($users-$prevActiveMonth+1))*$timeproportion);
+			set_config('system','hide_in_stats_prevactivemonth',$activeMonth);
+
+			$prevActiveHalfyear = get_config('system','hide_in_stats_prevactivehy');
+			$prevActiveHalfyear = (isset($prevActiveHalfyear) && (intval($prevActiveHalfyear) > 0)) ? $prevActiveHalfyear : $users;
+			$activeHalfyear = $prevActiveHalfyear + intval(rand(1,($users-$prevActiveHalfyear+1))*$timeproportion);
+			set_config('system','hide_in_stats_prevactivehy',$activeHalfyear);
+
+			$prevPosts = get_config('system','hide_in_stats_prevposts');
+			$prevPosts = (isset($prevPosts) && intval($prevPosts) > 0) ? $prevPosts : 1;
+			$localPosts = $prevPosts + ($activeMonth * rand(1,30) * $timeproportion);
+			set_config('system','hide_in_stats_prevposts',$localPosts);
+			$newPosts = $localPosts - $prevPosts;
+
+			$prevComments = get_config('system','hide_in_stats_prevcomments');
+			$prevComments = (isset($prevComments) && intval($prevComments) > 0) ? $prevComments : 1;
+			$localComments = $prevComments + ($newPosts * rand(1,10) * $timeproportion);
+			set_config('system','hide_in_stats_prevcomments',$localComments);
+			$prevComments = $localComments;
+
+
+
+
 			if(argc() > 1 && argv(1) === '2.0') {
 				$arr = [
 					'version' => '2.0',
@@ -19,9 +55,9 @@ class Nodeinfo extends Controller {
 					'protocols' => [ 'zot' ],
 					'services' => [],
 					'openRegistrations' => false,
-					'usage' => [ 'users' => [ 'total' => 1, 'activeHalfyear' => 1, 'activeMonth' => 1 ],
-						'localPosts' => 1,
-						'localComments' => 1
+					'usage' => [ 'users' => [ 'total' => $users, 'activeHalfyear' => $activeHalfyear, 'activeMonth' => $activeMonth ],
+						'localPosts' => $localPosts,
+						'localComments' => $localComments
 					],
 					'metadata' => [ 'nodeName' => get_config('system','sitename') ]
 				];
