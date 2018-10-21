@@ -8,17 +8,15 @@ class Nodeinfo extends Controller {
 
 	function init() {
 
-		$hidden = get_config('system','hide_in_statistics');
+		$fudge = get_config('system','fudge_in_statistics');
 
-		if($hidden) {
-
+		if($fudge) {
 			$lastrun = get_config('system','hide_in_stats_lastrun');
 			$lastrun = (isset($lastrun) && (intval($lastrun) > 0)) ? intval($lastrun) : (time() - (60 * 60 * 24 * 30));
-
 			set_config('system','hide_in_stats_lastrun',time());
 			$timedelta = time() - intval($lastrun);
 			$timeproportion = floatval($timedelta / intval(60 * 60 * 24 * 30));
-
+			
 			$prevusers = get_config('system','hide_in_stats_prevusers');
 			$prevusers = (isset($prevusers) && (intval($prevusers) > 0)) ? $prevusers : rand(1,50);
 			$maxusers = $prevusers + intval(200 * $timeproportion);
@@ -47,23 +45,31 @@ class Nodeinfo extends Controller {
 			$localComments = intval($prevComments + ($newPosts * rand(1,10) * $timeproportion));
 			set_config('system','hide_in_stats_prevcomments',$localComments);
 			$prevComments = $localComments;
+		}
 
+		$hidden = get_config('system','hide_in_statistics');
 
-			if(argc() > 1 && argv(1) === '2.0') {
-				$arr = [
-					'version' => '2.0',
-					'software' => [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version()],
-					'protocols' => [ 'zot' ],
-					'services' => [],
-					'openRegistrations' => false,
-					'usage' => [ 'users' => [ 'total' => $users, 'activeHalfyear' => $activeHalfyear, 'activeMonth' => $activeMonth ],
-						'localPosts' => $localPosts,
-						'localComments' => $localComments
-					],
-					'metadata' => [ 'nodeName' => get_config('system','sitename') ]
-				];
-			}
+		if($hidden && !$fudge) {
+			$users = 1;
+			$activeHalfyear = 1;
+			$activeMonth = 1;
+			$localPosts = 1;
+			$localComments = 1;
+		}
 
+		if(($hidden || $fudge) && argc() > 1 && argv(1) === '2.0') {
+			$arr = [
+				'version' => '2.0',
+				'software' => [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version()],
+				'protocols' => [ 'zot' ],
+				'services' => [],
+				'openRegistrations' => false,
+				'usage' => [ 'users' => [ 'total' => $users, 'activeHalfyear' => $activeHalfyear, 'activeMonth' => $activeMonth ],
+					'localPosts' => $localPosts,
+					'localComments' => $localComments
+				],
+				'metadata' => [ 'nodeName' => get_config('system','sitename') ]
+			];
 		}
 		else {
 			$arr = [
