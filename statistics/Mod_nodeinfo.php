@@ -11,39 +11,39 @@ class Nodeinfo extends Controller {
 		$fudge = get_config('system','fudge_in_statistics');
 
 		if($fudge) {
-			$lastrun = get_config('system','hide_in_stats_lastrun');
+			$lastrun = get_config('system','fudge_in_stats_lastrun');
 			$lastrun = (isset($lastrun) && (intval($lastrun) > 0)) ? intval($lastrun) : (time() - (60 * 60 * 24 * 30));
-			set_config('system','hide_in_stats_lastrun',time());
+			set_config('system','fudge_in_stats_lastrun',time());
 			$timedelta = time() - intval($lastrun);
 			$timeproportion = floatval($timedelta / intval(60 * 60 * 24 * 30));
 			
-			$prevusers = get_config('system','hide_in_stats_prevusers');
+			$prevusers = get_config('system','fudge_in_stats_prevusers');
 			$prevusers = (isset($prevusers) && (intval($prevusers) > 0)) ? $prevusers : rand(1,50);
 			$maxusers = $prevusers + intval(200 * $timeproportion);
 
 			$users = rand($prevusers,$maxusers);
-			set_config('system','hide_in_stats_prevusers',$users);
+			set_config('system','fudge_in_stats_prevusers',$users);
 
-			$prevActiveMonth = get_config('system','hide_in_stats_prevactivemonth');
+			$prevActiveMonth = get_config('system','fudge_in_stats_prevactivemonth');
 			$prevActiveMonth = (isset($prevActiveMonth) && (intval($prevActiveMonth) > 0)) ? $prevActiveMonth : $users;
 			$activeMonth = $prevActiveMonth + intval(rand(1,($users-$prevActiveMonth+1))*$timeproportion);
-			set_config('system','hide_in_stats_prevactivemonth',$activeMonth);
+			set_config('system','fudge_in_stats_prevactivemonth',$activeMonth);
 
-			$prevActiveHalfyear = get_config('system','hide_in_stats_prevactivehy');
+			$prevActiveHalfyear = get_config('system','fudge_in_stats_prevactivehy');
 			$prevActiveHalfyear = (isset($prevActiveHalfyear) && (intval($prevActiveHalfyear) > 0)) ? $prevActiveHalfyear : $users;
 			$activeHalfyear = $prevActiveHalfyear + intval(rand(1,($users-$prevActiveHalfyear+1))*$timeproportion);
-			set_config('system','hide_in_stats_prevactivehy',$activeHalfyear);
+			set_config('system','fudge_in_stats_prevactivehy',$activeHalfyear);
 
-			$prevPosts = get_config('system','hide_in_stats_prevposts');
+			$prevPosts = get_config('system','fudge_in_stats_prevposts');
 			$prevPosts = (isset($prevPosts) && intval($prevPosts) > 0) ? $prevPosts : rand($users,$users * 15);
 			$localPosts = intval($prevPosts + ($activeMonth * rand(1,30) * $timeproportion));
-			set_config('system','hide_in_stats_prevposts',$localPosts);
+			set_config('system','fudge_in_stats_prevposts',$localPosts);
 			$newPosts = $localPosts - $prevPosts;
 
-			$prevComments = get_config('system','hide_in_stats_prevcomments');
+			$prevComments = get_config('system','fudge_in_stats_prevcomments');
 			$prevComments = (isset($prevComments) && intval($prevComments) > 0) ? $prevComments : rand($localPosts,$localPosts * 3);
 			$localComments = intval($prevComments + ($newPosts * rand(1,10) * $timeproportion));
-			set_config('system','hide_in_stats_prevcomments',$localComments);
+			set_config('system','fudge_in_stats_prevcomments',$localComments);
 			$prevComments = $localComments;
 		}
 
