@@ -60,9 +60,9 @@ class Nodeinfo extends Controller {
 		}
 
 		$usereal = (!$hidden) && (!$fudge);
-logger("USERREAL: $usereal");
+
 		if((!$usereal) && argc() > 1 && argv(1) === '2.0') {
-logger("FAKE!");
+
 			$arr = [
 				'version' => '2.0',
 				'software' => [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version()],
