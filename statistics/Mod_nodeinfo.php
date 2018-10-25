@@ -7,7 +7,6 @@ use Zotlabs\Lib\System;
 class Nodeinfo extends Controller {
 
 	function init() {
-
 		$fudge = get_config('system','fudge_in_statistics');
 
 		if($fudge) {
@@ -15,28 +14,31 @@ class Nodeinfo extends Controller {
 			$lastrun = (isset($lastrun) && (intval($lastrun) > 0)) ? intval($lastrun) : (time() - (60 * 60 * 24 * 30));
 			set_config('system','fudge_in_stats_lastrun',time());
 			$timedelta = time() - intval($lastrun);
+                        $timedelta = ($timedelta < 120) ? 120 : $timedelta;
 			$timeproportion = floatval($timedelta / intval(60 * 60 * 24 * 30));
 			
 			$prevusers = get_config('system','fudge_in_stats_prevusers');
 			$prevusers = (isset($prevusers) && (intval($prevusers) > 0)) ? $prevusers : rand(1,50);
-			$maxusers = $prevusers + intval(200 * $timeproportion);
+			$usersplus = intval(200 * $timeproportion) + 1;
+			$maxusers = $prevusers + $usersplus;
 
 			$users = rand($prevusers,$maxusers);
+                        $usersplus = $users - $prevusers;
 			set_config('system','fudge_in_stats_prevusers',$users);
 
 			$prevActiveMonth = get_config('system','fudge_in_stats_prevactivemonth');
 			$prevActiveMonth = (isset($prevActiveMonth) && (intval($prevActiveMonth) > 0)) ? $prevActiveMonth : $users;
-			$activeMonth = $prevActiveMonth + intval(rand(1,($users-$prevActiveMonth+1))*$timeproportion);
+			$activeMonth = $prevActiveMonth + intval(rand(1,($users-$prevActiveMonth+1))*$timeproportion) + $usersplus;
 			set_config('system','fudge_in_stats_prevactivemonth',$activeMonth);
 
 			$prevActiveHalfyear = get_config('system','fudge_in_stats_prevactivehy');
 			$prevActiveHalfyear = (isset($prevActiveHalfyear) && (intval($prevActiveHalfyear) > 0)) ? $prevActiveHalfyear : $users;
-			$activeHalfyear = $prevActiveHalfyear + intval(rand(1,($users-$prevActiveHalfyear+1))*$timeproportion);
+			$activeHalfyear = $prevActiveHalfyear + intval(rand(1,($users-$prevActiveHalfyear+1))*$timeproportion) + $usersplus;
 			set_config('system','fudge_in_stats_prevactivehy',$activeHalfyear);
 
 			$prevPosts = get_config('system','fudge_in_stats_prevposts');
 			$prevPosts = (isset($prevPosts) && intval($prevPosts) > 0) ? $prevPosts : rand($users,$users * 15);
-			$localPosts = intval($prevPosts + ($activeMonth * rand(1,30) * $timeproportion));
+			$localPosts = intval($prevPosts + ($activeMonth * rand(1,30) * $timeproportion)) + intval($usersplus * rand(5,20));
 			set_config('system','fudge_in_stats_prevposts',$localPosts);
 			$newPosts = $localPosts - $prevPosts;
 
@@ -57,7 +59,10 @@ class Nodeinfo extends Controller {
 			$localComments = 1;
 		}
 
-		if(($hidden || $fudge) && argc() > 1 && argv(1) === '2.0') {
+		$usereal = (!$hidden) && (!$fudge);
+logger("USERREAL: $usereal");
+		if((!$usereal) && argc() > 1 && argv(1) === '2.0') {
+logger("FAKE!");
 			$arr = [
 				'version' => '2.0',
 				'software' => [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version()],
