@@ -28,6 +28,7 @@ function superblock_load() {
 	Hook::register('conversation_start', 'addon/superblock/superblock.php', 'superblock_conversation_start');
 	Hook::register('thread_author_menu', 'addon/superblock/superblock.php', 'superblock_item_photo_menu');
 	Hook::register('enotify_store', 'addon/superblock/superblock.php', 'superblock_enotify_store');
+	Hook::register('enotify_format', 'addon/superblock/superblock.php', 'superblock_enotify_format');
 	Hook::register('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
 	Hook::register('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
 	Hook::register('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
@@ -149,31 +150,39 @@ function superblock_post_mail(&$b) {
 	return;
 }
 
+function superblock_enotify_store(&$b) { 	
+	$sb = new Superblock($b['uid']); 	
+	$found = false; 	
+	
+	if($sb->match($b['sender_hash'])) 		
+		$found = true; 	
 
+	if(is_array($b['parent_item']) && (! $found)) {
+		if($sb->match($b['parent_item']['owner_xchan'])) 			
+			$found = true; 		
+		elseif($sb->match($b['parent_item']['author_xchan']))
+			$found = true; 	
+	}
+	if($found) { 		
+		$b['abort'] = true;
+	}
+}
 
-
-
-
-function superblock_enotify_store(&$b) {
+function superblock_enotify_format(&$b) {
 
 	$sb = new Superblock($b['uid']);
 
 	$found = false;
 
-	if($sb->match($b['sender_hash']))
+	if($sb->match($b['hash']))
 		$found = true;
 
-	if(is_array($b['parent_item']) && (! $found)) {
-		if($sb->match($b['parent_item']['owner_xchan']))
-			$found = true;
-		elseif($sb->match($b['parent_item']['author_xchan']))
-			$found = true;
-	}
-
 	if($found) {
-		$b['abort'] = true;
+		$b['display'] = false;
 	}
 }
+
+
 
 function superblock_api_format_items(&$b) {
 
