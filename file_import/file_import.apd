@@ -1,0 +1,6 @@
+version: 1.2
+url: $baseurl/file_import
+requires: local_channel
+name: File Storage Import
+photo: icon:folder
+categories: Networking

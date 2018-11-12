@@ -98,7 +98,7 @@
 
 <script>
 	window.wiki_resource_id = '{{$resource_id}}';
-	window.wiki_page_name = '{{$page}}';
+	window.wiki_page_name = '{{$page|escape:'javascript'}}';
 	window.wiki_page_content = '{{$content|escape:'javascript'}}';
 	window.wiki_page_commit = '{{$commit}}';
 	window.saved = true;
@@ -122,7 +122,7 @@
 			if (data.success) {
 				$('#rename-page-form-wrapper').hide();
 				window.console.log('data: ' + JSON.stringify(data));
-				window.wiki_page_name = data.name.urlName;
+				window.wiki_page_name = data.name.htmlName;
 				$('#wiki-header-page').html(data.name.htmlName);
 				wiki_refresh_page_list();
 			} else {
@@ -262,7 +262,7 @@
 			if (data.success) {
 				window.saved = true;
 				window.console.log('Page saved successfully.');
-				window.wiki_page_content = currentContent;
+				window.wiki_page_content = data.content;
 				$('#id_commitMsg').val(''); // Clear the commit message box
 				$('#save-page').addClass('disabled');  // Disable the save button
 				{{if !$mimeType || $mimeType == 'text/markdown'}}

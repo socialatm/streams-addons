@@ -235,7 +235,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 
 				// /wiki/channel/wiki -> No page was specified, so redirect to Home.md
 
-				$wikiUrlName = urlencode(argv(2));
+				$wikiUrlName = \NativeWiki::name_encode(argv(2));
 				goaway(z_root() . '/' . argv(0) . '/' . argv(1) . '/' . $wikiUrlName . '/Home');
 
 			case 4:
@@ -244,7 +244,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 				// GET /wiki/channel/wiki/page
 				// Fetch the wiki info and determine observer permissions
 
-				$wikiUrlName = urldecode(argv(2));
+				$wikiUrlName = \NativeWiki::name_decode(argv(2));
 
 				$page_name = '';
 				$ignore_language = false;
@@ -260,8 +260,8 @@ class Wiki extends \Zotlabs\Web\Controller {
 					$page_name .= argv($x);
 				}
 
-				$pageUrlName = urldecode($page_name);
-				$langPageUrlName = urldecode(\App::$language . '/' . $page_name);
+				$pageUrlName = \NativeWiki::name_decode($page_name);
+				$langPageUrlName = \App::$language . '/' . $page_name;
 
 				$w = \NativeWiki::exists_by_name($owner['channel_id'], $wikiUrlName);
 
@@ -287,8 +287,8 @@ class Wiki extends \Zotlabs\Web\Controller {
 					$wiki_editor = true;
 				}
 
-				$wikiheaderName = urldecode($wikiUrlName);
-				$wikiheaderPage = urldecode($pageUrlName);
+				$wikiheaderName = \NativeWiki::name_decode($wikiUrlName);
+				$wikiheaderPage = \NativeWiki::name_decode($pageUrlName);
 
 				$renamePage = (($wikiheaderPage === 'Home') ? '' : t('Rename page'));
 				$sharePage  = t('Share');
@@ -314,7 +314,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			                //json_return_and_die(array('pages' => $page_list_html, 'message' => '', 'success' => true));					
 					notice( t('Error retrieving page content') . EOL);
 					//goaway(z_root() . '/' . argv(0) . '/' . argv(1) );
-				        $renderedContent = \NativeWikiPage::convert_links($html, argv(0) . '/' . argv(1) . '/' . $wikiUrlName);
+				        $renderedContent = \NativeWikiPage::convert_links($html, argv(0) . '/' . argv(1) . '/' . \NativeWiki::name_encode($wikiUrlName));
 				        $showPageControls = $wiki_editor;
 				}
                                 else {
@@ -328,21 +328,23 @@ class Wiki extends \Zotlabs\Web\Controller {
     
 				    // Render the Markdown-formatted page content in HTML
 				    if($mimeType == 'text/bbcode') {
-				        $renderedContent = \NativeWikiPage::convert_links(zidify_links(smilies(bbcode($content))), argv(0) . '/' . argv(1) . '/' . $wikiUrlName);
+				        $renderedContent = zidify_links(smilies(bbcode($content)));
+						$renderedContent = \NativeWikiPage::convert_links($renderedContent,argv(0) . '/' . argv(1) . '/' . \NativeWiki::name_encode($wikiUrlName));
 				    }
 			 	    elseif($mimeType === 'text/plain') {
 				        $renderedContent = str_replace(["\n",' ',"\t"],[EOL,'&nbsp;','&nbsp;&nbsp;&nbsp;&nbsp;'],htmlentities($content,ENT_COMPAT,'UTF-8',false));
 				    }
 				    elseif($mimeType === 'text/markdown') {
-				     $content = Zlib\MarkdownSoap::unescape($content);
-				     $html = \NativeWikiPage::generate_toc(zidify_text(MarkdownExtra::defaultTransform(\NativeWikiPage::bbcode($content))));
-				     $renderedContent = \NativeWikiPage::convert_links($html, argv(0) . '/' . argv(1) . '/' . $wikiUrlName);
+				    $content = Zlib\MarkdownSoap::unescape($content);
+				    $html = \NativeWikiPage::convert_links($html, argv(0) . '/' . argv(1) . '/' . \NativeWiki::name_encode($wikiUrlName));
+					$renderedContent = \NativeWikiPage::generate_toc(zidify_text(MarkdownExtra::defaultTransform(\NativeWikiPage::bbcode($content))));
+
 				    }
 				    $showPageControls = $wiki_editor;
                                 }
 				break;
 //			default:	// Strip the extraneous URL components
-//				goaway('/' . argv(0) . '/' . argv(1) . '/' . $wikiUrlName . '/' . $pageUrlName);
+//				goaway('/' . argv(0) . '/' . argv(1) . '/' . $wikiUrlName . '/' . \NativeWiki::name_encode($pageUrlName));
 		}
 		
 
@@ -359,13 +361,15 @@ class Wiki extends \Zotlabs\Web\Controller {
 		$currenttype = $types[$mimeType];
 
 		$placeholder = t('Short description of your changes (optional)');
+	
+		$zrl = urlencode( z_root() . '/wiki/' . argv(1) . '/' . \NativeWiki::name_encode($wikiUrlName) . '/' . \NativeWiki::name_encode($pageUrlName) );
 				
 		$o .= replace_macros(get_markup_template('wiki.tpl','addon/wiki'),array(
 			'$wikiheaderName' => $wikiheaderName,
 			'$wikiheaderPage' => $wikiheaderPage,
 			'$renamePage' => $renamePage,
 			'$sharePage' => $sharePage,
-			'$shareLink' => urlencode('#^[zrl=' . z_root() . '/wiki/' . argv(1) . '/' . $wikiUrlName . '/' . $pageUrlName . ']' . '[ ' . $owner['channel_name'] . ' ] ' . $wikiheaderName . ' - ' . $wikiheaderPage . '[/zrl]'),
+			'$shareLink' => '#[zrl=' . $zrl . ']' . '[ ' . $owner['channel_name'] . ' ] ' . $wikiheaderName . ' - ' . $wikiheaderPage . '[/zrl]',
 			'$showPageControls' => $showPageControls,
 			'$editOrSourceLabel' => (($showPageControls) ? t('Edit') : t('Source')),
 			'$tools_label' => 'Page Tools',
@@ -428,16 +432,18 @@ class Wiki extends \Zotlabs\Web\Controller {
 			$mimeType = $_POST['mimetype'];
 
 			if($mimeType === 'text/bbcode') {
-				$html = \NativeWikiPage::convert_links(zidify_links(smilies(bbcode($content))),$wikiURL);
+					$linkconverted = \NativeWikiPage::convert_links($content,$wikiURL);
+					$html = zidify_links(smilies(bbcode($linkconverted)));
 			}
 			elseif($mimeType === 'text/markdown') {
-				$bb = \NativeWikiPage::bbcode($content);
+				$linkconverted = \NativeWikiPage::convert_links($content,$wikiURL);
+				$bb = \NativeWikiPage::bbcode($linkconverted);
+
 				$x = new ZLib\MarkdownSoap($bb);
 				$md = $x->clean();
 				$md = ZLib\MarkdownSoap::unescape($md);
 				$html = MarkdownExtra::defaultTransform($md);
 				$html = \NativeWikiPage::generate_toc(zidify_text($html));
-				$html = \NativeWikiPage::convert_links($html,$wikiURL);
 			}
 			elseif($mimeType === 'text/plain') {
 				$html = str_replace(["\n",' ',"\t"],[EOL,'&nbsp;','&nbsp;&nbsp;&nbsp;&nbsp;'],htmlentities($content,ENT_COMPAT,'UTF-8',false));
@@ -464,7 +470,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			$wiki['postVisible'] = ((intval($_POST['postVisible'])) ? 1 : 0);
 			$wiki['rawName']     = $name;
 			$wiki['htmlName']    = escape_tags($name);
-			$wiki['urlName']     = urlencode(urlencode($name)); 
+			$wiki['urlName']     = \NativeWiki::name_encode($name); 
 			$wiki['mimeType']    = $_POST['mimeType'];
 			$wiki['typelock']    = $_POST['typelock'];
 
@@ -490,10 +496,10 @@ class Wiki extends \Zotlabs\Web\Controller {
 				$homePage = \NativeWikiPage::create_page($owner['channel_id'],$observer_hash,'Home', $r['item']['resource_id'], $wiki['mimeType']);
 				if(! $homePage['success']) {
 					notice( t('Wiki created, but error creating Home page.'));
-					goaway(z_root() . '/wiki/' . $nick . '/' . $wiki['urlName']);
+					goaway(z_root() . '/wiki/' . $nick . '/' . \NativeWiki::name_encode($wiki['urlName']));
 				}
 				\NativeWiki::sync_a_wiki_item($owner['channel_id'],$homePage['item_id'],$r['item']['resource_id']);
-				goaway(z_root() . '/wiki/' . $nick . '/' . $wiki['urlName'] . '/' . $homePage['page']['urlName']);
+				goaway(z_root() . '/wiki/' . $nick . '/' . \NativeWiki::name_encode($wiki['urlName']) . '/' . \NativeWiki::name_encode($homePage['page']['urlName']));
 			}
 			else {
 				notice( t('Error creating wiki'));
@@ -513,7 +519,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 
 			$arr = [];
 
-			$arr['urlName'] = urlencode(urlencode($_POST['origRawName']));
+			$arr['urlName'] = \NativeWiki::name_encode($_POST['origRawName']);
 
 			if($_POST['updateRawName'])
 				$arr['updateRawName'] = $_POST['updateRawName'];
@@ -524,7 +530,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 				return; //not reached
 			}
 
-			$wiki = \NativeWiki::exists_by_name($owner['channel_id'], urldecode($arr['urlName']));
+			$wiki = \NativeWiki::exists_by_name($owner['channel_id'], $arr['urlName']);
 
 			if($wiki['resource_id']) {
 
@@ -584,12 +590,12 @@ class Wiki extends \Zotlabs\Web\Controller {
 				json_return_and_die(array('success' => false));					
 			}
 
-			$name = $_POST['pageName']; //Get new page name
+			$name = ((isset($_POST['pageName'])) ? $_POST['pageName'] : $_POST['missingPageName']); //Get new page name
 
 			// backslashes won't work well in the javascript functions
 			$name = str_replace('\\','',$name);
 
-			if(urlencode(escape_tags($name)) === '') {
+			if(\NativeWiki::name_encode(escape_tags($name)) === '') {
 				json_return_and_die(array('message' => 'Error creating page. Invalid name (' . print_r($_POST,true) . ').', 'success' => false));
 			}
 
@@ -606,10 +612,10 @@ class Wiki extends \Zotlabs\Web\Controller {
 
 				if($commit['success']) {
 					\NativeWiki::sync_a_wiki_item($owner['channel_id'],$commit['item_id'],$resource_id);
-					json_return_and_die(array('url' => '/' . argv(0) . '/' . argv(1) . '/' . urlencode($page['wiki']['urlName']) . '/' . urlencode($page['page']['urlName']), 'success' => true));
+					json_return_and_die(array('url' => '/' . argv(0) . '/' . argv(1) . '/' . $page['wiki']['urlName'] . '/' . $page['page']['urlName'], 'success' => true));
 				} 
 				else {
-					json_return_and_die(array('message' => 'Error making git commit','url' => '/' . argv(0) . '/' . argv(1) . '/' . urlencode($page['wiki']['urlName']) . '/' . urlencode($page['page']['urlName']),'success' => false));
+					json_return_and_die(array('message' => 'Error making git commit','url' => '/' . argv(0) . '/' . argv(1) . '/' . \NativeWiki::name_encode($page['wiki']['urlName']) . '/' . \NativeWiki::name_encode($page['page']['urlName']),'success' => false));
 				}				
 
 
@@ -677,7 +683,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 		
 				if($commit['success']) {
 					\NativeWiki::sync_a_wiki_item($owner['channel_id'],$commit['item_id'],$resource_id);
-					json_return_and_die(array('message' => 'Wiki git repo commit made', 'success' => true));
+					json_return_and_die(array('message' => 'Wiki git repo commit made', 'success' => true, 'content' => $content));
 				}
 				else {
 					json_return_and_die(array('message' => 'Error making git commit','success' => false));					
@@ -798,7 +804,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			if ($pageUrlName === 'Home') {
 				json_return_and_die(array('message' => 'Cannot rename Home','success' => false));
 			}
-			if(urlencode(escape_tags($pageNewName)) === '') {				
+			if(\NativeWiki::encode_name(escape_tags($pageNewName)) === '') {				
 				json_return_and_die(array('message' => 'Error renaming page. Invalid name.', 'success' => false));
 			}
 			// Determine if observer has permission to rename pages
@@ -814,7 +820,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			if($renamed['success']) {
 				$commit = \NativeWikiPage::commit(array(
 					'channel_id' => $owner['channel_id'],
-					'commit_msg' => 'Renamed ' . urldecode($pageUrlName) . ' to ' . $renamed['page']['htmlName'], 
+					'commit_msg' => 'Renamed ' . \NativeWiki::name_decode($pageUrlName) . ' to ' . $renamed['page']['htmlName'], 
 					'resource_id' => $resource_id, 
 					'observer_hash' => $observer_hash,
 					'pageUrlName' => $pageNewName
