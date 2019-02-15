@@ -487,7 +487,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			}
 
 			// Get ACL for permissions
-			$acl = new \Zotlabs\Access\AccessList($owner);
+			$acl = new \Zotlabs\Access\AccessControl($owner);
 			$acl->set_from_array($_POST);
 			$r = \NativeWiki::create_wiki($owner, $observer_hash, $wiki, $acl);
 			if($r['success']) {
@@ -535,7 +535,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 
 				$arr['resource_id'] = $wiki['resource_id'];
 				
-				$acl = new \Zotlabs\Access\AccessList($owner);
+				$acl = new \Zotlabs\Access\AccessControl($owner);
 				$acl->set_from_array($_POST);
 
 				$r = \NativeWiki::update_wiki($owner['channel_id'], $observer_hash, $arr, $acl);
