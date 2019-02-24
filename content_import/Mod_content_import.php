@@ -56,6 +56,8 @@ class Content_import extends Controller {
 				$page ++;
 				continue;
 			}
+			notice(t('Posts imported') . EOL);
+
 		}
 
 		if(intval($_REQUEST['files'])) {
@@ -97,7 +99,10 @@ class Content_import extends Controller {
 
 				}
 			}
+
+			notice(t('Files imported') . EOL);
 		}
+
 	}
 
 
