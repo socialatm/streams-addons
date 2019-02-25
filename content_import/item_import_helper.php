@@ -6,34 +6,35 @@ require_once('include/cli_startup.php');
 require_once('include/attach.php');
 require_once('include/import.php');
 
-cli_startup();
+	cli_startup();
 
-$page = $argv[1];
-$start = $argv[2];
-$finish = $argv[3];
-$channel_address = $argv[4];
-$hz_server = urldecode($argv[5]);
+	$page = $argv[1];
+	$since = $argv[2];
+	$until = $argv[3];
+	$channel_address = $argv[4];
+	$hz_server = urldecode($argv[5]);
 
+	$m = parse_url($hz_server);
 
 	$channel = channelx_by_nick($channel_address);
 	if(! $channel) {
-		logger('reditemhelper: channel not found');
+		logger('itemhelper: channel not found');
 		killme();
 	}
 
 	$headers = [ 
 		'X-API-Token'      => random_string(),
-		'X-API-Request'    => $hz_server . '/api/z/1.0/item_export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until) . '&page=' . $page ,
-		'Host'             => \App::get_hostname(),
-		'(request-target)' => '/api/z/1.0/item_export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until) . '&page=' . $page ,
+		'X-API-Request'    => $hz_server . '/api/z/1.0/item/export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until) . '&page=' . $page ,
+		'Host'             => $m['host'],
+		'(request-target)' => 'get /api/z/1.0/item/export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until) . '&page=' . $page ,
 	];
 
 	$headers = HTTPSig::create_sig($headers,$channel['channel_prvkey'], channel_url($channel),true,'sha512');
 
-	$x = z_fetch_url($hz_server . '/api/z/1.0/item_export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until . '&page=' . $page),false,$redirects,[ 'headers' => $headers ]);
+	$x = z_fetch_url($hz_server . '/api/z/1.0/item/export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until) . '&page=' . $page,false,$redirects,[ 'headers' => $headers ]);
 
 	if(! $x['success']) {
-		logger('no API response');
+		logger('no API response',LOGGER_DEBUG);
 		killme();
 	}
 
