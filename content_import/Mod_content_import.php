@@ -52,7 +52,7 @@ class Content_import extends Controller {
 
 				$x = z_fetch_url($hz_server . '/api/z/1.0/item/export_page?f=&since=' . urlencode($since) . '&until=' . urlencode($until) . '&page=' . $page,false,$redirects,[ 'headers' => $headers ]);
 
-				logger('z_fetch: ' . print_r($x,true));
+				// logger('z_fetch: ' . print_r($x,true));
 
 				if(! $x['success']) {
 					logger('no API response');
