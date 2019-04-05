@@ -107,7 +107,7 @@ function zotpost_post_hook(&$b) {
 	$api      = get_pconfig($b['uid'], 'zotpost', 'server');
 	$api      = rtrim($api,'/') . '/api';	
 
-	$password = z_unobscure(get_pconfig($b['uid'], 'zotpost', 'password'));
+	$password = unobscurify(get_pconfig($b['uid'], 'zotpost', 'password'));
 	$channel  = get_pconfig($b['uid'], 'zotpost', 'channel');
 
 	$postdata =  [ 'body' => $b['body'], 'title' => $b['title'], 'source' => (($b['app']) ? : 'ZAP/ZotPost') ];

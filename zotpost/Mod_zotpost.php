@@ -28,7 +28,7 @@ class Zotpost extends \Zotlabs\Web\Controller {
 		}
 
 		set_pconfig(local_channel(), 'zotpost', 'server',          trim($_POST['zotpost_server']));
-		set_pconfig(local_channel(), 'zotpost', 'password',        z_obscure(trim($_POST['zotpost_password'])));
+		set_pconfig(local_channel(), 'zotpost', 'password',        obscurify(trim($_POST['zotpost_password'])));
 		set_pconfig(local_channel(), 'zotpost', 'channel',         trim($_POST['zotpost_channel']));
 		set_pconfig(local_channel(), 'zotpost', 'post_by_default', intval($_POST['zotpost_default']));
         info( t('Zotpost Settings saved.') . EOL);
@@ -51,7 +51,7 @@ class Zotpost extends \Zotlabs\Web\Controller {
 		nav_set_selected(t('ZotPost'));
 
 		$api        = get_pconfig(local_channel(), 'zotpost', 'server');
-		$password   = z_unobscure(get_pconfig(local_channel(), 'zotpost', 'password' ));
+		$password   = unobscurify(get_pconfig(local_channel(), 'zotpost', 'password' ));
 		$channel    = get_pconfig(local_channel(), 'zotpost', 'channel' );
 		$defenabled = get_pconfig(local_channel(), 'zotpost', 'post_by_default');
 		$defchecked = (($defenabled) ? 1 : false);
