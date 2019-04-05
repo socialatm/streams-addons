@@ -120,7 +120,7 @@ class Articles extends \Zotlabs\Web\Controller {
 				'expanded'            => false,
 				'novoting'            => false,
 				'allow_summary'       => true,
-				'catsenabled'         => feature_enabled($owner,'categories'),
+				'catsenabled'         => Apps::system_app_installed($owner,'Categories'),
 				'bbco_autocomplete'   => 'bbcode',
 				'editor_autocomplete' => true,
 				'bbcode'              => true
