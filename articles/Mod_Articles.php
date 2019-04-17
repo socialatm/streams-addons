@@ -106,7 +106,7 @@ class Articles extends \Zotlabs\Web\Controller {
 				'lockstate'           => (($channel['channel_allow_cid'] || $channel['channel_allow_gid'] 
 					|| $channel['channel_deny_cid'] || $channel['channel_deny_gid']) ? 'lock' : 'unlock'),
 				'acl'                 => (($is_owner) ? populate_acl($channel_acl, false, 
-					\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_pages')) : ''),
+					\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_pages') get_post_aclDialogDescription(), 'acl_dialog_post') : ''),
 				'permissions'         => $channel_acl,
 				'showacl'             => (($is_owner) ? true : false),
 				'visitor'             => true,
