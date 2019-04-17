@@ -72,7 +72,7 @@ class Articles extends \Zotlabs\Web\Controller {
 	
 		$ob_hash = (($observer) ? $observer['xchan_hash'] : '');
 		
-		if(! perm_is_allowed($owner,$ob_hash,'view_pages')) {
+		if(! perm_is_allowed($owner,$ob_hash,'view_articles')) {
 			notice( t('Permission denied.') . EOL);
 			return;
 		}
@@ -95,7 +95,7 @@ class Articles extends \Zotlabs\Web\Controller {
 	
 
 
-		if(perm_is_allowed($owner,$ob_hash,'write_pages')) {
+		if(perm_is_allowed($owner,$ob_hash,'write_articles')) {
 
 			$x = [
 				'webpage'             => ITEM_TYPE_ARTICLE,
@@ -105,8 +105,7 @@ class Articles extends \Zotlabs\Web\Controller {
 				'nickname'            => $channel['channel_address'],
 				'lockstate'           => (($channel['channel_allow_cid'] || $channel['channel_allow_gid'] 
 					|| $channel['channel_deny_cid'] || $channel['channel_deny_gid']) ? 'lock' : 'unlock'),
-				'acl'                 => (($is_owner) ? populate_acl($channel_acl, false, 
-					\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_pages') get_post_aclDialogDescription(), 'acl_dialog_post') : ''),
+				'acl'                 => (($is_owner) ? populate_acl($channel_acl, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_articles')) : ''),
 				'permissions'         => $channel_acl,
 				'showacl'             => (($is_owner) ? true : false),
 				'visitor'             => true,
