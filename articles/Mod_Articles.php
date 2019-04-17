@@ -2,7 +2,9 @@
 
 namespace Zotlabs\Module;
 
-
+use App;
+use Zotlabs\Web\Controller;
+use Zotlabs\Lib\Libprofile;
 use Zotlabs\Lib\Apps;
 
 require_once('include/channel.php');
@@ -10,7 +12,7 @@ require_once('include/conversation.php');
 require_once('include/acl_selectors.php');
 
 
-class Articles extends \Zotlabs\Web\Controller {
+class Articles extends Controller {
 
 	function init() {
 	
@@ -19,7 +21,7 @@ class Articles extends \Zotlabs\Web\Controller {
 		else
 			return;
 	
-		profile_load($which);
+		Libprofile::load($which);
 	
 	}
 	
