@@ -13,6 +13,7 @@ class Superblock extends \Zotlabs\Web\Controller {
 
 		$words = get_pconfig(local_channel(),'system','blocked');
 		$handled = false;
+		$ignored = [];
 
 		if(array_key_exists('block',$_GET) && $_GET['block']) {
 			$handled = true;
@@ -25,6 +26,12 @@ class Superblock extends \Zotlabs\Web\Controller {
 					$words .= ',';
 				$words .= trim($_GET['block']);
 			}
+			$z = q("insert into xign ( 'uid', 'xchan') values ( %d , '%s' ) ",
+				intval(local_channel()),
+				dbesc($_GET['block'])
+			);
+			$ignored = [ 'uid' => local_channel(), 'xchan' => $_GET['block'] ];
+			
 		}
 
 		if(array_key_exists('unblock',$_GET) && $_GET['unblock']) {
@@ -40,13 +47,20 @@ class Superblock extends \Zotlabs\Web\Controller {
 					}
 				}
 				$words = implode(',',$newlist);
+				$z = q("delete from xign where uid = %d  and xchan = '%s' ",
+					intval(local_channel()),
+					dbesc($_GET['block'])
+				);
+
+				$ignored = [ 'uid' => local_channel(), 'xchan' => $_GET['block'], 'deleted' => true ];
+
 			}
 		}
 
 		if($handled) {
 
 			set_pconfig(local_channel(),'system','blocked',$words);
-			Libsync::build_sync_packet();
+			Libsync::build_sync_packet(0, [ 'xign' => [ $ignored ] ] );
 
 			info( t('superblock settings updated') . EOL );
 

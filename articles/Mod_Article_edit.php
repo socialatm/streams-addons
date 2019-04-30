@@ -49,7 +49,7 @@ class Article_edit extends \Zotlabs\Web\Controller {
 
 		$ob_hash = (($observer) ? $observer['xchan_hash'] : '');
 
-		if(! perm_is_allowed($owner,$ob_hash,'write_pages')) {
+		if(! perm_is_allowed($owner,$ob_hash,'write_articles')) {
 			notice( t('Permission denied.') . EOL);
 			return;
 		}
@@ -99,14 +99,14 @@ class Article_edit extends \Zotlabs\Web\Controller {
 			'return_path' => $rp,
 			'webpage' => ITEM_TYPE_ARTICLE,
 			'button' => t('Edit'),
-			'writefiles' => perm_is_allowed($owner, get_observer_hash(), 'write_pages'),
+			'writefiles' => perm_is_allowed($owner, get_observer_hash(), 'write_articles'),
 			'weblink' => t('Insert web link'),
 			'hide_voting' => false,
 			'hide_future' => false,
 			'hide_location' => false,
 			'hide_expire' => false,
 			'showacl' => true,
-			'acl' => populate_acl($itm[0],false,\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_pages')),
+			'acl' => populate_acl($itm[0],false,\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_articles')),
 			'permissions' => $itm[0],
 			'lockstate' => (($itm[0]['allow_cid'] || $itm[0]['allow_gid'] || $itm[0]['deny_cid'] || $itm[0]['deny_gid']) ? 'lock' : 'unlock'),
 			'ptyp' => $itm[0]['type'],

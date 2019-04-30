@@ -15,7 +15,7 @@ use Zotlabs\Access\PermissionLimits;
 function articles_load() {
 	Route::register('addon/articles/Mod_Articles.php','articles');
 	Route::register('addon/articles/Mod_Article_edit.php','article_edit');
-	Hook::register('permissions_list','addon/articles/wiki.php','articles_permissions_list');
+	Hook::register('permissions_list','addon/articles/articles.php','articles_permissions_list');
 	Hook::register('permission_limits_get','addon/articles/articles.php','articles_permission_limits_get');
 	Hook::register('get_role_perms','addon/articles/articles.php','articles_get_role_perms');
 
@@ -24,7 +24,7 @@ function articles_load() {
 function articles_unload() {
 	Route::unregister('addon/articles/Mod_Articles.php','articles');
 	Route::unregister('addon/articles/Mod_Article_edit.php','article_edit');
-	Hook::unregister('permissions_list','addon/articles/wiki.php','articles_permissions_list');
+	Hook::unregister('permissions_list','addon/articles/articles.php','articles_permissions_list');
 	Hook::unregister('permission_limits_get','addon/articles/articles.php','articles_permission_limits_get');
 	Hook::unregister('get_role_perms','addon/articles/articles.php','articles_get_role_perms');
 

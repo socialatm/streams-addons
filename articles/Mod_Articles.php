@@ -2,7 +2,9 @@
 
 namespace Zotlabs\Module;
 
-
+use App;
+use Zotlabs\Web\Controller;
+use Zotlabs\Lib\Libprofile;
 use Zotlabs\Lib\Apps;
 
 require_once('include/channel.php');
@@ -10,7 +12,7 @@ require_once('include/conversation.php');
 require_once('include/acl_selectors.php');
 
 
-class Articles extends \Zotlabs\Web\Controller {
+class Articles extends Controller {
 
 	function init() {
 	
@@ -19,7 +21,7 @@ class Articles extends \Zotlabs\Web\Controller {
 		else
 			return;
 	
-		profile_load($which);
+		Libprofile::load($which);
 	
 	}
 	
@@ -72,7 +74,7 @@ class Articles extends \Zotlabs\Web\Controller {
 	
 		$ob_hash = (($observer) ? $observer['xchan_hash'] : '');
 		
-		if(! perm_is_allowed($owner,$ob_hash,'view_pages')) {
+		if(! perm_is_allowed($owner,$ob_hash,'view_articles')) {
 			notice( t('Permission denied.') . EOL);
 			return;
 		}
@@ -95,7 +97,7 @@ class Articles extends \Zotlabs\Web\Controller {
 	
 
 
-		if(perm_is_allowed($owner,$ob_hash,'write_pages')) {
+		if(perm_is_allowed($owner,$ob_hash,'write_articles')) {
 
 			$x = [
 				'webpage'             => ITEM_TYPE_ARTICLE,
@@ -105,8 +107,7 @@ class Articles extends \Zotlabs\Web\Controller {
 				'nickname'            => $channel['channel_address'],
 				'lockstate'           => (($channel['channel_allow_cid'] || $channel['channel_allow_gid'] 
 					|| $channel['channel_deny_cid'] || $channel['channel_deny_gid']) ? 'lock' : 'unlock'),
-				'acl'                 => (($is_owner) ? populate_acl($channel_acl, false, 
-					\Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_pages')) : ''),
+				'acl'                 => (($is_owner) ? populate_acl($channel_acl, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_articles')) : ''),
 				'permissions'         => $channel_acl,
 				'showacl'             => (($is_owner) ? true : false),
 				'visitor'             => true,

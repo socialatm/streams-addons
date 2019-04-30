@@ -2,6 +2,9 @@
 
 namespace Zotlabs\Module;
 
+use App;
+use Zotlabs\Web\Controller;
+use Zotlabs\Lib\Libprofile;
 use Zotlabs\Lib as Zlib;
 use Michelf\MarkdownExtra;
 use Zotlabs\Lib\Apps;
@@ -15,7 +18,7 @@ require_once('include/conversation.php');
 require_once('include/bbcode.php');
 
 
-class Wiki extends \Zotlabs\Web\Controller {
+class Wiki extends Controller {
 
 	private $wiki = null;
 
@@ -36,7 +39,7 @@ class Wiki extends \Zotlabs\Web\Controller {
 			goaway(z_root());
 		}
 
-		profile_load($nick);
+		Libprofile::load($nick);
 	}
 
 	function get() {
