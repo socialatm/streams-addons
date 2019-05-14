@@ -3,6 +3,7 @@
 use Zotlabs\Extend\Route;
 use Zotlabs\Extend\Hook;
 use Zotlabs\Lib\Libsync;
+use Zotlabs\Lib\Apps;
 
 /**
  * Name: superblock
@@ -79,14 +80,17 @@ class Superblock {
 
 function superblock_addon_settings_post(&$b) {
 
-	if(! local_channel())
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
 		return;
+	}
 
 }
 
 function superblock_stream_item(&$b) {
-	if(! local_channel())
+
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
 		return;
+	}
 
 	$sb = new Superblock(local_channel());
 
@@ -97,6 +101,21 @@ function superblock_stream_item(&$b) {
 			$found = true;
 		elseif($sb->match($b['item']['owner_xchan']))
 			$found = true;
+	}
+
+	$matches = null;
+	$cnt = preg_match_all("/\[share(.*?)profile='(.*?)'(.*?)\]/ism", $b['item']['body'], $matches, PREG_SET_ORDER);
+	if ($cnt) {
+		foreach ($matches as $match) {
+			$r = q("select hubloc_hash from hubloc where hubloc_id_url = '%s'",
+				dbesc($match[2])
+			);
+			if ($r) {
+				if ($sb->match($r[0]['hubloc_hash'])) {
+					$found = true;
+				}
+			}
+		}
 	}
 
 	if($b['item']['children']) {
@@ -116,6 +135,10 @@ function superblock_stream_item(&$b) {
 
 
 function superblock_item_store(&$b) {
+
+	if(! Apps::addon_app_installed($b['uid'],'superblock')) { 
+		return;
+	}
 
 	if(! $b['item_wall'])
 		return;
@@ -137,6 +160,10 @@ function superblock_item_store(&$b) {
 
 function superblock_post_mail(&$b) {
 
+	if(! Apps::addon_app_installed($b['channel_id'],'superblock')) { 
+		return;
+	}
+
 	$sb = new Superblock($b['channel_id']);
 
 	$found = false;
@@ -151,6 +178,11 @@ function superblock_post_mail(&$b) {
 }
 
 function superblock_enotify_store(&$b) { 	
+
+	if(! Apps::addon_app_installed($b['uid'],'superblock')) { 
+		return;
+	}
+
 	$sb = new Superblock($b['uid']); 	
 	$found = false; 	
 	
@@ -170,6 +202,10 @@ function superblock_enotify_store(&$b) {
 
 function superblock_enotify_format(&$b) {
 
+	if(! Apps::addon_app_installed($b['uid'],'superblock')) { 
+		return;
+	}
+
 	$sb = new Superblock($b['uid']);
 
 	$found = false;
@@ -186,6 +222,9 @@ function superblock_enotify_format(&$b) {
 
 function superblock_api_format_items(&$b) {
 
+	if(! Apps::addon_app_installed($b['api_user'],'superblock')) { 
+		return;
+	}
 
 	$sb = new Superblock($b['api_user']);
 	$ret = [];
@@ -210,8 +249,9 @@ function superblock_api_format_items(&$b) {
 
 function superblock_directory_item(&$b) {
 
-	if(! local_channel())
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
 		return;
+	}
 
 
 	$sb = new Superblock(local_channel());
@@ -230,6 +270,9 @@ function superblock_directory_item(&$b) {
 
 function superblock_activity_widget(&$b) {
 
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
+		return;
+	}
 	if(! local_channel())
 		return;
 
@@ -251,6 +294,9 @@ function superblock_activity_widget(&$b) {
 
 function superblock_conversation_start(&$b) {
 
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
+		return;
+	}
 	if(! local_channel())
 		return;
 
@@ -278,8 +324,9 @@ EOT;
 
 function superblock_item_photo_menu(&$b) {
 
-	if(! local_channel())
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
 		return;
+	}
 
 	$blocked = false;
 	$author = $b['item']['author_xchan'];
@@ -313,8 +360,9 @@ function superblock_item_photo_menu(&$b) {
 
 function superblock_init(&$a) {
 
-	if(! local_channel())
+	if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
 		return;
+	}
 
 	$words = get_pconfig(local_channel(),'system','blocked');
 
