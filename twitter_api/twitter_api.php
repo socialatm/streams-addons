@@ -174,9 +174,10 @@ function api_get_user($contact_id = null, $contact_xchan = null){
 		
 	if (! $user) {
 		if (api_user() === false) {
-			api_login($a); 
+			api_login(); 
 			return false;
-		} else {
+		}
+		else {
 			$user = local_channel();
 			$extra_query = " AND abook_channel = %d AND abook_self = 1 ";
 		}
