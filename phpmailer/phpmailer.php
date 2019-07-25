@@ -1,5 +1,7 @@
 <?php
 
+use Zotlabs\Extend\Hook;
+
 /**
  * Name: phpmailer
  * Description: use phpmailer instead of built-in mail() function
@@ -59,12 +61,12 @@
 
 
 function phpmailer_load() {
-	\Zotlabs\Extend\Hook::register('email_send','addon/phpmailer/phpmailer.php','phpmailer_email_send');
+	Hook::register('email_send','addon/phpmailer/phpmailer.php','phpmailer_email_send');
 }
 
 
 function phpmailer_unload() {
-	\Zotlabs\Extend\Hook::unregister_by_file('addon/phpmailer/phpmailer.php');
+	Hook::unregister_by_file('addon/phpmailer/phpmailer.php');
 }
 
 
