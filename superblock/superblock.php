@@ -67,6 +67,7 @@ class Superblock {
 		}
 		return false;
 	}
+
 }
 
 
@@ -132,7 +133,6 @@ function superblock_stream_item(&$b) {
 	}
 
 }
-
 
 function superblock_item_store(&$b) {
 
