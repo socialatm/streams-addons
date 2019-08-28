@@ -20,7 +20,7 @@ require_once('include/permissions.php');
 function zotpost_load() {
 
 	Hook::register('notifier_normal', 'addon/zotpost/zotpost.php', 'zotpost_post_hook');
-	Hook::register('post_local', 'addon/zotpost/zotpost.php', 'zotpost_post_local');
+	Hook::register('post_local',      'addon/zotpost/zotpost.php', 'zotpost_post_local');
 	Hook::register('jot_networks',    'addon/zotpost/zotpost.php', 'zotpost_jot_nets');
 	Route::register('addon/zotpost/Mod_zotpost.php','zotpost');
 }
@@ -28,7 +28,7 @@ function zotpost_load() {
 
 function zotpost_unload() {
 	Hook::unregister('notifier_normal', 'addon/zotpost/zotpost.php', 'zotpost_post_hook');
-	Hook::unregister('post_local', 'addon/zotpost/zotpost.php', 'zotpost_post_local');
+	Hook::unregister('post_local',      'addon/zotpost/zotpost.php', 'zotpost_post_local');
 	Hook::unregister('jot_networks',    'addon/zotpost/zotpost.php', 'zotpost_jot_nets');
 	Route::unregister('addon/zotpost/Mod_zotpost.php','zotpost');
 
