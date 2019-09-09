@@ -161,26 +161,6 @@ function superblock_item_store(&$b) {
 	return;
 }
 
-function superblock_post_mail(&$b) {
-
-	if (! Apps::addon_app_installed($b['channel_id'],'superblock')) { 
-		return;
-	}
-
-	$sb = new Superblock($b['channel_id']);
-
-	$found = false;
-
-	if ($sb->match($b['from_xchan'])) {
-		$found = true;
-	}
-
-	if ($found) {
-		$b['cancel'] = true;
-	}
-	return;
-}
-
 function superblock_enotify_store(&$b) { 	
 
 	if (! Apps::addon_app_installed($b['uid'],'superblock')) { 

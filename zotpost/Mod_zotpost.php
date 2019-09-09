@@ -2,35 +2,38 @@
 
 namespace Zotlabs\Module;
 
+use App;
 use Zotlabs\Lib\Apps;
 use Zotlabs\Lib\Libsync;
+use Zotlabs\Lib\PConfig;
+use Zotlabs\Web\Controller;
 
-class Zotpost extends \Zotlabs\Web\Controller {
+class Zotpost extends Controller {
 
 	function post() {
 
-		if(! ( local_channel() && Apps::addon_app_installed(local_channel(),'zotpost'))) { 
+		if (! ( local_channel() && Apps::addon_app_installed(local_channel(),'zotpost'))) { 
 			return;
 		}
 
-		$channel = \App::get_channel();
+		$channel = App::get_channel();
 
 		// Don't let somebody post to their self channel. Since we aren't passing message-id this would be very very bad.
 
-		if(! trim($_POST['zotpost_channel'])) {
+		if (! trim($_POST['zotpost_channel'])) {
 			notice( t('Channel is required.') . EOL);
 			return;
 		}
 
-		if($channel['channel_address'] === trim($_POST['zotpost_channel'])) {
+		if ($channel['channel_address'] === trim($_POST['zotpost_channel'])) {
 			notice( t('Invalid channel.') . EOL);
 			return;
 		}
 
-		set_pconfig(local_channel(), 'zotpost', 'server',          trim($_POST['zotpost_server']));
-		set_pconfig(local_channel(), 'zotpost', 'password',        obscurify(trim($_POST['zotpost_password'])));
-		set_pconfig(local_channel(), 'zotpost', 'channel',         trim($_POST['zotpost_channel']));
-		set_pconfig(local_channel(), 'zotpost', 'post_by_default', intval($_POST['zotpost_default']));
+		PConfig::Set(local_channel(), 'zotpost', 'server',          trim($_POST['zotpost_server']));
+		PConfig::Set(local_channel(), 'zotpost', 'password',        obscurify(trim($_POST['zotpost_password'])));
+		PConfig::Set(local_channel(), 'zotpost', 'channel',         trim($_POST['zotpost_channel']));
+		PConfig::Set(local_channel(), 'zotpost', 'post_by_default', intval($_POST['zotpost_default']));
         info( t('Zotpost Settings saved.') . EOL);
 
 		Libsync::build_sync_packet();
@@ -50,12 +53,11 @@ class Zotpost extends \Zotlabs\Web\Controller {
 
 		nav_set_selected(t('ZotPost'));
 
-		$api        = get_pconfig(local_channel(), 'zotpost', 'server');
-		$password   = unobscurify(get_pconfig(local_channel(), 'zotpost', 'password' ));
-		$channel    = get_pconfig(local_channel(), 'zotpost', 'channel' );
-		$defenabled = get_pconfig(local_channel(), 'zotpost', 'post_by_default');
+		$api        = PConfig::Get(local_channel(), 'zotpost', 'server');
+		$password   = unobscurify(PConfig::Get(local_channel(), 'zotpost', 'password' ));
+		$channel    = PConfig::Get(local_channel(), 'zotpost', 'channel' );
+		$defenabled = PConfig::Get(local_channel(), 'zotpost', 'post_by_default');
 		$defchecked = (($defenabled) ? 1 : false);
-
 
 		$sc = $text;
 
