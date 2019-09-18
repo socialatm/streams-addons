@@ -65,7 +65,7 @@ function nsfw_prepare_body(&$b) {
 	$words = null;
 
 	if(local_channel() && Apps::addon_app_installed(local_channel(),'nsfw')) {
-		$words = get_pconfig(local_channel(),'nsfw','words',EMPTY_STR);
+		$words = get_pconfig(local_channel(),'nsfw','words','nsfw,contentwarning');
 	}
 	else {
 		$words = 'nsfw,contentwarning';
