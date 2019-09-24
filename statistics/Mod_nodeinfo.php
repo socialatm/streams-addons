@@ -96,7 +96,7 @@ class Nodeinfo extends Controller {
 				'metadata' => [ 'nodeName' => get_config('system','sitename') ]
 			];
 
-			if(! defined('NOMADIC')) {
+			if(get_config('system','activitypub')) {
 				$arr['protocols'][] = 'activitypub';
 			}
 
