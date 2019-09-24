@@ -24,8 +24,7 @@ function superblock_load() {
 	Hook::register('item_store', 'addon/superblock/superblock.php', 'superblock_item_store');
 	Hook::register('directory_item', 'addon/superblock/superblock.php', 'superblock_directory_item');
 	Hook::register('api_format_items', 'addon/superblock/superblock.php', 'superblock_api_format_items');
-	Hook::register('stream_item', 'addon/superblock/superblock.php', 'superblock_stream_item');
-	Hook::register('post_mail', 'addon/superblock/superblock.php', 'superblock_post_mail');
+	Hook::register('conv_sort', 'addon/superblock/superblock.php', 'superblock_conv_sort');
 	Hook::register('activity_widget', 'addon/superblock/superblock.php', 'superblock_activity_widget');
 
 }
@@ -71,7 +70,7 @@ class Superblock {
 }
 
 
-function superblock_stream_item(&$b) {
+function superblock_conv_sort(&$b) {
 
 	if (! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
 		return;
@@ -79,68 +78,60 @@ function superblock_stream_item(&$b) {
 
 	$sb = new Superblock(local_channel());
 
-	$found = false;
+	$ret = [];
 
-	if (is_array($b['item']) && (! $found)) {
-		if ($sb->match($b['item']['author_xchan'])) {
-			$found = true;
-		}
-		elseif ($sb->match($b['item']['owner_xchan'])) {
-			$found = true;
-		}
-	}
-
-	$matches = null;
-
-	$cnt = preg_match_all("/\[share(.*?)portable_id='(.*?)'(.*?)\]/ism", $b['item']['body'], $matches, PREG_SET_ORDER);
-	if ($cnt) {
-		foreach ($matches as $match) {
-			if ($sb->match($match[2])) {
-				$found = true;
+	if ($b['items']) {
+		foreach ($b['items'] as $item) {
+			if ($sb->match($item['author_xchan']) || $sb->match($item['owner_xchan'])) {
+				continue;
 			}
-		}
-	}
-
-	$matches = null;
-
-	$cnt = preg_match_all("/\[share(.*?)profile='(.*?)'(.*?)\]/ism", $b['item']['body'], $matches, PREG_SET_ORDER);
-	if ($cnt) {
-		foreach ($matches as $match) {
-			$r = q("select hubloc_hash from hubloc where hubloc_id_url = '%s'",
-				dbesc($match[2])
-			);
-			if ($r) {
-				if ($sb->match($r[0]['hubloc_hash'])) {
-					$found = true;
+			
+			$matches = null;
+			$found = false;
+			$cnt = preg_match_all("/\[share(.*?)portable_id='(.*?)'(.*?)\]/ism", $item['body'], $matches, PREG_SET_ORDER);
+			if ($cnt) {
+				foreach ($matches as $match) {
+					if ($sb->match($match[2])) {
+						$found = true;
+						break;
+					}
 				}
 			}
+
+			if ($found) {
+				continue;
+			}
+
+			$matches = null;
+			$found = false;
+			$cnt = preg_match_all("/\[share(.*?)profile='(.*?)'(.*?)\]/ism", $b['item']['body'], $matches, PREG_SET_ORDER);
+			if ($cnt) {
+				foreach ($matches as $match) {
+					$r = q("select hubloc_hash from hubloc where hubloc_id_url = '%s'",
+						dbesc($match[2])
+					);
+					if ($r) {
+						if ($sb->match($r[0]['hubloc_hash'])) {
+							$found = true;
+						}
+					}
+				}
+			}
+
+			if ($found) {
+				continue;
+			}
+
+			$ret[] = $item;
 		}
 	}
-
-	if ($b['item']['children']) {
-		for ($d = 0; $d < count($b['item']['children']); $d ++) {
-			if ($sb->match($b['item']['children'][$d]['owner_xchan'])) {
-				$b['item']['children'][$d]['blocked'] = true;
-			}
-			elseif ($sb->match($b['item']['children'][$d]['author_xchan'])) {
-				$b['item']['children'][$d]['blocked'] = true;
-			}
-		}
-	}
-
-	if ($found) {
-		$b['item']['blocked'] = true;
-	}
+	$b['items'] = $ret;
 
 }
 
 function superblock_item_store(&$b) {
 
 	if (! Apps::addon_app_installed($b['uid'],'superblock')) { 
-		return;
-	}
-
-	if (! $b['item_wall']) {
 		return;
 	}
 
@@ -297,15 +288,13 @@ function superblock_conversation_start(&$b) {
 	}
 
 	App::$page['htmlhead'] .= <<< EOT
-
 <script>
 function superblockBlock(author,item) {
-	$.get('superblock?f=&item=' + item + '&block=' +author, function(data) {
+	$.get('superblock?f=&item=' + item + '&block=' + author, function(data) {
 		location.reload(true);
 	});
 }
 </script>
-
 EOT;
 
 }
