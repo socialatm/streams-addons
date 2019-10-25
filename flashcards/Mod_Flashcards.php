@@ -48,8 +48,6 @@ class Flashcards extends Controller {
         head_add_css('/addon/flashcards/view/css/flashcards.css');
 
         $desc = 'This addon app provides a learning software for your channel.';
-
-        $text = '<div class="section-content-info-wrapper">' . $desc . '</div>';
         
         $status = $this->permChecks();
         
