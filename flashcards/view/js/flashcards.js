@@ -1776,12 +1776,15 @@ function visualiseLearnSystem() {
 }
 
 $(document).on("click", "#button_flashcards_settings_default", function () {
-    // $('#flashcards-switch-learn-directions').prop('checked', false);
+    $('#flashcards-autosave').prop('checked', true);
+    $('#flashcards-card-sort').prop('checked', false);
+    $('#flashcards-default-sort').prop('checked', true);
+    $('#flashcards-switch-learn-all').prop('checked', false);
     $("#flashcards-learn-system-decks").val('7');
     $("#flashcards-learn-system-deck-repetitions").val('3');
     $("#flashcards-learn-system-exponent").val('3');
     $('input.flashcards-column-visibility').each(function (i, checkbox) {
-        if (i == 1 || i == 2 || i == 3 || i == 4) {
+        if (i == 1 || i == 2) {
             $($(this)).prop('checked', true);
         } else {
             $($(this)).prop('checked', false);
