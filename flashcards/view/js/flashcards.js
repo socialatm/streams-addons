@@ -297,6 +297,7 @@ class Box {
             "private_hasChanged": false,
             "private_block": false,
             "private_autosave": true,
+            "private_show_card_sort": false,
             "private_sort_default": true,
             "cards": []
         };
@@ -408,6 +409,7 @@ class Box {
         this.content.private_switch_learn_direction = this.checkBoolean(this.content.private_switch_learn_direction, false);
         this.content.private_switch_learn_all = this.checkBoolean(this.content.private_switch_learn_all, false);
         this.content.private_autosave = this.checkBoolean(this.content.private_autosave, true);
+        this.content.private_show_card_sort = this.checkBoolean(this.content.private_show_card_sort, false);
         this.content.private_sort_default = this.checkBoolean(this.content.private_sort_default, true);
         var i;
         for (i = 0; i < this.content.private_visibleColumns.length; i++) {
@@ -497,6 +499,7 @@ class Box {
         s += this.content.private_switch_learn_direction;
         s += this.content.private_switch_learn_all;
         s += this.content.private_autosave;
+        s += this.content.private_show_card_sort;
         s += this.content.private_sort_default;
         s += this.content.private_block;
         return s;
@@ -703,7 +706,7 @@ class Box {
             }
         }
         if (isOwnBox) {
-            var keysPrivate = ['cardsDecks', 'cardsDeckWaitExponent', 'cardsRepetitionsPerDeck', 'private_block', 'private_sortColumn', 'private_sortReverse', 'private_filter', 'private_visibleColumns', 'private_switch_learn_direction', 'private_switch_learn_all', 'private_autosave', 'private_sort_default', 'lastChangedPrivateMetaData'];
+            var keysPrivate = ['cardsDecks', 'cardsDeckWaitExponent', 'cardsRepetitionsPerDeck', 'private_block', 'private_sortColumn', 'private_sortReverse', 'private_filter', 'private_visibleColumns', 'private_switch_learn_direction', 'private_switch_learn_all', 'private_autosave', 'private_show_card_sort', 'private_sort_default', 'lastChangedPrivateMetaData'];
             if (this.content.lastChangedPrivateMetaData !== boxRemote.content.lastChangedPrivateMetaData) {
                 var i;
                 for (i = 0; i < keysPrivate.length; i++) {
@@ -1114,6 +1117,7 @@ function fillInputsSettings() {
     $('#flashcards-switch-learn-directions').prop('checked', box.content.private_switch_learn_direction);
     $('#flashcards-switch-learn-all').prop('checked', box.content.private_switch_learn_all);
     $('#flashcards-autosave').prop('checked', box.content.private_autosave);
+    $('#flashcards-card-sort').prop('checked', box.content.private_show_card_sort);
     $('#flashcards-default-sort').prop('checked', box.content.private_sort_default);
     $("#flashcards-learn-system-decks").val(box.content.cardsDecks);
     $("#flashcards-learn-system-deck-repetitions").val(box.content.cardsRepetitionsPerDeck);
@@ -1160,31 +1164,33 @@ function createTable(reload) {
             }
         }
         html += '</tr>';
-        html += '<tr>';
-        var i;
-        for (i = 0; i < 11; i++) {
-            if (box.content.private_visibleColumns[i]) {
-                html += '<th scope="col">';
-                // html += box.content.cardsColumnName[i];
-                // html += '<br>';
-                html += '<span>';
-                if (box.content.private_sortColumn == i) {
-                    if (!box.content.private_sortReverse) {
-                        html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
-                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+        if(box.content.private_show_card_sort) {            
+            html += '<tr>';
+            var i;
+            for (i = 0; i < 11; i++) {
+                if (box.content.private_visibleColumns[i]) {
+                    html += '<th scope="col">';
+                    // html += box.content.cardsColumnName[i];
+                    // html += '<br>';
+                    html += '<span>';
+                    if (box.content.private_sortColumn == i) {
+                        if (!box.content.private_sortReverse) {
+                            html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                            html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+                        } else {
+                            html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
+                            html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                        }
                     } else {
                         html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
-                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
                     }
-                } else {
-                    html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
-                    html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+                    html += '</span>';
+                    html += '</th>';
                 }
-                html += '</span>';
-                html += '</th>';
             }
+            html += '</tr>';
         }
-        html += '</tr>';
         logger.log('creating table body...');
         html += createCardRows();
         html += '</table>';
@@ -1450,6 +1456,7 @@ function saveBoxSettings() {
         box.content.private_switch_learn_direction = $('#flashcards-switch-learn-directions').prop('checked');
         box.content.private_switch_learn_all = $('#flashcards-switch-learn-all').prop('checked');
         box.content.private_autosave = $('#flashcards-autosave').prop('checked');
+        box.content.private_show_card_sort= $('#flashcards-card-sort').prop('checked');
         box.content.private_sort_default = $('#flashcards-default-sort').prop('checked');
         box.content.cardsDecks = $('#flashcards-learn-system-decks').val();
         box.content.cardsRepetitionsPerDeck = $('#flashcards-learn-system-deck-repetitions').val();
@@ -2149,6 +2156,7 @@ function test_box_validate() {
     testBox.content.private_switch_learn_direction = false;
     testBox.content.private_switch_learn_all = true;
     testBox.content.private_autosave = true;
+    testBox.content.private_show_card_sort = true;
     testBox.content.private_sort_default = true;
     testBox.content.private_block = true;
     testBox.validate();
@@ -2164,7 +2172,10 @@ function test_box_validate() {
     if (testBox.content.private_autosave !== true) {
         return false;
     }
-    if (testBox.content.private_sort_default !== true) {
+    if (testBox.content.private_autosave !== true) {
+        return false;
+    }
+    if (testBox.content.private_show_card_sort !== true) {
         return false;
     }
     if (testBox.content.private_block !== true) {
@@ -2174,6 +2185,7 @@ function test_box_validate() {
     testBox.content.private_switch_learn_direction = "false";
     testBox.content.private_switch_learn_all = "true";
     testBox.content.private_autosave = "true";
+    testBox.content.private_show_card_sort = "true";
     testBox.content.private_sort_default = "true";
     testBox.content.private_block = "true";
     testBox.validate();
@@ -2189,6 +2201,9 @@ function test_box_validate() {
     if (testBox.content.private_autosave !== true) {
         return false;
     }
+    if (testBox.content.private_show_card_sort !== true) {
+        return false;
+    }
     if (testBox.content.private_sort_default !== true) {
         return false;
     }
@@ -2199,6 +2214,7 @@ function test_box_validate() {
     testBox.content.private_switch_learn_direction = 0;
     testBox.content.private_switch_learn_all = "hallo";
     testBox.content.private_autosave = "hallo";
+    testBox.content.private_show_card_sort = "hallo";
     testBox.content.private_sort_default = "hallo";
     testBox.content.private_block = "nonsense";
     testBox.validate();
@@ -2212,6 +2228,9 @@ function test_box_validate() {
         return false;
     }
     if (testBox.content.private_autosave !== true) {
+        return false;
+    }
+    if (testBox.content.private_show_card_sort !== false) {
         return false;
     }
     if (testBox.content.private_sort_default !== true) {
