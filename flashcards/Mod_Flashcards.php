@@ -7,7 +7,7 @@ use Zotlabs\Web\Controller;
 use Zotlabs\Storage\Directory;
 use Zotlabs\Storage\File;
 use Zotlabs\Storage\BasicAuth;
-use Zotlabs\Access\AccessControl;
+use Zotlabs\Access\AccessList;
 
 class Flashcards extends Controller {
     
@@ -239,7 +239,7 @@ class Flashcards extends Controller {
 
         $channel = \App::get_channel();
 
-        $acl = new AccessControl($channel);
+        $acl = new AccessControl($channel); // Hubzilla: $acl = new AccessList($channel);
         $acl->set_from_array($_POST);
         $x = $acl->get();
 

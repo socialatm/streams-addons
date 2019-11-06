@@ -910,6 +910,8 @@ var sortByColumn = 0;
 var sortReversOrder = false;
 var timezoneOffsetMilliseconds = 0;
 
+var blockEditBox = false;
+
 function setShareButton() {
     var hasUploads = 0;
     $("#button_share_box").css({'color': ''});
@@ -955,6 +957,7 @@ function conductGUIelements(action) {
     if (action !== 'list-boxes') {
         $("#button_flashcards_list_close").hide();
         $("#panel_cloud_boxes_1").hide();
+        blockEditBox = false;
     }
     if (action === 'start') {
         $("#panel_box_navigation").show();
@@ -982,7 +985,7 @@ function conductGUIelements(action) {
             $('#panel_box_attributes').collapse("hide");
             $("#panel_flashcards_cards_actions").show();
             $("#panel_flashcards_cards").show();
-            showCards(false);
+            showCards();
         }
     }
     if (action === 'edit-box') {
@@ -1006,7 +1009,7 @@ function conductGUIelements(action) {
         $("#button_flashcards_save_box").hide();
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
-        showCards(true);
+        showCards();
     }
     if (action === 'edit-card') {
         $("#flashcards_panel_card_header").show();
@@ -1027,7 +1030,7 @@ function conductGUIelements(action) {
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
         $("#button_flashcards_new_card").css({'color': ''});
-        showCards(false);
+        showCards();
     }
     if (action === 'learn-next') {
         $("#panel_box_navigation").hide();
@@ -1074,7 +1077,7 @@ function conductGUIelements(action) {
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
         unsetLearnButtonsToFixedPosition();
-        showCards(false);
+        showCards();
     }
     if (action === 'list-boxes') {
         $("#flashcards_navbar_brand").html("Your Cloud Boxes");
@@ -1085,8 +1088,10 @@ function conductGUIelements(action) {
         $('#panel_flashcards_permissions').collapse("hide");
         $("#panel_flashcards_cards_actions").hide();
         $("#panel_flashcards_cards").hide();
+        $("#panel_box_navigation").show();
         $("#panel_cloud_boxes_1").show();
-        $("#button_flashcards_list_close").show();
+        //$("#button_flashcards_list_close").show();
+        blockEditBox = true;
     }
     if (action === 'list-close') {
         $("#panel_flashcards_cards_actions").show();
@@ -1132,15 +1137,15 @@ function fillInputsSettings() {
     $("#fc_leitner_calculation").html(result[2]);
 }
 
-function showCards(reload) {
+function showCards() {
     logger.log('showCards()...');
     box.sort();
-    createTable(reload);
+    createTable();
     setCardsStatus();
     logger.log('tables created, showCards() is finished');
 }
 
-function createTable(reload) {
+function createTable() {
     var html = "";
     if (box.content.cards == null) {
         return;
@@ -1149,55 +1154,51 @@ function createTable(reload) {
         removeRows();
         return;
     }
-    if ($('#flashcards_table').length < 1 || reload) {
-        logger.log('creating table head...');
-        html += '<table class="table" id="flashcards_table">';
-        html += getColumnElements();
+    logger.log('creating table head...');
+    html += '<table class="table" id="flashcards_table">';
+    html += getColumnElements();
+    html += '<tr>';
+    var i;
+    for (i = 0; i < 11; i++) {
+        logger.log('col ' + i + ' is visible = ' + box.content.private_visibleColumns[i]);
+        if (box.content.private_visibleColumns[i]) {
+            html += '<td>';
+            html += '<input class="form-control cards-filter" type="text" filterCol="' + i + '" value="' + box.content.private_filter[i] + '">';
+            html += '</td>';
+        }
+    }
+    html += '</tr>';
+    if(box.content.private_show_card_sort) {            
         html += '<tr>';
         var i;
         for (i = 0; i < 11; i++) {
-            logger.log('col ' + i + ' is visible = ' + box.content.private_visibleColumns[i]);
             if (box.content.private_visibleColumns[i]) {
-                html += '<td>';
-                html += '<input class="form-control cards-filter" type="text" filterCol="' + i + '" value="' + box.content.private_filter[i] + '">';
-                html += '</td>';
+                html += '<th scope="col">';
+                // html += box.content.cardsColumnName[i];
+                // html += '<br>';
+                html += '<span>';
+                if (box.content.private_sortColumn == i) {
+                    if (!box.content.private_sortReverse) {
+                        html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+                    } else {
+                        html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
+                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                    }
+                } else {
+                    html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
+                    html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+                }
+                html += '</span>';
+                html += '</th>';
             }
         }
         html += '</tr>';
-        if(box.content.private_show_card_sort) {            
-            html += '<tr>';
-            var i;
-            for (i = 0; i < 11; i++) {
-                if (box.content.private_visibleColumns[i]) {
-                    html += '<th scope="col">';
-                    // html += box.content.cardsColumnName[i];
-                    // html += '<br>';
-                    html += '<span>';
-                    if (box.content.private_sortColumn == i) {
-                        if (!box.content.private_sortReverse) {
-                            html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
-                            html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
-                        } else {
-                            html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
-                            html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
-                        }
-                    } else {
-                        html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
-                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
-                    }
-                    html += '</span>';
-                    html += '</th>';
-                }
-            }
-            html += '</tr>';
-        }
-        logger.log('creating table body...');
-        html += createCardRows();
-        html += '</table>';
-        $('#panel_flashcards_cards').html(html);
-    } else {
-        replaceRows();
     }
+    logger.log('creating table body...');
+    html += createCardRows();
+    html += '</table>';
+    $('#panel_flashcards_cards').html(html);
 }
 function removeRows() {
     logger.log('removeRows() remove all rows first...');
@@ -1480,8 +1481,12 @@ $(document).on("input", "#flashcards_box_description", function () {
 
 $(document).on("click", "#button_flashcards_learn_play", function () {
     if(box.content.private_sort_default) {
+        var tmpIndex = box.content.private_sortColumn;
+        var tempRevers = box.content.private_sortReverse;
         box.sortBy(0, false);
         box.sortBy(6, false);
+        box.content.private_sortColumn = tmpIndex;
+        box.content.private_sortReverse = tempRevers;
     }
     learnNext(true);
 });
@@ -1796,14 +1801,14 @@ $(document).on("click", "#button_flashcards_settings_default", function () {
 $(document).on("click", "i.fa-sort-asc", function () {
     box.content.private_sortColumn = parseInt($(this).attr("sortCol"));
     box.content.private_sortReverse = false;
-    showCards(false);
+    showCards();
     colorSortArrow();
 });
 
 $(document).on("click", "i.fa-sort-desc", function () {
     box.content.private_sortColumn = parseInt($(this).attr("sortCol"));
     box.content.private_sortReverse = true;
-    showCards(false);
+    showCards();
     colorSortArrow();
 });
 
@@ -1831,7 +1836,7 @@ $(document).on("input", "input.cards-filter", function () {
     $('input.cards-filter').each(function (i, obj) {
         box.content.private_filter[$(this).attr('filterCol')] = $(this).val();
     });
-    showCards(false);
+    showCards();
 });
 
 $(document).on("click", "#button_flashcards_new_card", function () {
@@ -1852,6 +1857,9 @@ $(document).on("click", ".flashcards-table-row", function () {
 
 $(document).on("click", "#flashcards_navbar_brand", function () {
     logger.log('Clicked on title in navbar');
+    if(blockEditBox) {
+        return;
+    }
     if ($('#button_flashcards_save_box').is(':visible')) {
         saveBoxSettings();
     } else {
@@ -1860,6 +1868,9 @@ $(document).on("click", "#flashcards_navbar_brand", function () {
 });
 $(document).on("click", "#flashcards_edit_box", function () {
     logger.log('Clicked on flashcards_edit_box');
+    if(blockEditBox) {
+        return;
+    }
     conductGUIelements('edit-box');
 });
 
@@ -1954,7 +1965,7 @@ function createBoxList(boxes) {
 $(document).on("click", "#run_unit_tests", function () {
     logger.log('clicked run unit tests');
     test_run();
-    showCards(true);
+    showCards();
 });
 
 $(window).on('resize', function () {
