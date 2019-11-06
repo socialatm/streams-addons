@@ -302,6 +302,8 @@ class Box {
             "private_search_convenient": true,
             "cards": []
         };
+        // not persistant search string for convenient search
+        this.search = "";
     }
     /**
      * load content from local storage
@@ -583,73 +585,113 @@ class Box {
         this.sortBy(this.content.private_sortColumn, this.content.private_sortReverse);
     }
     getCardsArrayFiltered(filterArray) {
-        if (filterArray) {
-            this.content.private_filter = filterArray;
-        } else {
-            filterArray = this.content.private_filter;
-        }
-        logger.log('Filter cards array with filter array = ' + filterArray + '...');
-        // Is filter empty?
-        var l;
-        var isFilterEmpty = true;
-        for (l = 0; l < filterArray.length; l++) {
-            if (filterArray[l].trim() != "") {
-                isFilterEmpty = false
-            }
-        }
-        if (isFilterEmpty) {
-            return this.content.cards;
-        }
         var filtered = [];
-        // iterate all cards
-        var i;
-        for (i = 0; i < this.content.cards.length; i++) {
-            var card = this.content.cards[i];
-            var aWordFound = false;
-            var aWordNotFound = false;
-            // iterate columns
-            var j;
-            for (j = 0; j < filterArray.length; j++) {
-                if (aWordNotFound) {
-                    break;
-                }
-                if (filterArray[j] == "") {
-                    // ignore if a column has no search string
-                    continue;
-                }
-
-                if (j == 0 || j == 5 || j == 9) {
-                    // Date-Time Search
-                    if (card.content[j] != 0) { // ignore if time is 0 = 1970-01-01
-                        var localTimeString = new Date(card.content[j]).toLocaleString();
-                        var value = filterArray[j];
-                        if (localTimeString.toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
-                            aWordFound = true;
-                        } else {
-                            aWordNotFound = true;
-                            break;
+        if(this.search !== "") {
+            logger.log('Using convenient search with search string = ' + this.search + '...');
+            for (i = 0; i < this.content.cards.length; i++) {
+                var card = this.content.cards[i];
+                var cardContent = "";
+                var j;
+                for(j = 1; j < 5; j++) {
+                    if(card.content[j].length > 0) {
+                        if (cardContent.length > 0) {
+                            cardContent += " ";
                         }
+                        cardContent += card.content[j];
                     }
-                } else {
-                    // String search: make a search with AND for every word in a search string
-                    var parts = filterArray[j].split(" ");
-                    var k;
-                    for (k = 0; k < parts.length; k++) {
-                        var value = parts[k].trim();
-                        if (value == "") {
-                            continue;
-                        }
-                        if (!card.content[j].toString().toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
-                            aWordNotFound = true;
-                            break;
-                        } else {
-                            aWordFound = true;
-                        }
+                }
+                if(cardContent.length < 1) {
+                    break; // should never happen
+                }
+                var aWordFound = false;
+                var aWordNotFound = false;
+                // String search: make a search with AND for every word in a search string
+                var parts = this.search.split(" ");
+                var k;
+                for (k = 0; k < parts.length; k++) {
+                    var value = parts[k].trim();
+                    if (value == "") {
+                        continue;
                     }
+                    if (! cardContent.toString().toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
+                        aWordNotFound = true;
+                        break;
+                    } else {
+                        aWordFound = true;
+                    }
+                }
+                if (aWordFound && !aWordNotFound) {
+                    filtered.push(card);
                 }
             }
-            if (aWordFound && !aWordNotFound) {
-                filtered.push(card);
+        } else {            
+            if (filterArray) {
+                this.content.private_filter = filterArray;
+            } else {
+                filterArray = this.content.private_filter;
+            }
+            logger.log('Filter cards array with filter array = ' + filterArray + '...');
+            // Is filter empty?
+            var l;
+            var isFilterEmpty = true;
+            for (l = 0; l < filterArray.length; l++) {
+                if (filterArray[l].trim() != "") {
+                    isFilterEmpty = false
+                }
+            }
+            if (isFilterEmpty) {
+                return this.content.cards;
+            }
+            // iterate all cards
+            var i;
+            for (i = 0; i < this.content.cards.length; i++) {
+                var card = this.content.cards[i];
+                var aWordFound = false;
+                var aWordNotFound = false;
+                // iterate columns
+                var j;
+                for (j = 0; j < filterArray.length; j++) {
+                    if (aWordNotFound) {
+                        break;
+                    }
+                    if (filterArray[j] == "") {
+                        // ignore if a column has no search string
+                        continue;
+                    }
+
+                    if (j == 0 || j == 5 || j == 9) {
+                        // Date-Time Search
+                        if (card.content[j] != 0) { // ignore if time is 0 = 1970-01-01
+                            var localTimeString = new Date(card.content[j]).toLocaleString();
+                            var value = filterArray[j];
+                            if (localTimeString.toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
+                                aWordFound = true;
+                            } else {
+                                aWordNotFound = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        // String search: make a search with AND for every word in a search string
+                        var parts = filterArray[j].split(" ");
+                        var k;
+                        for (k = 0; k < parts.length; k++) {
+                            var value = parts[k].trim();
+                            if (value == "") {
+                                continue;
+                            }
+                            if (!card.content[j].toString().toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
+                                aWordNotFound = true;
+                                break;
+                            } else {
+                                aWordFound = true;
+                            }
+                        }
+                    }
+                }
+                if (aWordFound && !aWordNotFound) {
+                    filtered.push(card);
+                }
             }
         }
         return filtered;
@@ -1287,6 +1329,8 @@ function setCardsStatus() {
         } else {
             $('#button_flashcards_search_cards').hide();
             $('#input_flashcards_search_cards').hide();
+            $('#input_flashcards_search_cards').val("");
+            box.search = "";
         }
     }
     var due = 0;
@@ -1857,8 +1901,17 @@ $(document).on("input", "input.cards-filter", function () {
 
 $(document).on("input", "#input_flashcards_search_cards", function () {
     logger.log('Some input in field for convenient search. Clear column filter');
-    box.content.private_filter = ["", "", "", "", "", "", "", "", "", "", ""];
-    showCards();
+    var searchStr = $('#input_flashcards_search_cards').val();
+    var l = searchStr.length;
+    var lastChar = searchStr.substring(searchStr.length - 1)
+    if (l > 2 && lastChar !== " ") {
+        box.content.private_filter = ["", "", "", "", "", "", "", "", "", "", ""];
+        box.search = searchStr;
+        showCards();
+    } else {
+        logger.log('Search string less than 3 characters: ' + searchStr);
+        return;
+    }
 });
 
 $(document).on("click", "#button_flashcards_new_card", function () {
