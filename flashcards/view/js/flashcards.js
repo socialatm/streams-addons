@@ -299,6 +299,7 @@ class Box {
             "private_autosave": true,
             "private_show_card_sort": false,
             "private_sort_default": true,
+            "private_search_convenient": true,
             "cards": []
         };
     }
@@ -411,6 +412,7 @@ class Box {
         this.content.private_autosave = this.checkBoolean(this.content.private_autosave, true);
         this.content.private_show_card_sort = this.checkBoolean(this.content.private_show_card_sort, false);
         this.content.private_sort_default = this.checkBoolean(this.content.private_sort_default, true);
+        this.content.private_search_convenient = this.checkBoolean(this.content.private_search_convenient, true);
         var i;
         for (i = 0; i < this.content.private_visibleColumns.length; i++) {
             var defaultBool = false;
@@ -501,6 +503,7 @@ class Box {
         s += this.content.private_autosave;
         s += this.content.private_show_card_sort;
         s += this.content.private_sort_default;
+        s += this.content.private_search_convenient;
         s += this.content.private_block;
         return s;
     }
@@ -706,7 +709,7 @@ class Box {
             }
         }
         if (isOwnBox) {
-            var keysPrivate = ['cardsDecks', 'cardsDeckWaitExponent', 'cardsRepetitionsPerDeck', 'private_block', 'private_sortColumn', 'private_sortReverse', 'private_filter', 'private_visibleColumns', 'private_switch_learn_direction', 'private_switch_learn_all', 'private_autosave', 'private_show_card_sort', 'private_sort_default', 'lastChangedPrivateMetaData'];
+            var keysPrivate = ['cardsDecks', 'cardsDeckWaitExponent', 'cardsRepetitionsPerDeck', 'private_block', 'private_sortColumn', 'private_sortReverse', 'private_filter', 'private_visibleColumns', 'private_switch_learn_direction', 'private_switch_learn_all', 'private_autosave', 'private_show_card_sort', 'private_sort_default', 'private_search_convenient', 'lastChangedPrivateMetaData'];
             if (this.content.lastChangedPrivateMetaData !== boxRemote.content.lastChangedPrivateMetaData) {
                 var i;
                 for (i = 0; i < keysPrivate.length; i++) {
@@ -1124,6 +1127,7 @@ function fillInputsSettings() {
     $('#flashcards-autosave').prop('checked', box.content.private_autosave);
     $('#flashcards-card-sort').prop('checked', box.content.private_show_card_sort);
     $('#flashcards-default-sort').prop('checked', box.content.private_sort_default);
+    $('#flashcards-convenient-search').prop('checked', box.content.private_search_convenient);
     $("#flashcards-learn-system-decks").val(box.content.cardsDecks);
     $("#flashcards-learn-system-deck-repetitions").val(box.content.cardsRepetitionsPerDeck);
     $("#flashcards-learn-system-exponent").val(box.content.cardsDeckWaitExponent);
@@ -1157,17 +1161,19 @@ function createTable() {
     logger.log('creating table head...');
     html += '<table class="table" id="flashcards_table">';
     html += getColumnElements();
-    html += '<tr>';
-    var i;
-    for (i = 0; i < 11; i++) {
-        logger.log('col ' + i + ' is visible = ' + box.content.private_visibleColumns[i]);
-        if (box.content.private_visibleColumns[i]) {
-            html += '<td>';
-            html += '<input class="form-control cards-filter" type="text" filterCol="' + i + '" value="' + box.content.private_filter[i] + '">';
-            html += '</td>';
+    if(! box.content.private_search_convenient) {
+        html += '<tr>';
+        var i;
+        for (i = 0; i < 11; i++) {
+            logger.log('col ' + i + ' is visible = ' + box.content.private_visibleColumns[i]);
+            if (box.content.private_visibleColumns[i]) {
+                html += '<td>';
+                html += '<input class="form-control cards-filter" type="text" filterCol="' + i + '" value="' + box.content.private_filter[i] + '">';
+                html += '</td>';
+            }
         }
+        html += '</tr>';
     }
-    html += '</tr>';
     if(box.content.private_show_card_sort) {            
         html += '<tr>';
         var i;
@@ -1275,6 +1281,14 @@ function setCardsStatus() {
         html += filteredCards.length + ' out of ' + l;
     }
     $('#span_flashcards_cards_actions_status').html(html);
+    if(l > 0) {
+        if(box.content.private_search_convenient) {
+            $('#button_flashcards_search_cards').show();
+        } else {
+            $('#button_flashcards_search_cards').hide();
+            $('#input_flashcards_search_cards').hide();
+        }
+    }
     var due = 0;
     var i;
     for (i = 0; i < filteredCards.length; i++) {
@@ -1459,6 +1473,7 @@ function saveBoxSettings() {
         box.content.private_autosave = $('#flashcards-autosave').prop('checked');
         box.content.private_show_card_sort= $('#flashcards-card-sort').prop('checked');
         box.content.private_sort_default = $('#flashcards-default-sort').prop('checked');
+        box.content.private_search_convenient = $('#flashcards-convenient-search').prop('checked');
         box.content.cardsDecks = $('#flashcards-learn-system-decks').val();
         box.content.cardsRepetitionsPerDeck = $('#flashcards-learn-system-deck-repetitions').val();
         box.content.cardsDeckWaitExponent = $('#flashcards-learn-system-exponent').val();
@@ -1784,6 +1799,7 @@ $(document).on("click", "#button_flashcards_settings_default", function () {
     $('#flashcards-autosave').prop('checked', true);
     $('#flashcards-card-sort').prop('checked', false);
     $('#flashcards-default-sort').prop('checked', true);
+    $('#flashcards-convenient-search').prop('checked', true);
     $('#flashcards-switch-learn-all').prop('checked', false);
     $("#flashcards-learn-system-decks").val('7');
     $("#flashcards-learn-system-deck-repetitions").val('3');
@@ -1836,6 +1852,12 @@ $(document).on("input", "input.cards-filter", function () {
     $('input.cards-filter').each(function (i, obj) {
         box.content.private_filter[$(this).attr('filterCol')] = $(this).val();
     });
+    showCards();
+});
+
+$(document).on("input", "#input_flashcards_search_cards", function () {
+    logger.log('Some input in field for convenient search. Clear column filter');
+    box.content.private_filter = ["", "", "", "", "", "", "", "", "", "", ""];
     showCards();
 });
 
@@ -2031,6 +2053,14 @@ function showACLbutton() {
     }
 }
 
+$(document).on("click", "#button_flashcards_search_cards", function () {
+    if($("#input_flashcards_search_cards").is(":visible")) {
+        $('#input_flashcards_search_cards').hide(); 
+    } else {
+        $('#input_flashcards_search_cards').show();        
+    }
+})
+
 //------------------------
 // ###
 // ### Start Unit Tests
@@ -2172,6 +2202,7 @@ function test_box_validate() {
     testBox.content.private_autosave = true;
     testBox.content.private_show_card_sort = true;
     testBox.content.private_sort_default = true;
+    testBox.content.private_search_convenient = true;
     testBox.content.private_block = true;
     testBox.validate();
     if (testBox.content.private_sortReverse !== true) {
@@ -2192,6 +2223,12 @@ function test_box_validate() {
     if (testBox.content.private_show_card_sort !== true) {
         return false;
     }
+    if (testBox.content.private_sort_default !== true) {
+        return false;
+    }
+    if (testBox.content.private_search_convenient !== true) {
+        return false;
+    }
     if (testBox.content.private_block !== true) {
         return false;
     }
@@ -2201,6 +2238,7 @@ function test_box_validate() {
     testBox.content.private_autosave = "true";
     testBox.content.private_show_card_sort = "true";
     testBox.content.private_sort_default = "true";
+    testBox.content.private_search_convenient = "true";
     testBox.content.private_block = "true";
     testBox.validate();
     if (testBox.content.private_sortReverse !== true) {
@@ -2221,6 +2259,9 @@ function test_box_validate() {
     if (testBox.content.private_sort_default !== true) {
         return false;
     }
+    if (testBox.content.private_search_convenient !== true) {
+        return false;
+    }
     if (testBox.content.private_block !== true) {
         return false;
     }
@@ -2230,6 +2271,7 @@ function test_box_validate() {
     testBox.content.private_autosave = "hallo";
     testBox.content.private_show_card_sort = "hallo";
     testBox.content.private_sort_default = "hallo";
+    testBox.content.private_search_convenient = "hallo";
     testBox.content.private_block = "nonsense";
     testBox.validate();
     if (testBox.content.private_sortReverse !== false) {
@@ -2248,6 +2290,9 @@ function test_box_validate() {
         return false;
     }
     if (testBox.content.private_sort_default !== true) {
+        return false;
+    }
+    if (testBox.content.private_search_convenient !== true) {
         return false;
     }
     if (testBox.content.private_block !== false) {
