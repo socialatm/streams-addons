@@ -1909,6 +1909,11 @@ $(document).on("input", "#input_flashcards_search_cards", function () {
         box.search = searchStr;
         showCards();
     } else {
+        if(box.search.length > 0 && l === 0) {
+            // User deleted the search string
+            box.search = "";
+            showCards();
+        }
         logger.log('Search string less than 3 characters: ' + searchStr);
         return;
     }
@@ -2432,6 +2437,37 @@ function test_box_getCardsArrayFiltered() {
     // filter longer than value in card
     filteredCards = box.getCardsArrayFiltered(["", "c", "a aaa", "", "DD"]);
     if (filteredCards.length != 0) {
+        return false;
+    }
+    // -- convenient filter --
+    box.search = "y"
+    var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
+    if (filteredCards.length !== 0) {
+        return false;
+    }
+    box.search = "dd"
+    var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
+    if (filteredCards.length !== 3) {
+        return false;
+    }
+    // to use more columns AND search with operator AND -> but this is overwritten by the convenient search
+    filteredCards = box.getCardsArrayFiltered(["", "cc", "a a"]);
+    if (filteredCards.length !== 3) {
+        return false;
+    }
+    box.search = "Aa dd bB"
+    var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
+    if (filteredCards.length !== 3) {
+        return false;
+    }
+    box.search = "15"
+    var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
+    if (filteredCards.length !== 0) {
+        return false;
+    }
+    box.search = ""
+    filteredCards = box.getCardsArrayFiltered(["", "c", "a a", "", "DD"]);
+    if (filteredCards.length != 1 || filteredCards[0] != test_card_02) {
         return false;
     }
     return true;
