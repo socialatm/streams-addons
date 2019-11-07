@@ -7,6 +7,8 @@
 				<a class="dropdown-item" id="flashcards_edit_box">Edit Box</a>
 				<a class="dropdown-item" id="flashcards_show_boxes">List Boxes</a>
 				<div class="dropdown-divider"></div>
+				<a class="dropdown-item" id="flashcards_show_help">Help</a>
+				<div class="dropdown-divider"></div>
 				<a class="dropdown-item disabled" href="#">Search</a>
 			</div>
 		</li>
@@ -22,6 +24,9 @@
 			<i class="fa fa-save fa-lg"></i> Save
 		</button>
 		<button class="btn btn-default nav-pill ml-auto" id="button_flashcards_list_close" style="display: none;">
+			<i class="fa fa-window-close fa-lg"></i> Close
+		</button>
+		<button class="btn btn-default nav-pill ml-auto" id="button_flashcards_help_close" style="display: none;">
 			<i class="fa fa-window-close fa-lg"></i> Close
 		</button>
 	</ul>
@@ -386,6 +391,51 @@
 		</div>
 	</div>
 </div>
+
+<div id="panel_flashcards_help" style="display: none;">
+	<div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-12">
+                    This addon is a  <a href="https://en.wikipedia.org/wiki/List_of_flashcard_software" target="_blank">flashcard software</a> that uses <a href="https://en.wikipedia.org/wiki/Spaced_repetition" target="_blank">spaced repetition</a> as a learning technique.
+                    <br><br><img src="/addon/flashcards/view/img/leitner-system.png" align="center" width="70%">
+                    <br><br>You can share the flash cards with other users of Hubzilla and ZAP.
+                    <br><br>Your learning progress will be kept private.
+                    <hr/>
+                    <h4>In Praxis - The School Example</h4>
+                    <hr/>
+                    <h4>Introduction</h4>
+                    A school and its students all have an account at Hubzilla or ZAP. The school has the addon Flashcards installed.
+                    <br><br>It is possible that the school and the students have accounts on different instances. let's say
+                    <ul>
+                        <li>The school on https://school.com/</li>
+                        <li>A student on https://student.org/</li>
+                    </ul>
+                    <h4>How to begin?</h4>
+                    The school...
+                    <ul>
+                        <li>opens the addon https://school.com/flashcards/school</li>
+                        <li>creates a box of flashcards "English-Italian", URL could be https://school.com/flashcards/school/xy12tlsel89q81o</li>
+                        <li>sends the URL to the student</li>
+                    </ul>
+                    The student...
+                    <ul>
+                        <li>opens https://school.com/flashcards/school/xy12tlsel89q81o</li>
+                    </ul>
+                    <h4>How to fix errors in the cards?</h4>
+                    The school and the students can both add or modify cards. The syncronization is done automatically as soon as they upload (save) changes.
+                    <br><br>
+                    <h4>Permissions and Technically</h4>
+                    A student sees those flashcards only the school allows him to see. The student will get a copy of "English-Italian". For both users it looks the same, same URL, same content. Everything is done under the hood. The student does not own the flashcards. The school can withdraw the permissions for a student or even delete the flashcards at any time.
+                    <br><br>
+                    <h4>Federation</h4>
+                    It is not tested yet but should be available in the near future. If enabled a student will be able to use the addon without having an account at Hubzulla or ZAP as long as the account supports <a href="https://en.wikipedia.org/wiki/ActivityPub" target="_blank">ActivityPub</a>. Users of Mastodon should have ActivityPub for example. Stay tuned.
+                </div>
+            </div>
+	</div>
+</div>
+
+
+
 
 <div id="panel_flashcards_cards" style="display: none;"></div>
 

@@ -7,7 +7,7 @@ use Zotlabs\Web\Controller;
 use Zotlabs\Storage\Directory;
 use Zotlabs\Storage\File;
 use Zotlabs\Storage\BasicAuth;
-use Zotlabs\Access\AccessList;
+use Zotlabs\Access\AccessControl;
 
 class Flashcards extends Controller {
     
