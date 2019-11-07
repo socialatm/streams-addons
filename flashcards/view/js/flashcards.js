@@ -1003,6 +1003,8 @@ function conductGUIelements(action) {
         $("#button_flashcards_list_close").hide();
         $("#panel_cloud_boxes_1").hide();
         blockEditBox = false;
+        $("#panel_flashcards_help").hide();
+        $("#button_flashcards_help_close").hide();
     }
     if (action === 'start') {
         $("#panel_box_navigation").show();
@@ -1133,6 +1135,8 @@ function conductGUIelements(action) {
         $('#panel_flashcards_permissions').collapse("hide");
         $("#panel_flashcards_cards_actions").hide();
         $("#panel_flashcards_cards").hide();
+        $("#panel_flashcards_help").hide();
+        $("#button_flashcards_help_close").hide();
         $("#panel_box_navigation").show();
         $("#panel_cloud_boxes_1").show();
         //$("#button_flashcards_list_close").show();
@@ -1141,6 +1145,20 @@ function conductGUIelements(action) {
     if (action === 'list-close') {
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
+    }
+    if (action === 'show-help') {
+        $("#flashcards_navbar_brand").html("Help");
+        $("#button_flashcards_save_box").hide();
+        $("#button_flashcards_learn_play").hide();
+        $("#button_share_box").hide();
+        $('#panel_box_attributes').collapse("hide");
+        $('#panel_flashcards_permissions').collapse("hide");
+        $("#panel_flashcards_cards_actions").hide();
+        $("#panel_flashcards_cards").hide();
+        $("#panel_cloud_boxes_1").hide();
+        $("#panel_box_navigation").show();
+        $("#panel_flashcards_help").show();
+        $("#button_flashcards_help_close").show();
     }
     fixTitleLength();
     if(hasUploads === 1 && box.content.private_autosave) {
@@ -1895,8 +1913,16 @@ $(document).on("input", "input.cards-filter", function () {
     // box.content.private_filter = [];
     $('input.cards-filter').each(function (i, obj) {
         box.content.private_filter[$(this).attr('filterCol')] = $(this).val();
+        var focused = $(document.activeElement);
+        if(focused == $(this)) {
+            logger.log('focused column is ' + i);
+        }
+        if(focused == obj) {
+            logger.log('focused column is ' + i);
+        }
     });
-    showCards();
+    showCards(); // focus gets lost
+    focused.focus();
 });
 
 $(document).on("input", "#input_flashcards_search_cards", function () {
@@ -1959,6 +1985,16 @@ $(document).on("click", "#flashcards_new_box", function () {
     box = new Box();
     box.store();
     loadStartPage();
+});
+
+$(document).on("click", "#flashcards_show_help", function () {
+    logger.log('Clicked on flashcards_show_help');
+    conductGUIelements('show-help');
+});
+
+$(document).on("click", "#button_flashcards_help_close", function () {
+    logger.log('Clicked on button_flashcards_help_close');
+    conductGUIelements('start');
 });
 
 $(document).on("click", "#button_flashcards_list_close", function () {
