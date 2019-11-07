@@ -1905,7 +1905,7 @@ $(document).on("input", "#input_flashcards_search_cards", function () {
     var l = searchStr.length;
     var lastChar = searchStr.substring(searchStr.length - 1)
     if (l > 2 && lastChar !== " ") {
-        box.content.private_filter = ["", "", "", "", "", "", "", "", "", "", ""];
+        // box.content.private_filter = ["", "", "", "", "", "", "", "", "", "", ""];
         box.search = searchStr;
         showCards();
     } else {
@@ -2113,9 +2113,10 @@ function showACLbutton() {
 
 $(document).on("click", "#button_flashcards_search_cards", function () {
     if($("#input_flashcards_search_cards").is(":visible")) {
-        $('#input_flashcards_search_cards').hide(); 
+        $('#input_flashcards_search_cards').hide();
     } else {
-        $('#input_flashcards_search_cards').show();        
+        $('#input_flashcards_search_cards').show();
+        $('#input_flashcards_search_cards').focus();
     }
 })
 
