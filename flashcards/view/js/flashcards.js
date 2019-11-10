@@ -588,39 +588,38 @@ class Box {
         var filtered = [];
         if(this.search !== "") {
             logger.log('Using convenient search with search string = ' + this.search + '...');
+            var parts = this.search.split(" ");
+            var partsFound = new Array(parts.length);
             for (i = 0; i < this.content.cards.length; i++) {
+                for(var z = 0; z < parts.length; z++) {
+                    partsFound[z] = false;
+                }
                 var card = this.content.cards[i];
-                var cardContent = "";
                 var j;
                 for(j = 1; j < 5; j++) {
-                    if(card.content[j].length > 0) {
-                        if (cardContent.length > 0) {
-                            cardContent += " ";
-                        }
-                        cardContent += card.content[j];
-                    }
-                }
-                if(cardContent.length < 1) {
-                    break; // should never happen
-                }
-                var aWordFound = false;
-                var aWordNotFound = false;
-                // String search: make a search with AND for every word in a search string
-                var parts = this.search.split(" ");
-                var k;
-                for (k = 0; k < parts.length; k++) {
-                    var value = parts[k].trim();
-                    if (value == "") {
+                    var text = card.content[j];
+                    if(text.length < 1) {
                         continue;
                     }
-                    if (! cardContent.toString().toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
-                        aWordNotFound = true;
-                        break;
-                    } else {
-                        aWordFound = true;
+                    // String search: make a search with AND for every word in a search string
+                    var k;
+                    for (k = 0; k < parts.length; k++) {
+                        var value = parts[k].trim();
+                        if (value == "") {
+                            continue;
+                        }
+                        if (text.toString().toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
+                            partsFound[k] = true;
+                        }
                     }
                 }
-                if (aWordFound && !aWordNotFound) {
+                var notFound = false;
+                for(var z = 0; z < parts.length; z++) {
+                    if(! partsFound[z]) {
+                        notFound = true;
+                    }
+                }
+                if(! notFound) {
                     filtered.push(card);
                 }
             }
