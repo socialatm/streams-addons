@@ -999,13 +999,7 @@ function conductGUIelements(action) {
         fillInputsBox();
         hasUploads = setShareButton();
     }
-    if (action !== 'list-boxes') {
-        $("#button_flashcards_list_close").hide();
-        $("#panel_cloud_boxes_1").hide();
-        blockEditBox = false;
-        $("#panel_flashcards_help").hide();
-        $("#button_flashcards_help_close").hide();
-    }
+    $("#button_flashcards_close").hide();
     if (action === 'start') {
         $("#panel_box_navigation").show();
         $(".flashcards_nav").show();
@@ -1136,15 +1130,18 @@ function conductGUIelements(action) {
         $("#panel_flashcards_cards_actions").hide();
         $("#panel_flashcards_cards").hide();
         $("#panel_flashcards_help").hide();
-        $("#button_flashcards_help_close").hide();
         $("#panel_box_navigation").show();
         $("#panel_cloud_boxes_1").show();
-        //$("#button_flashcards_list_close").show();
+        $("#button_flashcards_close").show();
         blockEditBox = true;
     }
     if (action === 'list-close') {
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
+    }
+    if (action !== 'list-boxes') {
+        $("#panel_cloud_boxes_1").hide();
+        blockEditBox = false;
     }
     if (action === 'show-help') {
         $("#flashcards_navbar_brand").html("Help");
@@ -1158,7 +1155,10 @@ function conductGUIelements(action) {
         $("#panel_cloud_boxes_1").hide();
         $("#panel_box_navigation").show();
         $("#panel_flashcards_help").show();
-        $("#button_flashcards_help_close").show();
+        $("#button_flashcards_close").show();
+    }
+    if (action !== 'show-help') {
+        $("#panel_flashcards_help").hide();
     }
     fixTitleLength();
     if(hasUploads === 1 && box.content.private_autosave) {
@@ -1910,19 +1910,10 @@ function colorSortArrow() {
 }
 
 $(document).on("input", "input.cards-filter", function () {
-    // box.content.private_filter = [];
     $('input.cards-filter').each(function (i, obj) {
         box.content.private_filter[$(this).attr('filterCol')] = $(this).val();
-        var focused = $(document.activeElement);
-        if(focused == $(this)) {
-            logger.log('focused column is ' + i);
-        }
-        if(focused == obj) {
-            logger.log('focused column is ' + i);
-        }
     });
-    showCards(); // focus gets lost
-    focused.focus();
+    showCards();
 });
 
 $(document).on("input", "#input_flashcards_search_cards", function () {
@@ -1992,13 +1983,8 @@ $(document).on("click", "#flashcards_show_help", function () {
     conductGUIelements('show-help');
 });
 
-$(document).on("click", "#button_flashcards_help_close", function () {
-    logger.log('Clicked on button_flashcards_help_close');
-    conductGUIelements('start');
-});
-
-$(document).on("click", "#button_flashcards_list_close", function () {
-    logger.log('Clicked on button_flashcards_list_close');
+$(document).on("click", "#button_flashcards_close", function () {
+    logger.log('Clicked on button_flashcards_close');
     conductGUIelements('start');
 });
 
