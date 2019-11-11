@@ -304,6 +304,7 @@ class Box {
         };
         // not persistant search string for convenient search
         this.search = "";
+        this.searchResultColumns = [false, true, true, false, false, false, false, false, false, false, false];
     }
     /**
      * load content from local storage
@@ -588,6 +589,7 @@ class Box {
         var filtered = [];
         if(this.search !== "") {
             logger.log('Using convenient search with search string = ' + this.search + '...');
+            this.searchResultColumns = [false, true, true, false, false, false, false, false, false, false, false];
             var parts = this.search.split(" ");
             var partsFound = new Array(parts.length);
             for (i = 0; i < this.content.cards.length; i++) {
@@ -605,11 +607,12 @@ class Box {
                     var k;
                     for (k = 0; k < parts.length; k++) {
                         var value = parts[k].trim();
-                        if (value == "") {
+                        if (value === "") {
                             continue;
                         }
                         if (text.toString().toLocaleLowerCase().includes(value.toLocaleLowerCase())) {
                             partsFound[k] = true;
+                            this.searchResultColumns[j] = true;
                         }
                     }
                 }
@@ -630,6 +633,7 @@ class Box {
                 filterArray = this.content.private_filter;
             }
             logger.log('Filter cards array with filter array = ' + filterArray + '...');
+            this.searchResultColumns = [false, false, false, false, false, false, false, false, false, false, false];
             // Is filter empty?
             var l;
             var isFilterEmpty = true;
@@ -1217,6 +1221,7 @@ function createTable() {
         removeRows();
         return;
     }
+    var cards = box.getCardsArrayFiltered();
     logger.log('creating table head...');
     html += '<table class="table" id="flashcards_table">';
     html += getColumnElements();
@@ -1261,7 +1266,7 @@ function createTable() {
         html += '</tr>';
     }
     logger.log('creating table body...');
-    html += createCardRows();
+    html += createCardRows(cards);
     html += '</table>';
     $('#panel_flashcards_cards').html(html);
 }
@@ -1280,9 +1285,8 @@ function replaceRows() {
     $('#flashcards_table tr:last').after(html);
     logger.log('replaceRows() ready');
 }
-function createCardRows() {
+function createCardRows(cards) {
     logger.log('createCardRows() start...');
-    var cards = box.getCardsArrayFiltered();
     var html = '';
     if (cards == null) {
         return html;
@@ -1292,7 +1296,7 @@ function createCardRows() {
         html += '<tr class="flashcards-table-row" cardid="' + cards[i].content[0] + '">';
         var j;
         for (j = 0; j < 11; j++) {
-            if (box.content.private_visibleColumns[j]) {
+            if (box.content.private_visibleColumns[j] || box.searchResultColumns[j]) {
                 html += '<td>';
                 if (j == 0 || j == 5 || j == 9) {
                     if (cards[i].content[j] != 0) {
@@ -1313,13 +1317,13 @@ function getColumnElements() {
     var counter = 0;
     var j;
     for (j = 0; j < 11; j++) {
-        if (box.content.private_visibleColumns[j]) {
+        if (box.content.private_visibleColumns[j] || box.searchResultColumns[j]) {
             counter++;
 
         }
     }
     for (j = 0; j < 11; j++) {
-        if (box.content.private_visibleColumns[j]) {
+        if (box.content.private_visibleColumns[j] || box.searchResultColumns[j]) {
             html += '<col width="' + 100 / counter + '%">';
         }
     }
@@ -2467,9 +2471,15 @@ function test_box_getCardsArrayFiltered() {
     if (filteredCards.length !== 0) {
         return false;
     }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, true, true, false, false, false, false, false, false, false, false])) {
+        return false;
+    }
     box.search = "dd"
     var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
     if (filteredCards.length !== 3) {
+        return false;
+    }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, true, true, false, true, false, false, false, false, false, false])) {
         return false;
     }
     // to use more columns AND search with operator AND -> but this is overwritten by the convenient search
@@ -2477,9 +2487,15 @@ function test_box_getCardsArrayFiltered() {
     if (filteredCards.length !== 3) {
         return false;
     }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, true, true, false, true, false, false, false, false, false, false])) {
+        return false;
+    }
     box.search = "Aa dd bB"
     var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
     if (filteredCards.length !== 3) {
+        return false;
+    }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, true, true, true, true, false, false, false, false, false, false])) {
         return false;
     }
     box.search = "15"
@@ -2487,9 +2503,23 @@ function test_box_getCardsArrayFiltered() {
     if (filteredCards.length !== 0) {
         return false;
     }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, true, true, false, false, false, false, false, false, false, false])) {
+        return false;
+    }
+    box.search = "Aa"
+    var filteredCards = box.getCardsArrayFiltered(["", "", "", " ", "", ""]);
+    if (filteredCards.length !== 3) {
+        return false;
+    }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, true, true, true, true, false, false, false, false, false, false])) {
+        return false;
+    }
     box.search = ""
     filteredCards = box.getCardsArrayFiltered(["", "c", "a a", "", "DD"]);
     if (filteredCards.length != 1 || filteredCards[0] != test_card_02) {
+        return false;
+    }
+    if (JSON.stringify(box.searchResultColumns) !== JSON.stringify([false, false, false, false, false, false, false, false, false, false, false])) {
         return false;
     }
     return true;
