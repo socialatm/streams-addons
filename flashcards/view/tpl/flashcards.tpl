@@ -23,10 +23,7 @@
 		<button class="btn btn-default nav-pill ml-auto" id="button_flashcards_save_box" style="display: none;">
 			<i class="fa fa-save fa-lg"></i> Save
 		</button>
-		<button class="btn btn-default nav-pill ml-auto" id="button_flashcards_list_close" style="display: none;">
-			<i class="fa fa-window-close fa-lg"></i> Close
-		</button>
-		<button class="btn btn-default nav-pill ml-auto" id="button_flashcards_help_close" style="display: none;">
+		<button class="btn btn-default nav-pill ml-auto" id="button_flashcards_close" style="display: none;">
 			<i class="fa fa-window-close fa-lg"></i> Close
 		</button>
 	</ul>
