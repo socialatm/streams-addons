@@ -1333,7 +1333,6 @@ function getColumnElements() {
 
 function mark(text, search) {
     if(search.trim() === "") {
-        console.log("Nothing to mark because the search is empty, search = " + search);
         return text;
     }
     var searchParts = new Array();
@@ -1363,11 +1362,8 @@ function mark(text, search) {
             }
         }
         if(start > -1) {
-            console.log(start);
             result += remaining.substring(0, start) + '<mark>' + remaining.substring(start, start + part.length) + '</mark>';
             remaining = remaining.substring(start + part.length, text.length);
-            console.log(result);
-            console.log(remaining);
         } else {
             result += remaining;
             next = false;
