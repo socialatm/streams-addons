@@ -1303,7 +1303,8 @@ function createCardRows(cards) {
                         html += new Date(cards[i].content[j]).toLocaleString();
                     }
                 } else {
-                    html += cards[i].content[j];
+                    var marked = mark(cards[i].content[j], box.search)
+                    html += marked;
                 }
                 html += '</td>';
             }
@@ -1329,6 +1330,51 @@ function getColumnElements() {
     }
     return html;
 }
+
+function mark(text, search) {
+    if(search.trim() === "") {
+        console.log("Nothing to mark because the search is empty, search = " + search);
+        return text;
+    }
+    var searchParts = new Array();
+    var parts = search.split(/\s+/);
+    for (var el of parts) {
+        if(el.trim() !== "") {
+            searchParts.push(el);
+        }
+    }
+    var remaining = text;
+    var result = "";
+    var next = true;
+    while(next) {
+        var start = -1;
+        var part;
+        for (var el of searchParts) {
+            var testStart = remaining.toLowerCase().indexOf(el.toLowerCase());
+            if(testStart < 0) {
+                continue;
+            }
+            if(start === -1) {
+                start = testStart;
+                part = el;
+            } else if(start !== -1 && testStart < start) {
+                start = testStart;
+                part = el;
+            }
+        }
+        if(start > -1) {
+            console.log(start);
+            result += remaining.substring(0, start) + '<mark>' + remaining.substring(start, start + part.length) + '</mark>';
+            remaining = remaining.substring(start + part.length, text.length);
+            console.log(result);
+            console.log(remaining);
+        } else {
+            result += remaining;
+            next = false;
+        }
+    }
+    return result;
+} 
 
 function setCardsStatus() {
     logger.log('setCardsStatus() ...');
