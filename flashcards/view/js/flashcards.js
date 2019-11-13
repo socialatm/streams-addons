@@ -2185,6 +2185,9 @@ function showACLbutton() {
 $(document).on("click", "#button_flashcards_search_cards", function () {
     if($("#input_flashcards_search_cards").is(":visible")) {
         $('#input_flashcards_search_cards').hide();
+        box.search = "";
+        $('#input_flashcards_search_cards').val("");
+        showCards();
     } else {
         $('#input_flashcards_search_cards').show();
         $('#input_flashcards_search_cards').focus();
