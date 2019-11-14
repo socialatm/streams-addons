@@ -1029,7 +1029,7 @@ function conductGUIelements(action) {
             $('#panel_box_attributes').collapse("hide");
             $("#panel_flashcards_cards_actions").show();
             $("#panel_flashcards_cards").show();
-            showCards();
+            showCards(false);
         }
     }
     if (action === 'edit-box') {
@@ -1053,7 +1053,7 @@ function conductGUIelements(action) {
         $("#button_flashcards_save_box").hide();
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
-        showCards();
+        showCards(true);
     }
     if (action === 'edit-card') {
         $("#flashcards_panel_card_header").show();
@@ -1074,7 +1074,7 @@ function conductGUIelements(action) {
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
         $("#button_flashcards_new_card").css({'color': ''});
-        showCards();
+        showCards(false);
     }
     if (action === 'learn-next') {
         $("#panel_box_navigation").hide();
@@ -1121,7 +1121,7 @@ function conductGUIelements(action) {
         $("#panel_flashcards_cards_actions").show();
         $("#panel_flashcards_cards").show();
         unsetLearnButtonsToFixedPosition();
-        showCards();
+        showCards(false);
     }
     if (action === 'list-boxes') {
         $("#flashcards_navbar_brand").html("Your Cloud Boxes");
@@ -1204,15 +1204,15 @@ function fillInputsSettings() {
     $("#fc_leitner_calculation").html(result[2]);
 }
 
-function showCards() {
+function showCards(reload) {
     logger.log('showCards()...');
     box.sort();
-    createTable();
+    createTable(reload);
     setCardsStatus();
     logger.log('tables created, showCards() is finished');
 }
 
-function createTable() {
+function createTable(reload) {
     var html = "";
     if (box.content.cards == null) {
         return;
@@ -1222,11 +1222,15 @@ function createTable() {
         return;
     }
     var cards = box.getCardsArrayFiltered();
-    logger.log('creating table head...');
-    html += '<table class="table" id="flashcards_table">';
-    html += getColumnElements();
-    if(! box.content.private_search_convenient) {
-        html += '<tr>';
+    if ($('#flashcards_table').length < 1 || reload) {
+        logger.log('creating table head...');
+        html += '<table class="table" id="flashcards_table">';
+        html += getColumnElements();
+        if(box.content.private_search_convenient) {
+            html += '<tr  style="display: none;">';
+        } else {
+            html += '<tr>';
+        }
         var i;
         for (i = 0; i < 11; i++) {
             logger.log('col ' + i + ' is visible = ' + box.content.private_visibleColumns[i]);
@@ -1237,38 +1241,40 @@ function createTable() {
             }
         }
         html += '</tr>';
-    }
-    if(box.content.private_show_card_sort) {            
-        html += '<tr>';
-        var i;
-        for (i = 0; i < 11; i++) {
-            if (box.content.private_visibleColumns[i]) {
-                html += '<th scope="col">';
-                // html += box.content.cardsColumnName[i];
-                // html += '<br>';
-                html += '<span>';
-                if (box.content.private_sortColumn == i) {
-                    if (!box.content.private_sortReverse) {
-                        html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
-                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+        if(box.content.private_show_card_sort) {            
+            html += '<tr>';
+            var i;
+            for (i = 0; i < 11; i++) {
+                if (box.content.private_visibleColumns[i]) {
+                    html += '<th scope="col">';
+                    // html += box.content.cardsColumnName[i];
+                    // html += '<br>';
+                    html += '<span>';
+                    if (box.content.private_sortColumn == i) {
+                        if (!box.content.private_sortReverse) {
+                            html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                            html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+                        } else {
+                            html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
+                            html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                        }
                     } else {
                         html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
-                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '" style="color:red;"></i>';
+                        html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
                     }
-                } else {
-                    html += '<i class="fa fa-fw fa-sort-asc fa-lg" sortCol="' + i + '"></i>';
-                    html += '<i class="fa fa-fw fa-sort-desc fa-lg" sortCol="' + i + '"></i>';
+                    html += '</span>';
+                    html += '</th>';
                 }
-                html += '</span>';
-                html += '</th>';
             }
+            html += '</tr>';
         }
-        html += '</tr>';
+        logger.log('creating table body...');
+        html += createCardRows(cards);
+        html += '</table>';
+        $('#panel_flashcards_cards').html(html);
+    } else {
+        replaceRows(cards);
     }
-    logger.log('creating table body...');
-    html += createCardRows(cards);
-    html += '</table>';
-    $('#panel_flashcards_cards').html(html);
 }
 function removeRows() {
     logger.log('removeRows() remove all rows first...');
@@ -1277,10 +1283,10 @@ function removeRows() {
         tr.remove();
     })
 }
-function replaceRows() {
+function replaceRows(cards) {
     removeRows();
     logger.log('replaceRows() sort and filter cards...');
-    html = createCardRows();
+    html = createCardRows(cards);
     logger.log('replaceRows() insert into table...');
     $('#flashcards_table tr:last').after(html);
     logger.log('replaceRows() ready');
@@ -1330,7 +1336,6 @@ function getColumnElements() {
     }
     return html;
 }
-
 function mark(text, search) {
     if(search.trim() === "") {
         return text;
@@ -1924,14 +1929,14 @@ $(document).on("click", "#button_flashcards_settings_default", function () {
 $(document).on("click", "i.fa-sort-asc", function () {
     box.content.private_sortColumn = parseInt($(this).attr("sortCol"));
     box.content.private_sortReverse = false;
-    showCards();
+    showCards(false);
     colorSortArrow();
 });
 
 $(document).on("click", "i.fa-sort-desc", function () {
     box.content.private_sortColumn = parseInt($(this).attr("sortCol"));
     box.content.private_sortReverse = true;
-    showCards();
+    showCards(false);
     colorSortArrow();
 });
 
@@ -1958,7 +1963,7 @@ $(document).on("input", "input.cards-filter", function () {
     $('input.cards-filter').each(function (i, obj) {
         box.content.private_filter[$(this).attr('filterCol')] = $(this).val();
     });
-    showCards();
+    showCards(false);
 });
 
 $(document).on("input", "#input_flashcards_search_cards", function () {
@@ -1969,12 +1974,12 @@ $(document).on("input", "#input_flashcards_search_cards", function () {
     if (l > 2 && lastChar !== " ") {
         // box.content.private_filter = ["", "", "", "", "", "", "", "", "", "", ""];
         box.search = searchStr;
-        showCards();
+        showCards(false);
     } else {
         if(box.search.length > 0 && l === 0) {
             // User deleted the search string
             box.search = "";
-            showCards();
+            showCards(true);
         }
         logger.log('Search string less than 3 characters: ' + searchStr);
         return;
