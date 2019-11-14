@@ -3171,9 +3171,9 @@ function loadBox() {
     boxLocalStore.check();
     box.load();
     box.validate();
-    postUrl = $("#post_url").html();
-    nick = $("#nick").html();
-    is_owner = $("#is_owner").html();
+    postUrl = $("#flashcards_post_url").html();
+    nick = $("#flashcards_nick").html();
+    is_owner = $("#flashcards_is_owner").html();
     if (!is_owner) {
         $("#flashcards_new_box").hide();
         $("#flashcards-block-changes-row").hide();
