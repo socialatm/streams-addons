@@ -2164,6 +2164,7 @@ $(document).on("click", "#flashcards_perms", function () {
             $("#button_flashcards_save_box").hide();
             $("#panel_flashbox_settings").collapse("hide");
             $('#panel_box_attributes').collapse("hide");
+            $("#button_flashcards_close").show();
         } else {
             logger.log("Failed to load ACL. Error message is: " + data['errormsg']);
         }
