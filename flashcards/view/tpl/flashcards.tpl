@@ -72,7 +72,8 @@
 		<div class="row">
 			<div class="col-sm-12">
 				<div class="form-group">
-					<small id="flashcards_editor" class="form-text text-muted">{{$flashcards_editor}}</small>
+                                        <small id="flashcards_owner" class="form-text text-muted">owner is {{$flashcards_owner}}. </small>
+                                        <small id="flashcards_editor" class="form-text text-muted">{{$flashcards_editor}}</small>
 				</div>
 			</div>
 		</div>      
@@ -393,7 +394,8 @@
 	<div class="container-fluid">
             <div class="row">
                 <div class="col-sm-12">
-                    This addon is a  <a href="https://en.wikipedia.org/wiki/List_of_flashcard_software" target="_blank">flashcard software</a> that uses <a href="https://en.wikipedia.org/wiki/Spaced_repetition" target="_blank">spaced repetition</a> as a learning technique.
+                    Flashcards version {{$flashcards_version}}
+                    <br><br>This addon is a  <a href="https://en.wikipedia.org/wiki/List_of_flashcard_software" target="_blank">flashcard software</a> that uses <a href="https://en.wikipedia.org/wiki/Spaced_repetition" target="_blank">spaced repetition</a> as a learning technique.
                     <br><br><img src="/addon/flashcards/view/img/leitner-system.png" align="center" width="70%">
                     <br><br>You can share the flash cards with other users of Hubzilla and ZAP.
                     <br><br>Your learning progress will be kept private.
@@ -436,9 +438,10 @@
 
 <div id="panel_flashcards_cards" style="display: none;"></div>
 
-<div id="post_url" style="display: none;">{{$post_url}}</div>
-<div id="nick" style="display: none;">{{$nick}}</div>
-<div id="is_owner" style="display: none;">{{$is_owner}}</div>
+<div id="flashcards_post_url" style="display: none;">{{$post_url}}</div>
+<div id="flashcards_nick" style="display: none;">{{$nick}}</div>
+<div id="flashcards_is_owner" style="display: none;">{{$is_owner}}</div>
+<div id="flashcards_version" style="display: none;">{{$version}}</div>
 <!--
 <p>
 	<button class="btn" id="run_unit_tests"">Test</button>
