@@ -7,9 +7,9 @@
 				<a class="dropdown-item" id="flashcards_edit_box">Edit Box</a>
 				<a class="dropdown-item" id="flashcards_show_boxes">List Boxes</a>
 				<div class="dropdown-divider"></div>
-				<a class="dropdown-item" id="flashcards_show_help">Help</a>
+				<a class="dropdown-item" id="flashcards_search_boxes">Search</a>
 				<div class="dropdown-divider"></div>
-				<a class="dropdown-item disabled" href="#">Search</a>
+				<a class="dropdown-item" id="flashcards_show_help">Help</a>
 			</div>
 		</li>
 		<div class="navbar-brand nav-pill">
@@ -402,6 +402,8 @@
 		</div>
 	</div>
 </div>
+
+<div id="panel_search_cloud_boxes" style="display: none;"></div>
 
 <div id="panel_flashcards_help" style="display: none;">
 	<div class="container-fluid">

@@ -11,13 +11,14 @@ use Zotlabs\Access\AccessControl;
 
 class Flashcards extends Controller {
     
-    private $version = "2.06";
+    private $version = "2.07";
     
     private $boxesDir;
     private $is_owner;
     private $owner;
     private $observer;
     private $canWrite;
+    private $auth;
 
     function init() {
         // Determine which channel's flashcards to display to the observer
@@ -119,6 +120,10 @@ class Flashcards extends Controller {
                     // API: /flashcards/nick/delete
                     // Deletes a box specified by param "box_id"
                     $this->deleteBox();
+                case 'search':
+                    // API: /flashcards/nick/search
+                    // get boxes of other users on this instance
+                    $this->searchBoxes();
                 default:
                     break;
             }
@@ -300,6 +305,53 @@ class Flashcards extends Controller {
         json_return_and_die(array('status' => true, 'boxes' => $boxes));
     }
 
+    private function searchBoxes() {
+        
+        logger('+++ search boxes ... +++');
+
+		$authObserver = new BasicAuth();
+
+		$authObserver->setCurrentUser($this->observer['xchan_addr']);
+		$authObserver->channel_id = $this->observer['xchan_guid'];
+		$authObserver->channel_hash = $this->observer['xchan_hash'];
+		$authObserver->observer = $this->observer['xchan_hash'];
+		
+        $rootDirectory = new Directory('/', $authObserver);
+		
+		$baseURL = \App::get_baseurl();
+		
+		$children = $rootDirectory->getChildren();
+		if(count($children) < 1) {
+			$msg = 'No access to cloud root dir ( ' . $baseURL . '/cloud ). Possible reason: No permission and/or the admin disabled it (setting in admin page).';
+			logger($msg);
+			json_return_and_die(array('status' => false, 'errormsg' => $msg));
+		}
+        
+        $boxes = [];
+		
+        foreach($children as $child) {
+            if ($child instanceof Directory) {
+				$extPath = $child->getName();
+				if($child->childExists('flashcards')) {
+					$dirFlashcards = $child->getChild('flashcards');
+					$boxFiles = $dirFlashcards->getChildren();
+					foreach($boxFiles as $boxFile) {
+						if ($boxFile instanceof File) {
+							$boxName = $boxFile->getName();							
+							$boxURL = $baseURL . '/flashcards/' . $extPath . '/' . substr($boxName, 0, strrpos($boxName, "."));
+							logger('Found box: ' . $boxURL );
+							array_push($boxes, $boxURL);
+						}						
+					}
+				} else {					
+					logger('No dir ' . $baseURL . '/' . $extPath . '/flashcards or no permission : ', LOGGER_DEBUG);
+				}
+            }
+        }
+        
+        json_return_and_die(array('status' => true, 'boxes' => $boxes));
+    }
+
     private function recoverBoxes() {
         
         if(! $this->is_owner) {
@@ -422,7 +474,7 @@ class Flashcards extends Controller {
             $this->boxesDir->createDirectory($box_id);
         }
 
-        $boxDirObserver = new Directory('/'. $this->owner['channel_address'] . '/flashcards/' . $box_id, $this->createAuth());
+        $boxDirObserver = new Directory('/'. $this->owner['channel_address'] . '/flashcards/' . $box_id, $this->getAuth());
         if(! $boxDirObserver) {
             json_return_and_die(array('message' => 'Directory for observer box can not be created.', 'success' => false));
         }
@@ -752,27 +804,24 @@ class Flashcards extends Controller {
         
     }
     
-    private function createAuth() { 
-        
-        // copied/adapted from Cloud.php
-        $auth = new BasicAuth();
+    private function getAuth() { 
 
-        $auth->setCurrentUser($this->owner['channel_address']);
-        $auth->channel_id = $this->owner['channel_id'];
-        $auth->channel_hash = $this->owner['channel_hash'];
-        $auth->channel_account_id = $this->owner['channel_account_id'];
-        if($this->owner['channel_timezone']) {
-            $auth->setTimezone($this->owner['channel_timezone']);
+        // copied/adapted from Cloud.php
+        if (!$this->auth) {
+
+            $this->auth = new BasicAuth();
+
+            $this->auth->setCurrentUser($this->owner['xchan_addr']);
+            $this->auth->channel_id = $this->owner['xchan_guid'];
+            $this->auth->channel_hash = $this->owner['xchan_hash'];
+            // this is not true but reflects that no files are owned by the observer
+            $this->auth->observer = $this->owner['xchan_hash'];
         }
-        // this is not true but reflects that no files are owned by the observer
-        $auth->observer = $this->owner['channel_hash'];
-        
-        return $auth;
+
+        return $this->auth;
     }
     
-    private function getShareDir() {
-        
-        $auth = $this->createAuth();
+    private function getShareDir() {  
         
         if(! $this->boxesDir->childExists('share')) {
             $this->boxesDir->createDirectory('share');
@@ -780,7 +829,7 @@ class Flashcards extends Controller {
         
         $channelAddress = $this->owner['channel_address'];
         
-        $shareDir = new Directory('/'. $channelAddress . '/flashcards/share', $auth);
+        $shareDir = new Directory('/'. $channelAddress . '/flashcards/share', $this->getAuth());
         
         if(! $shareDir) {
             json_return_and_die(array('message' => 'Directory share is missing.', 'success' => false));
@@ -791,15 +840,13 @@ class Flashcards extends Controller {
     
     private function getRecoverDir() {
         
-        $auth = $this->createAuth();
-        
         if(! $this->boxesDir->childExists('recover')) {
             $this->boxesDir->createDirectory('recover');
         }
         
         $channelAddress = $this->owner['channel_address'];
         
-        $recoverDir = new Directory('/'. $channelAddress . '/flashcards/recover', $auth);
+        $recoverDir = new Directory('/'. $channelAddress . '/flashcards/recover', $this->getAuth());
         
         if(! $recoverDir) {
             json_return_and_die(array('message' => 'Directory recover is missing.', 'success' => false));
@@ -810,26 +857,35 @@ class Flashcards extends Controller {
     
     private function getAddonDir() {
         
-        $auth = $this->createAuth($this->owner);
-        
-        $rootDirectory = new Directory('/', $auth);
-        
+        $this->getRootDir(); // just test this time
+
         $channelAddress = $this->owner['channel_address'];
-        
-        if(! $rootDirectory->childExists($channelAddress)) {
-            json_return_and_die(array('message' => 'No cloud directory.', 'success' => false));
-        }
-        $channelDir = new Directory('/' . $channelAddress, $auth);
+
+        $channelDir = new Directory('/' . $channelAddress, $this->getAuth());
         
         if(! $channelDir->childExists('flashcards')) {
             $channelDir->createDirectory('flashcards');
         }
         
-        $this->boxesDir = new Directory('/'. $channelAddress . '/flashcards', $auth);
+        $this->boxesDir = new Directory('/'. $channelAddress . '/flashcards', $this->getAuth());
         if(! $this->boxesDir) {
             json_return_and_die(array('message' => 'Directory flashcards is missing.', 'success' => false));
         }
         
+    }
+    
+    private function getRootDir() {
+
+        $rootDirectory = new Directory('/', $this->getAuth());
+
+        $channelAddress = $this->owner['channel_address'];
+
+        if(! $rootDirectory->childExists($channelAddress)) {
+            json_return_and_die(array('message' => 'No cloud directory.', 'success' => false));
+        }
+
+        return $rootDirectory;
+
     }
 
     /*
