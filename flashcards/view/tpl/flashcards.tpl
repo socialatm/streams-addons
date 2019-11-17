@@ -347,16 +347,29 @@
                         
 <div id="panel_flashcards_cards_actions" style="display: none;">
 	<span class="navbar-brand">
-		<span>&nbsp;</span>
-		<span id="span_flashcards_cards_actions_status"></span>
-		<span>Cards</span>
-		<button class="nav-item btn btn-default" id="button_flashcards_new_card">
-                    <i class="fa fa-calendar-plus-o"></i>			
-		</button>
-		<button class="nav-item btn btn-default" id="button_flashcards_search_cards" style="display: none;">
-                    <i class="fa fa-search"></i>			
-		</button>
-                <input id="input_flashcards_search_cards" style="display: none;">
+            <div class="container-fluid"> 
+              <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <button class="nav-item btn btn-default" id="button_flashcards_search_cards" style="display: none;">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        <button class="nav-item btn btn-default" id="button_flashcards_new_card">
+                            <i class="fa fa-calendar-plus-o"></i>
+                        </button>
+                        <span id="span_flashcards_cards_actions_status"></span>
+                        <span>Cards</span>
+                    </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <input id="input_flashcards_search_cards" style="display: none;">
+                    </div>
+                </div>
+              </div>
+            </div>
 	</span>
 </div>
 
