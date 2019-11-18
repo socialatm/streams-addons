@@ -134,28 +134,40 @@ class Flashcards extends Controller {
     private function permChecks() {
 
         $owner_uid = $this->owner['channel_id'];
+		
+		//logger('DELETE ME: This is the owner...', LOGGER_DEBUG);
+		//logger(print_r($this->owner, true), LOGGER_DEBUG);
+		
+        $this->observer = \App::get_observer();
+		
+		logger('DELETE ME: This is the observer...', LOGGER_DEBUG);
+		logger(print_r($this->observer, true), LOGGER_DEBUG);
 
         if (!$owner_uid) {
+			logger('Stop: No owner profil', LOGGER_DEBUG);
             return array('status' => false, 'errormsg' => 'No owner profil');
         }
 
         if (observer_prohibited(true)) {
+			logger('Stop: observer prohibited', LOGGER_DEBUG);
             return array('status' => false, 'errormsg' => 'observer prohibited');
         }
 
         if(! Apps::addon_app_installed($owner_uid,'flashcards')) { 
+			logger('Stop: Owner profil has not addon installed', LOGGER_DEBUG);
             return array('status' => false, 'errormsg' => 'Owner profil has not addon installed');
         }
 
         if (!perm_is_allowed($owner_uid, get_observer_hash(), 'view_storage')) {
+			logger('Stop: Permission view storage denied', LOGGER_DEBUG);
             return array('status' => false, 'errormsg' => 'Permission view storage denied');
         }
 
         if (perm_is_allowed($owner_uid, get_observer_hash(), 'write_storage')) {
+			logger('write_storage is allowed', LOGGER_DEBUG);
             $this->canWrite = true;
         }
                
-        $this->observer = \App::get_observer();
         
         logger('observer = ' . $this->observer['xchan_addr'] . ', owner = ' . $this->owner['xchan_addr']);
         
@@ -486,6 +498,14 @@ class Flashcards extends Controller {
     private function writeBox() {
         
         logger('+++ write box ... +++');
+		
+		if(! $this->observer) {
+
+			logger('Stop: no observer. Can not write the box.');
+
+			json_return_and_die(array('status' => false, 'errormsg' => 'No box was sent. No observer.'));
+
+		}
         
         $boxRemote = $_POST['box'];
         if(!$boxRemote) {
@@ -785,6 +805,15 @@ class Flashcards extends Controller {
     }
     
     private function deleteBoxObserver($box_id) {
+		
+		
+		if(! $this->observer) {
+
+			logger('Stop: no observer. Can not delete the box.');
+
+			json_return_and_die(array('status' => false, 'errormsg' => 'Unable to delete the box. No observer.'));
+
+		}
         
         if(! $this->boxesDir->childExists($box_id)) {
             notice('No box dir found. Might be delete by owner.');
