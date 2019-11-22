@@ -1174,7 +1174,8 @@ function conductGUIelements(action) {
         $("#panel_flashcards_cards").hide();
         $("#panel_flashcards_help").hide();
         $("#panel_cloud_boxes_1").hide();
-         $("#panel_search_cloud_boxes").html('loading...');
+        $("#button_flashcards_close").hide();
+        $("#panel_search_cloud_boxes").html('loading...');
         $("#panel_search_cloud_boxes").show();
     }
     if (action !== 'search-boxes') {
@@ -2201,7 +2202,7 @@ function fixTitleLength() {
     if ($("#panel_box_navigation").css('display') !== 'none') {
         logger.log('Title is visible when rezising');
         if ($("#button_share_box").css('display') !== 'none') {
-            var s = box.content.title;
+            var s = $("#flashcards_navbar_brand").html();;
             $("#flashcards_navbar_brand").html(s);
             var i = s.length - 1;
             for (i; i > 0; i--) {
