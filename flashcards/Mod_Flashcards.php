@@ -869,9 +869,10 @@ class Flashcards extends Controller {
 
             $this->auth = new BasicAuth();
 
-            $this->auth->setCurrentUser($this->owner['xchan_addr']);
-            $this->auth->channel_id = $this->owner['xchan_guid'];
+            $this->auth->setCurrentUser($this->owner['channel_address']);
+            $this->auth->channel_id = $this->owner['channel_id'];
             $this->auth->channel_hash = $this->owner['xchan_hash'];
+            $this->auth->channel_account_id = $this->owner['channel_account_id'];
             // this is not true but reflects that no files are owned by the observer
             $this->auth->observer = $this->owner['xchan_hash'];
         }
