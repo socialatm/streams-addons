@@ -2125,8 +2125,8 @@ function createBoxListContent(showAllBoxes) {
             logger.log('Received a box that is NULL (seems to be a bug).');
             continue;  // This happened in dev (alpha)
         }
-        if(!showAllBoxes) {
             var currentOwner = cloudBox["current_owner"];
+        if(!showAllBoxes) {
             if(flashcards_observer !== currentOwner) {
                 continue;
             }
@@ -2147,7 +2147,7 @@ function createBoxListContent(showAllBoxes) {
         html += '   <br><b>Owner: </b>' + cloudBox["current_owner"] + '';
         html += '   <br><b>Size: </b>' + cloudBox["size"] + '';
         if (cloudBox["boxID"] !== box.content.boxID) {
-            if (is_owner) {
+            if (flashcards_observer === currentOwner) {
                 html += '       &nbsp;<b>Delete box: </b>&nbsp;';
             } else {
                 html += '       &nbsp;<b>Delete learn results: </b>&nbsp;';
