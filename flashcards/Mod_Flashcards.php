@@ -340,7 +340,8 @@ class Flashcards extends Controller {
 						$fname = $child->getName();
 						logger('found json file = '. $fname, LOGGER_DEBUG);
 						$box = $this->readBox($dirFlashcards, $child->getName());
-						if($box) {
+						if($box) {		
+							$box['size'] = count($box['cards']);
 							unset($box['cards']);
 							$current_owner = channelx_by_nick($nick_fc);
 							$box['current_owner'] = $current_owner['xchan_addr'];
@@ -442,8 +443,10 @@ class Flashcards extends Controller {
             if($this->is_owner) {
         
                 logger('owner requested box id = ' . $box_id);
+
+                $box = $this->importSharedBoxes($box);		
             
-                $box = $this->importSharedBoxes($box);
+				$box['size'] = count($box['cards']);
                 
                 json_return_and_die(
                         array(
@@ -713,6 +716,7 @@ class Flashcards extends Controller {
                         $sharedBox = $this->readBox($shareDir, $sharedFileName);
                         $boxes = $this->flashcards_merge($box, $sharedBox, false);
                         $box = $boxes['boxLocal'];
+						$this->boxesDir->getChild($boxId . '.json')->put(json_encode($box));
 						try {
 							$shareDir->getChild($sharedFileName)->delete();
 						} catch (\Exception $e) {
@@ -833,8 +837,7 @@ class Flashcards extends Controller {
         
     }
     
-    private function deleteBoxObserver($box_id) {
-		
+    private function deleteBoxObserver($box_id) {		
 		
 		if(! $this->observer) {
 
