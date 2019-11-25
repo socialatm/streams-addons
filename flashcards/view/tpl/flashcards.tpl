@@ -7,9 +7,9 @@
 				<a class="dropdown-item" id="flashcards_edit_box">Edit Box</a>
 				<a class="dropdown-item" id="flashcards_show_boxes">List Boxes</a>
 				<div class="dropdown-divider"></div>
-				<a class="dropdown-item" id="flashcards_show_help">Help</a>
+				<a class="dropdown-item .disabled" id="flashcards_search_boxes">Search</a>
 				<div class="dropdown-divider"></div>
-				<a class="dropdown-item disabled" href="#">Search</a>
+				<a class="dropdown-item" id="flashcards_show_help">Help</a>
 			</div>
 		</li>
 		<div class="navbar-brand nav-pill">
@@ -347,48 +347,40 @@
                         
 <div id="panel_flashcards_cards_actions" style="display: none;">
 	<span class="navbar-brand">
-		<span>&nbsp;</span>
-		<span id="span_flashcards_cards_actions_status"></span>
-		<span>Cards</span>
-		<button class="nav-item btn btn-default" id="button_flashcards_new_card">
-                    <i class="fa fa-calendar-plus-o"></i>			
-		</button>
-		<button class="nav-item btn btn-default" id="button_flashcards_search_cards" style="display: none;">
-                    <i class="fa fa-search"></i>			
-		</button>
-                <input id="input_flashcards_search_cards" style="display: none;">
+            <div class="container-fluid"> 
+              <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <button class="nav-item btn btn-default" id="button_flashcards_search_cards" style="display: none;">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        <button class="nav-item btn btn-default" id="button_flashcards_new_card">
+                            <i class="fa fa-calendar-plus-o"></i>
+                        </button>
+                        <span id="span_flashcards_cards_actions_status"></span>
+                        <span>Cards</span>
+                    </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-sm-12">
+                    <div class="form-group">
+                        <input id="input_flashcards_search_cards" style="display: none;">
+                    </div>
+                </div>
+              </div>
+            </div>
 	</span>
 </div>
 
 <div id="panel_flashcards_cards" style="display: none;"></div>
 
 <div id="panel_cloud_boxes_1" style="display: none;">
-	<div class="container-fluid">
-		<div class="row">
-			<div class="col-sm-12">
-                <button class="btn nav-item" id="button_flashcards_list_close">
-                    <i class="fa fa-window-close"></i> Close
-                </button>
-      		</div>
-     	 </div>
-		<div class="row">
-			<div class="col-sm-1">
-				<i class="fa fa-sliders fa-lg" data-toggle="collapse" href="#panel_list_box_1" role="button" aria-expanded="false" aria-controls="panel_list_box_1"></i>
-			</div>
-			<div class="col-sm-11">
-				<a href="flashcards/admin/boxID" name="load_box">Box Title</a>
-			</div>
-		</div>
-		<div class="row panel-collapse collapse" id="panel_list_box_1">
-            <div class="col-sm-10">
-                Description
-            </div>
-            <div class="col-sm-2">
-                <i class="fa fa-trash" id="link_delete_box" boxid="boxID" title_box_delete="box-title"></i>
-            </div>
-		</div>
-	</div>
+    <div id="panel_cloud_boxes_header"></div>
+    <div id="panel_cloud_boxes_content"></div>
 </div>
+
+<div id="panel_search_cloud_boxes" style="display: none;"></div>
 
 <div id="panel_flashcards_help" style="display: none;">
 	<div class="container-fluid">
@@ -442,6 +434,7 @@
 <div id="flashcards_nick" style="display: none;">{{$nick}}</div>
 <div id="flashcards_is_owner" style="display: none;">{{$is_owner}}</div>
 <div id="flashcards_version" style="display: none;">{{$version}}</div>
+<div id="flashcards_observer" style="display: none;">{{$flashcards_observer}}</div>
 <!--
 <p>
 	<button class="btn" id="run_unit_tests"">Test</button>
