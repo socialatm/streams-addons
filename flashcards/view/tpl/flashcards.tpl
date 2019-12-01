@@ -386,40 +386,37 @@
 	<div class="container-fluid">
             <div class="row">
                 <div class="col-sm-12">
-                    Flashcards version {{$flashcards_version}}
-                    <br><br>This addon is a  <a href="https://en.wikipedia.org/wiki/List_of_flashcard_software" target="_blank">flashcard software</a> that uses <a href="https://en.wikipedia.org/wiki/Spaced_repetition" target="_blank">spaced repetition</a> as a learning technique.
-                    <br><br><img src="/addon/flashcards/view/img/leitner-system.png" align="center" width="70%">
-                    <br><br>You can share the flash cards with other users of Hubzilla and ZAP.
-                    <br><br>Your learning progress will be kept private.
+                    <p>Flashcards version {{$flashcards_version}}</p>
+                    <p>This addon is a  <a href="https://en.wikipedia.org/wiki/List_of_flashcard_software" target="_blank">flashcard software</a> that uses <a href="https://en.wikipedia.org/wiki/Spaced_repetition" target="_blank">spaced repetition</a> as a learning technique.</p>
+                    <p><img src="/addon/flashcards/view/img/leitner-system.png" align="center" width="70%"></p>
+                    <p>You can share the flash cards with other users.</p>
+                    <p>Your learning progress will be kept private.</p>
                     <hr/>
-                    <h4>In Praxis - The School Example</h4>
+                    <h4>The School Example</h4>
                     <hr/>
-                    <h4>Introduction</h4>
-                    A school and its students all have an account at Hubzilla or ZAP. The school has the addon Flashcards installed.
-                    <br><br>It is possible that the school and the students have accounts on different instances. let's say
+                    <h4>The school...</h4>
+                    <p>has the addon Flashcards installed and creates a box of flashcards, let's say "English-Italian".</p>
+                    <p>The school has full control of who is allowed to</p>
                     <ul>
-                        <li>The school on https://school.com/</li>
-                        <li>A student on https://student.org/</li>
+                        <li>open and learn with "English-Italian"</li>
+                        <li>make changes to "English-Italian"</li>
                     </ul>
-                    <h4>How to begin?</h4>
-                    The school...
+                    <h4>The student...</h4>
                     <ul>
-                        <li>opens the addon https://school.com/flashcards/school</li>
-                        <li>creates a box of flashcards "English-Italian", URL could be https://school.com/flashcards/school/xy12tlsel89q81o</li>
-                        <li>sends the URL to the student</li>
+                        <li>can access "English-Italian" via menu -> "List Boxes"</li>
+                        <li>can make changes to "English-Italian" if he is allowed to to so</li>
+                        <li>can change the learning algorithm, e.g. how often to repeat cards,...</li>
+                        <li>use the cards as dictionary</li>
                     </ul>
-                    The student...
-                    <ul>
-                        <li>opens https://school.com/flashcards/school/xy12tlsel89q81o</li>
-                    </ul>
-                    <h4>How to fix errors in the cards?</h4>
-                    The school and the students can both add or modify cards. The syncronization is done automatically as soon as they upload (save) changes.
-                    <br><br>
+                    <hr/>
+                    <h4>FAQs</h4>
+                    <hr/>
+                    <h4>How to add or change cards?</h4>
+                    <p>By default the school and the students can both add or modify cards. The syncronization is done automatically as soon as they upload (save) changes.</p>
                     <h4>Permissions and Technically</h4>
-                    A student sees those flashcards only the school allows him to see. The student will get a copy of "English-Italian". For both users it looks the same, same URL, same content. Everything is done under the hood. The student does not own the flashcards. The school can withdraw the permissions for a student or even delete the flashcards at any time.
-                    <br><br>
+                    <p>A student sees those flashcards only the school allows him to see. The student will get a copy of "English-Italian". For both users it looks the same, same URL, same content. Everything is done under the hood. The student does not own the flashcards. The school can withdraw the permissions for a student or even delete the flashcards at any time.</p>
                     <h4>Federation</h4>
-                    It is not tested yet but should be available in the near future. If enabled a student will be able to use the addon without having an account at Hubzulla or ZAP as long as the account supports <a href="https://en.wikipedia.org/wiki/ActivityPub" target="_blank">ActivityPub</a>. Users of Mastodon should have ActivityPub for example. Stay tuned.
+                    <p>It is not tested yet but should be available in the near future. If enabled a student will be able to use the addon without having an account at Hubzulla or ZAP as long as the account supports <a href="https://en.wikipedia.org/wiki/ActivityPub" target="_blank">ActivityPub</a>. Users of Mastodon should have ActivityPub for example. Stay tuned.</p>
                 </div>
             </div>
 	</div>
