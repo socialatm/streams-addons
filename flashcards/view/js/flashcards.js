@@ -75,7 +75,6 @@ class BoxLocalStore {
 var postUrl = '';
 var is_owner = '';
 var flashcards_editor = '';
-var flashcards_observer = '';
 
 var boxLocalStore = new BoxLocalStore();
 var stringContentOldCard = '';
@@ -2127,7 +2126,7 @@ function createBoxListContent(showAllBoxes) {
         }
             var currentOwner = cloudBox["current_owner"];
         if(!showAllBoxes) {
-            if(flashcards_observer !== currentOwner) {
+            if(flashcards_editor !== currentOwner) {
                 continue;
             }
         }
@@ -2147,7 +2146,7 @@ function createBoxListContent(showAllBoxes) {
         html += '   <br><b>Owner: </b>' + cloudBox["current_owner"] + '';
         html += '   <br><b>Size: </b>' + cloudBox["size"] + '';
         if (cloudBox["boxID"] !== box.content.boxID) {
-            if (flashcards_observer === currentOwner) {
+            if (flashcards_editor === currentOwner) {
                 html += '       &nbsp;<b>Delete box: </b>&nbsp;';
             } else {
                 html += '       &nbsp;<b>Delete learn results: </b>&nbsp;';
@@ -3291,7 +3290,6 @@ function loadBox() {
         $("#flashcards-block-changes-row").hide();
     }
     flashcards_editor = $("#flashcards_editor").html();
-    flashcards_observer = $("#flashcards_observer").html();
     if (box.isEmpty()) {
         logger.log('The box was not stored in local storage of browser. Try to load box from URL...');
         if (downLoadBoxForURL()) {

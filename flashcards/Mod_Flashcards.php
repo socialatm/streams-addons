@@ -67,7 +67,6 @@ class Flashcards extends Controller {
                 '$is_owner' => $this->is_owner,
                 '$flashcards_editor' => $this->observer['xchan_addr'],
                 '$flashcards_owner' => $this->owner['xchan_addr'],
-                '$flashcards_observer' => $this->observer['xchan_addr'],
                 '$flashcards_version' => $this->version
         )); 
 
