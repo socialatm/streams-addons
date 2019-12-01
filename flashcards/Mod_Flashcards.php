@@ -67,7 +67,6 @@ class Flashcards extends Controller {
                 '$is_owner' => $this->is_owner,
                 '$flashcards_editor' => $this->observer['xchan_addr'],
                 '$flashcards_owner' => $this->owner['xchan_addr'],
-                '$flashcards_observer' => $this->observer['xchan_addr'],
                 '$flashcards_version' => $this->version
         )); 
 
@@ -718,9 +717,11 @@ class Flashcards extends Controller {
                         $box = $boxes['boxLocal'];
 						$this->boxesDir->getChild($boxId . '.json')->put(json_encode($box));
 						try {
+							// Remove the try-catch if everythings works fine on Hubzilla and ZAP.
+							// Zotlabs\Storage\BasicAuth was not used correctly (or changed).
 							$shareDir->getChild($sharedFileName)->delete();
 						} catch (\Exception $e) {
-							logger('This seems to be a bug. Permission denied to delete a file in owned directory ', LOGGER_DEBUG);
+							logger('Please report to the devs. This could be a bug with the usages of Zotlabs\Storage\BasicAuth. This caused a permission denied to delete a file in owned directory ', LOGGER_DEBUG);
 							continue;
 						}
                     }
