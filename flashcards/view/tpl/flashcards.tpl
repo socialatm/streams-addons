@@ -386,7 +386,7 @@
 	<div class="container-fluid">
             <div class="row">
                 <div class="col-sm-12">
-                    <p>Flashcards version {{$flashcards_version}}</p>
+                    <p>Flashcards version <span id="flashcards_version">{{$flashcards_version}}</span></p>
                     <p>This addon is a  <a href="https://en.wikipedia.org/wiki/List_of_flashcard_software" target="_blank">flashcard software</a> that uses <a href="https://en.wikipedia.org/wiki/Spaced_repetition" target="_blank">spaced repetition</a> as a learning technique.</p>
                     <p><img src="/addon/flashcards/view/img/leitner-system.png" align="center" width="70%"></p>
                     <p>You can share the flash cards with other users.</p>
@@ -430,8 +430,6 @@
 <div id="flashcards_post_url" style="display: none;">{{$post_url}}</div>
 <div id="flashcards_nick" style="display: none;">{{$nick}}</div>
 <div id="flashcards_is_owner" style="display: none;">{{$is_owner}}</div>
-<div id="flashcards_version" style="display: none;">{{$version}}</div>
-<div id="flashcards_observer" style="display: none;">{{$flashcards_observer}}</div>
 <!--
 <p>
 	<button class="btn" id="run_unit_tests"">Test</button>
