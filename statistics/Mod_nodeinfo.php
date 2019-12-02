@@ -65,7 +65,7 @@ class Nodeinfo extends Controller {
 
 			$arr = [
 				'version' => '2.0',
-				'software' => [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version()],
+				'software' => [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version() ],
 				'protocols' => [ 'zot' ],
 				'services' => [],
 				'openRegistrations' => false,
@@ -79,7 +79,7 @@ class Nodeinfo extends Controller {
 		else {
 			$arr = [
 				'version'           => '2.0',
-				'software'          =>  [ 'name' => strtolower(System::get_platform_name()),'version' =>System::get_project_version() ],
+				'software'          =>  [ 'name' => strtolower(System::get_platform_name()),'version' => System::get_project_version() ],
 				'protocols'         => [ 'zot' ],
 				'services'          => [],
 				'openRegistrations' => ((intval(get_config('system','register_policy')) === REGISTER_OPEN) ? true : false),
@@ -110,12 +110,7 @@ class Nodeinfo extends Controller {
 
 		}
 
-
-		header('Content-type: application/json');
-		echo json_encode($arr);
-		killme();
-
-
+		json_return_and_die($arr);
 	}
 }
 
