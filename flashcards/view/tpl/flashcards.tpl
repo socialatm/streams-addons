@@ -416,7 +416,8 @@
                     <h4>Permissions and Technically</h4>
                     <p>A student sees those flashcards only the school allows him to see. The student will get a copy of "English-Italian". For both users it looks the same, same URL, same content. Everything is done under the hood. The student does not own the flashcards. The school can withdraw the permissions for a student or even delete the flashcards at any time.</p>
                     <h4>Federation</h4>
-                    <p>It is not tested yet but should be available in the near future. If enabled a student will be able to use the addon without having an account at Hubzulla or ZAP as long as the account supports <a href="https://en.wikipedia.org/wiki/ActivityPub" target="_blank">ActivityPub</a>. Users of Mastodon should have ActivityPub for example. Stay tuned.</p>
+                    <p>Users of Hubzilla and ZAP (both talk ZOT) will be able to use flashcards on other servers, e.g. "English-Italian" of the school in our example.</p>
+                    <p><a href="https://en.wikipedia.org/wiki/ActivityPub" target="_blank">ActivityPub</a>: It is not tested yet but should be available in the near future. If enabled a student will be able to use the addon without having an account at Hubzulla or ZAP as long as the account supports <a href="https://en.wikipedia.org/wiki/ActivityPub" target="_blank">ActivityPub</a>. Users of Mastodon should have ActivityPub for example. Stay tuned.</p>
                 </div>
             </div>
 	</div>
