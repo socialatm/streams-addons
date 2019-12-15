@@ -58,6 +58,7 @@ class Flashcards extends Controller {
             notice($status['errormsg'] . EOL);
             goaway(z_root());
         }
+		
 
         head_add_css('/addon/flashcards/view/css/flashcards.css');  
 
@@ -67,6 +68,7 @@ class Flashcards extends Controller {
                 '$is_owner' => $this->is_owner,
                 '$flashcards_editor' => $this->observer['xchan_addr'],
                 '$flashcards_owner' => $this->owner['xchan_addr'],
+                '$is_local_channel' => ((local_channel() && $this->observer) ? true : false),
                 '$flashcards_version' => $this->version
         )); 
 

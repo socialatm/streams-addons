@@ -431,6 +431,7 @@
 <div id="flashcards_post_url" style="display: none;">{{$post_url}}</div>
 <div id="flashcards_nick" style="display: none;">{{$nick}}</div>
 <div id="flashcards_is_owner" style="display: none;">{{$is_owner}}</div>
+<div id="flashcards_is_local_channel" style="display: none;">{{$is_local_channel}}</div>
 <!--
 <p>
 	<button class="btn" id="run_unit_tests"">Test</button>

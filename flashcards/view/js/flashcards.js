@@ -75,6 +75,7 @@ class BoxLocalStore {
 var postUrl = '';
 var is_owner = '';
 var flashcards_editor = '';
+var is_local_channel = false;
 
 var boxLocalStore = new BoxLocalStore();
 var stringContentOldCard = '';
@@ -1143,6 +1144,9 @@ function conductGUIelements(action) {
         $("#panel_flashcards_help").hide();
         $("#panel_box_navigation").show();
         $("#panel_cloud_boxes_1").show();
+        if(!is_local_channel) {
+            $("#panel_cloud_boxes_header").hide();
+        }
         $("#button_flashcards_close").show();
         blockEditBox = true;
     }
@@ -3301,6 +3305,7 @@ function loadBox() {
             return;
         }
     }
+    is_local_channel = $("#flashcards_is_local_channel").html();
     // Check if the boxID is different in URL
     var pathname = window.location.pathname;
     var pathnameArr = pathname.split('/');
