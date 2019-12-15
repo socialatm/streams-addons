@@ -455,6 +455,10 @@ class Flashcards extends Controller {
     private function sendBox() {    
         
         logger('+++ send box ... +++');
+                
+		if(! $this->observer) {
+			json_return_and_die(array('status' => false, 'errormsg' => 'Unknown observer. Please login to view box ' . $box_id));
+		}
         
         $box_id = isset($_POST['boxID']) ? $_POST['boxID'] : ''; 
         if(strlen($box_id) > 0) {

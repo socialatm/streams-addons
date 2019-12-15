@@ -2166,7 +2166,9 @@ function createBoxListContent(showAllBoxes) {
         html += '   ' + description + '';
         html += '   <br><b>Owner: </b>' + cloudBox["current_owner"] + '';
         html += '   <br><b>Size: </b>' + cloudBox["size"] + '';
-        if (cloudBox["boxID"] !== box.content.boxID) {
+        if(flashcards_editor === '') {            
+            html += '   <br>Unknow observer. Please login to view this box';
+        }else if (cloudBox["boxID"] !== box.content.boxID) {
             if (flashcards_editor === currentOwner) {
                 html += '       &nbsp;<b>Delete box: </b>&nbsp;';
             } else {
