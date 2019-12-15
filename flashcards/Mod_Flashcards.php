@@ -441,7 +441,7 @@ class Flashcards extends Controller {
                         $box["boxPublicID"] = $hash;
                         $this->boxesDir->createFile($hash . '.json', json_encode($box));
                         logger('created file name of box = ' . $hash . '.json');
-                        info('Box was recovered.');
+                        //info('Box was recovered.');
                     }
                     logger('delete file...' . $fname);
                     $child->delete();
@@ -518,7 +518,7 @@ class Flashcards extends Controller {
             $hash = random_string(15);
             $box["boxID"] = $hash;
             $boxDirObserver->createFile($filename, json_encode($box));
-            info('Box was copied box for you');
+            //info('Box was copied box for you');
             logger('box created (copied) for observer, box id = ' . $box_id);
         }
         
