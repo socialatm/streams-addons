@@ -83,7 +83,7 @@ class Flashcards extends Controller {
 			if(strcasecmp ( argv(1) , 'search') === 0) {
 				// API: /flashcards/search
 				// get all boxes of flashcards the observer is allowed to see
-				logger('Another instance requests all boxes of flashcards', LOGGER_DEBUG);
+				logger('Another instance/server requests all boxes of flashcards', LOGGER_DEBUG);
 				if(!$this->observer) {
 					$msg = "Failed to sent all boxes of flashcards. Reason: No observer found.";
 					logger($msg, LOGGER_DEBUG);
@@ -186,13 +186,13 @@ class Flashcards extends Controller {
         }
                
         
-        logger('observer = ' . $this->observer['xchan_addr'] . ', owner = ' . $this->owner['xchan_addr']);
+        logger('observer = ' . $this->observer['xchan_addr'] . ', owner = ' . $this->owner['xchan_addr'], LOGGER_DEBUG);
         
         $this->is_owner = ($this->observer['xchan_hash'] && $this->observer['xchan_hash'] == $this->owner['xchan_hash']);
         if($this->is_owner) {
-            logger('observer = owner');
+            logger('observer = owner', LOGGER_DEBUG);
         } else {
-            logger('observer != owner');
+            logger('observer != owner', LOGGER_DEBUG);
         }
         
         return array('status' => true);
@@ -204,14 +204,14 @@ class Flashcards extends Controller {
         if (argc() > 1) {
             $nick = argv(1); // if the channel name is in the URL, use that
         }
-        logger('nick = ' . $nick);
+        logger('nick = ' . $nick, LOGGER_DEBUG);
         
         $this->owner = channelx_by_nick($nick);
 	}
 
     private function getACL() {
         
-        logger('+++ get permissions (ACL) of box ... +++');
+        logger('+++ get permissions (ACL) of box ... +++', LOGGER_DEBUG);
         
         // API: /flashcards/nick/fileid/permissions
         if(! $this->isObserverAllowedToCreateFlashcards()) {   
@@ -226,7 +226,7 @@ class Flashcards extends Controller {
             return;
         }
         
-        logger('user requested ACL for box id = ' . $box_id);
+        logger('user requested ACL for box id = ' . $box_id, LOGGER_DEBUG);
         
         $filename = $box_id . '.json';
         $r = q("select id, uid, folder, filename, revision, flags, is_dir, os_storage, hash, allow_cid, allow_gid, deny_cid, deny_gid from attach where filename = '%s' and uid = %d limit 1",
@@ -270,7 +270,7 @@ class Flashcards extends Controller {
 
     private function setPermissions() {
         
-        logger('+++ set permissions of box ... +++');
+        logger('+++ set permissions of box ... +++', LOGGER_DEBUG);
         
         $channel_id = ((x($_POST, 'uid')) ? intval($_POST['uid']) : 0);
 
@@ -343,7 +343,7 @@ class Flashcards extends Controller {
 
     private function listBoxes() {
         
-        logger('+++ list boxes ... +++');
+        logger('+++ list boxes ... +++', LOGGER_DEBUG);
         
         $this->recoverBoxes();
 		
@@ -384,7 +384,7 @@ class Flashcards extends Controller {
 			}
 		}
         if (empty($boxes)) {
-            logger('no boxes found');
+            logger('no boxes found', LOGGER_DEBUG);
         }
         
         logger('sending (post response) list of boxes...', LOGGER_DEBUG);
@@ -394,7 +394,7 @@ class Flashcards extends Controller {
 
     private function searchBoxes() {
         
-        logger('+++ search boxes ... +++');
+        logger('+++ search boxes ... +++', LOGGER_DEBUG);
         
         json_return_and_die(array('status' => false, 'errormsg' => 'Not implemented' . EOL));
     }
@@ -454,7 +454,7 @@ class Flashcards extends Controller {
 
     private function sendBox() {    
         
-        logger('+++ send box ... +++');
+        logger('+++ send box ... +++', LOGGER_DEBUG);
                 
 		if(! $this->observer) {
 			json_return_and_die(array('status' => false, 'errormsg' => 'Unknown observer. Please login to view box ' . $box_id));
@@ -463,20 +463,20 @@ class Flashcards extends Controller {
         $box_id = isset($_POST['boxID']) ? $_POST['boxID'] : ''; 
         if(strlen($box_id) > 0) {
         
-            logger('user requested box id = ' . $box_id);
+            logger('user requested box id = ' . $box_id, LOGGER_DEBUG);
         
             $box = $this->readBox($this->boxesDir, $box_id . '.json');
             
             if(! $box) {
         
-                logger('box not found or no permission, box id = ' . $box_id);
+                logger('box not found or no permission, box id = ' . $box_id, LOGGER_DEBUG);
                 
                 json_return_and_die(array('status' => false, 'errormsg' => 'No box found or no permissions for ' . $box_id));
             }
             
             if($this->is_owner) {
         
-                logger('owner requested box id = ' . $box_id);
+                logger('owner requested box id = ' . $box_id, LOGGER_DEBUG);
 
                 $box = $this->importSharedBoxes($box);		
             
@@ -497,7 +497,7 @@ class Flashcards extends Controller {
         
         $box_id = $box['boxID'];
         
-        logger('observer requested box id = ' . $box_id);
+        logger('observer requested box id = ' . $box_id, LOGGER_DEBUG);
         
         $boxDirObserver = $this->createDirBoxObserver($box_id);
         
@@ -524,7 +524,7 @@ class Flashcards extends Controller {
         
         $boxObserver = $this->readBox($boxDirObserver, $filename);         
         
-        logger('merge owner box into observer box, box id = ' . $box_id);
+        logger('merge owner box into observer box, box id = ' . $box_id, LOGGER_DEBUG);
         
         $boxObserver = $this->mergeOwnerBoxIntoObserverBox($boxObserver);
         
@@ -539,7 +539,7 @@ class Flashcards extends Controller {
     
     private function createDirBoxObserver($box_id) {
         
-        logger('create dir for observer, box id = ' . $box_id);
+        logger('create dir for observer, box id = ' . $box_id, LOGGER_DEBUG);
         
         if(! $this->boxesDir->childExists($box_id)) {
             $this->boxesDir->createDirectory($box_id);
@@ -556,7 +556,7 @@ class Flashcards extends Controller {
     
     private function writeBox() {
         
-        logger('+++ write box ... +++');
+        logger('+++ write box ... +++', LOGGER_DEBUG);
 		
 		if(! $this->observer) {
 
@@ -601,7 +601,7 @@ class Flashcards extends Controller {
                     
                 } else {
         
-                    logger('locla box has to be merged with remote box for owner, box id = ' . $box_id);
+                    logger('local box has to be merged with remote box for owner, box id = ' . $box_id);
                     
                     $this->mergeBox($box_id, $boxRemote, $cardIDsReceived);
                     
@@ -626,8 +626,6 @@ class Flashcards extends Controller {
             }
             
         } else {
-        
-            logger('jump to write box for observer');
             
             $this->writeBoxObserver($boxRemote, $cardIDsReceived);
             
@@ -662,11 +660,11 @@ class Flashcards extends Controller {
         
         $boxLocalObserver = $this->readBox($boxDirObserver, $filename);
         
-        logger('merge local owner box into local observer box = ' . $filename);
+        logger('merge local owner box into local observer box = ' . $filename, LOGGER_DEBUG);
         
         $boxLocalObserverMergedWithOwner = $this->mergeOwnerBoxIntoObserverBox($boxLocalObserver);
         
-        logger('merge local local observer box with remote box');
+        logger('merge local local observer box with remote box', LOGGER_DEBUG);
         
         $boxes = $this->flashcards_merge($boxLocalObserverMergedWithOwner, $boxRemote);
         $boxToWrite = $boxes['boxLocal'];
@@ -782,11 +780,11 @@ class Flashcards extends Controller {
     private function readBox($dir, $filename) {
         $boxFileExists = $dir->childExists($filename);
         if(! $boxFileExists) {
-            logger('file does not exist in boxes dir, file = '. $filename);
+            logger('file does not exist in boxes dir, file = '. $filename, LOGGER_DEBUG);
             return false;
         }
         
-        logger('read box and convert from file = '. $filename);
+        logger('read box and convert from file = '. $filename, LOGGER_DEBUG);
         
         $JSONstream = $dir->getChild($filename)->get();
         $contents = stream_get_contents($JSONstream);
@@ -827,7 +825,7 @@ class Flashcards extends Controller {
     
     private function deleteBox() {
         
-        logger('+++ delete box ... +++');
+        logger('+++ delete box ... +++', LOGGER_DEBUG);
         
         $boxID = $_POST['boxID'];
         if(! $boxID) {
@@ -1177,7 +1175,7 @@ class Flashcards extends Controller {
         $boxLocal['cards'] = $cardsDB;
         $boxRemote['cards'] = $cardsRemoteToUpload; // send changed or new cards only
         
-        logger('merge boxes finished');
+        logger('merge boxes finished', LOGGER_DEBUG);
         
         return array('boxLocal' => $boxLocal, 'boxRemote' => $boxRemote);
     }
