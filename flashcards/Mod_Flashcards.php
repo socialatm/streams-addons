@@ -19,6 +19,7 @@ class Flashcards extends Controller {
     private $observer;
     private $canWrite;
     private $auth;
+	private $authObserver;
 
     function init() {		
 		
@@ -69,6 +70,7 @@ class Flashcards extends Controller {
                 '$flashcards_editor' => $this->observer['xchan_addr'],
                 '$flashcards_owner' => $this->owner['xchan_addr'],
                 '$is_local_channel' => ((local_channel() && $this->observer) ? true : false),
+                '$is_allowed_to_create_box' => ($this->isObserverAllowedToCreateFlashcards() ? true : false),
                 '$flashcards_version' => $this->version
         )); 
 
@@ -212,7 +214,7 @@ class Flashcards extends Controller {
         logger('+++ get permissions (ACL) of box ... +++');
         
         // API: /flashcards/nick/fileid/permissions
-        if(! $this->canWrite) {   
+        if(! $this->isObserverAllowedToCreateFlashcards()) {   
             notice(t('Not allowed.') . EOL);
             json_return_and_die(array('status' => false, 'errormsg' => 'No permission to change ACLs ' . $box_id));
             return;
@@ -307,6 +309,38 @@ class Flashcards extends Controller {
         goaway($go_away_url);
     }
 
+    private function isObserverAllowedToViewFlashcards() {
+
+		$this->getAuthObserver();
+
+		$nick = argv(1);
+		
+		if(! $nick) {
+			return false;
+		}
+		
+		$dirFlashcards = new Directory($nick . '/flashcards/', $this->authObserver);
+		try {
+			$boxFiles = $dirFlashcards->getChildren();
+		} catch (\Exception $e) {
+			logger('permission denied for path ' . $nick_fc . '/flashcards/', LOGGER_DEBUG);
+			return false;
+		}
+		
+		return true;
+	}
+
+    private function isObserverAllowedToCreateFlashcards() {
+
+		if($this->isObserverAllowedToViewFlashcards() && $this->canWrite) {
+			// can view the folder "flashcards" AND has write permissions to cloud files
+			return true;
+		} else {
+			return false;
+		}
+		
+	}
+
     private function listBoxes() {
         
         logger('+++ list boxes ... +++');
@@ -315,19 +349,14 @@ class Flashcards extends Controller {
 		
 		$nicks = $this->getFlashcardsUsers();
 
-		$authObserver = new BasicAuth();
-
-		$authObserver->setCurrentUser($this->observer['xchan_addr']);
-		$authObserver->channel_id = $this->observer['xchan_guid'];
-		$authObserver->channel_hash = $this->observer['xchan_hash'];
-		$authObserver->observer = $this->observer['xchan_hash'];
+		$this->getAuthObserver();
 		
 		$baseURL = \App::get_baseurl();
         
         $boxes = [];
 
 		foreach ($nicks as $nick_fc) {		
-			$dirFlashcards = new Directory($nick_fc . '/flashcards/', $authObserver);
+			$dirFlashcards = new Directory($nick_fc . '/flashcards/', $this->authObserver);
 			$boxFiles;
 			try {
 				$boxFiles = $dirFlashcards->getChildren();
@@ -830,8 +859,7 @@ class Flashcards extends Controller {
                 }
             }
             
-            json_return_and_die(array('status' => true));
-            
+            json_return_and_die(array('status' => true));            
         } else {
             
             json_return_and_die(array('status' => false, 'errormsg' => 'Box not found on server'));
@@ -885,6 +913,21 @@ class Flashcards extends Controller {
 
         return $this->auth;
     }
+	
+	private function getAuthObserver() {
+		
+		if(! $this->authObserver) {
+			
+			$this->authObserver = new BasicAuth();
+
+			$this->authObserver->setCurrentUser($this->observer['xchan_addr']);
+			$this->authObserver->channel_id = $this->observer['xchan_guid'];
+			$this->authObserver->channel_hash = $this->observer['xchan_hash'];
+			$this->authObserver->observer = $this->observer['xchan_hash'];
+				
+		}
+		
+	}
     
     private function getShareDir() {  
         
