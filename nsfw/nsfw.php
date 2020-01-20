@@ -64,46 +64,54 @@ function nsfw_prepare_body(&$b) {
 
 	$words = null;
 
-	if(local_channel() && Apps::addon_app_installed(local_channel(),'nsfw')) {
+	if (local_channel() && Apps::addon_app_installed(local_channel(),'nsfw')) {
 		$words = get_pconfig(local_channel(),'nsfw','words','nsfw,contentwarning');
 	}
 	else {
 		$words = 'nsfw,contentwarning';
 	}
 
-	if($words) {
+	if ($words) {
 		$arr = explode(',',$words);
 	}
 
 	$found = false;
 
-	if($arr) {
+	if (! get_safemode()) {
+		$arr = null;
+	}
+
+	if ($arr) {
 		$body = nsfw_extract_photos($b['html']);
 
-		foreach($arr as $word) {
+		foreach ($arr as $word) {
 			$word = trim($word);
 			$author = '';
 
-			if(! strlen($word)) {
+			if (! strlen($word)) {
 				continue;
 			}
 
-			if(strpos($word,'lang=') === 0) {
-				if(! $b['item']['lang'])
+			if (strpos($word,'lang=') === 0) {
+				if (! $b['item']['lang']) {
 					continue;
+				}
 				$l = substr($word,5);
-				if(strlen($l) && strcasecmp($l,$b['item']['lang']) !== 0)
+				if (strlen($l) && strcasecmp($l,$b['item']['lang']) !== 0) {
 					continue;
+				}
 				$found = true;
 				$orig_word = $word;
 				break;
 			}
-			if(strpos($word,'lang!=') === 0) {
-				if(! $b['item']['lang'])
+			if (strpos($word,'lang!=') === 0) {
+				if (! $b['item']['lang']) {
 					continue;
+				}
 				$l = substr($word,6);
-				if(strlen($l) && strcasecmp($l,$b['item']['lang']) === 0)
+				if (strlen($l) && strcasecmp($l,$b['item']['lang']) === 0) {
 					continue;
+				}
 				$found = true;
 				$orig_word = $word;
 				break;
@@ -111,59 +119,61 @@ function nsfw_prepare_body(&$b) {
 
 			$orig_word = $word;
 
-			if(strpos($word,'::') !== false) {
+			if (strpos($word,'::') !== false) {
 				$author = substr($word,0,strpos($word,'::'));
 				$word = substr($word,strpos($word,'::')+2);
 			}			
-			if($author && (stripos($b['item']['author']['xchan_name'],$author) === false) && (stripos($b['item']['author']['xchan_addr'],$author) === false))
+			if ($author && (stripos($b['item']['author']['xchan_name'],$author) === false) && (stripos($b['item']['author']['xchan_addr'],$author) === false)) {
 				continue;
+			}
 
 
-			if(! $word)
+			if (! $word) {
 				$found = true;
-
-			if(strpos($word,'/') === 0) {
-				if(preg_match($word,$body)) {
+			}
+			if (strpos($word,'/') === 0) {
+				if (preg_match($word,$body)) {
 					$found = true;
 					break;
 				}
 			}
 			else {
-				if(stristr($body,$word)) {
+				if (stristr($body,$word)) {
 					$found = true;
 					break;
 				}
-				if($b['item']['term']) {
-					foreach($b['item']['term'] as $t) {
-						if(stristr($t['term'],$word )) {
+				if ($b['item']['term']) {
+					foreach ($b['item']['term'] as $t) {
+						if (stristr($t['term'],$word )) {
 							$found = true;
 							break;
 						}
 					}
 				}
-				if($found)
-					break; 
+				if ($found) {
+					break;
+				}
 			}
 		}
 	}
 
-	if($b['item']['collapse']) {
+	if ($b['item']['collapse']) {
 			$found = true;
 			$orig_word = t('Conversation muted');
 	}
 
 	$ob_hash = get_observer_hash();
-	if((! $ob_hash) 
+	if ((! $ob_hash) 
 		&& (intval($b['item']['author']['xchan_censored']) || intval($b['item']['author']['xchan_selfcensored']))) {
 		$found = true;
 		$orig_word = t('Possible adult content');
 	}	
-	if($found) {
+	if ($found) {
 		$rnd = random_string(8);
 
 		$b['html'] = preg_replace('~<img[^>]*\K(?=src)~i','data-',$b['html']);
 
-		if($b['photo']) {
+		if ($b['photo']) {
 			$b['photo'] = preg_replace('~<img[^>]*\K(?=src)~i','data-',$b['photo']);
 			$onclick = 'onclick="datasrc2src(\'#nsfw-html-' . $rnd . ' img[data-src]\'); datasrc2src(\'#nsfw-photo-' . $rnd . ' img[data-src]\'); openClose(\'nsfw-html-' . $rnd . '\'); openClose(\'nsfw-photo-' . $rnd . '\');"';
 		}
