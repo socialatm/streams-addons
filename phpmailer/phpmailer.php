@@ -1,6 +1,7 @@
 <?php
 
 use Zotlabs\Extend\Hook;
+use PHPMailer\PHP\Mailer\PHPMailer;
 
 /**
  * Name: phpmailer
@@ -88,7 +89,9 @@ function phpmailer_email_send(&$x) {
 	 *  * \e string \b additionalMailHeader  additions to the smtp mail header
 	 */
 
-	require_once('addon/phpmailer/PHPMailerAutoload.php');
+	require_once('addon/phpmailer/PHPMailer/src/Exception.php');
+	require_once('addon/phpmailer/PHPMailer/src/PHPMailer.php');
+	require_once('addon/phpmailer/PHPMailer/src/SMTP.php');
 
 	$mail = new PHPMailer;
 
@@ -104,7 +107,7 @@ function phpmailer_email_send(&$x) {
 	}
 
 
-	$mail->Hostname = \App::get_hostname();
+	$mail->Hostname = App::get_hostname();
 
 	if(get_config('phpmailer','mailer') === 'smtp') {
 		$mail->IsSMTP();
