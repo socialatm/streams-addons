@@ -2935,7 +2935,7 @@ class PHPMailer
      * @param string $name        Overrides the attachment name
      * @param string $encoding    File encoding (see $Encoding)
      * @param string $type        File extension (MIME) type
-     * @param string $disposition Disposition to use
+     * @param string $Disposition Disposition to use
      *
      * @throws Exception
      *
@@ -2946,7 +2946,7 @@ class PHPMailer
         $name = '',
         $encoding = self::ENCODING_BASE64,
         $type = '',
-        $disposition = 'attachment'
+        $Disposition = 'attachment'
     ) {
         try {
             if (!static::isPermittedPath($path) || !@is_file($path)) {
@@ -2974,7 +2974,7 @@ class PHPMailer
                 3 => $encoding,
                 4 => $type,
                 5 => false, // isStringAttachment
-                6 => $disposition,
+                6 => $Disposition,
                 7 => $name,
             ];
         } catch (Exception $exc) {
@@ -3004,14 +3004,14 @@ class PHPMailer
      * Attach all file, string, and binary attachments to the message.
      * Returns an empty string on failure.
      *
-     * @param string $disposition_type
+     * @param string $Disposition_type
      * @param string $boundary
      *
      * @throws Exception
      *
      * @return string
      */
-    protected function attachAll($disposition_type, $boundary)
+    protected function attachAll($Disposition_type, $boundary)
     {
         // Return text of body
         $mime = [];
@@ -3020,8 +3020,8 @@ class PHPMailer
 
         // Add all attachments
         foreach ($this->attachment as $attachment) {
-            // Check if it is a valid disposition_filter
-            if ($attachment[6] === $disposition_type) {
+            // Check if it is a valid Disposition_filter
+            if ($attachment[6] === $Disposition_type) {
                 // Check for string attachment
                 $string = '';
                 $path = '';
@@ -3040,9 +3040,9 @@ class PHPMailer
                 $name = $attachment[2];
                 $encoding = $attachment[3];
                 $type = $attachment[4];
-                $disposition = $attachment[6];
+                $Disposition = $attachment[6];
                 $cid = $attachment[7];
-                if ('inline' === $disposition && array_key_exists($cid, $cidUniq)) {
+                if ('inline' === $Disposition && array_key_exists($cid, $cidUniq)) {
                     continue;
                 }
                 $cidUniq[$cid] = true;
@@ -3069,7 +3069,7 @@ class PHPMailer
                 }
 
                 //Only set Content-IDs on inline attachments
-                if ((string) $cid !== '' && $disposition === 'inline') {
+                if ((string) $cid !== '' && $Disposition === 'inline') {
                     $mime[] = 'Content-ID: <' . $this->encodeHeader($this->secureHeader($cid)) . '>' . static::$LE;
                 }
 
@@ -3077,26 +3077,26 @@ class PHPMailer
                 // but not otherwise: RFC2183 & RFC2045 5.1
                 // Fixes a warning in IETF's msglint MIME checker
                 // Allow for bypassing the Content-Disposition header totally
-                if (!empty($disposition)) {
+                if (!empty($Disposition)) {
                     $encoded_name = $this->encodeHeader($this->secureHeader($name));
                     if (preg_match('/[ ()<>@,;:"\/\[\]?=]/', $encoded_name)) {
                         $mime[] = sprintf(
                             'Content-Disposition: %s; filename="%s"%s',
-                            $disposition,
+                            $Disposition,
                             $encoded_name,
                             static::$LE . static::$LE
                         );
                     } elseif (!empty($encoded_name)) {
                         $mime[] = sprintf(
                             'Content-Disposition: %s; filename=%s%s',
-                            $disposition,
+                            $Disposition,
                             $encoded_name,
                             static::$LE . static::$LE
                         );
                     } else {
                         $mime[] = sprintf(
                             'Content-Disposition: %s%s',
-                            $disposition,
+                            $Disposition,
                             static::$LE . static::$LE
                         );
                     }
@@ -3439,7 +3439,7 @@ class PHPMailer
      * @param string $filename    Name of the attachment
      * @param string $encoding    File encoding (see $Encoding)
      * @param string $type        File extension (MIME) type
-     * @param string $disposition Disposition to use
+     * @param string $Disposition Disposition to use
      *
      * @throws Exception
      *
@@ -3450,7 +3450,7 @@ class PHPMailer
         $filename,
         $encoding = self::ENCODING_BASE64,
         $type = '',
-        $disposition = 'attachment'
+        $Disposition = 'attachment'
     ) {
         try {
             // If a MIME type is not specified, try to work it out from the file name
@@ -3470,7 +3470,7 @@ class PHPMailer
                 3 => $encoding,
                 4 => $type,
                 5 => true, // isStringAttachment
-                6 => $disposition,
+                6 => $Disposition,
                 7 => 0,
             ];
         } catch (Exception $exc) {
@@ -3501,7 +3501,7 @@ class PHPMailer
      * @param string $name        Overrides the attachment name
      * @param string $encoding    File encoding (see $Encoding)
      * @param string $type        File MIME type
-     * @param string $disposition Disposition to use
+     * @param string $Disposition Disposition to use
      *
      * @throws Exception
      *
@@ -3513,7 +3513,7 @@ class PHPMailer
         $name = '',
         $encoding = self::ENCODING_BASE64,
         $type = '',
-        $disposition = 'inline'
+        $Disposition = 'inline'
     ) {
         try {
             if (!static::isPermittedPath($path) || !@is_file($path)) {
@@ -3542,7 +3542,7 @@ class PHPMailer
                 3 => $encoding,
                 4 => $type,
                 5 => false, // isStringAttachment
-                6 => $disposition,
+                6 => $Disposition,
                 7 => $cid,
             ];
         } catch (Exception $exc) {
@@ -3571,7 +3571,7 @@ class PHPMailer
      *                            For example 'file.jpg' would get an 'image/jpeg' MIME type.
      * @param string $encoding    File encoding (see $Encoding), defaults to 'base64'
      * @param string $type        MIME type - will be used in preference to any automatically derived type
-     * @param string $disposition Disposition to use
+     * @param string $Disposition Disposition to use
      *
      * @throws Exception
      *
@@ -3583,7 +3583,7 @@ class PHPMailer
         $name = '',
         $encoding = self::ENCODING_BASE64,
         $type = '',
-        $disposition = 'inline'
+        $Disposition = 'inline'
     ) {
         try {
             // If a MIME type is not specified, try to work it out from the name
@@ -3603,7 +3603,7 @@ class PHPMailer
                 3 => $encoding,
                 4 => $type,
                 5 => true, // isStringAttachment
-                6 => $disposition,
+                6 => $Disposition,
                 7 => $cid,
             ];
         } catch (Exception $exc) {
