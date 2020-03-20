@@ -3,7 +3,6 @@
  * Name: OpenStreetMap
  * Description: Use OpenStreetMap for displaying locations. After activation the post location just beneath your avatar in your posts will link to OpenStreetMap.
  * Version: 1.3
- * Author: Mike Macgirvin <http://macgirvin.com/profile/mike>
  * Author: Klaus Weidenbach
  * Maintainer: none
  */

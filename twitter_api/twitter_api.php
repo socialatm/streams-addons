@@ -1,6 +1,7 @@
 <?php
 
 use Zotlabs\Extend\Hook;
+use Zotlabs\Lib\LibBlock;
 
 /**
  * Name: Twitter API
@@ -1321,6 +1322,10 @@ function api_format_items($r,$user_info,$type = 'json') {
 		return $ret;
 
 	foreach($r as $item) {
+
+		if (LibBlock::fetch_by_entity(api_user(),$item['author_xchan']) || LibBlock::fetch_by_entity(api_user(),$item['owner_xchan'])) {
+			continue;
+		}
 
 		localize_item($item);
 
