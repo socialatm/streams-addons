@@ -4,6 +4,8 @@ use Zotlabs\Extend\Route;
 use Zotlabs\Extend\Hook;
 use Zotlabs\Lib\Libsync;
 use Zotlabs\Lib\Apps;
+use Zotlabs\Lib\LibBlock;
+
 
 /**
  * Name: superblock
@@ -44,11 +46,10 @@ class Superblock {
 	private $list = [];
 
 	function __construct($channel_id) {
-		$cnf = get_pconfig($channel_id,'system','blocked');
-		if (! $cnf) {
-			return;
+		$l = LibBlock::fetch($channel_id,BLOCKTYPE_CHANNEL);
+		if ($l) {
+			$this->list = ids_to_array($l,'block_entity');
 		}
-		$this->list = explode(',',$cnf);
 	}
 
 	function get_list() {
@@ -278,19 +279,19 @@ function superblock_conversation_start(&$b) {
 		return;
 	}
 
-	$words = get_pconfig(local_channel(),'system','blocked');
-	if ($words) {
-		App::$data['superblock'] = explode(',',$words);
+	$l = LibBlock::fetch($channel_id,BLOCKTYPE_CHANNEL);
+	if ($l) {
+		App::$data['superblock'] = ids_to_array($l,'block_entity');
 	}
 
-	if (! array_key_exists('htmlhead',App::$page)) {
+	if (! array_key_exists('htmlhead', App::$page)) {
 		App::$page['htmlhead'] = '';
 	}
 
 	App::$page['htmlhead'] .= <<< EOT
 <script>
 function superblockBlock(author,item) {
-	$.get('superblock?f=&item=' + item + '&block=' + author, function(data) {
+	$.get('superblock?f=&item=' + item + '&block=' + encodeURI(author), function(data) {
 		location.reload(true);
 	});
 }
@@ -336,50 +337,3 @@ function superblock_item_photo_menu(&$b) {
 
 
 
-function superblock_init(&$a) {
-
-	if (! ( local_channel() && Apps::addon_app_installed(local_channel(),'superblock'))) { 
-		return;
-	}
-
-	$words = get_pconfig(local_channel(),'system','blocked');
-
-	if (array_key_exists('block',$_GET) && $_GET['block']) {
-		$r = q("select id from item where id = %d and author_xchan = '%s' limit 1",
-			intval($_GET['item']),
-			dbesc($_GET['block'])
-		);
-		if ($r) {
-			if (strlen($words))
-				$words .= ',';
-			$words .= trim($_GET['block']);
-		}
-	}
-
-	if (array_key_exists('unblock',$_GET) && $_GET['unblock']) {
-		if (check_form_security_token('superblock','sectok')) {
-			$newlist = [];
-			$list = explode(',',$words);
-			if ($list) {
-				foreach ($list as $li) {
-					if ($li !== $_GET['unblock']) {
-						$newlist[] = $li;
-					}
-				}
-			}
-			$words = implode(',',$newlist);
-		}
-	}
-
-
-	set_pconfig(local_channel(),'system','blocked',$words);
-	Libsync::build_sync_packet();
-
-	info( t('superblock settings updated') . EOL );
-
-	if($_GET['unblock']) {
-		goaway(z_root() . '/settings/featured');
-	}
-
-	killme();
-}

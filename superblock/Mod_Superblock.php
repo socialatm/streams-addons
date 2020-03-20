@@ -5,6 +5,7 @@ namespace Zotlabs\Module;
 use Zotlabs\Web\Controller;
 use Zotlabs\Lib\Apps;
 use Zotlabs\Lib\Libsync;
+use Zotlabs\Lib\LibBlock;
 
 class Superblock extends Controller {
 
@@ -14,54 +15,60 @@ class Superblock extends Controller {
 			return;
 		}
 
-		$words = get_pconfig(local_channel(),'system','blocked');
+
 		$handled = false;
 		$ignored = [];
 
-		if (array_key_exists('block',$_GET) && $_GET['block']) {
+		if (array_key_exists('block',$_GET) && trim($_GET['block'])) {
 			$handled = true;
 			$r = q("select id from item where id = %d and author_xchan = '%s' limit 1",
 				intval($_GET['item']),
 				dbesc($_GET['block'])
 			);
 			if ($r) {
-				if (strlen($words))
-					$words .= ',';
-				$words .= trim($_GET['block']);
-			}
-			$z = q("insert into xign ( 'uid', 'xchan') values ( %d , '%s' ) ",
-				intval(local_channel()),
-				dbesc($_GET['block'])
-			);
-			$ignored = [ 'uid' => local_channel(), 'xchan' => $_GET['block'] ];
-		}
+			
+				$bl = [
+					'block_channel_id' => local_channel(),
+					'block_entity' => trim($_GET['block']),
+					'block_type' => BLOCKTYPE_CHANNEL,
+					'block_comment' => t('Added by Superblock')
+				];
+				
+				LibBlock::store($bl);
 
-		if (array_key_exists('unblock',$_GET) && $_GET['unblock']) {
+				$sync = LibBlock::fetch_by_entity(local_channel(),trim($_GET['block']));
+				
+				$z = q("insert into xign ( 'uid', 'xchan') values ( %d , '%s' ) ",
+					intval(local_channel()),
+					dbesc(trim($_GET['block']))
+				);
+				
+				$ignored = [ 'uid' => local_channel(), 'xchan' => $_GET['block'] ];
+				Libsync::build_sync_packet(0, [ 'xign' => [ $ignored ], 'block' => $sync ] );
+			}
+		}
+		if (array_key_exists('unblock',$_GET) && trim($_GET['unblock'])) {
 			$handled = true;
 			if (check_form_security_token('superblock','sectok')) {
-				$newlist = [];
-				$list = explode(',',$words);
-				if ($list) {
-					foreach ($list as $li) {
-						if ($li !== $_GET['unblock']) {
-							$newlist[] = $li;
-						}
-					}
+				$r = LibBlock::fetch_by_entity(local_channel(), trim($_GET['unblock']));
+				if ($r) {
+					LibBlock::remove(local_channel(), trim($_GET['unblock']));
+					$z = q("delete from xign where uid = %d  and xchan = '%s' ",
+						intval(local_channel()),
+						dbesc($_GET['block'])
+					);
+					$ignored = [ 'uid' => local_channel(), 'xchan' => $_GET['block'], 'deleted' => true ];
+					$r['deleted'] = true;
+					Libsync::build_sync_packet(0, [ 'xign' => [ $ignored ], 'block' => $r ] );
 				}
-				$words = implode(',',$newlist);
-				$z = q("delete from xign where uid = %d  and xchan = '%s' ",
-					intval(local_channel()),
-					dbesc($_GET['block'])
-				);
-
-				$ignored = [ 'uid' => local_channel(), 'xchan' => $_GET['block'], 'deleted' => true ];
 			}
 		}
 
 		if ($handled) {
 
-			set_pconfig(local_channel(),'system','blocked',$words);
-			Libsync::build_sync_packet(0, [ 'xign' => [ $ignored ] ] );
+			$bl = LibBlock::fetch(local_channel());
+
+			Libsync::build_sync_packet(0, [ 'xign' => [ $ignored ], 'block' => $bl ] );
 
 			info( t('superblock settings updated') . EOL );
 
@@ -85,9 +92,9 @@ class Superblock extends Controller {
 
 		$sc = $text;
 
-		$cnf = get_pconfig(local_channel(),'system','blocked', EMPTY_STR);
+		$l = LibBlock::fetch(local_channel(),BLOCKTYPE_CHANNEL);
+		$list = ids_to_array($l,'block_entity');
 
-		$list = explode(',',$cnf);
 		stringify_array_elms($list,true);
 		$query_str = implode(',',$list);
 		if ($query_str) {
