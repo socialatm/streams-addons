@@ -1,0 +1,6 @@
+version: 1.08 beta
+url: $baseurl/faces/$nick
+requires: local_channel
+name: Faces
+photo: icon:eye
+categories: Multimedia
