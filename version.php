@@ -1,3 +1,3 @@
 <?php
 
-define ( 'ADDON_VERSION',             '20.05.15' );
+define ( 'ADDON_VERSION',             '20.06.02' );
