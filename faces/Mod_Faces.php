@@ -1841,7 +1841,10 @@ class Faces extends Controller {
 
 	function notifyTaggedContact($xchan_hash, $channel_address) {
 		$link = z_root() . '/faces/' . $this->owner['channel_address'] . '/searchme';
-		$body = $channel_address . ', you where tagged [zrl=' . $link . ']here[/zrl].';
+		$body = $channel_address . ', you where tagged [zrl=' . $link . ']here[/zrl].'
+				. ' You can remove you by clicking into the frame around your face and then the eye icon.'
+				. ' The removal can not be undone by the owner of the image. In case you do not have the'
+				. ' permission to view an image a delete button will be displayed instead.';
 		$allow_cid = '<' . $xchan_hash . '>';
 		post_activity_item(array('body' => $body, 'allow_cid' => $allow_cid));
 		logger("Posted notify message to " . $this->observer['xchan_url'] . ", link: " . $link, LOGGER_DEBUG);

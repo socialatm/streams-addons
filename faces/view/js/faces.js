@@ -764,8 +764,11 @@ function styleFaceFrame(face) {
     var name_id = "0";
     if (face.pv != 0) {
         // prio 1 because the user said this is person XY
-//        nameFrame.style.border = "medium dashed";
-        nameFrame.style.border = "rgba(255,255,255,.5)";
+        if (isSearchMe) {
+            nameFrame.style.border = "medium dashed red";
+        } else {
+            nameFrame.style.border = "rgba(255,255,255,.5)";
+        }
         name = getNameForID(face.pv);
         name_id = face.pv;
         ((loglevel >= 1) ? console.log(t() + " verified name id = " + name_id) : null);
