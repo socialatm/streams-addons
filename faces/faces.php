@@ -9,7 +9,7 @@ require_once('addon/faces/FacesPermission.php');
 /**
  * Name: Faces
  * Description: Detect faces in images and make a guess who it is.
- * Version: 1.08 beta
+ * Version: 1.10 beta
  * Author: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  * Maintainer: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  *
@@ -104,6 +104,11 @@ function faces_plugin_admin(&$a, &$o) {
 		$limit = 100;
 	}
 
+	$zoom = get_config('faces', 'zoom');
+	if (!$zoom) {
+		$zoom = 3;
+	}
+
 	$o = replace_macros($t, array(
 		'$submit' => t('Submit'),
 		'$limit' => array('limit', 'Number of Images to dectect per Loop', $limit, 'Number of images per detection loop (default = 100)'),
@@ -117,6 +122,7 @@ function faces_plugin_admin(&$a, &$o) {
 		'$exiftoolmsg' => $exiftoolmsg,
 		'$pythoncheckmsg' => $pythoncheckmsg,
 		'$deletetables' => array('deletetables', "Delete Faces and Names of all Users", false, "Delete all rows in db tables this addon created"),
+		'$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
 	));
 }
 
@@ -128,6 +134,7 @@ function faces_plugin_admin_post(&$a) {
 	$finder2config = ((x($_POST, 'finder2config')) ? notags(trim($_POST['finder2config'])) : '');
 	$exiftool = ((x($_POST, 'exiftool')) ? true : false);
 	$deletetables = ((x($_POST, 'deletetables')) ? true : false);
+	$zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : 3);
 
 
 	$ret = testPythonVersion();
@@ -158,12 +165,19 @@ function faces_plugin_admin_post(&$a) {
 		$limit = 10000;
 	}
 
+	if ($zoom > 6) {
+		$zoom = 6;
+	} else if ($zoom < 1) {
+		$zoom = 1;
+	}
+
 	set_config('faces', 'limit', $limit);
 	set_config('faces', 'finder1', $finder1);
 	set_config('faces', 'finder1config', preg_replace('/\s+/', '', $finder1config));
 	set_config('faces', 'finder2', $finder2);
 	set_config('faces', 'finder2config', preg_replace('/\s+/', '', $finder2config));
 	set_config('faces', 'exiftool', $exiftool);
+	set_config('faces', 'zoom', $zoom);
 
 	if ($deletetables) {
 		faces_drop_database_tables();

@@ -126,6 +126,11 @@ class Faces extends Controller {
 		$version = $this->getAppVersion();
 		logger("App version is " . $version);
 
+		$zoom = get_config('faces', 'zoom');
+		if (!$zoom) {
+			$zoom = 3;
+		}
+
 		head_add_css('/addon/faces/view/css/faces.css');
 		$o = replace_macros(get_markup_template('faces.tpl', 'addon/faces'), array(
 			'$status' => $ret['status'],
@@ -136,6 +141,7 @@ class Faces extends Controller {
 			'$faces_date_to' => $to,
 			'$log_level' => $loglevel,
 			'$version' => $version,
+			'$faces_zoom' => $zoom,
 			'$uid' => $channel['channel_id'],
 			'$channelnick' => $channel['channel_address'],
 			'$permissions' => t('Permissions'),

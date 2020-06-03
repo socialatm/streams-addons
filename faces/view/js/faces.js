@@ -1154,6 +1154,8 @@ $(document).ready(function () {
     ((loglevel >= 0) ? console.log(t() + " can write = " + can_write) : null);
 //    $('#region_1').remove();
 //    $('#region_3').remove();
+    zoom = parseInt($("#faces_zoom").text());
+    ((loglevel >= 0) ? console.log(t() + " zoom = " + zoom) : null);
     isSearchMe = isModeSearchMe();
     postSearch();
     if (!isSearchMe) {
