@@ -764,8 +764,11 @@ function styleFaceFrame(face) {
     var name_id = "0";
     if (face.pv != 0) {
         // prio 1 because the user said this is person XY
-//        nameFrame.style.border = "medium dashed";
-        nameFrame.style.border = "rgba(255,255,255,.5)";
+        if (isSearchMe) {
+            nameFrame.style.border = "medium dashed red";
+        } else {
+            nameFrame.style.border = "rgba(255,255,255,.5)";
+        }
         name = getNameForID(face.pv);
         name_id = face.pv;
         ((loglevel >= 1) ? console.log(t() + " verified name id = " + name_id) : null);
@@ -1154,6 +1157,8 @@ $(document).ready(function () {
     ((loglevel >= 0) ? console.log(t() + " can write = " + can_write) : null);
 //    $('#region_1').remove();
 //    $('#region_3').remove();
+    zoom = parseInt($("#faces_zoom").text());
+    ((loglevel >= 0) ? console.log(t() + " zoom = " + zoom) : null);
     isSearchMe = isModeSearchMe();
     postSearch();
     if (!isSearchMe) {

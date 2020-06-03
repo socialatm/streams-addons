@@ -126,6 +126,11 @@ class Faces extends Controller {
 		$version = $this->getAppVersion();
 		logger("App version is " . $version);
 
+		$zoom = get_config('faces', 'zoom');
+		if (!$zoom) {
+			$zoom = 3;
+		}
+
 		head_add_css('/addon/faces/view/css/faces.css');
 		$o = replace_macros(get_markup_template('faces.tpl', 'addon/faces'), array(
 			'$status' => $ret['status'],
@@ -136,6 +141,7 @@ class Faces extends Controller {
 			'$faces_date_to' => $to,
 			'$log_level' => $loglevel,
 			'$version' => $version,
+			'$faces_zoom' => $zoom,
 			'$uid' => $channel['channel_id'],
 			'$channelnick' => $channel['channel_address'],
 			'$permissions' => t('Permissions'),
@@ -1835,7 +1841,10 @@ class Faces extends Controller {
 
 	function notifyTaggedContact($xchan_hash, $channel_address) {
 		$link = z_root() . '/faces/' . $this->owner['channel_address'] . '/searchme';
-		$body = $channel_address . ', you where tagged [zrl=' . $link . ']here[/zrl].';
+		$body = $channel_address . ', you where tagged [zrl=' . $link . ']here[/zrl].'
+				. ' You can remove you by clicking into the frame around your face and then the eye icon.'
+				. ' The removal can not be undone by the owner of the image. In case you do not have the'
+				. ' permission to view an image a delete button will be displayed instead.';
 		$allow_cid = '<' . $xchan_hash . '>';
 		post_activity_item(array('body' => $body, 'allow_cid' => $allow_cid));
 		logger("Posted notify message to " . $this->observer['xchan_url'] . ", link: " . $link, LOGGER_DEBUG);

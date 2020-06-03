@@ -20,6 +20,7 @@ message: {{$message}}
 <p id="faces_log_level">{{$log_level}}</p>
 <p id="faces_date_from">{{$faces_date_from}}</p>
 <p id="faces_date_to">{{$faces_date_to}}</p>
+<p id="faces_zoom">{{$faces_zoom}}</p>
 </div>
 
 <!-- this div will be copied by javascript and then removed after loading the page -->
