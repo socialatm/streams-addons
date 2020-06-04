@@ -637,6 +637,12 @@ function zoomLastPictures(img) {
     }
 }
 
+function openSingleImage(img) {
+    var url = img.getAttribute('src');
+    var url_large = url.replace(/-\d$/, "");
+    window.open(url_large, "_blank");
+}
+
 function appendPicture(img) {
     ((loglevel >= 0) ? console.log(t() + " start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
     var html = "";
@@ -660,7 +666,7 @@ function appendPicture(img) {
             var url = url + "/photo/" + src;
             html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\">";
             html += "   <div class=\"face-container\">";
-            html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onerror=\"showDeleteButtonForTaggedContact(" + face.id + ")\" onclick=\"hideEditFrame(false)\">";
+            html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onerror=\"showDeleteButtonForTaggedContact(" + face.id + ")\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
         }
         ((loglevel >= 0) ? console.log(t() + " adding face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
         var top = 1;
