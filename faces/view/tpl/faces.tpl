@@ -5,6 +5,7 @@
     <!-- filled dynamically by javascript -->
     <!-- all the pictures go here -->    
 </div>
+<div id="face-scoll-end"></div>
 
 <div style="display: none;">
 <p>    
