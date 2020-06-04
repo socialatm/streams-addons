@@ -664,7 +664,8 @@ function appendPicture(img) {
                 src += "-3"
             }
             var url = url + "/photo/" + src;
-            html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\">";
+            var width = (100 / zoom).toString() + "%";
+            html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\" width=\"" + width + "\">";
             html += "   <div class=\"face-container\">";
             html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onerror=\"showDeleteButtonForTaggedContact(" + face.id + ")\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
         }
