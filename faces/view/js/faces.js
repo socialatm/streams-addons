@@ -436,7 +436,10 @@ function createFilterString() {
     ((loglevel >= 1) ? console.log(t() + " AND = " + checked) : null);
 
     var from = $("#face-date-from").val();
-    var to = $("#face-date-to").val();
+    var to = $("#face-date-to").val() + " 23:59:59";
+    if(oldestImageTimeStamp != "") {
+        to = oldestImageTimeStamp;
+    } 
     ((loglevel >= 1) ? console.log(t() + " from = " + from) : null);
     ((loglevel >= 1) ? console.log(t() + " to = " + to) : null);
 
@@ -923,7 +926,7 @@ function appendPictures() {
     }
     if (receivedImages.length === k) {
         ((loglevel >= 0) ? console.log(t() + " all images where processed. Reached end of list of images") : null);
-        clearCounterImagesLoading();
+        clearCounterImagesLoading(true);
     }
 }
 
@@ -941,10 +944,17 @@ function animate_off() {
     ((loglevel >= 1) ? console.log(t() + " animate off") : null);
 }
 
-function clearCounterImagesLoading() {
+function clearCounterImagesLoading(isLoadAgain) {
     $("#button_share_box_counter_download").html('<sub></sub>');
     ((loglevel >= 1) ? console.log(t() + " clear image counter shown to user") : null);
     animate_off();
+    var shouldLoadMore = isEndVisible();
+    ((loglevel >= 0) ? console.log(t() + " after loading images > is end visible= " + shouldLoadMore) : null);
+    if (shouldLoadMore && isLoadAgain) {
+        loadMoreImages();
+    } else {
+        blockEndVisible = false;
+    }
 }
 
 function setCounterImagesLoading() {
@@ -979,20 +989,28 @@ function startFaceDetection() {
 
 }
 
+var oldestImageTimeStamp = "";
+
 function postSearch() {
+    blockEndVisible = true;
     animate_on();
     var postURL = getURL();
     if (!isSearchMe) {
         postURL = getURL() + "/search";
     }
+    oldestImageTimeStamp = "";
     ((loglevel >= 0) ? console.log(t() + " about to post a search to the server: url = " + postURL + " , filter = " + filterStringServer) : null);
     $.post(postURL, {filter: filterStringServer}, function (data) {
         blockAppending = false;
         if (data['status']) {
             ((loglevel >= 0) ? console.log(t() + " Successfully received pictures from server.") : null);
+            if (data['oldest']) {
+                oldestImageTimeStamp = data['oldest'];
+                ((loglevel >= 0) ? console.log(t() + " oldest image is: " + oldestImageTimeStamp) : null);
+            }
             if (data['images'].length < 1) {
                 ((loglevel >= 0) ? console.log(t() + " But no results where received from server.") : null);
-                clearCounterImagesLoading();
+                clearCounterImagesLoading(false);
                 return;
             }
             receivedImages = data['images'];
@@ -1105,7 +1123,7 @@ function initDate(fromS, toS) {
     toS = checkDateString(toS);
     var today = new Date();
     if (fromS == "") {
-        from = new Date(new Date().setDate(today.getDate() - 7));
+        from = new Date(new Date().setDate(today.getDate() - 365));
     } else {
         from = new Date(fromS);
     }
@@ -1139,11 +1157,46 @@ function isModeSearchMe() {
     }
     return false;
 }
+
 var isSearchMe = false;
+
+var blockEndVisible = true;
+var observer = new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting === true) {
+        ((loglevel >= 0) ? console.log(t() + " scrolled to end") : null);
+        if (!blockEndVisible) {
+            loadMoreImages();
+        }
+    }
+}, {threshold: [1]});
+
+function loadMoreImages() {
+    ((loglevel >= 0) ? console.log(t() + " load more images") : null);
+    if(oldestImageTimeStamp == "") {
+        return;
+    }
+//    var toS = checkDateString(oldestImageTimeStamp);
+//    var to = new Date(toS);
+//    document.querySelector("#face-date-to").valueAsDate = to;
+    createFilterString();
+    postSearch();
+}
+
+function isEndVisible() {
+    var elem = $("#face-scoll-end")
+    var docViewTop = $(window).scrollTop();
+    var docViewBottom = docViewTop + $(window).height();
+
+    var elemTop = $(elem).offset().top;
+    var elemBottom = elemTop + $(elem).height();
+
+    return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
+}
 
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
+    observer.observe(document.querySelector("#face-scoll-end"));
     faceEditControls = $("#template-face-frame-edit-controls").html();
     $("#template-face-frame-edit-controls").remove();
     var dFrom = $("#faces_date_from").text();

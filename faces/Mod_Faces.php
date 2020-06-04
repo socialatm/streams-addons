@@ -1016,7 +1016,7 @@ class Faces extends Controller {
 				$from = $filterArr['from'] . " 00:00:00";
 			}
 			if ($filterArr['to'] != "") {
-				$to = $filterArr['to'] . " 23:59:59";
+				$to = $filterArr['to'];
 			}
 			if ($filterArr['names'] != "") {
 				$filter_names = $filterArr['names'];
@@ -1055,7 +1055,8 @@ class Faces extends Controller {
 				. "  faces_encoding.person_recognized, "
 				. "  faces_encoding.person_marked_unknown, "
 				. "  faces_encoding.marked_ignore, "
-				. "  attach.hash "
+				. "  attach.hash, "
+				. "  attach.created "
 				. "FROM "
 				. "  attach "
 				. "JOIN "
@@ -1070,15 +1071,24 @@ class Faces extends Controller {
 				. "  AND faces_encoding.error != 1 "
 				. "  AND faces_encoding.channel_id = %d "
 //				. "  AND faces_encoding.finder = %d "
+				. "  AND attach.created != '%s' "
 				. "  AND attach.created between '%s' and '%s' $perms "
-				. "ORDER BY faces_encoding.id  DESC " // 
+				. "ORDER BY attach.created DESC " //
+				. "LIMIT 20 " 
 				, intval($this->owner['channel_id']), // 
 //				intval(1), //
+				dbesc($to), //
 				dbesc($from), //
 				dbesc($to)
 		);
 
 		logger("Found " . sizeof($encodings) . " face encodings after date filter.", LOGGER_DEBUG);
+		
+		$dateOldestImage = 0;
+		if($encodings) {
+			$lastEnc = end($encodings); 
+			$dateOldestImage = $lastEnc["created"];
+		}
 
 		//----------------------------------------------------------------------
 		//-- filter face encodings by names (AND / OR)
@@ -1095,6 +1105,7 @@ class Faces extends Controller {
 				array(
 					'status' => true,
 					'images' => $images,
+					'oldest' => $dateOldestImage,
 					'names' => $names
 		));
 	}
