@@ -8,6 +8,7 @@
 {{include file="field_checkbox.tpl" field=$exiftool}}
 {{$exiftoolmsg}}
 {{include file="field_input.tpl" field=$zoom}}
+{{include file="field_input.tpl" field=$maximages}}
 {{include file="field_input.tpl" field=$limit}}
 {{include file="field_checkbox.tpl" field=$deletetables}}
 <div class="submit"><input type="submit" name="page_faces" value="{{$submit}}"></div>

@@ -109,9 +109,14 @@ function faces_plugin_admin(&$a, &$o) {
 		$zoom = 3;
 	}
 
+	$maximages = get_config('faces', 'maximages');
+	if (!$maximages) {
+		$maximages = 6;
+	}
+
 	$o = replace_macros($t, array(
 		'$submit' => t('Submit'),
-		'$limit' => array('limit', 'Number of Images to dectect per Loop', $limit, 'Number of images per detection loop (default = 100)'),
+		'$limit' => array('limit', 'Number of Images to dectect per Loop (Face Detection Scripts)', $limit, 'Number of images per detection loop (default = 100)'),
 		'$finder1' => array('finder1', "Finder 1", $finder1checked, "opencv , dnn, sklearn"),
 		'$finder1msg' => $finder1msg,
 		'$finder1config' => array('finder1config', "Finder 1 - Configuration", get_config('faces', 'finder1config'), "Leave empty or overwrite the defaults"),
@@ -123,6 +128,7 @@ function faces_plugin_admin(&$a, &$o) {
 		'$pythoncheckmsg' => $pythoncheckmsg,
 		'$deletetables' => array('deletetables', "Delete Faces and Names of all Users", false, "Delete all rows in db tables this addon created"),
 		'$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
+		'$maximages' => array('maximages', 'Number of Images the Browser loads at once (autoload)', $maximages, 'Allowed values: 2 - 20, default = 6)'),
 	));
 }
 
@@ -135,6 +141,7 @@ function faces_plugin_admin_post(&$a) {
 	$exiftool = ((x($_POST, 'exiftool')) ? true : false);
 	$deletetables = ((x($_POST, 'deletetables')) ? true : false);
 	$zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : 3);
+	$maximages = ((x($_POST, 'maximages')) ? intval(trim($_POST['maximages'])) : 6);
 
 
 	$ret = testPythonVersion();
@@ -171,6 +178,12 @@ function faces_plugin_admin_post(&$a) {
 		$zoom = 1;
 	}
 
+	if ($maximages > 20) {
+		$maximages = 20;
+	} else if ($maximages < 2) {
+		$maximages = 2;
+	}
+
 	set_config('faces', 'limit', $limit);
 	set_config('faces', 'finder1', $finder1);
 	set_config('faces', 'finder1config', preg_replace('/\s+/', '', $finder1config));
@@ -178,6 +191,7 @@ function faces_plugin_admin_post(&$a) {
 	set_config('faces', 'finder2config', preg_replace('/\s+/', '', $finder2config));
 	set_config('faces', 'exiftool', $exiftool);
 	set_config('faces', 'zoom', $zoom);
+	set_config('faces', 'maximages', $maximages);
 
 	if ($deletetables) {
 		faces_drop_database_tables();

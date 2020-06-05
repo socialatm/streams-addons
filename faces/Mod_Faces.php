@@ -1003,17 +1003,18 @@ class Faces extends Controller {
 		$this->removeObsoleteNames();
 
 		// the defaults
-		$from = '0000-00-00';
+		$from = '0000-00-00 00:00:00';
 		$to = date('Y-m-d') . " 23:59:59";
 		$filter_names = [];
 		$AND = "0";
+		$lastFileIdLoadedCondition = "";
 
 		// read the request by the browser
 		$filter = $_POST['filter'];
 		if ($filter != "") {
 			$filterArr = json_decode($filter, true);
 			if ($filterArr['from'] != "") {
-				$from = $filterArr['from'] . " 00:00:00";
+				$from = $filterArr['from'];
 			}
 			if ($filterArr['to'] != "") {
 				$to = $filterArr['to'];
@@ -1023,6 +1024,9 @@ class Faces extends Controller {
 			}
 			if ($filterArr['and'] != "") {
 				$AND = $filterArr['and'];
+			}
+			if ($filterArr['oldestImageLoadedId'] != "") {
+				$lastFileIdLoadedCondition = "  AND faces_encoding.id < " . intval($filterArr['oldestImageLoadedId'] . " ");
 			}
 		} else {
 			logger('no filter received from client', LOGGER_DEBUG);
@@ -1041,6 +1045,12 @@ class Faces extends Controller {
 		//-- filter face encodings by time 
 		//----------------------------------------------------------------------
 
+		$imagesPerPost = get_config('faces', 'maximages');
+		if(!$imagesPerPost) {
+			$imagesPerPost = 6;
+		}
+		$limit = $imagesPerPost * 100; // max 50 faces on each image using max 2 finders = 100 encodings per image
+
 		$perms = permissions_sql($this->owner['channel_id'], null, 'attach');
 
 		// select all faces for
@@ -1055,8 +1065,7 @@ class Faces extends Controller {
 				. "  faces_encoding.person_recognized, "
 				. "  faces_encoding.person_marked_unknown, "
 				. "  faces_encoding.marked_ignore, "
-				. "  attach.hash, "
-				. "  attach.created "
+				. "  attach.hash "
 				. "FROM "
 				. "  attach "
 				. "JOIN "
@@ -1071,30 +1080,23 @@ class Faces extends Controller {
 				. "  AND faces_encoding.error != 1 "
 				. "  AND faces_encoding.channel_id = %d "
 //				. "  AND faces_encoding.finder = %d "
-				. "  AND attach.created != '%s' "
-				. "  AND attach.created between '%s' and '%s' $perms "
-				. "ORDER BY attach.created DESC " //
-				. "LIMIT 20 " 
+				. " $lastFileIdLoadedCondition AND attach.created between '%s' and '%s' $perms "
+				. "ORDER BY faces_encoding.id DESC " //
+				. "LIMIT %d "
 				, intval($this->owner['channel_id']), // 
 //				intval(1), //
-				dbesc($to), //
 				dbesc($from), //
-				dbesc($to)
+				dbesc($to), //
+				intval($limit)
 		);
 
 		logger("Found " . sizeof($encodings) . " face encodings after date filter.", LOGGER_DEBUG);
-		
-		$dateOldestImage = 0;
-		if($encodings) {
-			$lastEnc = end($encodings); 
-			$dateOldestImage = $lastEnc["created"];
-		}
 
 		//----------------------------------------------------------------------
 		//-- filter face encodings by names (AND / OR)
 		//----------------------------------------------------------------------
 
-		$images = $this->filterImages($encodings, $filter_names, $AND, $names);
+		$images = $this->filterImages($encodings, $filter_names, $AND, $names, $imagesPerPost);
 
 		logger("Sending " . sizeof($images) . " images after name filter.", LOGGER_DEBUG);
 
@@ -1105,7 +1107,6 @@ class Faces extends Controller {
 				array(
 					'status' => true,
 					'images' => $images,
-					'oldest' => $dateOldestImage,
 					'names' => $names
 		));
 	}
@@ -1392,7 +1393,7 @@ class Faces extends Controller {
 		return $images;
 	}
 
-	private function filterImages($encodings, $filter_names, $AND, $allowedNames) {
+	private function filterImages($encodings, $filter_names, $AND, $allowedNames, $imagesPerPost) {
 		if (sizeof($encodings) == 0) {
 			return [];
 		}
@@ -1420,6 +1421,9 @@ class Faces extends Controller {
 			}
 			$current_file_id = $encoding['id'];
 			array_push($image_encodings, $encoding);
+			if(sizeof($images) >= ($imagesPerPost - 1)) {
+				break;
+			} 
 		}
 		// last image
 		$img = $this->checkImage($image_encodings, $filter_names, $AND, $preferedFinder, $allowedNameIDs);
