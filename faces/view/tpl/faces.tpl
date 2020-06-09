@@ -1,7 +1,7 @@
 
 
-
 <div id="face-scoll-top"></div>
+<div id="face-scoll-top-message">Loading...</div>
 <div id="face-panel-pictures" class="clearfix">
     <!-- filled dynamically by javascript -->
     <!-- all the pictures go here -->    

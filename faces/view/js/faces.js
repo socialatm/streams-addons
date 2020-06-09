@@ -964,6 +964,8 @@ function animate_on() {
 function animate_off() {
     $('#button_share_box').find('.fa').removeClass("fa-spin").removeClass("fa-fw");
     document.getElementById("button_share_box").style.visibility = "hidden";
+    $('#face-scoll-top-message').text("");
+    $('#face-scoll-top-message').fadeOut();
     ((loglevel >= 1) ? console.log(t() + " animate off") : null);
 }
 
@@ -1223,6 +1225,9 @@ var isAppendingToTop = false;
 function loadNewImages() {
     ((loglevel >= 0) ? console.log(t() + " load new images") : null);
     isAppendingToTop = true;
+    $('#face-scoll-top-message').text("Loading...");
+    $("#face-scoll-top-message").css("background-color", "red");
+    $('#face-scoll-top-message').fadeIn();
     startFaceDetection();
     createFilterString();
     postSearch();
