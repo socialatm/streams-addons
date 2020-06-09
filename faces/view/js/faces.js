@@ -290,7 +290,7 @@ function postNames() {
     if (unsentNames.length === 0) {
         ((loglevel >= 0) ? console.log(t() + " no name left to send ") : null);
         clearCounterNamesSending();
-        postSearch();
+//        postSearch();
         return;
     }
     var name = unsentNames[0];
