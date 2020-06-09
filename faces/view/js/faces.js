@@ -400,7 +400,9 @@ $("#face-search-and").change(function () {
 var blockAppending = false;
 var filterStringServer = "";
 var filterNames = [];
+var oldestImageLoadedId = "";
 function search() {
+    oldestImageLoadedId = "";
     createFilterString();
     // stop loading images
     ((loglevel >= 0) ? console.log(t() + " Clear some arrays received from server (images, encodings, names) to stop the loading of images ") : null);
@@ -435,15 +437,12 @@ function createFilterString() {
     var checked = $("#face-search-and")[0].checked;
     ((loglevel >= 1) ? console.log(t() + " AND = " + checked) : null);
 
-    var from = $("#face-date-from").val();
+    var from = $("#face-date-from").val() + " 00:00:00";
     var to = $("#face-date-to").val() + " 23:59:59";
-    if(oldestImageTimeStamp != "") {
-        to = oldestImageTimeStamp;
-    } 
     ((loglevel >= 1) ? console.log(t() + " from = " + from) : null);
     ((loglevel >= 1) ? console.log(t() + " to = " + to) : null);
 
-    var filter = {"from": from, "to": to, "names": filterNames, "and": checked};
+    var filter = {"from": from, "to": to, "names": filterNames, "and": checked, "oldestImageLoadedId": oldestImageLoadedId};
     filterStringServer = JSON.stringify(filter);
     ((loglevel >= 0) ? console.log(t() + " filter (search) for server is = " + filterStringServer) : null);
 }
@@ -687,6 +686,10 @@ function appendPicture(img) {
             html += "</div>";
         }
     }
+    
+    oldestImageLoadedId = img.id;
+    ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+    
     if (blockAppending) {
         // just in case a seach was started meanwhile
         ((loglevel >= 0) ? console.log(t() + " was interrupted to show image to user. A new server request was started.") : null);
@@ -989,7 +992,6 @@ function startFaceDetection() {
 
 }
 
-var oldestImageTimeStamp = "";
 
 function postSearch() {
     blockEndVisible = true;
@@ -998,16 +1000,11 @@ function postSearch() {
     if (!isSearchMe) {
         postURL = getURL() + "/search";
     }
-    oldestImageTimeStamp = "";
     ((loglevel >= 0) ? console.log(t() + " about to post a search to the server: url = " + postURL + " , filter = " + filterStringServer) : null);
     $.post(postURL, {filter: filterStringServer}, function (data) {
         blockAppending = false;
         if (data['status']) {
             ((loglevel >= 0) ? console.log(t() + " Successfully received pictures from server.") : null);
-            if (data['oldest']) {
-                oldestImageTimeStamp = data['oldest'];
-                ((loglevel >= 0) ? console.log(t() + " oldest image is: " + oldestImageTimeStamp) : null);
-            }
             if (data['images'].length < 1) {
                 ((loglevel >= 0) ? console.log(t() + " But no results where received from server.") : null);
                 clearCounterImagesLoading(false);
@@ -1015,7 +1012,7 @@ function postSearch() {
             }
             receivedImages = data['images'];
             ((loglevel >= 2) ? console.log(t() + " received images = " + JSON.stringify(Object.assign({}, receivedImages))) : null);
-            receivedFaceEncodings = [];
+//            receivedFaceEncodings = [];
             var i;
             for (i = 0; i < receivedImages.length; i++) {
                 var encs = receivedImages[i].encodings;
@@ -1172,12 +1169,9 @@ var observer = new IntersectionObserver(function (entries) {
 
 function loadMoreImages() {
     ((loglevel >= 0) ? console.log(t() + " load more images") : null);
-    if(oldestImageTimeStamp == "") {
+    if (oldestImageLoadedId == "") {
         return;
     }
-//    var toS = checkDateString(oldestImageTimeStamp);
-//    var to = new Date(toS);
-//    document.querySelector("#face-date-to").valueAsDate = to;
     createFilterString();
     postSearch();
 }
@@ -1204,7 +1198,7 @@ $(document).ready(function () {
     var dTo = $("#faces_date_to").text();
     ((loglevel >= 0) ? console.log(t() + " date to = " + dTo) : null);
     initDate(dFrom, dTo);
-    createFilterString()
+//    createFilterString()
     var v = $("#faces_can_write").text();
     can_write = (v === 'true');
     ((loglevel >= 0) ? console.log(t() + " can write = " + can_write) : null);
@@ -1220,7 +1214,8 @@ $(document).ready(function () {
     zoom = parseInt($("#faces_zoom").text());
     ((loglevel >= 0) ? console.log(t() + " zoom = " + zoom) : null);
     isSearchMe = isModeSearchMe();
-    postSearch();
+//    postSearch();
+    search();
     if (!isSearchMe) {
         startFaceDetection();
     }
