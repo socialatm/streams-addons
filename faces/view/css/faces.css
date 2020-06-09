@@ -84,3 +84,12 @@
 .face-name-and-buttons {
     visibility: hidden;
 }
+
+#face-scoll-top {
+    margin: auto;
+    width: 10%;
+}
+
+#face-scoll-top-button {
+    border-radius: 50%;
+}

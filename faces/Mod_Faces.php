@@ -1007,7 +1007,7 @@ class Faces extends Controller {
 		$to = date('Y-m-d') . " 23:59:59";
 		$filter_names = [];
 		$AND = "0";
-		$lastFileIdLoadedCondition = "";
+		$fileIdCondition = "";
 
 		// read the request by the browser
 		$filter = $_POST['filter'];
@@ -1026,7 +1026,10 @@ class Faces extends Controller {
 				$AND = $filterArr['and'];
 			}
 			if ($filterArr['oldestImageLoadedId'] != "") {
-				$lastFileIdLoadedCondition = "  AND faces_encoding.id < " . intval($filterArr['oldestImageLoadedId'] . " ");
+				$fileIdCondition = "  AND faces_encoding.id < " . intval($filterArr['oldestImageLoadedId'] . " ");
+			}
+			if ($filterArr['mostRecentImageLoadedId'] != "") {
+				$fileIdCondition = "  AND faces_encoding.id > " . intval($filterArr['mostRecentImageLoadedId'] . " ");
 			}
 		} else {
 			logger('no filter received from client', LOGGER_DEBUG);
@@ -1046,8 +1049,11 @@ class Faces extends Controller {
 		//----------------------------------------------------------------------
 
 		$imagesPerPost = get_config('faces', 'maximages');
-		if(!$imagesPerPost) {
+		if (!$imagesPerPost) {
 			$imagesPerPost = 6;
+		}
+		if ($filterArr['mostRecentImageLoadedId'] != "") {
+			$imagesPerPost = 50;
 		}
 		$limit = $imagesPerPost * 100; // max 50 faces on each image using max 2 finders = 100 encodings per image
 
@@ -1080,7 +1086,7 @@ class Faces extends Controller {
 				. "  AND faces_encoding.error != 1 "
 				. "  AND faces_encoding.channel_id = %d "
 //				. "  AND faces_encoding.finder = %d "
-				. " $lastFileIdLoadedCondition AND attach.created between '%s' and '%s' $perms "
+				. " $fileIdCondition AND attach.created between '%s' and '%s' $perms "
 				. "ORDER BY faces_encoding.id DESC " //
 				. "LIMIT %d "
 				, intval($this->owner['channel_id']), // 
@@ -1421,9 +1427,9 @@ class Faces extends Controller {
 			}
 			$current_file_id = $encoding['id'];
 			array_push($image_encodings, $encoding);
-			if(sizeof($images) >= ($imagesPerPost - 1)) {
+			if (sizeof($images) >= ($imagesPerPost - 1)) {
 				break;
-			} 
+			}
 		}
 		// last image
 		$img = $this->checkImage($image_encodings, $filter_names, $AND, $preferedFinder, $allowedNameIDs);

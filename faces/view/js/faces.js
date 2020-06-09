@@ -401,8 +401,11 @@ var blockAppending = false;
 var filterStringServer = "";
 var filterNames = [];
 var oldestImageLoadedId = "";
+var mostRecentImageLoadedId = "";
 function search() {
     oldestImageLoadedId = "";
+    mostRecentImageLoadedId = "";
+    isAppendingToTop = false;
     createFilterString();
     // stop loading images
     ((loglevel >= 0) ? console.log(t() + " Clear some arrays received from server (images, encodings, names) to stop the loading of images ") : null);
@@ -442,7 +445,14 @@ function createFilterString() {
     ((loglevel >= 1) ? console.log(t() + " from = " + from) : null);
     ((loglevel >= 1) ? console.log(t() + " to = " + to) : null);
 
-    var filter = {"from": from, "to": to, "names": filterNames, "and": checked, "oldestImageLoadedId": oldestImageLoadedId};
+    var filter = {"from": from, "to": to, "names": filterNames, "and": checked};
+
+    if (isAppendingToTop) {
+        filter.mostRecentImageLoadedId = mostRecentImageLoadedId;
+    } else {
+        filter.oldestImageLoadedId = oldestImageLoadedId;
+    }
+
     filterStringServer = JSON.stringify(filter);
     ((loglevel >= 0) ? console.log(t() + " filter (search) for server is = " + filterStringServer) : null);
 }
@@ -686,16 +696,23 @@ function appendPicture(img) {
             html += "</div>";
         }
     }
-    
+    if (mostRecentImageLoadedId == "") {
+        mostRecentImageLoadedId = img.id;
+        ((loglevel >= 0) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
+    }
     oldestImageLoadedId = img.id;
     ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
-    
+
     if (blockAppending) {
         // just in case a seach was started meanwhile
         ((loglevel >= 0) ? console.log(t() + " was interrupted to show image to user. A new server request was started.") : null);
         return;
     }
-    $("#face-panel-pictures").append(html);
+    if (isAppendingToTop) {
+        $("#face-panel-pictures").prepend(html);
+    } else {
+        $("#face-panel-pictures").append(html);
+    }
 }
 
 function getImageForId(id) {
@@ -755,8 +772,11 @@ function setFrameSizes(img) {
         styleFaceFrame(face);
     }
     ((loglevel >= 1) ? console.log(t() + " finished to set frame size") : null);
-//    zoomPictures();
-    zoomLastPictures(img);
+    if (isAppendingToTop) {
+        zoomPictures();
+    } else {
+        zoomLastPictures(img);
+    }
     appendNextPicture();
 }
 
@@ -956,7 +976,7 @@ function clearCounterImagesLoading(isLoadAgain) {
     if (shouldLoadMore && isLoadAgain) {
         loadMoreImages();
     } else {
-        blockEndVisible = false;
+        blockSearch = false;
     }
 }
 
@@ -994,7 +1014,7 @@ function startFaceDetection() {
 
 
 function postSearch() {
-    blockEndVisible = true;
+    blockSearch = true;
     animate_on();
     var postURL = getURL();
     if (!isSearchMe) {
@@ -1011,6 +1031,9 @@ function postSearch() {
                 return;
             }
             receivedImages = data['images'];
+            if (isAppendingToTop) {
+                receivedImages = receivedImages.reverse();
+            }
             ((loglevel >= 2) ? console.log(t() + " received images = " + JSON.stringify(Object.assign({}, receivedImages))) : null);
 //            receivedFaceEncodings = [];
             var i;
@@ -1157,11 +1180,11 @@ function isModeSearchMe() {
 
 var isSearchMe = false;
 
-var blockEndVisible = true;
-var observer = new IntersectionObserver(function (entries) {
+var blockSearch = true;
+var observerEnd = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting === true) {
         ((loglevel >= 0) ? console.log(t() + " scrolled to end") : null);
-        if (!blockEndVisible) {
+        if (!blockSearch) {
             loadMoreImages();
         }
     }
@@ -1172,6 +1195,7 @@ function loadMoreImages() {
     if (oldestImageLoadedId == "") {
         return;
     }
+    isAppendingToTop = false;
     createFilterString();
     postSearch();
 }
@@ -1186,11 +1210,29 @@ function isEndVisible() {
 
     return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
 }
+var observerTop = new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting === true) {
+        ((loglevel >= 0) ? console.log(t() + " scrolled to top") : null);
+        if (!blockSearch) {
+            loadNewImages();
+        }
+    }
+}, {threshold: [1]});
+
+var isAppendingToTop = false;
+function loadNewImages() {
+    ((loglevel >= 0) ? console.log(t() + " load new images") : null);
+    isAppendingToTop = true;
+    startFaceDetection();
+    createFilterString();
+    postSearch();
+}
 
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
-    observer.observe(document.querySelector("#face-scoll-end"));
+    observerEnd.observe(document.querySelector("#face-scoll-end"));
+    observerTop.observe(document.querySelector("#face-scoll-top"));
     faceEditControls = $("#template-face-frame-edit-controls").html();
     $("#template-face-frame-edit-controls").remove();
     var dFrom = $("#faces_date_from").text();
