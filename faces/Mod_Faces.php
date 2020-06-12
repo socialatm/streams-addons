@@ -484,6 +484,11 @@ class Faces extends Controller {
 
 	private function writeName() {
 
+		if (!$this->can_write) {
+			logger('no write permissions', LOGGER_DEBUG);
+			json_return_and_die(array('status' => false, 'errormsg' => 'no write permissions'));
+		}
+
 		$n = $_POST['name'];
 		if (!isset($n)) {
 			logger('no name received from client');
@@ -629,19 +634,8 @@ class Faces extends Controller {
 
 		//----------------------------------------------------------------------
 		//-- encodings --
-		//----------------------------------------------------------------------		
-
-		if (!$this->can_write) {
-			logger('not allowed to write, but check if observer is the owner of the old name or has write permissions on the old name. This will be allowed. Example: set the face to unknown, ignored.', LOGGER_DEBUG);
-			$allowed = $this->canWriteOldName($nameRequestFromBrowser);
-			if (!$allowed) {
-				$enc['id'] = $nameRequestFromBrowser['encoding_id'];
-				$encs[] = $enc;
-				logger('not allowed to change the old name to another one', LOGGER_DEBUG);
-				json_return_and_die(array('status' => false, 'encodings' => $encs, 'errormsg' => 'not allowed to change the old name to another one'));
-			}
-		}
-
+		//----------------------------------------------------------------------
+		//
 		// This is how a face will get or change a (verified) name in the ui.
 		// The name id and the name itself (both from table faces_person) will be sent as response.
 		// Only then (after the server response) the ui will change
@@ -724,34 +718,6 @@ class Faces extends Controller {
 					'name' => $name_db[0],
 					'$message' => $ret['message']
 		));
-	}
-
-	private function canWriteOldName($nameRequestFromBrowser) {
-		// What was the old name of the face encoding before the user changed it?
-		$person = q("SELECT "
-				. "  faces_person.id, "
-				. "  faces_person.channel_id "
-				. "  FROM "
-				. "    faces_person "
-				. "  JOIN "
-				. "    faces_encoding "
-				. "  ON "
-				. "    faces_person.id = faces_encoding.person_verified "
-				. "  WHERE "
-				. "    faces_person.id = %d "
-				. "  LIMIT 1", //
-				intval($nameRequestFromBrowser['name_id_old']));
-
-		if (!$person) {
-			logger("no existing name found for this old name id=" . $nameRequestFromBrowser['name_id_old'], LOGGER_DEBUG);
-			return false;
-		}
-		// check if the observer has write permissions to change the name
-		$chan_id = $person[0]['channel_id'];
-		$observer_hash = get_observer_hash();
-		$allowed = perm_is_allowed($chan_id, $observer_hash, 'write_storage');
-
-		return $allowed;
 	}
 
 	private function writeFaceForOtherFinder($encoding, $name_hash) {
@@ -1037,14 +1003,6 @@ class Faces extends Controller {
 		logger('received name = ' . $filter, LOGGER_DEBUG);
 
 		//----------------------------------------------------------------------
-		//-- get list of all names
-		//----------------------------------------------------------------------
-
-		$names = $this->listAllowedNames();
-
-		logger("Found " . sizeof($names) . " names.", LOGGER_DEBUG);
-
-		//----------------------------------------------------------------------
 		//-- filter face encodings by time 
 		//----------------------------------------------------------------------
 
@@ -1099,15 +1057,24 @@ class Faces extends Controller {
 		logger("Found " . sizeof($encodings) . " face encodings after date filter.", LOGGER_DEBUG);
 
 		//----------------------------------------------------------------------
+		//-- get list of all names
+		//----------------------------------------------------------------------
+
+		$names = $this->listAllowedNames();
+
+		logger("Found " . sizeof($names) . " names.", LOGGER_DEBUG);
+
+		$names = $this->appendAllowedContacts($names);
+
+		logger("Found " . sizeof($names) . " names including real channels.", LOGGER_DEBUG);
+
+		//----------------------------------------------------------------------
 		//-- filter face encodings by names (AND / OR)
 		//----------------------------------------------------------------------
 
 		$images = $this->filterImages($encodings, $filter_names, $AND, $names, $imagesPerPost);
 
 		logger("Sending " . sizeof($images) . " images after name filter.", LOGGER_DEBUG);
-
-		$names = $this->appendMissingNames($images, $names);
-		$names = $this->appendAllowedContacts($names);
 
 		json_return_and_die(
 				array(
@@ -1118,42 +1085,11 @@ class Faces extends Controller {
 	}
 
 	private function listAllowedNames() {
-		// Who has granted the observer write permissions?
-		// This includes his own names.
-		// 
-		// The effect will be:
-		// If the observer B looks at the faces (images) of owner A then 
-		// observer B will be able
-		// - to use his own name to tag faces.
-		// - to change the names (he owns) in the browser
-		//  even he has no write permissions for channel A.
-		//  
-		// To be clear: This applies to names only that
-		// are owned by B. This permission is checked by the browser and later on by the server
-		// if B wants to write the name (for image of A) to the database.
-		// 
-		// The idea behind:
-		// This opens the door a little bit to let user B tag faces of images of A
-		// without B having the permission to write files and photos for A's channel.
-		//
-		// Think it over! Is it to complicated?
-		//
-		$channels = q("SELECT channel_id FROM faces_person GROUP by channel_id");
-		$allowedChannelsWithWritePermissions = [];
-		if (!$this->is_owner) {
-			foreach ($channels as $channel) {
-				$chan_id = $channel['channel_id'];
-				$observer_hash = get_observer_hash();
-				$allowed = perm_is_allowed($chan_id, $observer_hash, 'write_storage');
-				if ($allowed) {
-					array_push($allowedChannelsWithWritePermissions, $channel['channel_id']);
-				}
-			}
-		}
 
-		// Who has granted the observer read permissions on the names.
-		// This has the effect that the name list in the browser shows the names
-		// that are owned by the observer itself.
+		$perms = permissions_sql($this->owner['channel_id'], null, 'faces_person');
+
+		$r = q("SELECT id, name FROM faces_person WHERE channel_id = %d $perms ", intval($this->owner['channel_id']));
+
 		$names = q("SELECT "
 				. "  faces_person.name, "
 				. "  faces_person.id, "
@@ -1164,42 +1100,13 @@ class Faces extends Controller {
 				. "  faces_person "
 				. "JOIN "
 				. "  channel "
-				. "ON channel.channel_id = faces_person.channel_id");
-		$allowedNameIDs = $this->selectAllowedNameIDsForObserver();
+				. "ON "
+				. "  channel.channel_id = faces_person.channel_id "
+				. "WHERE "
+				. "  faces_person.channel_id = %d $perms ", //
+				intval($this->owner['channel_id']));
 
-		// add names the name where the observer has the permissions
-		$namesToSend = [];
-		foreach ($names as $name) {
-			$chan_id = $name['channel_id'];
-			$name_id = $name['id'];
-			if (in_array($chan_id, $allowedChannelsWithWritePermissions) ? 1 : 0) {
-				// look for the write permissions first
-				$n = array(
-					'id' => $name['id'],
-					'name' => $name['name'],
-					'channel_id' => $name['channel_id'],
-					'channel_address' => $name['channel_address'],
-					'xchan_hash' => ($name['xchan_hash'] ? $name['xchan_hash'] : ''),
-					'w' => 1
-				);
-				$namesToSend[] = $n;
-			} else if (in_array($name_id, $allowedNameIDs) ? 1 : 0) {
-				// add the names with read permissions
-				// The effect will be that the user can see and search this name
-				// but he can not change the name of the face. No dialog will open.
-				$n = array(
-					'id' => $name['id'],
-					'name' => $name['name'],
-					'channel_id' => $name['channel_id'],
-					'channel_address' => $name['channel_address'],
-					'xchan_hash' => ($name['xchan_hash'] ? $name['xchan_hash'] : ''),
-					'w' => 0
-				);
-				$namesToSend[] = $n;
-			}
-		}
-
-		return $namesToSend;
+		return $names;
 	}
 
 	private function appendAllowedContacts($names) {
@@ -1271,12 +1178,11 @@ class Faces extends Controller {
 				foreach ($r as $name) {
 					if (!in_array($name['xchan_hash'], $tmpList) ? 1 : 0) {
 						$n = array(
-							'id' => $this->owner['channel_id'] . "_" . $name['xchan_name'],
+							'id' => $name['xchan_hash'],
 							'name' => $name['xchan_name'],
 							'channel_id' => $this->owner['channel_id'],
 							'channel_address' => $name['xchan_addr'],
-							'xchan_hash' => ($name['xchan_hash'] ? $name['xchan_hash'] : ''),
-							'w' => 0
+							'xchan_hash' => $name['xchan_hash'],
 						);
 						$names[] = $n;
 					}
@@ -1285,97 +1191,6 @@ class Faces extends Controller {
 		}
 
 		return $names;
-	}
-
-	private function appendMissingNames($images, $names) {
-		$sizeStart = sizeof($names);
-		logger("Found " . sizeof($names) . " names before appending missing names.", LOGGER_DEBUG);
-		// It can happen that a face has a name but this name is not in the
-		// name list. Result: the face is framed in the image but shows no name.
-		// When does it happen? If
-		//   - The owner A of the channel is not the owner B of the name.
-		//   - The owner B of the name has withdrawn the permission for the name.
-		// it seems better to show him the name.
-		// Keep mind that the observer C looks at the addon using the permissions of the
-		// channel owner A.
-		$ids_encodings = [];
-		foreach ($images as $image) {
-			foreach ($image['encodings'] as $encoding) {
-				if (!in_array($encoding['pv'], $ids_encodings) && $encoding['pv'] != 0) {
-					array_push($ids_encodings, $encoding['pv']);
-				}
-//				if (!in_array($encoding['pr'], $ids_encodings) && $encoding['pr'] != 0) {
-//					array_push($ids_encodings, $encoding['pr']);
-//				}
-			}
-		}
-		$ids_names = [];
-		foreach ($names as $name) {
-			$ids_names[] = $name['id'];
-		}
-		foreach ($ids_encodings as $id_encoding) {
-			if (!in_array($id_encoding, $ids_names)) {
-				$r = q("SELECT "
-						. "  faces_person.name, "
-						. "  faces_person.id, "
-						. "  faces_person.channel_id, "
-						. "  channel.channel_address, "
-						. "  faces_person.xchan_hash, "
-						. "  xchan.xchan_addr "
-						. "FROM "
-						. "  faces_person "
-						. "JOIN "
-						. "  channel "
-						. "ON "
-						. "  channel.channel_id = faces_person.channel_id "
-						. "LEFT JOIN "
-						. "  xchan "
-						. " ON  "
-						. "  faces_person.xchan_hash  = xchan.xchan_hash  "
-						. "WHERE "
-						. "  faces_person.id = %d ", intval($id_encoding));
-				if ($r) {
-					$n = array(
-						'id' => $r[0]['id'],
-						'name' => $r[0]['name'],
-						'channel_id' => ($r[0]['xchan_addr'] ? $r[0]['xchan_addr'] : $r[0]['channel_address']),
-						'channel_address' => $r[0]['channel_address'],
-						'xchan_hash' => ($r[0]['xchan_hash'] ? $r[0]['xchan_hash'] : ''),
-						'w' => 0
-					);
-					$names[] = $n;
-					logger("appending missing name with id=" . $r[0]['id'] . ", name=" . $r[0]['name'], LOGGER_DEBUG);
-				}
-			}
-		}
-
-		logger("Found " . sizeof($names) . " names after appending missing names.", LOGGER_DEBUG);
-		$sizeEnd = sizeof($names);
-		logger("Appended " . ($sizeEnd - $sizeStart) . " names (due to withdrawn permissions).", LOGGER_DEBUG);
-
-		return $names;
-	}
-
-	private function selectAllowedNameIDsForObserver() {
-		$channels = q("SELECT faces_person.channel_id, channel.channel_hash FROM faces_person JOIN channel  ON channel.channel_id = faces_person.channel_id GROUP by faces_person.channel_id");
-
-		// who has granted the observer write permissions
-		$allowed = [];
-		foreach ($channels as $channel) {
-			$perms = permissions_sql($channel['channel_id'], $this->owner['channel_hash']); // this channel is the owner of the name(s)
-			// apply on observer
-//			$r = q("SELECT id, name FROM faces_person WHERE channel_id = %d $perms ", intval($channel['channel_id']));
-			// apply on owner of the channel
-			// the obserer looks with the eyes (pemissions) of the owner of the images at the faces
-			$r = q("SELECT id, name FROM faces_person WHERE channel_id = %d $perms ", intval($channel['channel_id']));
-			if (!r) {
-				continue;
-			}
-			foreach ($r as $name) {
-				array_push($allowed, $name['id']);
-			}
-		}
-		return $allowed;
 	}
 
 	private function filterMyImages($encodings, $name_id) {
@@ -1455,7 +1270,7 @@ class Faces extends Controller {
 		}
 
 		if (sizeof($filter_names) < 1) {
-			$img = $this->createImage($encs);
+			$img = $this->createImage($encs, $allowedNameIDs);
 			return $img;
 		}
 
@@ -1485,7 +1300,7 @@ class Faces extends Controller {
 							$andResults[$counter] = true;
 							break;
 						} else {
-							return $this->createImage($encodings);
+							return $this->createImage($encodings, $allowedNameIDs);
 						}
 					}
 				} else if ($encoding['person_recognized'] > 0) {
@@ -1494,7 +1309,7 @@ class Faces extends Controller {
 							$andResults[$counter] = true;
 							break;
 						} else {
-							return $this->createImage($encodings);
+							return $this->createImage($encodings, $allowedNameIDs);
 						}
 					}
 				}
@@ -1509,7 +1324,7 @@ class Faces extends Controller {
 				return false;
 			}
 		}
-		$img = $this->createImage($encodings);
+		$img = $this->createImage($encodings, $allowedNameIDs);
 		return $img;
 	}
 
@@ -1597,16 +1412,33 @@ class Faces extends Controller {
 		return intval($count[0]['matches']);
 	}
 
-	private function createImage($encodings) {
+	private function createImage($encodings, $allowedNameIDs) {
 		$image = [];
 		$image['id'] = $encodings[0]['id'];
 		$image['src'] = $encodings[0]['hash'];
 		$encs = [];
 		for ($x = 0; $x < sizeof($encodings); $x++) {
+			$enc_id = $encodings[$x]['person_verified'];
+			if (//
+					$encodings[$x]['person_marked_unknown'] == 0 && //
+					$encodings[$x]['person_verified'] != 0 && //
+					$encodings[$x]['person_recognized'] != 0) {
+				if (//
+						!in_array($encodings[$x]['person_verified'], $allowedNameIDs) && //
+						!in_array($encodings[$x]['person_recognized'], $allowedNameIDs)) {
+					// The observer might not have the permission to view the contacts
+					// of the owner. Assume the owner does not want to show the faces
+					// of those contacts to the observer.
+					continue;
+				}
+			}
 			// shrink the size of the json response
 			$encs[$x] = $this->prepareToSend($encodings[$x]);
 		}
 		$image['encodings'] = $encs;
+		if (sizeof($encs) < 1) {
+			return false;
+		}
 		return $image;
 	}
 

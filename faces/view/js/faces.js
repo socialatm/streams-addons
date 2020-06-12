@@ -15,14 +15,13 @@ function editName(faceFrame) {
 
     var name_id = $(faceFrame).attr("name_id");
     ((loglevel >= 0) ? console.log(t() + " user starts do edit name id =" + name_id + " Checking permissions...") : null);
-    var perm = canWriteName(name_id);
     if (!isSearchMe) {
-        if (perm) {
-            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name.. This IF helps the owner of the name to see and change the name here without having the permission granted to write the faces of the channel owner (owner of the images itself)") : null);
+        if (is_owner) {
+            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name. observer = owner") : null);
         } else if (can_write) {
-            ((loglevel >= 0) ? console.log(t() + " Edit anyway. Why? This can happen, if the owner of the name has withdrawn the permissions.") : null);
+            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name. observer != owner") : null);
         } else {
-            ((loglevel >= 0) ? console.log(t() + " Neither permission to edit faces on this channel, nor to edit this face particulary") : null);
+            ((loglevel >= 0) ? console.log(t() + " Neither owner nor write permission") : null);
             return;
         }
     }
@@ -68,21 +67,6 @@ function editName(faceFrame) {
     ((loglevel >= 0) ? console.log(t() + " edit frame  was opened and shows name = " + name_shown) : null);
 }
 
-function canWriteName(nameID) {
-    var i;
-    for (i = 0; i < receivedNames.length; i++) {
-        var name_id = receivedNames[i].id;
-        if (name_id == nameID) {
-            if (receivedNames[i].w == 1) {
-                ((loglevel >= 1) ? console.log(t() + " yes, has permission to write name id = " + nameID) : null);
-                return true;
-            }
-        }
-    }
-    ((loglevel >= 1) ? console.log(t() + " no permission to write name id = " + nameID) : null);
-    return false;
-}
-
 function getIdForNameAndOwner(nameandowner) {
     var i;
     for (i = 0; i < receivedNames.length; i++) {
@@ -102,7 +86,11 @@ function appendNames() {
     for (i = 0; i < receivedNames.length; i++) {
         var id = receivedNames[i].id;
         var name = receivedNames[i].name;
-        receivedNames[i].nameAndOwner = receivedNames[i].name + " (" + receivedNames[i].channel_address + ")";
+        if (receivedNames[i].xchan_hash != "") {
+            receivedNames[i].nameAndOwner = receivedNames[i].name + " (" + receivedNames[i].channel_address + ")";
+        } else {
+            receivedNames[i].nameAndOwner = receivedNames[i].name;
+        }
         name = name.trim();
         if (!isIdInList(id, "face-name-list-search")) {  // double check just in case
             $(".face-name-list").append("<option value=\"" + receivedNames[i].nameAndOwner + "\" xchan_hash=\"" + receivedNames[i].xchan_hash + "\" nameid=\"" + id + "\" channel_id=\"" + receivedNames[i].channel_id + "\" channel_address=\"" + receivedNames[i].channel_address + "\">" + receivedNames[i].nameAndOwner + "</option>");
@@ -125,7 +113,11 @@ function appendName(name) {
     }
     // append in ui
     if (!isIdInList(name.id, "face-name-list-search")) {
-        name.nameAndOwner = name.name + " (" + name.channel_address + ")";
+        if (name.xchan_hash != "") {
+            name.nameAndOwner = name.name + " (" + name.channel_address + ")";
+        } else {
+            name.nameAndOwner = name.name;
+        }
         $(".face-name-list").append("<option value=\"" + name.nameAndOwner + "\" xchan_hash=\"" + name.xchan_hash + "\" nameid=\"" + name.id + "\" channel_id=\"" + name.channel_id + "\" channel_address=\"" + name.channel_address + "\">" + name.nameAndOwner + "</option>");
         ((loglevel >= 0) ? console.log(t() + " append name = " + name.nameAndOwner + " with channel id = " + name.channel_id + " and name id = " + name.id) : null);
     }
@@ -700,8 +692,14 @@ function appendPicture(img) {
         mostRecentImageLoadedId = img.id;
         ((loglevel >= 0) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
     }
-    oldestImageLoadedId = img.id;
-    ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+    
+    if (oldestImageLoadedId == 0) {
+        oldestImageLoadedId = img.id;
+        ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+    } else if (img.id < oldestImageLoadedId) {
+        oldestImageLoadedId = img.id;
+        ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+    }
 
     if (blockAppending) {
         // just in case a seach was started meanwhile
