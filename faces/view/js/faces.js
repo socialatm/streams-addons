@@ -692,7 +692,7 @@ function appendPicture(img) {
         mostRecentImageLoadedId = img.id;
         ((loglevel >= 0) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
     }
-    
+
     if (oldestImageLoadedId == 0) {
         oldestImageLoadedId = img.id;
         ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
@@ -1074,6 +1074,10 @@ function getURL() {
 
 $('#aclModal').on('hidden.bs.modal', function (e) {
     ((loglevel >= 0) ? console.log(t() + " ACL modal dialog was closed by user") : null);
+    if (hasOpenedWritePermission && !isWritePermission) {
+        ((loglevel >= 0) ? console.log(t() + " ACL modal dialog for view permissions was closed because the modal dialog for write permissions was openend. Do not send the ACSLs.") : null);
+        return;
+    }
     var acls = $('.acl-field');
     var groupAllow = [];
     var groupDeny = [];
@@ -1097,15 +1101,44 @@ $('#aclModal').on('hidden.bs.modal', function (e) {
         contact_allow: contactAllow,
         group_allow: groupAllow,
         contact_deny: contactDeny,
-        groupDeny: groupDeny};
+        groupDeny: groupDeny,
+        isWrite: isWritePermission};
     acl_to_send_json = JSON.stringify(acl_to_send);
-    sendACLs(acl_to_send_json);
+    postACLs(acl_to_send_json);
 });
 
-function sendACLs(acl_string) {
+var windowWritePermission;
+
+$('#aclModal').on('shown.bs.modal', function (e) {
+    ((loglevel >= 0) ? console.log(t() + " ACL modal dialog is shown by user") : null);
+    if (hasOpenedWritePermission) {
+//        var perms_url = getURL() + "/permissions_write?wperm=1";
+//        var perms_url = getURL() + "?wperm=1";
+//        windowWritePermission = window.open(perms_url, "_self");
+        var f = document.getElementById('faces_load_write_permissions');
+        window.open('', '_self');
+        f.submit();
+        $('#aclModal').modal('toggle');
+    }
+    var labels = $(".section-content-wrapper").find("label");
+    if (labels) {
+        if (labels.length > 0) {
+            var label = labels[0];
+            if (isWritePermission) {
+                label.innerHTML = "Who can write?";
+            } else {
+                label.innerHTML = "Who can see this?";
+            }
+        }
+    }
+});
+
+function postACLs(acl_string) {
     var postURL = getURL() + "/permissions";
     ((loglevel >= 0) ? console.log(t() + " Sending request to get ACL: url = " + postURL + " , acl = " + acl_string) : null);
-    animate_on();
+    if (!isWritePermission) {
+        animate_on();
+    }
     $("#jot-perms-icon").html('<sup>!</sup>');
     $.post(postURL, {acl: acl_string}, function (data) {
         if (data['status']) {
@@ -1117,9 +1150,50 @@ function sendACLs(acl_string) {
             $("#jot-perms-icon").css({'color': 'red'});
             ((loglevel >= 0) ? console.log(t() + " Error sending ACLs: " + data['errormsg']) : null);
         }
-        animate_off();
+        if (!isWritePermission) {
+            animate_off();
+        } else {
+            $('#dbtn-acl').remove();
+            history.back();
+        }
     });
 }
+var startTimePressLockIcon = 0;
+var hasOpenedWritePermission = false;
+$('#dbtn-acl').mousedown(function (event) {
+    startTimePressLockIcon = Date.now();
+    switch (event.which) {
+        case 1:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was left clicked mouse down") : null);
+            hasOpenedWritePermission = false;
+            break;
+        case 2:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was middle clicked") : null);
+            hasOpenedWritePermission = true;
+            break;
+        case 3:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was right clicked") : null);
+            hasOpenedWritePermission = true;
+            break;
+        default:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was.... You have a strange Mouse!") : null);
+    }
+}).mouseup(function (event) {
+    switch (event.which) {
+        case 1:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was left clicked mouse up") : null);
+            var endTimePressLockIcon = Date.now();
+            var elapsedMilliseconds = endTimePressLockIcon - startTimePressLockIcon;
+            ((loglevel >= 0) ? console.log(t() + " lock icon was pressed for " + elapsedMilliseconds + " milliseconds") : null);
+            if (elapsedMilliseconds > 500) {
+                hasOpenedWritePermission = true;
+            }
+            break;
+        default:
+            ((loglevel >= 0) ? console.log(t() + " ignore elapsed time the lock icon was pressed") : null);
+    }
+});
+
 
 
 function formatDate(date) {
@@ -1231,9 +1305,16 @@ function loadNewImages() {
     postSearch();
 }
 
+var isWritePermission = 0;
+
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
+    isWritePermission = parseInt($("#isWritePermission").text());
+    if (isWritePermission === 1) {
+        document.getElementById("dbtn-acl").click();
+        return;
+    }
     observerEnd.observe(document.querySelector("#face-scoll-end"));
     observerTop.observe(document.querySelector("#face-scoll-top"));
     faceEditControls = $("#template-face-frame-edit-controls").html();

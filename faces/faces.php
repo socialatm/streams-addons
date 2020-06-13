@@ -9,7 +9,7 @@ require_once('addon/faces/FacesPermission.php');
 /**
  * Name: Faces
  * Description: Detect faces in images and make a guess who it is.
- * Version: 1.14 beta
+ * Version: 1.15 beta
  * Author: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  * Maintainer: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  *
@@ -28,11 +28,15 @@ function faces_unload() {
 	Hook::unregister('identity_basic_export', 'addon/faces/faces.php', 'export');
 	Hook::unregister('import_channel', 'addon/faces/faces.php', 'import');
 	Hook::unregister('process_channel_sync_delivery', 'addon/faces/faces.php', 'import');
+	Hook::unregister('perm_is_allowed', 'addon/faces/faces.php', 'faces_perm_is_allowed');
 }
 
 function faces_perm_is_allowed(&$a) {
 	if ($a['permission'] === 'view_faces') {
 		$a['result'] = check_faces_view_permission($a);
+	}
+	if ($a['permission'] === 'write_faces') {
+		$a['result'] = check_faces_write_permission($a);
 	}
 }
 

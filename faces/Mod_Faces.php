@@ -15,6 +15,7 @@ class Faces extends Controller {
 	private $can_write;
 	private $owner;
 	private $acl_item;
+	private $acl_item_write;
 	private $observer;
 	private $findersInEncodings = [];
 	private $findersInConfig = [];
@@ -31,6 +32,8 @@ class Faces extends Controller {
 		$this->loadFinders();
 
 		$this->getPermissionOject();
+
+		$this->getPermissionWriteOject();
 	}
 
 	function get() {
@@ -94,14 +97,6 @@ class Faces extends Controller {
 				return $ret['msg'];
 			}
 		}
-		$from = "";
-		if (isset($_GET['from'])) {
-			$from = $_GET['from'];
-		}
-		$to = "";
-		if (isset($_GET['to'])) {
-			$to = $_GET['to'];
-		}
 
 		// tell the browser about the log level
 		$loglevel = -1;
@@ -110,17 +105,52 @@ class Faces extends Controller {
 			$loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
 		}
 
-		//----------------------------------------------------------------------
-		// fill some elements in the ui including ACL
-		//----------------------------------------------------------------------
-
 		require_once('include/acl_selectors.php');
 
 		$channel = \App::get_channel();
 
-		$aclselect_e = populate_acl($this->acl_item, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+		$isWriteParam = "";
+		if (isset($_POST['wperm'])) {
+			$isWriteParam = $_POST['wperm'];
+		}
 
-		$lockstate = (($this->acl_item['allow_cid'] || $this->acl_item['allow_gid'] || $this->acl_item['deny_cid'] || $this->acl_item['deny_gid']) ? 'lock' : 'unlock');
+		// Does the user want to set write permissions?
+		if ($isWriteParam) {
+
+			$aclselect_e = populate_acl($this->acl_item_write, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+
+			$lockstate = (($this->acl_item_write['allow_cid'] || $this->acl_item_write['allow_gid'] || $this->acl_item_write['deny_cid'] || $this->acl_item_write['deny_gid']) ? 'lock' : 'unlock');
+
+//			head_add_css('/addon/faces/view/css/faces.css');
+//			$o = replace_macros(get_markup_template('write_permission.tpl', 'addon/faces'), array(
+//				'$log_level' => $loglevel,
+//				'$channelnick' => $channel['channel_address'],
+//				'$isWritePermission' => 1,
+//				'$channelnick' => $channel['channel_address'],
+//				'$permissions' => t('Permissions'),
+////				'$aclselect' => $aclselect_e,
+//				'$allow_cid' => acl2json($this->acl_item_write['allow_cid']),
+//				'$allow_gid' => acl2json($this->acl_item_write['allow_gid']),
+//				'$deny_cid' => acl2json($this->acl_item_write['deny_cid']),
+//				'$deny_gid' => acl2json($this->acl_item_write['deny_gid']),
+//				'$lockstate' => $lockstate,
+//				'$permset' => t('Set/edit permissions'),
+//				'$submit' => t('Submit'),
+//				'$acl_modal' => $aclselect_e
+//			));
+//
+//			return $o;
+		} else {
+
+			$aclselect_e = populate_acl($this->acl_item, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+
+			$lockstate = (($this->acl_item['allow_cid'] || $this->acl_item['allow_gid'] || $this->acl_item['deny_cid'] || $this->acl_item['deny_gid']) ? 'lock' : 'unlock');
+			
+		}
+
+		//----------------------------------------------------------------------
+		// fill some elements in the ui including ACL
+		//----------------------------------------------------------------------
 
 
 		$version = $this->getAppVersion();
@@ -129,6 +159,15 @@ class Faces extends Controller {
 		$zoom = get_config('faces', 'zoom');
 		if (!$zoom) {
 			$zoom = 3;
+		}
+
+		$from = "";
+		if (isset($_GET['from'])) {
+			$from = $_GET['from'];
+		}
+		$to = "";
+		if (isset($_GET['to'])) {
+			$to = $_GET['to'];
 		}
 
 		head_add_css('/addon/faces/view/css/faces.css');
@@ -143,9 +182,10 @@ class Faces extends Controller {
 			'$version' => $version,
 			'$faces_zoom' => $zoom,
 			'$uid' => $channel['channel_id'],
+			'$isWritePermission' => $isWriteParam,
 			'$channelnick' => $channel['channel_address'],
 			'$permissions' => t('Permissions'),
-			'$aclselect' => $aclselect_e,
+//			'$aclselect' => $aclselect_e,
 			'$allow_cid' => acl2json($this->acl_item['allow_cid']),
 			'$allow_gid' => acl2json($this->acl_item['allow_gid']),
 			'$deny_cid' => acl2json($this->acl_item['deny_cid']),
@@ -153,7 +193,7 @@ class Faces extends Controller {
 			'$lockstate' => $lockstate,
 			'$permset' => t('Set/edit permissions'),
 			'$submit' => t('Submit'),
-			'acl_modal' => $aclselect_e
+			'$acl_modal' => $aclselect_e
 		));
 
 		return $o;
@@ -205,7 +245,11 @@ class Faces extends Controller {
 				case 'permissions':
 					// API: /faces/nick/permissions
 					// set acl
-					$this->setACL();
+					$this->setACL(false);
+				case 'permissions_write':
+					// API: /faces/nick/permissions
+					// set acl
+					$this->setACL(true);
 				case 'start':
 					// API: /faces/nick/start
 					// set acl
@@ -233,8 +277,10 @@ class Faces extends Controller {
 			return array('status' => false, 'errormsg' => 'Owner profil has not addon installed');
 		}
 
-		$this->can_write = perm_is_allowed($owner_uid, get_observer_hash(), 'write_storage');
+		$this->can_write = perm_is_allowed($owner_uid, get_observer_hash(), 'write_faces');
 		logger('observer can write: ' . $this->can_write, LOGGER_DEBUG);
+
+		$ps = get_all_perms($uid, get_observer_hash());
 
 		logger('observer = ' . $this->observer['xchan_addr'] . ', owner = ' . $this->owner['xchan_addr'], LOGGER_DEBUG);
 
@@ -309,6 +355,28 @@ class Faces extends Controller {
 		$this->createPermissionObject();
 	}
 
+	function getPermissionWriteOject() {
+
+		$r = q("SELECT * "
+				. "FROM "
+				. "  obj "
+				. "WHERE "
+				. "  obj_channel = %d "
+				. "  AND obj_term = '%s' "
+				. "LIMIT 1", //
+				intval($this->owner['channel_id']), //
+				dbesc("write_faces")
+		);
+
+		if ($r) {
+			logger('obj to hold permissions to write faces was found (does not have to be created)');
+			$this->acl_item_write = $r[0];
+			return;
+		}
+
+		$this->createPermissionWriteObject();
+	}
+
 	function createPermissionObject() {
 
 		$allow_cid = $this->owner['channel_allow_cid'];
@@ -334,6 +402,34 @@ class Faces extends Controller {
 		);
 
 		$this->syncPermissionObject();
+	}
+
+	function createPermissionWriteObject() {
+
+		// only the owner can write at the beginning
+		$allow_cid = "<" . $this->owner['xchan_hash'] . ">";
+		$allow_gid = "";
+		$deny_cid = "";
+		$deny_gid = "";
+
+		$uuid = new_uuid();
+
+		// the table item has different columns in ZAP and Hubzilla
+		$r = q("INSERT INTO obj ( 	obj_obj, obj_channel, obj_term, obj_created, obj_edited, obj_quantity,  allow_cid, allow_gid, deny_cid, deny_gid )"
+				. "VALUES (         '%s',    %d,          '%s',     '%s',        '%s',       %d,            '%s',     '%s',      '%s',     '%s') ", //
+				dbesc($uuid), //
+				intval($this->owner['channel_id']), // uid
+				dbesc('write_faces'), // obj_term
+				dbesc(datetime_convert()), // created
+				dbesc(datetime_convert()), // edited
+				intval(1), // uid
+				dbesc($allow_cid), //
+				dbesc($allow_gid), //
+				dbesc($deny_cid), //
+				dbesc($deny_gid)
+		);
+
+		$this->syncPermissionWriteObject();
 	}
 
 	function syncPermissionObject() {
@@ -362,7 +458,33 @@ class Faces extends Controller {
 		Libsync::build_sync_packet($this->owner['channel_id'], array('faces_permission' => array($this->acl_item)));
 	}
 
-	private function setACL() {
+	function syncPermissionWriteObject() {
+
+		// check and return
+		$r = q("SELECT * "
+				. "FROM "
+				. "  obj "
+				. "WHERE "
+				. "  obj_channel = %d "
+				. "  AND obj_term = '%s' "
+				. "LIMIT 1", //
+				intval($this->owner['channel_id']), //
+				dbesc("write_faces")
+		);
+		if (!$r) {
+			logger('ERROR just befor to sync the permission obj to clones. Obj to hold write permissions for faces does not exist. You should never see this message in the logs.');
+			json_return_and_die(array('status' => false, 'errormsg' => 'Failed to sync write permissions using obj'));
+		}
+		logger('About to sync write permission obj to clones.');
+
+		$this->acl_item_write = $r[0];
+
+		logger(print_r($this->acl_item_write, true), LOGGER_DEBUG);
+
+		Libsync::build_sync_packet($this->owner['channel_id'], array('faces_permission' => array($this->acl_item_write)));
+	}
+
+	private function setACL($isWritePermission) {
 
 		if (!$this->is_owner) {
 			logger('no permission to set permissions', LOGGER_DEBUG);
@@ -371,7 +493,7 @@ class Faces extends Controller {
 
 		$a = $_POST['acl'];
 		if (!isset($a)) {
-			logger('no name received from client', LOGGER_DEBUG);
+			logger('no acl received from client', LOGGER_DEBUG);
 			json_return_and_die(array('status' => false, 'errormsg' => 'No acl was sent by client (browser)'));
 		}
 		$aclArr = json_decode($a, true);
@@ -381,20 +503,26 @@ class Faces extends Controller {
 		require_once('ZapHubSpecific.php');
 		$zs = new ZapHubSpecific();
 		$x = $zs->setACL($aclArr, $channel);
+		
+		$isWritePermission = $aclArr['isWrite'];
 
-		$this->updatePermissions($x);
+		$this->updatePermissions($x, $isWritePermission);
 
 		logger('sending post response for setting permissons successfully...', LOGGER_DEBUG);
 
 		json_return_and_die(array('status' => true));
 	}
 
-	function updatePermissions($x) {
+	function updatePermissions($x, $isWritePermission) {
 		$this->updatePermissionsNames($x);
-		$this->updatePermissionObject($x);
+		$this->updatePermissionObject($x, $isWritePermission);
 	}
 
-	function updatePermissionObject($x) {
+	function updatePermissionObject($x, $isWritePerms) {
+		$mode = "view_faces";
+		if ($isWritePerms) {
+			$mode = "write_faces";
+		}
 
 		$r = q("update "
 				. "  obj "
@@ -414,14 +542,18 @@ class Faces extends Controller {
 				dbesc($x['deny_cid']), //
 				dbesc($x['deny_gid']), // 
 				intval($this->owner['channel_id']), // uid
-				dbesc("view_faces") // obj_term
+				dbesc($mode) // obj_term
 		);
 
 		if (!isset($r)) {
 			json_return_and_die(array('status' => false, 'errormsg' => 'Failed to update permissions using obj'));
 		}
 
-		$this->syncPermissionObject();
+		if ($isWritePerms) {
+			$this->syncPermissionWriteObject();
+		} else {
+			$this->syncPermissionObject();
+		}
 	}
 
 	function updatePermissionsNames($x) {
