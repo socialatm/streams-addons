@@ -15,14 +15,13 @@ function editName(faceFrame) {
 
     var name_id = $(faceFrame).attr("name_id");
     ((loglevel >= 0) ? console.log(t() + " user starts do edit name id =" + name_id + " Checking permissions...") : null);
-    var perm = canWriteName(name_id);
     if (!isSearchMe) {
-        if (perm) {
-            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name.. This IF helps the owner of the name to see and change the name here without having the permission granted to write the faces of the channel owner (owner of the images itself)") : null);
+        if (is_owner) {
+            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name. observer = owner") : null);
         } else if (can_write) {
-            ((loglevel >= 0) ? console.log(t() + " Edit anyway. Why? This can happen, if the owner of the name has withdrawn the permissions.") : null);
+            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name. observer != owner") : null);
         } else {
-            ((loglevel >= 0) ? console.log(t() + " Neither permission to edit faces on this channel, nor to edit this face particulary") : null);
+            ((loglevel >= 0) ? console.log(t() + " Neither owner nor write permission") : null);
             return;
         }
     }
@@ -68,21 +67,6 @@ function editName(faceFrame) {
     ((loglevel >= 0) ? console.log(t() + " edit frame  was opened and shows name = " + name_shown) : null);
 }
 
-function canWriteName(nameID) {
-    var i;
-    for (i = 0; i < receivedNames.length; i++) {
-        var name_id = receivedNames[i].id;
-        if (name_id == nameID) {
-            if (receivedNames[i].w == 1) {
-                ((loglevel >= 1) ? console.log(t() + " yes, has permission to write name id = " + nameID) : null);
-                return true;
-            }
-        }
-    }
-    ((loglevel >= 1) ? console.log(t() + " no permission to write name id = " + nameID) : null);
-    return false;
-}
-
 function getIdForNameAndOwner(nameandowner) {
     var i;
     for (i = 0; i < receivedNames.length; i++) {
@@ -102,7 +86,11 @@ function appendNames() {
     for (i = 0; i < receivedNames.length; i++) {
         var id = receivedNames[i].id;
         var name = receivedNames[i].name;
-        receivedNames[i].nameAndOwner = receivedNames[i].name + " (" + receivedNames[i].channel_address + ")";
+        if (receivedNames[i].xchan_hash != "") {
+            receivedNames[i].nameAndOwner = receivedNames[i].name + " (" + receivedNames[i].channel_address + ")";
+        } else {
+            receivedNames[i].nameAndOwner = receivedNames[i].name;
+        }
         name = name.trim();
         if (!isIdInList(id, "face-name-list-search")) {  // double check just in case
             $(".face-name-list").append("<option value=\"" + receivedNames[i].nameAndOwner + "\" xchan_hash=\"" + receivedNames[i].xchan_hash + "\" nameid=\"" + id + "\" channel_id=\"" + receivedNames[i].channel_id + "\" channel_address=\"" + receivedNames[i].channel_address + "\">" + receivedNames[i].nameAndOwner + "</option>");
@@ -125,7 +113,11 @@ function appendName(name) {
     }
     // append in ui
     if (!isIdInList(name.id, "face-name-list-search")) {
-        name.nameAndOwner = name.name + " (" + name.channel_address + ")";
+        if (name.xchan_hash != "") {
+            name.nameAndOwner = name.name + " (" + name.channel_address + ")";
+        } else {
+            name.nameAndOwner = name.name;
+        }
         $(".face-name-list").append("<option value=\"" + name.nameAndOwner + "\" xchan_hash=\"" + name.xchan_hash + "\" nameid=\"" + name.id + "\" channel_id=\"" + name.channel_id + "\" channel_address=\"" + name.channel_address + "\">" + name.nameAndOwner + "</option>");
         ((loglevel >= 0) ? console.log(t() + " append name = " + name.nameAndOwner + " with channel id = " + name.channel_id + " and name id = " + name.id) : null);
     }
@@ -290,7 +282,7 @@ function postNames() {
     if (unsentNames.length === 0) {
         ((loglevel >= 0) ? console.log(t() + " no name left to send ") : null);
         clearCounterNamesSending();
-        postSearch();
+//        postSearch();
         return;
     }
     var name = unsentNames[0];
@@ -401,8 +393,11 @@ var blockAppending = false;
 var filterStringServer = "";
 var filterNames = [];
 var oldestImageLoadedId = "";
+var mostRecentImageLoadedId = "";
 function search() {
     oldestImageLoadedId = "";
+    mostRecentImageLoadedId = "";
+    isAppendingToTop = false;
     createFilterString();
     // stop loading images
     ((loglevel >= 0) ? console.log(t() + " Clear some arrays received from server (images, encodings, names) to stop the loading of images ") : null);
@@ -442,7 +437,14 @@ function createFilterString() {
     ((loglevel >= 1) ? console.log(t() + " from = " + from) : null);
     ((loglevel >= 1) ? console.log(t() + " to = " + to) : null);
 
-    var filter = {"from": from, "to": to, "names": filterNames, "and": checked, "oldestImageLoadedId": oldestImageLoadedId};
+    var filter = {"from": from, "to": to, "names": filterNames, "and": checked};
+
+    if (isAppendingToTop) {
+        filter.mostRecentImageLoadedId = mostRecentImageLoadedId;
+    } else {
+        filter.oldestImageLoadedId = oldestImageLoadedId;
+    }
+
     filterStringServer = JSON.stringify(filter);
     ((loglevel >= 0) ? console.log(t() + " filter (search) for server is = " + filterStringServer) : null);
 }
@@ -686,16 +688,29 @@ function appendPicture(img) {
             html += "</div>";
         }
     }
-    
-    oldestImageLoadedId = img.id;
-    ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
-    
+    if (mostRecentImageLoadedId == "") {
+        mostRecentImageLoadedId = img.id;
+        ((loglevel >= 0) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
+    }
+
+    if (oldestImageLoadedId == 0) {
+        oldestImageLoadedId = img.id;
+        ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+    } else if (img.id < oldestImageLoadedId) {
+        oldestImageLoadedId = img.id;
+        ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+    }
+
     if (blockAppending) {
         // just in case a seach was started meanwhile
         ((loglevel >= 0) ? console.log(t() + " was interrupted to show image to user. A new server request was started.") : null);
         return;
     }
-    $("#face-panel-pictures").append(html);
+    if (isAppendingToTop) {
+        $("#face-panel-pictures").prepend(html);
+    } else {
+        $("#face-panel-pictures").append(html);
+    }
 }
 
 function getImageForId(id) {
@@ -755,8 +770,11 @@ function setFrameSizes(img) {
         styleFaceFrame(face);
     }
     ((loglevel >= 1) ? console.log(t() + " finished to set frame size") : null);
-//    zoomPictures();
-    zoomLastPictures(img);
+    if (isAppendingToTop) {
+        zoomPictures();
+    } else {
+        zoomLastPictures(img);
+    }
     appendNextPicture();
 }
 
@@ -944,6 +962,8 @@ function animate_on() {
 function animate_off() {
     $('#button_share_box').find('.fa').removeClass("fa-spin").removeClass("fa-fw");
     document.getElementById("button_share_box").style.visibility = "hidden";
+    $('#face-scoll-top-message').text("");
+    $('#face-scoll-top-message').fadeOut();
     ((loglevel >= 1) ? console.log(t() + " animate off") : null);
 }
 
@@ -956,7 +976,7 @@ function clearCounterImagesLoading(isLoadAgain) {
     if (shouldLoadMore && isLoadAgain) {
         loadMoreImages();
     } else {
-        blockEndVisible = false;
+        blockSearch = false;
     }
 }
 
@@ -994,7 +1014,7 @@ function startFaceDetection() {
 
 
 function postSearch() {
-    blockEndVisible = true;
+    blockSearch = true;
     animate_on();
     var postURL = getURL();
     if (!isSearchMe) {
@@ -1011,6 +1031,9 @@ function postSearch() {
                 return;
             }
             receivedImages = data['images'];
+            if (isAppendingToTop) {
+                receivedImages = receivedImages.reverse();
+            }
             ((loglevel >= 2) ? console.log(t() + " received images = " + JSON.stringify(Object.assign({}, receivedImages))) : null);
 //            receivedFaceEncodings = [];
             var i;
@@ -1051,6 +1074,10 @@ function getURL() {
 
 $('#aclModal').on('hidden.bs.modal', function (e) {
     ((loglevel >= 0) ? console.log(t() + " ACL modal dialog was closed by user") : null);
+    if (hasOpenedWritePermission && !isWritePermission) {
+        ((loglevel >= 0) ? console.log(t() + " ACL modal dialog for view permissions was closed because the modal dialog for write permissions was openend. Do not send the ACSLs.") : null);
+        return;
+    }
     var acls = $('.acl-field');
     var groupAllow = [];
     var groupDeny = [];
@@ -1074,15 +1101,44 @@ $('#aclModal').on('hidden.bs.modal', function (e) {
         contact_allow: contactAllow,
         group_allow: groupAllow,
         contact_deny: contactDeny,
-        groupDeny: groupDeny};
+        groupDeny: groupDeny,
+        isWrite: isWritePermission};
     acl_to_send_json = JSON.stringify(acl_to_send);
-    sendACLs(acl_to_send_json);
+    postACLs(acl_to_send_json);
 });
 
-function sendACLs(acl_string) {
+var windowWritePermission;
+
+$('#aclModal').on('shown.bs.modal', function (e) {
+    ((loglevel >= 0) ? console.log(t() + " ACL modal dialog is shown by user") : null);
+    if (hasOpenedWritePermission) {
+//        var perms_url = getURL() + "/permissions_write?wperm=1";
+//        var perms_url = getURL() + "?wperm=1";
+//        windowWritePermission = window.open(perms_url, "_self");
+        var f = document.getElementById('faces_load_write_permissions');
+        window.open('', '_self');
+        f.submit();
+        $('#aclModal').modal('toggle');
+    }
+    var labels = $(".section-content-wrapper").find("label");
+    if (labels) {
+        if (labels.length > 0) {
+            var label = labels[0];
+            if (isWritePermission) {
+                label.innerHTML = "Who can write?";
+            } else {
+                label.innerHTML = "Who can see this?";
+            }
+        }
+    }
+});
+
+function postACLs(acl_string) {
     var postURL = getURL() + "/permissions";
     ((loglevel >= 0) ? console.log(t() + " Sending request to get ACL: url = " + postURL + " , acl = " + acl_string) : null);
-    animate_on();
+    if (!isWritePermission) {
+        animate_on();
+    }
     $("#jot-perms-icon").html('<sup>!</sup>');
     $.post(postURL, {acl: acl_string}, function (data) {
         if (data['status']) {
@@ -1094,9 +1150,50 @@ function sendACLs(acl_string) {
             $("#jot-perms-icon").css({'color': 'red'});
             ((loglevel >= 0) ? console.log(t() + " Error sending ACLs: " + data['errormsg']) : null);
         }
-        animate_off();
+        if (!isWritePermission) {
+            animate_off();
+        } else {
+            $('#dbtn-acl').remove();
+            history.back();
+        }
     });
 }
+var startTimePressLockIcon = 0;
+var hasOpenedWritePermission = false;
+$('#dbtn-acl').mousedown(function (event) {
+    startTimePressLockIcon = Date.now();
+    switch (event.which) {
+        case 1:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was left clicked mouse down") : null);
+            hasOpenedWritePermission = false;
+            break;
+        case 2:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was middle clicked") : null);
+            hasOpenedWritePermission = true;
+            break;
+        case 3:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was right clicked") : null);
+            hasOpenedWritePermission = true;
+            break;
+        default:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was.... You have a strange Mouse!") : null);
+    }
+}).mouseup(function (event) {
+    switch (event.which) {
+        case 1:
+            ((loglevel >= 0) ? console.log(t() + " lock icon was left clicked mouse up") : null);
+            var endTimePressLockIcon = Date.now();
+            var elapsedMilliseconds = endTimePressLockIcon - startTimePressLockIcon;
+            ((loglevel >= 0) ? console.log(t() + " lock icon was pressed for " + elapsedMilliseconds + " milliseconds") : null);
+            if (elapsedMilliseconds > 500) {
+                hasOpenedWritePermission = true;
+            }
+            break;
+        default:
+            ((loglevel >= 0) ? console.log(t() + " ignore elapsed time the lock icon was pressed") : null);
+    }
+});
+
 
 
 function formatDate(date) {
@@ -1157,11 +1254,11 @@ function isModeSearchMe() {
 
 var isSearchMe = false;
 
-var blockEndVisible = true;
-var observer = new IntersectionObserver(function (entries) {
+var blockSearch = true;
+var observerEnd = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting === true) {
         ((loglevel >= 0) ? console.log(t() + " scrolled to end") : null);
-        if (!blockEndVisible) {
+        if (!blockSearch) {
             loadMoreImages();
         }
     }
@@ -1172,6 +1269,7 @@ function loadMoreImages() {
     if (oldestImageLoadedId == "") {
         return;
     }
+    isAppendingToTop = false;
     createFilterString();
     postSearch();
 }
@@ -1186,11 +1284,39 @@ function isEndVisible() {
 
     return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
 }
+var observerTop = new IntersectionObserver(function (entries) {
+    if (entries[0].isIntersecting === true) {
+        ((loglevel >= 0) ? console.log(t() + " scrolled to top") : null);
+        if (!blockSearch) {
+            loadNewImages();
+        }
+    }
+}, {threshold: [1]});
+
+var isAppendingToTop = false;
+function loadNewImages() {
+    ((loglevel >= 0) ? console.log(t() + " load new images") : null);
+    isAppendingToTop = true;
+    $('#face-scoll-top-message').text("Loading...");
+    $("#face-scoll-top-message").css("background-color", "red");
+    $('#face-scoll-top-message').fadeIn();
+    startFaceDetection();
+    createFilterString();
+    postSearch();
+}
+
+var isWritePermission = 0;
 
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
-    observer.observe(document.querySelector("#face-scoll-end"));
+    isWritePermission = parseInt($("#isWritePermission").text());
+    if (isWritePermission === 1) {
+        document.getElementById("dbtn-acl").click();
+        return;
+    }
+    observerEnd.observe(document.querySelector("#face-scoll-end"));
+    observerTop.observe(document.querySelector("#face-scoll-top"));
     faceEditControls = $("#template-face-frame-edit-controls").html();
     $("#template-face-frame-edit-controls").remove();
     var dFrom = $("#faces_date_from").text();

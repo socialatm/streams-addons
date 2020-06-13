@@ -253,7 +253,7 @@ function import_faces_all($import_data) {
 
 function import_faces_permission($perm_objects, $chan_id) {
 
-	logger("import permission view_faces for channel_id = obj_channel=" . $chan_id);
+	logger("import permission view_faces / write_faces for channel_id = obj_channel=" . $chan_id);
 
 	foreach ($perm_objects as $a) {
 
@@ -299,7 +299,7 @@ function import_faces_permission($perm_objects, $chan_id) {
 					. "VALUES (         '%s',    %d,          '%s',     '%s',        '%s',       %d,            '%s',     '%s',      '%s',     '%s') ", //
 					dbesc($a['obj_obj']), //
 					intval($chan_id), // uid
-					dbesc($a['obj_term']), // obj_term = view_faces
+					dbesc($a['obj_term']), // obj_term = view_faces / write_faces
 					dbesc($a['obj_created']), // created
 					dbesc($a['obj_edited']), // edited
 					intval($a['obj_quantity']), // uid

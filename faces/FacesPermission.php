@@ -47,7 +47,7 @@ function check_faces_view_permission($a) {
 	);
 	
 	if (!$r) {
-		logger("No permission obj found. You should never see this in the logs.");
+		logger("No view permission obj found. You should never see this in the logs.");
 		return 0;
 	}
 
@@ -66,6 +66,47 @@ function check_faces_view_permission($a) {
 	
 	if (!$r) {
 		logger("Observer has no permissions to view faces for this channel. ");
+		return 0;
+	}
+	return 1;
+}
+
+function check_faces_write_permission($a) {
+
+	$uid = $a['channel_id']; // owner
+	$observer_hash = $a['observer_hash'];
+
+	$r = q("SELECT * "
+			. "FROM "
+			. "  obj "
+			. "WHERE "
+			. "  obj_channel = %d "
+			. "  AND obj_term = '%s' "
+			. "LIMIT 1", //
+			intval($uid), //
+			dbesc("write_faces")
+	);
+	
+	if (!$r) {
+		logger("No write permission obj found. You should never see this in the logs.");
+		return 0;
+	}
+
+	$perms = permissions_sql($uid, $observer_hash); // channel_id of owner
+
+	$r = q("SELECT * "
+			. "FROM "
+			. "  obj "
+			. "WHERE "
+			. "  obj_channel = %d "
+			. "  AND obj_term = '%s' $perms "
+			. "LIMIT 1", //
+			intval($uid), //
+			dbesc("write_faces")
+	);
+	
+	if (!$r) {
+		logger("Observer has no permissions to write faces for this channel. ");
 		return 0;
 	}
 	return 1;

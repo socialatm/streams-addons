@@ -1,6 +1,7 @@
 
 
-
+<div id="face-scoll-top"></div>
+<div id="face-scoll-top-message">Loading...</div>
 <div id="face-panel-pictures" class="clearfix">
     <!-- filled dynamically by javascript -->
     <!-- all the pictures go here -->    
@@ -22,6 +23,7 @@ message: {{$message}}
 <p id="faces_date_from">{{$faces_date_from}}</p>
 <p id="faces_date_to">{{$faces_date_to}}</p>
 <p id="faces_zoom">{{$faces_zoom}}</p>
+<p id="isWritePermission">{{$isWritePermission}}</p>
 </div>
 
 <!-- this div will be copied by javascript and then removed after loading the page -->
@@ -103,7 +105,13 @@ message: {{$message}}
         </div>
 
     </div>
-</div>       
+</div>      
+
+<div>
+    <form id="faces_load_write_permissions" method="post" action="faces/{{$channelnick}}" target="_self">
+        <input type="hidden" name="wperm" value="1" />
+    </form>
+</div>
 
 <div id="acl_modal_faces">{{$acl_modal}}</div>
 
