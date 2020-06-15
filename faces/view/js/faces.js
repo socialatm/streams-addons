@@ -1112,13 +1112,7 @@ var windowWritePermission;
 $('#aclModal').on('shown.bs.modal', function (e) {
     ((loglevel >= 0) ? console.log(t() + " ACL modal dialog is shown by user") : null);
     if (hasOpenedWritePermission) {
-//        var perms_url = getURL() + "/permissions_write?wperm=1";
-//        var perms_url = getURL() + "?wperm=1";
-//        windowWritePermission = window.open(perms_url, "_self");
-        var f = document.getElementById('faces_load_write_permissions');
-        window.open('', '_self');
-        f.submit();
-        $('#aclModal').modal('toggle');
+        openWritePermissionsModal();
     }
     var labels = $(".section-content-wrapper").find("label");
     if (labels) {
@@ -1132,6 +1126,13 @@ $('#aclModal').on('shown.bs.modal', function (e) {
         }
     }
 });
+
+function openWritePermissionsModal() {
+    var f = document.getElementById('faces_load_write_permissions');
+    window.open('', '_self');
+    f.submit();
+    $('#aclModal').modal('toggle');
+}
 
 function postACLs(acl_string) {
     var postURL = getURL() + "/permissions";
@@ -1194,6 +1195,21 @@ $('#dbtn-acl').mousedown(function (event) {
     }
 });
 
+function onTouchStart(e) {
+    startTimePressLockIcon = Date.now();
+}
+
+function onTouchEnd(e) {
+    ((loglevel >= 0) ? console.log(t() + " lock icon fired touchend") : null);
+    var endTimePressLockIcon = Date.now();
+    var elapsedMilliseconds = endTimePressLockIcon - startTimePressLockIcon;
+    ((loglevel >= 0) ? console.log(t() + " lock icon was touched for " + elapsedMilliseconds + " milliseconds") : null);
+    if (elapsedMilliseconds > 500) {
+        openWritePermissionsModal();
+    } else {
+        hasOpenedWritePermission = false;
+    }
+}
 
 
 function formatDate(date) {
@@ -1315,6 +1331,8 @@ $(document).ready(function () {
         document.getElementById("dbtn-acl").click();
         return;
     }
+    document.getElementById("dbtn-acl").addEventListener("touchstart", onTouchStart, false);
+    document.getElementById("dbtn-acl").addEventListener("touchend", onTouchEnd, false);
     observerEnd.observe(document.querySelector("#face-scoll-end"));
     observerTop.observe(document.querySelector("#face-scoll-top"));
     faceEditControls = $("#template-face-frame-edit-controls").html();

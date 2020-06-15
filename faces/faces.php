@@ -9,7 +9,7 @@ require_once('addon/faces/FacesPermission.php');
 /**
  * Name: Faces
  * Description: Detect faces in images and make a guess who it is.
- * Version: 1.15 beta
+ * Version: 1.16 beta
  * Author: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  * Maintainer: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  *
