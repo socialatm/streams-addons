@@ -253,6 +253,14 @@ the channel clones. Make sure the clones have the addon installed. Once a face i
 detected there is no need for the Python scripts, except that they will
 guess the names for other faces.
 
+### How many Faces do I have?
+
+Append "stats" to the URL.
+
+Example
+
+    https://my-domain.org/faces/my-nick-name/stats
+
 ## Permissions
 
 It is up to you to decide who can see your tagged images. Use the lock icon to set view and write permissions.

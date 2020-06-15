@@ -8,6 +8,7 @@ use Zotlabs\Lib\Libsync;
 
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
+require_once('addon/faces/FacesStatistics.php');
 
 class Faces extends Controller {
 
@@ -87,6 +88,8 @@ class Faces extends Controller {
 		$ret['status'] = true;
 		$ret['message'] = "";
 
+		$channel = \App::get_channel();
+
 		// Does the user want to remove all the face encodings and names?
 		if (argc() > 2 && argv(2) === "remove") {
 			$ret = $this->removeChannelData();
@@ -97,6 +100,15 @@ class Faces extends Controller {
 				return $ret['msg'];
 			}
 		}
+		if (argc() > 2 && argv(2) === "stats") {
+			$html = \Zotlabs\Module\getStatisticsChannelAsHTML($this->owner['channel_id']);
+			$o = replace_macros(get_markup_template('faces_stats.tpl', 'addon/faces'), array(
+				'$channelnick' => $channel['channel_address'],
+				'$facesstatistics' => $html
+			));
+
+			return $o;
+		}
 
 		// tell the browser about the log level
 		$loglevel = -1;
@@ -106,8 +118,6 @@ class Faces extends Controller {
 		}
 
 		require_once('include/acl_selectors.php');
-
-		$channel = \App::get_channel();
 
 		$isWriteParam = "";
 		if (isset($_POST['wperm'])) {
