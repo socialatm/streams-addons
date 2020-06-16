@@ -8,6 +8,7 @@ use Zotlabs\Lib\Libsync;
 
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
+require_once('addon/faces/FacesStatistics.php');
 
 class Faces extends Controller {
 
@@ -87,6 +88,8 @@ class Faces extends Controller {
 		$ret['status'] = true;
 		$ret['message'] = "";
 
+		$channel = \App::get_channel();
+
 		// Does the user want to remove all the face encodings and names?
 		if (argc() > 2 && argv(2) === "remove") {
 			$ret = $this->removeChannelData();
@@ -96,6 +99,15 @@ class Faces extends Controller {
 			} else {
 				return $ret['msg'];
 			}
+		}
+		if (argc() > 2 && argv(2) === "stats") {
+			$html = \Zotlabs\Module\getStatisticsChannelAsHTML($this->owner['channel_id']);
+			$o = replace_macros(get_markup_template('faces_stats.tpl', 'addon/faces'), array(
+				'$channelnick' => $channel['channel_address'],
+				'$facesstatistics' => $html
+			));
+
+			return $o;
 		}
 
 		// tell the browser about the log level
@@ -107,8 +119,6 @@ class Faces extends Controller {
 
 		require_once('include/acl_selectors.php');
 
-		$channel = \App::get_channel();
-
 		$isWriteParam = "";
 		if (isset($_POST['wperm'])) {
 			$isWriteParam = $_POST['wperm'];
@@ -116,36 +126,11 @@ class Faces extends Controller {
 
 		// Does the user want to set write permissions?
 		if ($isWriteParam) {
-
 			$aclselect_e = populate_acl($this->acl_item_write, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
-
 			$lockstate = (($this->acl_item_write['allow_cid'] || $this->acl_item_write['allow_gid'] || $this->acl_item_write['deny_cid'] || $this->acl_item_write['deny_gid']) ? 'lock' : 'unlock');
-
-//			head_add_css('/addon/faces/view/css/faces.css');
-//			$o = replace_macros(get_markup_template('write_permission.tpl', 'addon/faces'), array(
-//				'$log_level' => $loglevel,
-//				'$channelnick' => $channel['channel_address'],
-//				'$isWritePermission' => 1,
-//				'$channelnick' => $channel['channel_address'],
-//				'$permissions' => t('Permissions'),
-////				'$aclselect' => $aclselect_e,
-//				'$allow_cid' => acl2json($this->acl_item_write['allow_cid']),
-//				'$allow_gid' => acl2json($this->acl_item_write['allow_gid']),
-//				'$deny_cid' => acl2json($this->acl_item_write['deny_cid']),
-//				'$deny_gid' => acl2json($this->acl_item_write['deny_gid']),
-//				'$lockstate' => $lockstate,
-//				'$permset' => t('Set/edit permissions'),
-//				'$submit' => t('Submit'),
-//				'$acl_modal' => $aclselect_e
-//			));
-//
-//			return $o;
 		} else {
-
 			$aclselect_e = populate_acl($this->acl_item, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
-
 			$lockstate = (($this->acl_item['allow_cid'] || $this->acl_item['allow_gid'] || $this->acl_item['deny_cid'] || $this->acl_item['deny_gid']) ? 'lock' : 'unlock');
-			
 		}
 
 		//----------------------------------------------------------------------
@@ -503,7 +488,7 @@ class Faces extends Controller {
 		require_once('ZapHubSpecific.php');
 		$zs = new ZapHubSpecific();
 		$x = $zs->setACL($aclArr, $channel);
-		
+
 		$isWritePermission = $aclArr['isWrite'];
 
 		$this->updatePermissions($x, $isWritePermission);

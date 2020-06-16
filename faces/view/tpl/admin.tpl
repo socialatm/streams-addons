@@ -12,3 +12,7 @@
 {{include file="field_input.tpl" field=$limit}}
 {{include file="field_checkbox.tpl" field=$deletetables}}
 <div class="submit"><input type="submit" name="page_faces" value="{{$submit}}"></div>
+<hr>
+<h2>Statistics</h2>
+{{$facesstatistics}}
+<br><br>
