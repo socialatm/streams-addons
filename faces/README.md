@@ -216,14 +216,13 @@ Provided you uploaded some images to your channel...
   * **BE PATIENT** if you use the addon for the **very first time**. Reload the addon page after some time 
 3. You will see frames around faces. Click on a frame and 
   * give the face a name, or
-  * Choose a contact from the list    
-Result:
-  * A notification will be sent to the contact  if selected from the list.
+  * Choose a contact from the list. (A notification will be sent to the contact if selected from the list.)
   * The face recognition will start to guess the name in other faces.
   * Confirm guessed names to improve the recognition.
-4. Optionally - You can other users allow to view your faces (use the lock icon). Result:
-  * Other users will be able to use your names. Result:
-  * This will improve the face recognition because the app has more "samples" of the same face.
+4. Set Permissions:
+  * View: click the lock icon
+  * Write: long click the lock icon
+     - (There is still a bug. The permission is set correctly but not shown if the dialog is opened again.)
 
 ## FAQs
 
@@ -254,48 +253,43 @@ the channel clones. Make sure the clones have the addon installed. Once a face i
 detected there is no need for the Python scripts, except that they will
 guess the names for other faces.
 
+### How many Faces do I have?
+
+Append "stats" to the URL.
+
+Example
+
+    https://my-domain.org/faces/my-nick-name/stats
+
 ## Permissions
 
-It is up to you to decide who can see your tagged images. Use the lock icon.
+It is up to you to decide who can see your tagged images. Use the lock icon to set view and write permissions.
 
-More details...  
-
-### On Names
+### Names
 
 ... every name holds the information
 
 - what user is the owner
 - what permission do other users have (as individuals or groups)
 
-### On Encodings
+### Encodings
 
-Face endodings have no special permission. The permission is inherited by the image.
+Face endodings have no special permission. The permission of the image is used.
 
-### What the programmer had in mind...  
+### Checks
 
-...if an observer B looks at the images/faces of an owner A.  
-The observer B will look with the eyes (permissions) of the owner A at the images of owner A.
+If the addon is opened:
 
-B will see
+- Check if the observer (observer... who is loocking at the addon) is known.
+- Check if the oberserver has the permission to
+  * view the addon faces,
+  * view images/files at all.
+- Check every image if the observer has the permission to view this particular image.
+- Show names only that are in the contact list of the owner (and are accepted by the contact).
 
-- the images of A he is allowed to see and
-- all faces of A - the same names in the list used for tagging and searches.
+Only the owner (of the addon / images) can set permissions.
 
-B will additionally see the names he owns (he has created).
-
-### Grant View Permissions
-
-Use the lock icon to tell the addon who is allowed to
-
-- see the your images with detected faces
-- use the names you created to tag your photos (This can improve the quality of the face recognition.)
-
-
-### Grant Write Permissions
-
-You want to give a friend the permission to tag faces in your photos?
-
-Solution: Grant upload permissions to your file storage and photos.
+Only observers having write permissions granted by the owner are allowed tag faces.
 
 ## Thoughts on Privacy
 
@@ -322,17 +316,17 @@ goal.)
 
 ### Step 2)
 
-Still the addon does not "know" of any person that belong to the faces detected.
+Still the addon does not "know" of any person that belong to the detected faces.
 Now the user steps in and starts to tell the face recognition what name belongs
-to what face encoding (array of numbers). The programm (both methods) now starts to compare
-face encodings and make guesses about who it is.  
+to what face encoding (array of numbers). The programm now starts (using both methods) to compare
+the face encodings and make guesses who it is.  
 The list of names is stored in a separate database table.
 
 ## Deletion of Data
 
 ### Admin - for all Users
 
-The admin can delete all encodings and names for all users unter [admin/addons/faces/](/admin/addons/faces/).
+The admin can delete the encodings and names for all users unter [admin/addons/faces/](/admin/addons/faces/).
 This will delete:
 
 - table with all face encodings

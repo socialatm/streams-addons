@@ -5,11 +5,12 @@ use Zotlabs\Extend\Hook;
 
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
+require_once('addon/faces/FacesStatistics.php');
 
 /**
  * Name: Faces
  * Description: Detect faces in images and make a guess who it is.
- * Version: 1.15 beta
+ * Version: 1.16 beta
  * Author: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  * Maintainer: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
  *
@@ -117,6 +118,8 @@ function faces_plugin_admin(&$a, &$o) {
 	if (!$maximages) {
 		$maximages = 6;
 	}
+	
+	$stats = \Zotlabs\Module\getStatisticsAsHTML();
 
 	$o = replace_macros($t, array(
 		'$submit' => t('Submit'),
@@ -133,6 +136,7 @@ function faces_plugin_admin(&$a, &$o) {
 		'$deletetables' => array('deletetables', "Delete Faces and Names of all Users", false, "Delete all rows in db tables this addon created"),
 		'$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
 		'$maximages' => array('maximages', 'Number of Images the Browser loads at once (autoload)', $maximages, 'Allowed values: 2 - 20, default = 6)'),
+		'$facesstatistics' => $stats,
 	));
 }
 
@@ -315,4 +319,8 @@ function testExiftool() {
 	}
 	logger("Exiftool version: " . $o[0], LOGGER_DEBUG);
 	return array('status' => true, 'message' => 'Result self check: found  exiftool version = ' . $o[0], LOGGER_NORMAL);
+}
+
+function getFacesStatisticsAsHtml() {
+	$html = \Zotlabs\Module\getStatisticsAsHTML();
 }
