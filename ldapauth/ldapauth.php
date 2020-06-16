@@ -169,30 +169,15 @@ function ldapauth_authenticate($username,$password,&$mail,&$nickname,&$displayna
 	$mail = '';
 
 	$attrs = @ldap_get_attributes($connect,$id);
+
 	if ($attrs['count'] && $attrs['mail']) {
-		if (is_array($attrs['mail'])) {
-			$mail = $attrs['mail'][0];
-		}
-		else {
-			$mail = $attrs['mail'];
-		}
+		$mail = ((is_array($attrs['mail'])) ? array_shift($attrs['mail']) : $attrs['mail']);
 	}
 	if ($attrs['count'] && $attrs[$ldap_nameattr]) {
-		if (is_array($attrs[$ldap_nameattr])) {
-			$displayname = $attrs[$ldap_nameattr][0];
-		}
-		else {
-			$displayname = $attrs[$ldap_nameattr];
-		}
+		$displayname = ((is_array($attrs[$ldap_nameattr])) ? array_shift($attrs[$ldap_nameattr]) : $attrs[$ldap_nameattr]);
 	}
-
 	if ($attrs['count'] && $attrs[$ldap_userattr]) {
-		if (is_array($attrs[$ldap_userattr])) {
-			$nickname = $attrs[$ldap_userattr][0];
-		}
-		else {
-			$nickname = $attrs[$ldap_userattr];
-		}
+		$nickname = ((is_array($attrs[$ldap_userattr])) ? array_shift($attrs[$ldap_userattr]) : $attrs[$ldap_userattr]);
 	}
 
 	$dn = @ldap_get_dn($connect,$id);
