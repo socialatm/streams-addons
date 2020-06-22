@@ -1648,7 +1648,7 @@ function api_direct_messages_new( $type) {
 
 	$sender = api_get_user();
 		
-	require_once('include/message.php');
+//	require_once('include/message.php');
 
 	// in a decentralised world the screen name is ambiguous
 
@@ -1681,7 +1681,7 @@ function api_direct_messages_new( $type) {
 		}
 	}
 
-	$id = send_message(api_user(),$recipient['guid'], $_POST['text'], $sub, $replyto);
+//	$id = send_message(api_user(),$recipient['guid'], $_POST['text'], $sub, $replyto);
 
 	if($id > (-1)) {
 		$r = q("SELECT * FROM mail WHERE id = %d", 
@@ -1704,7 +1704,8 @@ function api_direct_messages_new( $type) {
 function api_direct_messages_box( $type, $box) {
 	if(api_user() === false) 
 		return false;
-		
+
+	return false;
 	$user_info = api_get_user();
 		
 	// params
