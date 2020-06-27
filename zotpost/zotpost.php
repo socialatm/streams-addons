@@ -47,8 +47,9 @@ function zotpost_post_local(&$b) {
 		return;
 	}
 
-	if (! perm_is_allowed($b['uid'],'','view_stream'))
+	if (! perm_is_allowed($b['uid'],'','view_stream')) {
 		return;
+	}
 
 	if ((local_channel()) && (local_channel() == $b['uid']) && (! $b['item_private'])) {
 
@@ -97,7 +98,7 @@ function zotpost_post_hook(&$b) {
 		return;
 	}
 
-	if(! in_array('zotpost', explode(',',$b['postopts']))) {
+	if (! in_array('zotpost', explode(',',$b['postopts']))) {
 		return;
 	}
 	
