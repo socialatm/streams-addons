@@ -148,11 +148,11 @@ class Faces extends Controller {
 
 		$from = "";
 		if (isset($_GET['from'])) {
-			$from = $_GET['from'];
+			$from = escape_tags($_GET['from']);
 		}
 		$to = "";
 		if (isset($_GET['to'])) {
-			$to = $_GET['to'];
+			$to = escape_tags($_GET['to']);
 		}
 
 		head_add_css('/addon/faces/view/css/faces.css');
