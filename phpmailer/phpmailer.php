@@ -1,7 +1,7 @@
 <?php
 
 use Zotlabs\Extend\Hook;
-use PHPMailer\PHP\Mailer\PHPMailer;
+use PHPMailer\PHPMailer\PHPMailer;
 
 /**
  * Name: phpmailer
