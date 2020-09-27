@@ -145,9 +145,11 @@ function openstreetmap_generate_map(&$a,&$b) {
 	logger('lat: ' . $lat, LOGGER_DATA);
 	logger('lon: ' . $lon, LOGGER_DATA);
 	logger('zoom: ' . $zoom, LOGGER_DATA);
-	
+
+	$bbox = osm_latlon_to_bbox($lat, $lon, $zoom);
+
 	if(is_numeric($lat) && is_numeric($lon)) {
-		$b['html'] = '<iframe style="width:100%; height:300px; border:1px solid #ccc" src="' . $tmsserver . '/export/embed.html?bbox=' . ($lon - 0.01) . '%2C' . ($lat - 0.01) . '%2C' . ($lon + 0.01) . '%2C' . ($lat + 0.01) ;
+		$b['html'] = '<iframe style="width:100%; height:480px; border:1px solid #ccc" src="' . $tmsserver . '/export/embed.html?bbox=' . $bbox[1] . '%2C' . $bbox[2] . '%2C' . $bbox[3] . '%2C' . $bbox[0] ;
 
 		$b['html'] .=  '&amp;layer=mapnik&amp;marker=' . $lat . '%2C' . $lon . '" style="border: 1px solid black"></iframe><br/><small><a href="' . $tmsserver . '/?mlat=' . $lat . '&mlon=' . $lon . '#map=' . $zoom . '/' . $lat . '/' . $lon . '">' . (($b['location']) ? escape_tags($b['location']) : t('View Larger')) . '</a></small>';
 
@@ -155,6 +157,52 @@ function openstreetmap_generate_map(&$a,&$b) {
 	}
 
 }
+
+function osm_gettile($lat,$lon,$zoom) {
+
+	$xtile = floor((($lon + 180) / 360) * pow(2, $zoom));
+	$ytile = floor((1 - log(tan(deg2rad($lat)) + 1 / cos(deg2rad($lat))) / pi()) /2 * pow(2, $zoom));
+	return [ $xtile, $ytile ];
+}
+
+function osm_getlatlon($xtile,$ytile,$zoom) {
+	$n = pow(2, $zoom);
+	$lon_deg = $xtile / $n * 360.0 - 180.0;
+	$lat_deg = rad2deg(atan(sinh(pi() * (1 - 2 * $ytile / $n))));
+	return [ $lat_deg, $lon_deg ];
+}
+
+
+function osm_latlon_to_bbox($lat, $lon, $zoom) {
+
+	$width = 640;
+	$height = 480;	# note: must modify this to match your embed map width/height in pixels
+	$tile_size = 256;
+
+	$t = osm_gettile($lat,$lon,$zoom);
+	$xtile = $t[0];
+	$ytile = $t[1];
+
+
+	$xtile_s = ($xtile * $tile_size - $width/2) / $tile_size;
+	$ytile_s = ($ytile * $tile_size - $height/2) / $tile_size;
+	$xtile_e = ($xtile * $tile_size + $width/2) / $tile_size;
+	$ytile_e = ($ytile * $tile_size + $height/2) / $tile_size;
+
+	$s = osm_getlatlon($xtile_s,$ytile_s, $zoom);
+	$lat_s = $s[0];
+	$lon_s = $s[1];
+	
+	$e = osm_getlatlon($xtile_e,$ytile_e,$zoom);
+	$lat_e = $e[0];
+	$lon_e = $e[1];
+	return [ $lat_s, $lon_s, $lat_e, $lon_e ];
+
+}
+
+
+
+
 
 function openstreetmap_plugin_admin(&$a, &$o) {
 	$t = get_markup_template("admin.tpl", "addon/openstreetmap/");
