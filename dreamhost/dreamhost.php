@@ -11,10 +11,12 @@
 
 function dreamhost_load() {
 	Zotlabs\Extend\Hook::register('page_not_found', 'addon/dreamhost/dreamhost.php','dreamhost_page_not_found');
+	Zotlabs\Extend\Hook::register('startup', 'addon/dreamhost/dreamhost.php','dreamhost_init');
 }
 
 function dreamhost_unload() {
 	Zotlabs\Extend\Hook::unregister('page_not_found', 'addon/dreamhost/dreamhost.php','dreamhost_page_not_found');
+	Zotlabs\Extend\Hook::unregister('startup', 'addon/dreamhost/dreamhost.php','dreamhost_init');
 }
 
 function dreamhost_page_not_found($x) {
@@ -25,4 +27,8 @@ function dreamhost_page_not_found($x) {
 			goaway(z_root() . $_SERVER['REQUEST_URI']);
 	}
 
+}
+
+function dreamhost_init($x) {
+	@ini_set('pcre_jit','0');
 }
