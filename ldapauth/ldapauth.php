@@ -75,7 +75,7 @@ function ldapauth_hook_authenticate(&$x) {
 			}
 		}
 		elseif (intval(get_config('ldapauth','create_account')) != 1 && (! $results)) {
-			logger('ldapauth: User '.$x['username'].' authenticated but no db-record and. Rejecting auth.');
+			logger('ldapauth: User ' . $x['username'] . ' authenticated but no db-record and account creation is disabled. Rejecting auth.');
 			notice( t('Authentication successful but rejected: account creation is disabled.'));
 			return;
 		}
@@ -92,6 +92,7 @@ function ldapauth_hook_authenticate(&$x) {
 				return;
 			}
 		}
+
 		if ($results) {
 			logger('ldapauth: Login success for ' . $x['username']);
 			$x['user_record'] = $results[0];
