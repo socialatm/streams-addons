@@ -26,13 +26,56 @@ class Followlist extends Controller {
 		$url = $_GET['url'];
 
 
-		if ($importer && $url) {
+		$obj = null;
+		$src = null;
+		$actors = [];
 
-			$obj = new ASCollection($url, $importer, 0, $max_records);
-			$actors = $obj->get();
+		if(($_FILES) && array_key_exists('userfile',$_FILES) && intval($_FILES['userfile']['size'])) {
+			$filename = $_FILES['userfile']['name'];
+			$src = $_FILES['userfile']['tmp_name'];
+			$type = $_FILES['userfile']['type'];
+		}
+
+		if ($type === 'text/csv') {
+			$lines = file($src);
+			if ($lines) {
+				array_shift($lines);
+			}
+			if ($lines) {
+				foreach ($lines as $line) {
+					$csv = str_getcsv($line);
+					if ($csv) {
+						$actors[] = $csv[0];
+					}
+				}
+			}
+			$actors = array_slice($actors,0,$max_records);
+		}
+		else {
+			$obj = json_decode(file_get_contents($src),true);
+		}
+
+		if ($src) {
+			unlink($src);
+		}
+
+		if ($importer && ($url || $actors)) {
+
+			if (! $obj) {
+				$obj = new ASCollection($url, $importer, 0, $max_records);
+			}
+			if (! $actors) {
+				$actors = $obj->get();
+			}
 
 			if ($actors) {
+				notice( t('Adding connections') . EOL);
+				
 				foreach ($actors as $actor) {
+					if (get_config('system','followlist_test',true)) {
+						logger('followlist: ' . $actor);
+						continue;
+					}
 					if (is_array($actor)) {
 						$result = Connect::connect($importer,$actor['id']);
 					}
@@ -43,13 +86,14 @@ class Followlist extends Controller {
 						notice ( t('Connect failed: ') . $url . t(' Reason: ') . $result['message']);
 					}
 				}
+				notice( t('Finished adding connections') . EOL);
 			}
 		}
 	}
 
 	function get() {
 
-        $desc = t('This app allows you to connect to everybody in a pre-defined ActivityPub collection, such as follower/following lists. Install the app and revisit this page to input the source URL.');
+        $desc = t('This app allows you to connect to everybody in a pre-defined ActivityPub collection or CSV file, such as follower/following lists. Install the app and revisit this page to input the source URL.');
 
         $text = '<div class="section-content-info-wrapper">' . $desc . '</div>';
 
@@ -87,6 +131,7 @@ class Followlist extends Controller {
 			'$form_security_token' => get_form_security_token("followlist"),
 			'$disabled'            => (($total_channels > $max_records) ? ' disabled="disabled" ' : EMPTY_STR),
 			'$notes'               => t('Enter the URL of an ActivityPub followers/following collection to import'),
+			'$upload'              => t('Or upload an ActivityPub or CSV followers file from your device'),
 			'$url'                 => [ 'url', t('URL of followers/following list'), '', '' ],
 			'$submit'              => t('Submit')
 		]);
