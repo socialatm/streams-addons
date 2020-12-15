@@ -139,8 +139,8 @@ function openstreetmap_generate_map(&$a,&$b) {
 	if(! $marker)
 		$marker = 0;
 
-	$lat = $b['lat']; // round($b['lat'], 5);
-	$lon = $b['lon']; // round($b['lon'], 5);
+	$lat = (float) $b['lat']; // round($b['lat'], 5);
+	$lon = (float) $b['lon']; // round($b['lon'], 5);
 
 	logger('lat: ' . $lat, LOGGER_DATA);
 	logger('lon: ' . $lon, LOGGER_DATA);
