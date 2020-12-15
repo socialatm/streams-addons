@@ -12,7 +12,10 @@ class Nodeinfo extends Controller {
 
 		$arr = [
 			'version'           => '2.0',
-			'software'          =>  [ 'name' => strtolower(System::get_platform_name()),'version' => (($hidden) ? EMPTY_STR : System::get_project_version()) ],
+			'software'          =>  [
+				'name' => strtolower(System::get_platform_name()),
+				'version' => (($hidden) ? EMPTY_STR : System::get_project_version())
+			],
 			'protocols'         => [ 'zot' ],
 			'services'          => [],
 			'openRegistrations' => ((intval(get_config('system','register_policy')) === REGISTER_OPEN) ? true : false),
@@ -45,6 +48,8 @@ class Nodeinfo extends Controller {
 		if ($iservices) {
 			$arr['services']['inbound'] = $iservices;
 		}
+
+		call_hooks('nodeinfo',$arr);
 
 		json_return_and_die($arr);
 	}
