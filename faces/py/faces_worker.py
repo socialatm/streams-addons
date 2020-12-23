@@ -339,8 +339,9 @@ class Worker:
         data = { 'finder': self.finder.id, 'limit': self.limit }
         rows = self.db.select(query, data)
         for (id, content, uid, error, no_faces, encoding) in rows:
-            self.logger.log("id=" + str(id) + " , os_path=" + content + " , uid=" + str(uid), 2)
-            images.append([id, content, uid]);
+            os_path = str(content.decode())
+            self.logger.log("id=" + str(id) + " , os_path=" + os_path + " , uid=" + str(uid), 2)
+            images.append([id, os_path, uid]);
         self.logger.log("Found " + str(len(images)) + " not encoded images in table attach limited by " + str(self.limit), 1)
         return images
 
