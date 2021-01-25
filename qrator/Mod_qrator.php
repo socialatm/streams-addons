@@ -7,7 +7,7 @@ class Qrator extends Controller {
 
 	function get() {
 
-		$header = t('QR Generator');
+		$header = t('QR Generator (Qrator)');
 		$prompt = t('Enter some text');
 
 		$o .= replace_macros(get_markup_template('qrator.tpl','addon/qrator'), [
