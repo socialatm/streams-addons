@@ -42,10 +42,10 @@ class Nodeinfo extends Controller {
 
 		$services = [ 'atom1.0' ];
 
-		if ($services) {
+		if (isset($services)) {
 			$arr['services']['outbound'] = $services;
 		}
-		if ($iservices) {
+		if (isset($iservices)) {
 			$arr['services']['inbound'] = $iservices;
 		}
 

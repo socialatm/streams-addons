@@ -523,7 +523,7 @@ function api_statuses_update( $type) {
 			if(is_array($_FILES['media']['name'])) {
 				$num_uploads = count($_FILES['media']['name']);
 				for($x = 0; $x < $num_uploads; $x ++) {
-					$_FILES['userfile'] = array();
+					$_FILES['userfile'] = [];
 					$_FILES['userfile']['name'] = $_FILES['media']['name'][$x];
 					$_FILES['userfile']['type'] = $_FILES['media']['type'][$x];
 					$_FILES['userfile']['tmp_name'] = $_FILES['media']['tmp_name'][$x];
@@ -1312,7 +1312,7 @@ function api_format_items($r,$user_info,$type = 'json') {
 
 	//logger('api_format_items: ' . print_r($user_info,true));
 
-	$ret = array();
+	$ret = [];
 
 	$x = array('items' => $r,'api_user' => api_user(),'user_info' => $user_info);
 	call_hooks('api_format_items',$x);
@@ -1482,7 +1482,7 @@ function api_statuses_f( $type, $qtype) {
 		);
 	}
 
-	$ret = array();
+	$ret = [];
 
 	if($r) {
 		foreach($r as $cid) {
@@ -1620,7 +1620,7 @@ function api_ff_ids($type,$qtype) {
 			killme();
 		}
 		elseif($type === 'json') {
-			$ret = array();
+			$ret = [];
 			header('Content-type: application/json');
 			foreach($r as $rv) {
 				$ret[] = $rv['abook_id'];
@@ -1737,7 +1737,7 @@ function api_direct_messages_box( $type, $box) {
 		intval($start)
 	);
 		
-	$ret = array();
+	$ret = [];
 	if($r) {
 		foreach($r as $item) {
 			if($item['from_xchan'] === $channel['channel_hash']) {
