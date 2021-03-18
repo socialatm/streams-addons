@@ -50,7 +50,7 @@ function statistics_cron_weekly($a) {
 	$url = "https://the-federation.info/register/" . App::get_hostname();
 
 	$ret = z_fetch_url($url);
-	logger('statistics_cron: registering answer: '. print_r($ret,true), LOGGER_DEBUG);
+//	logger('statistics_cron: registering answer: '. print_r($ret,true), LOGGER_DEBUG);
 
 }
 
