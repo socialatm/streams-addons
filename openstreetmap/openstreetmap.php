@@ -211,8 +211,8 @@ function openstreetmap_plugin_admin($a,&$o) {
 }
 
 function openstreetmap_plugin_admin_post(&$a) {
-	$urltms = ((x($_POST, 'tmsserver')) ? notags(trim($_POST['tmsserver'])) : '');
-	$urlnom = ((x($_POST, 'nomserver')) ? notags(trim($_POST['nomserver'])) : '');
+	$urltms = ((x($_POST, 'tmsserver')) ? notags(trim($_POST['tmsserver'])) : 'http://www.openstreetmap.org');
+	$urlnom = ((x($_POST, 'nomserver')) ? notags(trim($_POST['nomserver'])) : 'http://nominatim.openstreetmap.org/search.php');
 	$zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : '16');
 	$marker = ((x($_POST, 'marker')) ? intval(trim($_POST['marker'])) : '0');
 	set_config('openstreetmap', 'tmsserver', $urltms);

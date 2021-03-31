@@ -1,0 +1,5 @@
+url: $baseurl/randplace
+name: Randplace
+photo: icon:globe
+version: 1
+requires: local_channel
