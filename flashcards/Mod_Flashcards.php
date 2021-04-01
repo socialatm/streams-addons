@@ -299,7 +299,8 @@ class Flashcards extends Controller {
 
         attach_change_permissions($channel_id, $resource, $x['allow_cid'], $x['allow_gid'], $x['deny_cid'], $x['deny_gid'], $recurse, true);
 
-        file_activity($channel_id, $object, $x['allow_cid'], $x['allow_gid'], $x['deny_cid'], $x['deny_gid'], 'post', $notify);
+// We can bring this back after file_activity() is fixed
+//        file_activity($channel_id, $object, $x['allow_cid'], $x['allow_gid'], $x['deny_cid'], $x['deny_gid'], 'post', $notify);
         
         logger('sending post response for setting box permissons...');
         
