@@ -19,7 +19,7 @@ function gallery_load() {
 	Hook::register('channel_apps', 'addon/gallery/gallery.php', 'gallery_channel_apps');
 	Hook::register('photo_view_filter', 'addon/gallery/gallery.php', 'gallery_photo_view_filter');
 	Hook::register('page_end', 'addon/gallery/gallery.php', 'gallery_page_end');
-//	Hook::register('prepare_body', 'addon/gallery/gallery.php', 'gallery_prepare_body', 1, 20);
+	Hook::register('prepare_body', 'addon/gallery/gallery.php', 'gallery_prepare_body', 1, 20);
 	Route::register('addon/gallery/Mod_Gallery.php','gallery');
 }
 
