@@ -56,7 +56,7 @@ function gallery_supported_modules() {
 	$modules = [
 		'gallery',
 		'photos',
-		'network',
+		'stream',
 		'channel',
 		'display',
 		'hq',
