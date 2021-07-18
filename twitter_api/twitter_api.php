@@ -37,8 +37,8 @@ blocks/blocking
 lists
 */
 
-require_once('include/api.php');
-
+// Do not load include/api.php here as this includes api_auth and will reset session cookies for unauthenticated sessions on every page load. 
+// This affects registration if you add any hooks outside the /api path. 
 
 function twitter_api_load() {
 	Hook::register('api_register','addon/twitter_api/twitter_api.php','twitter_api_register');
