@@ -70,7 +70,7 @@ function randplace_post_hook(&$item) {
 	$cities = [];
 	$zones = timezone_identifiers_list();
 	foreach ($zones as $zone) {
-		if ((strpos($zone,'/')) && (! stristr($zone,'US/')) && (! stristr($zone,'Etc/'))) {
+		if ((strpos($zone,'/')) && (stristr($zone,'US/') === false) && (stristr($zone,'Etc/') === false)) {
 			$cities[] = str_replace('_', ' ',substr($zone,strrpos($zone,'/') + 1));
 		}
 	}
