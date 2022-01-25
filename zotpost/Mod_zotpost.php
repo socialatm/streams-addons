@@ -51,7 +51,7 @@ class Zotpost extends Controller {
 			return $text;
 		}
 
-		nav_set_selected(t('ZotPost'));
+		Navbar::set_selected(t('ZotPost'));
 
 		$api        = PConfig::Get(local_channel(), 'zotpost', 'server');
 		$password   = unobscurify(PConfig::Get(local_channel(), 'zotpost', 'password' ));

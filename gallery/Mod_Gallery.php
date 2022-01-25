@@ -61,7 +61,7 @@ class Gallery extends \Zotlabs\Web\Controller {
 			return $o;
 		}
 
-		nav_set_selected('Gallery');
+		Navbar::set_selected('Gallery');
 
 		$owner_uid = App::$data['channel']['channel_id'];
 		$sql_extra = permissions_sql($owner_uid, get_observer_hash(), 'attach');
