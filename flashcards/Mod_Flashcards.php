@@ -2,6 +2,7 @@
 
 namespace Zotlabs\Module;
 
+use App;
 use Zotlabs\Lib\Apps;
 use Zotlabs\Web\Controller;
 use Zotlabs\Storage\Directory;
@@ -9,6 +10,7 @@ use Zotlabs\Storage\File;
 use Zotlabs\Storage\BasicAuth;
 use Zotlabs\Access\AccessControl;
 use Zotlabs\Lib\Channel;
+use Zotlabs\Lib\Libacl;
 
 class Flashcards extends Controller {
     
@@ -220,7 +222,6 @@ class Flashcards extends Controller {
             json_return_and_die(array('status' => false, 'errormsg' => 'No permission to change ACLs ' . $box_id));
             return;
         }
-        require_once('include/acl_selectors.php');
         $box_id = isset($_POST['boxID']) ? $_POST['boxID'] : ''; 
         if(strlen($box_id) < 1) {
             json_return_and_die(array('status' => false, 'errormsg' => 'Missing post param boxID in request'));
@@ -242,7 +243,7 @@ class Flashcards extends Controller {
         }
         $channel = \App::get_channel();
 
-        $aclselect_e = populate_acl($f, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+        $aclselect_e = Libacl::populate($f, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
 
         $lockstate = (($f['allow_cid'] || $f['allow_gid'] || $f['deny_cid'] || $f['deny_gid']) ? 'lock' : 'unlock');
 

@@ -6,6 +6,7 @@ use Zotlabs\Lib\Apps;
 use Zotlabs\Web\Controller;
 use Zotlabs\Lib\Libsync;
 use Zotlabs\Lib\Channel;
+use Zotlabs\Lib\Libacl;
 
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
@@ -118,8 +119,6 @@ class Faces extends Controller {
 			$loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
 		}
 
-		require_once('include/acl_selectors.php');
-
 		$isWriteParam = "";
 		if (isset($_POST['wperm'])) {
 			$isWriteParam = $_POST['wperm'];
@@ -127,10 +126,10 @@ class Faces extends Controller {
 
 		// Does the user want to set write permissions?
 		if ($isWriteParam) {
-			$aclselect_e = populate_acl($this->acl_item_write, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+			$aclselect_e = Libacl::populate($this->acl_item_write, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
 			$lockstate = (($this->acl_item_write['allow_cid'] || $this->acl_item_write['allow_gid'] || $this->acl_item_write['deny_cid'] || $this->acl_item_write['deny_gid']) ? 'lock' : 'unlock');
 		} else {
-			$aclselect_e = populate_acl($this->acl_item, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+			$aclselect_e = Libacl::populate($this->acl_item, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
 			$lockstate = (($this->acl_item['allow_cid'] || $this->acl_item['allow_gid'] || $this->acl_item['deny_cid'] || $this->acl_item['deny_gid']) ? 'lock' : 'unlock');
 		}
 

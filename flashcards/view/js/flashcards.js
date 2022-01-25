@@ -2286,7 +2286,7 @@ function fixTitleLength() {
 }
 
 $(document).on("click", "#flashcards_perms", function () {
-    var url = postUrl + '/acl';
+    var url = postUrl + '/acloader';
     logger.log('Sending request to get ACL for box ' + box.content.boxID + ' ... (' + url + ")");
     $.post(url, {boxID: box.content.boxID}, function (data) {
         if (data['status']) {
