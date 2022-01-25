@@ -8,6 +8,7 @@ use Zotlabs\Storage\Directory;
 use Zotlabs\Storage\File;
 use Zotlabs\Storage\BasicAuth;
 use Zotlabs\Access\AccessControl;
+use Zotlabs\Lib\Channel;
 
 class Flashcards extends Controller {
     
@@ -206,7 +207,7 @@ class Flashcards extends Controller {
         }
         logger('nick = ' . $nick, LOGGER_DEBUG);
         
-        $this->owner = channelx_by_nick($nick);
+        $this->owner = Channel::from_username($nick);
 	}
 
     private function getACL() {
@@ -374,7 +375,7 @@ class Flashcards extends Controller {
 						if($box) {		
 							$box['size'] = count($box['cards']);
 							unset($box['cards']);
-							$current_owner = channelx_by_nick($nick_fc);
+							$current_owner = Channel::from_username($nick_fc);
 							$box['current_owner'] = $current_owner['xchan_addr'];
 							$fn = substr($fname,0,strpos($fname, '.'));
 							$box['current_url'] = $baseURL . '/flashcards/' . $nick_fc . '/' . $fn;

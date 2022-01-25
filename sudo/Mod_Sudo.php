@@ -4,6 +4,7 @@ namespace Zotlabs\Module;
 
 use Zotlabs\Web\Controller;
 use Zotlabs\Lib\Config;
+use Zotlabs\Lib\Channel;
 
 class Sudo extends Controller {
 
@@ -17,7 +18,7 @@ class Sudo extends Controller {
 			http_status_exit(403,'Permission denied');
 		}
 	
-		$c = channelx_by_nick(argv(1));
+		$c = Channel::from_username(argv(1));
 		if ($c) {
 			$tmp = $_SESSION;
 			$_SESSION['delegate_push']	  = $tmp;

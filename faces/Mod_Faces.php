@@ -5,6 +5,7 @@ namespace Zotlabs\Module;
 use Zotlabs\Lib\Apps;
 use Zotlabs\Web\Controller;
 use Zotlabs\Lib\Libsync;
+use Zotlabs\Lib\Channel;
 
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
@@ -315,7 +316,7 @@ class Faces extends Controller {
 		}
 		logger('nick = ' . $nick, LOGGER_DEBUG);
 
-		$this->owner = channelx_by_nick($nick);
+		$this->owner = Channel::from_username($nick);
 	}
 
 	function getPermissionOject() {
