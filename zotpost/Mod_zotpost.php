@@ -6,6 +6,7 @@ use App;
 use Zotlabs\Lib\Apps;
 use Zotlabs\Lib\Libsync;
 use Zotlabs\Lib\PConfig;
+use Zotlabs\Lib\Navbar;
 use Zotlabs\Web\Controller;
 
 class Zotpost extends Controller {

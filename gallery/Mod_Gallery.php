@@ -5,6 +5,8 @@ namespace Zotlabs\Module;
 use App;
 use Zotlabs\Lib\Apps;
 use Zotlabs\Lib\Libprofile;
+use Zotlabs\Lib\Channel;
+use Zotlabs\Lib\Navbar;
 
 require_once('include/attach.php');
 
@@ -21,7 +23,7 @@ class Gallery extends \Zotlabs\Web\Controller {
 	
 			Libprofile::load($nick);
 
-			$channelx = channelx_by_nick($nick);
+			$channelx = Channel::from_username($nick);
 	
 			if(! $channelx)
 				return;

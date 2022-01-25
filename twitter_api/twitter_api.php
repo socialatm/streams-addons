@@ -3,6 +3,7 @@
 use Zotlabs\Extend\Hook;
 use Zotlabs\Extend\Route;
 use Zotlabs\Lib\LibBlock;
+use Zotlabs\Lib\Channel;
 
 /**
  * Name: Twitter API
@@ -837,7 +838,7 @@ function api_statuses_networkpublic_timeline( $type){
 
 	$user_info = api_get_user();
 
-	$sys = get_sys_channel();
+	$sys = Channel::get_system();
 
 	// params
 	$count = (x($_REQUEST,'count') ? $_REQUEST['count']   : 20);

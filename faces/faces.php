@@ -2,7 +2,8 @@
 
 use Zotlabs\Extend\Route;
 use Zotlabs\Extend\Hook;
-
+use Zotlabs\Lib\Channel;
+    
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
 require_once('addon/faces/FacesStatistics.php');

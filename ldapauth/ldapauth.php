@@ -9,7 +9,9 @@
  */
 
 use Zotlabs\Extend\Hook;
-
+use Zotlabs\Lib\Account;
+use Zotlabs\Lib\Channel;
+        
 /**
  * 
  * Module: LDAP Authenticate
@@ -66,7 +68,7 @@ function ldapauth_hook_authenticate(&$x) {
 			dbesc($x['username']), dbesc($mail)
 		);
 		if ((! $results) && ($mail) && intval(get_config('ldapauth','create_account')) == 1) {
-			$acct = create_account(array('email' => $mail, 'password' => random_string()));			
+			$acct = Account::create( [ 'email' => $mail, 'password' => random_string() ]);			
 			if ($acct['success']) {
 				logger('ldapauth: Created account for ' . $x['username'] . ' using ' . $mail);
 				info(t('An account has been created for you.'));
@@ -80,7 +82,7 @@ function ldapauth_hook_authenticate(&$x) {
 			return;
 		}
 		if ((! $results) && $x['user_record'] && $nickname && $displayname && intval(get_config('ldapauth','create_channel'))) {
-			$c = create_identity( [
+			$c = Channel::create( [
 				'name'             => $displayname, 
 				'nickname'         => $nickname, 
 				'account_id'       => $x['user_record']['account_id'], 

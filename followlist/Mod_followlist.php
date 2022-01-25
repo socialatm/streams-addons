@@ -6,7 +6,8 @@ use Zotlabs\Web\Controller;
 use Zotlabs\Lib\ASCollection;
 use Zotlabs\Lib\Connect;
 use Zotlabs\Lib\Apps;
-
+use Zotlabs\Lib\ServiceClass;
+    
 class Followlist extends Controller {
 
 	function post() {
@@ -117,7 +118,7 @@ class Followlist extends Controller {
 			$total_channels = $r[0]['total'];
 		}
 
-		$sc = service_class_fetch(local_channel(),'total_channels');
+		$sc = ServiceClass::fetch(local_channel(),'total_channels');
 		if ($sc !== false) {
 			$allowed = intval($sc) - $total_channels;
 			if ($allowed < $max_records) {
