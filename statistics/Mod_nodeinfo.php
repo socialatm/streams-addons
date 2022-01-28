@@ -13,7 +13,7 @@ class Nodeinfo extends Controller {
 		$arr = [
 			'version'           => '2.0',
 			'software'          =>  [
-				'name' => strtolower(System::get_platform_name()),
+				'name' => System::get_project_name()),
 				'version' => (($hidden) ? EMPTY_STR : System::get_project_version())
 			],
 			'protocols'         => [ 'zot' ],
