@@ -1300,7 +1300,7 @@ function api_format_items($r,$user_info,$type = 'json') {
 	$ret = [];
 
 	$x = array('items' => $r,'api_user' => api_user(),'user_info' => $user_info);
-	call_hooks('api_format_items',$x);
+	Hook::call('api_format_items',$x);
 	$r = $x['items'];
 
 	if(! $r)

@@ -3,6 +3,7 @@ namespace Zotlabs\Module;
 
 use Zotlabs\Web\Controller;
 use Zotlabs\Lib\System;
+use Zotlabs\Extend\Hook;
 
 class Nodeinfo extends Controller {
 
@@ -49,7 +50,7 @@ class Nodeinfo extends Controller {
 			$arr['services']['inbound'] = $iservices;
 		}
 
-		call_hooks('nodeinfo',$arr);
+		Hook::call('nodeinfo',$arr);
 
 		json_return_and_die($arr);
 	}
