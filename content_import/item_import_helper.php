@@ -1,7 +1,7 @@
 <?php
 
-use Zotlabs\Web\HTTPSig;
-use Zotlabs\Lib\Channel;
+use Code\Web\HTTPSig;
+use Code\Lib\Channel;
 
 require_once('include/cli_startup.php');
 require_once('include/attach.php');

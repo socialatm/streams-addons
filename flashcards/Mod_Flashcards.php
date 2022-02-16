@@ -1,16 +1,16 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Web\Controller;
-use Zotlabs\Storage\Directory;
-use Zotlabs\Storage\File;
-use Zotlabs\Storage\BasicAuth;
-use Zotlabs\Access\AccessControl;
-use Zotlabs\Lib\Channel;
-use Zotlabs\Lib\Libacl;
+use Code\Lib\Apps;
+use Code\Web\Controller;
+use Code\Storage\Directory;
+use Code\Storage\File;
+use Code\Storage\BasicAuth;
+use Code\Access\AccessControl;
+use Code\Lib\Channel;
+use Code\Lib\Libacl;
 
 class Flashcards extends Controller {
     
@@ -243,7 +243,7 @@ class Flashcards extends Controller {
         }
         $channel = \App::get_channel();
 
-        $aclselect_e = Libacl::populate($f, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+        $aclselect_e = Libacl::populate($f, false, \Code\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
 
         $lockstate = (($f['allow_cid'] || $f['allow_gid'] || $f['deny_cid'] || $f['deny_gid']) ? 'lock' : 'unlock');
 
@@ -754,10 +754,10 @@ class Flashcards extends Controller {
 						$this->boxesDir->getChild($boxId . '.json')->put(json_encode($box));
 						try {
 							// Remove the try-catch if everythings works fine on Hubzilla and ZAP.
-							// Zotlabs\Storage\BasicAuth was not used correctly (or changed).
+							// Code\Storage\BasicAuth was not used correctly (or changed).
 							$shareDir->getChild($sharedFileName)->delete();
 						} catch (\Exception $e) {
-							logger('Please report to the devs. This could be a bug with the usages of Zotlabs\Storage\BasicAuth. This caused a permission denied to delete a file in owned directory ', LOGGER_DEBUG);
+							logger('Please report to the devs. This could be a bug with the usages of Code\Storage\BasicAuth. This caused a permission denied to delete a file in owned directory ', LOGGER_DEBUG);
 							continue;
 						}
                     }

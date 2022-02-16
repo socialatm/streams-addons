@@ -1,9 +1,9 @@
 <?php
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Lib\PConfig;
+use Code\Extend\Hook;
+use Code\Extend\Route;
+use Code\Lib\Apps;
+use Code\Lib\PConfig;
 
 /**
  * Name: Zot Crosspost Connector (zotpost)

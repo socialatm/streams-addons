@@ -7,8 +7,8 @@
  * Version: 1.0
  */
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
+use Code\Extend\Hook;
+use Code\Extend\Route;
 
 
 function sudo_load() {

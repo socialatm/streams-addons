@@ -1,8 +1,8 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-class Hexit extends \Zotlabs\Web\Controller {
+class Hexit extends \Code\Web\Controller {
 
 
 	function get() {

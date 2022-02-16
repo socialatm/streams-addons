@@ -10,15 +10,15 @@
  */
 
 function std_embeds_load() {
-	Zotlabs\Extend\Hook::register('oembed_action','addon/std_embeds/std_embeds.php','std_embeds_action');
-	Zotlabs\Extend\Hook::register('html2bb_video','addon/std_embeds/std_embeds.php','std_embeds_html2bb_video');
-	Zotlabs\Extend\Hook::register('bb_translate_video','addon/std_embeds/std_embeds.php','std_embeds_bb_translate_video');
-	Zotlabs\Extend\Hook::register('bbcode_filter','addon/std_embeds/std_embeds.php','std_embeds_bbcode_filter');
-	Zotlabs\Extend\Hook::register('markdown_to_bb','addon/std_embeds/std_embeds.php','std_embeds_markdown_to_bb');
+	Code\Extend\Hook::register('oembed_action','addon/std_embeds/std_embeds.php','std_embeds_action');
+	Code\Extend\Hook::register('html2bb_video','addon/std_embeds/std_embeds.php','std_embeds_html2bb_video');
+	Code\Extend\Hook::register('bb_translate_video','addon/std_embeds/std_embeds.php','std_embeds_bb_translate_video');
+	Code\Extend\Hook::register('bbcode_filter','addon/std_embeds/std_embeds.php','std_embeds_bbcode_filter');
+	Code\Extend\Hook::register('markdown_to_bb','addon/std_embeds/std_embeds.php','std_embeds_markdown_to_bb');
 }
 
 function std_embeds_unload() {
-	Zotlabs\Extend\Hook::unregister_by_file('addon/std_embeds/std_embeds.php');
+	Code\Extend\Hook::unregister_by_file('addon/std_embeds/std_embeds.php');
 }
 
 function std_embeds_action(&$arr) {

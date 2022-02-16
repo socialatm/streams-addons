@@ -7,7 +7,7 @@
  * Maintainer: Mike Macgirvin <https://z.macgirvin.com/channel/mike>
  */
 
-use Zotlabs\Extend\Hook;
+use Code\Extend\Hook;
 
 function abc_load() {
 	Hook::register('page_end', 'addon/abc/abc.php', 'abc_page');

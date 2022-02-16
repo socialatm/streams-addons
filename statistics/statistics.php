@@ -9,8 +9,8 @@
  * Maintainer: none
  */
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
+use Code\Extend\Hook;
+use Code\Extend\Route;
 
 
 function statistics_load() {

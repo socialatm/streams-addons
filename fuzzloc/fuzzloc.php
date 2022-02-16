@@ -7,9 +7,9 @@
  * Maintainer: none
  */
 
-use Zotlabs\Lib\Apps;
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
+use Code\Lib\Apps;
+use Code\Extend\Hook;
+use Code\Extend\Route;
 
 
 function fuzzloc_load() {

@@ -8,7 +8,7 @@
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
  */
 
-use Zotlabs\Extend\Hook;
+use Code\Extend\Hook;
 
 function logrot_load() {
 		Hook::register('logger', 'addon/logrot/logrot.php','logrot_logger');

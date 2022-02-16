@@ -8,9 +8,9 @@
  * Maintainer: Mike Macgirvin
  */
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Lib\Account;
-use Zotlabs\Lib\Channel;
+use Code\Extend\Hook;
+use Code\Lib\Account;
+use Code\Lib\Channel;
         
 /**
  * 

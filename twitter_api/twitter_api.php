@@ -1,9 +1,9 @@
 <?php
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
-use Zotlabs\Lib\LibBlock;
-use Zotlabs\Lib\Channel;
+use Code\Extend\Hook;
+use Code\Extend\Route;
+use Code\Lib\LibBlock;
+use Code\Lib\Channel;
 
 /**
  * Name: Twitter API
@@ -46,7 +46,7 @@ function twitter_api_load() {
 }
 
 function twitter_api_unload() {
-	Zotlabs\Extend\Hook::unregister_by_file('addon/twitter_api/twitter_api.php');
+	Code\Extend\Hook::unregister_by_file('addon/twitter_api/twitter_api.php');
 }
 
 function twitter_api_register($x) {
@@ -418,13 +418,13 @@ function api_statuses_mediap( $type) {
 	$_REQUEST['silent'] = '1'; //tell wall_upload function to return img info instead of echo
 	$_FILES['userfile'] = $_FILES['media'];
 
-	$mod = new Zotlabs\Module\Wall_attach();
+	$mod = new Code\Module\Wall_attach();
 	$mod->post();
 
 
 	$_REQUEST['body']= $txt . "\n\n" . $posted;
 
-	$mod = new Zotlabs\Module\Item();
+	$mod = new Code\Module\Item();
 	$mod->post();
 
 	// this should output the last post (the one we just posted).
@@ -517,7 +517,7 @@ function api_statuses_update( $type) {
 
 					// upload each image if we have any
 					$_REQUEST['silent']='1'; //tell wall_upload function to return img info instead of echo
-					$mod = new Zotlabs\Module\Wall_attach();
+					$mod = new Code\Module\Wall_attach();
 					App::$data['api_info'] = $user_info;
 					$media = $mod->post();
 
@@ -530,7 +530,7 @@ function api_statuses_update( $type) {
 				$_FILES['userfile'] = $_FILES['media'];
 				// upload each image if we have any
 				$_REQUEST['silent']='1'; //tell wall_upload function to return img info instead of echo
-				$mod = new Zotlabs\Module\Wall_attach();
+				$mod = new Code\Module\Wall_attach();
 				App::$data['api_info'] = $user_info;
 				$media = $mod->post();
 
@@ -542,7 +542,7 @@ function api_statuses_update( $type) {
 
 	// call out normal post function
 
-	$mod = new Zotlabs\Module\Item();
+	$mod = new Code\Module\Item();
 	$mod->post();	
 
 	// this should output the last post (the one we just posted).
@@ -957,7 +957,7 @@ function api_statuses_repeat( $type){
 			$_REQUEST['profile_uid'] = api_user();
 			$_REQUEST['type'] = 'wall';
 			$_REQUEST['api_source'] = true;
-			$mod = new Zotlabs\Module\Item();
+			$mod = new Code\Module\Item();
 			$mod->post();
 		}
 	}
@@ -1533,10 +1533,10 @@ function api_statusnet_config($type) {
 			'shorturllength' => 30,
     
     		'platform' => [
-				'PLATFORM_NAME' => Zotlabs\Lib\System::get_platform_name(),
-				'STD_VERSION' => Zotlabs\Lib\System::get_project_version(),
+				'PLATFORM_NAME' => Code\Lib\System::get_platform_name(),
+				'STD_VERSION' => Code\Lib\System::get_project_version(),
 				'ZOT_REVISION' => ZOT_REVISION,
-				'DB_UPDATE_VERSION' => Zotlabs\Lib\System::get_update_version()
+				'DB_UPDATE_VERSION' => Code\Lib\System::get_update_version()
 			]
 		]
 	];  
@@ -1566,12 +1566,12 @@ function api_friendica_version($type) {
 
 	if($type === 'xml') {
 		header('Content-type: application/xml');
-		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\r\n" . '<version>' . Zotlabs\Lib\System::get_project_version() . '</version>' . "\r\n";
+		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\r\n" . '<version>' . Code\Lib\System::get_project_version() . '</version>' . "\r\n";
 		killme();
 	}
 	elseif($type === 'json') {
 		header('Content-type: application/json');
-		echo '"' . Zotlabs\Lib\System::get_project_version() . '"';
+		echo '"' . Code\Lib\System::get_project_version() . '"';
 		killme();
 	}
 }

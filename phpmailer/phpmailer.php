@@ -1,6 +1,6 @@
 <?php
 
-use Zotlabs\Extend\Hook;
+use Code\Extend\Hook;
 use PHPMailer\PHPMailer\PHPMailer;
 
 /**

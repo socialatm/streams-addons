@@ -1,8 +1,8 @@
 <?php
 
-use Zotlabs\Extend\Route;
-use Zotlabs\Extend\Hook;
-use Zotlabs\Lib\Channel;
+use Code\Extend\Route;
+use Code\Extend\Hook;
+use Code\Lib\Channel;
     
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
@@ -43,19 +43,19 @@ function faces_perm_is_allowed(&$a) {
 }
 
 function export(&$a) {
-	$encs = Zotlabs\Module\attach_face_encodings_export_data($a['channel_id']);
+	$encs = Code\Module\attach_face_encodings_export_data($a['channel_id']);
 	if ($encs) {
 		$a['data']['faces_encoding'] = $encs;
 	}
 	$names = [];
-	$names = \Zotlabs\Module\attach_face_names_export_data($a['channel_id']);
+	$names = \Code\Module\attach_face_names_export_data($a['channel_id']);
 	if ($names) {
 		$a['data']['faces_person'] = $names;
 	}
 }
 
 function import(&$a) {
-	Zotlabs\Module\import_faces_all($a);
+	Code\Module\import_faces_all($a);
 }
 
 function faces_plugin_admin(&$a, &$o) {
@@ -120,7 +120,7 @@ function faces_plugin_admin(&$a, &$o) {
 		$maximages = 6;
 	}
 	
-	$stats = \Zotlabs\Module\getStatisticsAsHTML();
+	$stats = \Code\Module\getStatisticsAsHTML();
 
 	$o = replace_macros($t, array(
 		'$submit' => t('Submit'),
@@ -323,5 +323,5 @@ function testExiftool() {
 }
 
 function getFacesStatisticsAsHtml() {
-	$html = \Zotlabs\Module\getStatisticsAsHTML();
+	$html = \Code\Module\getStatisticsAsHTML();
 }

@@ -1,10 +1,10 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Web\Controller;
+use Code\Lib\Apps;
+use Code\Web\Controller;
 
 class Fuzzloc extends Controller {
 

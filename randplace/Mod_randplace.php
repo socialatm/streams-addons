@@ -1,11 +1,11 @@
 <?php
-// With rare exception, controllers use the 'Zotlabs\Module' namespace and extend the Zotlabs\Web\Controller class
-namespace Zotlabs\Module;
+// With rare exception, controllers use the 'Code\Module' namespace and extend the Code\Web\Controller class
+namespace Code\Module;
 
-use Zotlabs\Web\Controller;
+use Code\Web\Controller;
 
 /* Autoload the Apps code */
-use Zotlabs\Lib\Apps;
+use Code\Lib\Apps;
 
 class Randplace extends Controller {
 

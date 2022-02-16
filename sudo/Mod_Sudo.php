@@ -1,10 +1,10 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Web\Controller;
-use Zotlabs\Lib\Config;
-use Zotlabs\Lib\Channel;
+use Code\Web\Controller;
+use Code\Lib\Config;
+use Code\Lib\Channel;
 
 class Sudo extends Controller {
 
