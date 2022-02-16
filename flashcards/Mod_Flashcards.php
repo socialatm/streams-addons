@@ -11,7 +11,8 @@ use Code\Storage\BasicAuth;
 use Code\Access\AccessControl;
 use Code\Lib\Channel;
 use Code\Lib\Libacl;
-
+use Code\Lib\Head;
+    
 class Flashcards extends Controller {
     
     private $version = "2.08";
@@ -64,7 +65,7 @@ class Flashcards extends Controller {
         }
 		
 
-        head_add_css('/addon/flashcards/view/css/flashcards.css');  
+        Head::add_css('/addon/flashcards/view/css/flashcards.css');  
 
         $o = replace_macros(get_markup_template('flashcards.tpl','addon/flashcards'),array(
                 '$post_url' => 'flashcards/' . $this->owner['channel_address'],

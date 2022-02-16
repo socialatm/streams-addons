@@ -8,6 +8,7 @@
  */
 
 use Code\Extend\Hook;
+use Code\Lib\Head;
 
 function openstreetmap_load() {
 	Hook::register('render_location', 'addon/openstreetmap/openstreetmap.php', 'openstreetmap_location');
@@ -25,7 +26,7 @@ function openstreetmap_unload() {
 }
 
 function openstreetmap_alterheader($navHtml) {
-	head_add_js('/addon/openstreetmap/openstreetmap.js');
+	Head::add_js('/addon/openstreetmap/openstreetmap.js');
 }
 
 /**

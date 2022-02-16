@@ -7,7 +7,8 @@ use Code\Web\Controller;
 use Code\Lib\Libsync;
 use Code\Lib\Channel;
 use Code\Lib\Libacl;
-
+use Code\Lib\Head;
+    
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
 require_once('addon/faces/FacesStatistics.php');
@@ -155,7 +156,7 @@ class Faces extends Controller {
 			$to = escape_tags($_GET['to']);
 		}
 
-		head_add_css('/addon/faces/view/css/faces.css');
+		Head::add_css('/addon/faces/view/css/faces.css');
 		$o = replace_macros(get_markup_template('faces.tpl', 'addon/faces'), array(
 			'$status' => $ret['status'],
 			'$message' => $ret['message'],

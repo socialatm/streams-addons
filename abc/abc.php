@@ -8,7 +8,8 @@
  */
 
 use Code\Extend\Hook;
-
+use Code\Lib\Head;
+    
 function abc_load() {
 	Hook::register('page_end', 'addon/abc/abc.php', 'abc_page');
 	Hook::register('bbcode', 'addon/abc/abc.php', 'abc_bbcode');
@@ -21,7 +22,7 @@ function abc_unload() {
 
 
 function abc_page($x) {
-	head_add_js('/addon/abc/abc.js');
+	Head::add_js('/addon/abc/abc.js');
 }
 
 function abc_bbcode(&$a) {

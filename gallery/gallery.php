@@ -12,7 +12,8 @@
 use Code\Lib\Apps;
 use Code\Extend\Hook;
 use Code\Extend\Route;
-
+use Code\Lib\Head;
+    
 //require_once('addon/gallery/Mod_Gallery.php');
 
 function gallery_load() {
@@ -81,13 +82,13 @@ function gallery_page_end(&$str) {
 	if(! Apps::addon_app_installed($uid, 'gallery'))
 		return;
 
-	head_add_js('/addon/gallery/lib/photoswipe/dist/photoswipe.js', 1);
-	head_add_js('/addon/gallery/lib/photoswipe/dist/photoswipe-ui-default.js', 1);
-	head_add_js('/addon/gallery/view/js/gallery.js', 1);
+	Head::add_js('/addon/gallery/lib/photoswipe/dist/photoswipe.js', 1);
+	Head::add_js('/addon/gallery/lib/photoswipe/dist/photoswipe-ui-default.js', 1);
+	Head::add_js('/addon/gallery/view/js/gallery.js', 1);
 
-	head_add_css('/addon/gallery/lib/photoswipe/dist/photoswipe.css');
-	head_add_css('/addon/gallery/lib/photoswipe/dist/default-skin/default-skin.css');
-	head_add_css('/addon/gallery/view/css/gallery.css');
+	Head::add_css('/addon/gallery/lib/photoswipe/dist/photoswipe.css');
+	Head::add_css('/addon/gallery/lib/photoswipe/dist/default-skin/default-skin.css');
+	Head::add_css('/addon/gallery/view/css/gallery.css');
 
 	$tpl = get_markup_template('gallery_dom.tpl', 'addon/gallery');
 	$str .= replace_macros($tpl, []);

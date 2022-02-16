@@ -12,7 +12,8 @@
 use Code\Extend\Hook;
 use Code\Extend\Route;
 use Code\Lib\System;
-
+use Code\Lib\Head;
+    
 function opensearch_load() {
 	Hook::register('build_pagehead','addon/opensearch/opensearch.php','opensearch_build_pagehead');
 	Route::register('addon/opensearch/Mod_opensearch.php', 'opensearch');
@@ -26,7 +27,7 @@ function opensearch_unload() {
 
 function opensearch_build_pagehead($x) {
 
-	head_add_link([ 
+	Head::add_link([ 
 		'rel' => 'search', 
 		'href' => z_root() . '/opensearch', 
 		'type' => 'application/opensearchdescription+xml',
