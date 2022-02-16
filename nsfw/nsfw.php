@@ -1,8 +1,8 @@
 <?php
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
-use Zotlabs\Lib\Apps;
+use Code\Extend\Hook;
+use Code\Extend\Route;
+use Code\Lib\Apps;
 
 /**
  * Name: Not Safe For Work

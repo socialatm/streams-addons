@@ -1,9 +1,9 @@
 <?php
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Web\Controller;
-use Zotlabs\Lib\System;
+use Code\Web\Controller;
+use Code\Lib\System;
 
 
 class Opensearch extends Controller {

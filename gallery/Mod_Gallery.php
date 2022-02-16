@@ -1,16 +1,16 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Lib\Libprofile;
-use Zotlabs\Lib\Channel;
-use Zotlabs\Lib\Navbar;
+use Code\Lib\Apps;
+use Code\Lib\Libprofile;
+use Code\Lib\Channel;
+use Code\Lib\Navbar;
 
 require_once('include/attach.php');
 
-class Gallery extends \Zotlabs\Web\Controller {
+class Gallery extends \Code\Web\Controller {
 
 	function init() {
 	

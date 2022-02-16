@@ -7,7 +7,7 @@
  * Maintainer: none
  */
 
-use Zotlabs\Extend\Hook;
+use Code\Extend\Hook;
 
 function openstreetmap_load() {
 	Hook::register('render_location', 'addon/openstreetmap/openstreetmap.php', 'openstreetmap_location');

@@ -8,8 +8,8 @@
  * Maintainer: none
  */
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
+use Code\Extend\Hook;
+use Code\Extend\Route;
 
 function qrator_load() {
 	Hook::register('photo_mod_init','addon/qrator/qrator.php','qrator_photo_mod_init');

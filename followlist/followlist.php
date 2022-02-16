@@ -7,7 +7,7 @@
  * Version: 1.0
  */
 
-use Zotlabs\Extend\Route;
+use Code\Extend\Route;
 
 function followlist_load() {
 	Route::register('addon/followlist/Mod_followlist.php','followlist');

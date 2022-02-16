@@ -8,7 +8,7 @@
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
  */
 
-use Zotlabs\Extend\Route;
+use Code\Extend\Route;
 
 function content_import_install() {
 	Route::register('addon/content_import/Mod_content_import.php','content_import');	

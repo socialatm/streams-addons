@@ -1,11 +1,11 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Lib\Apps;
-use Zotlabs\Lib\Libsync;
+use Code\Lib\Apps;
+use Code\Lib\Libsync;
 
-class Nsfw extends \Zotlabs\Web\Controller {
+class Nsfw extends \Code\Web\Controller {
 
 
 	function post() {

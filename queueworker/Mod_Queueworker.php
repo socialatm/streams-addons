@@ -1,9 +1,9 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Web\Controller;
+use Code\Web\Controller;
 
 require_once(dirname(__FILE__) . '/queueworker.php');
 

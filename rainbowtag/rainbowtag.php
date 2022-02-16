@@ -9,9 +9,9 @@
  * Maintainer: Mike Macgirvin <mike@macgirvin.com>
  */
 
-use Zotlabs\Lib\Apps;
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
+use Code\Lib\Apps;
+use Code\Extend\Hook;
+use Code\Extend\Route;
 
 function rainbowtag_load() {
 	Hook::register('construct_page', 'addon/rainbowtag/rainbowtag.php', 'rainbowtag_construct_page');

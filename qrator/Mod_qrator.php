@@ -1,7 +1,7 @@
 <?php
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Web\Controller;
+use Code\Web\Controller;
 
 class Qrator extends Controller {
 

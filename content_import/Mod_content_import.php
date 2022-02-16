@@ -1,12 +1,12 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Web\HTTPSig;
-use Zotlabs\Web\Controller;
-use Zotlabs\Lib\Channel;
+use Code\Lib\Apps;
+use Code\Web\HTTPSig;
+use Code\Web\Controller;
+use Code\Lib\Channel;
 
 class Content_import extends Controller {
 

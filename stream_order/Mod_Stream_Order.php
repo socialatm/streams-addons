@@ -1,11 +1,11 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Lib\Apps;
-use Zotlabs\Lib\Libsync;
+use Code\Lib\Apps;
+use Code\Lib\Libsync;
 
-class Stream_order extends \Zotlabs\Web\Controller {
+class Stream_order extends \Code\Web\Controller {
 
 
 	function get() {

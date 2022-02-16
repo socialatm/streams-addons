@@ -1,9 +1,9 @@
 <?php
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Web\Controller;
-use Zotlabs\Lib\System;
-use Zotlabs\Extend\Hook;
+use Code\Web\Controller;
+use Code\Lib\System;
+use Code\Extend\Hook;
 
 class Nodeinfo extends Controller {
 

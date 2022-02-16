@@ -10,13 +10,13 @@
 
 
 function dreamhost_load() {
-	Zotlabs\Extend\Hook::register('page_not_found', 'addon/dreamhost/dreamhost.php','dreamhost_page_not_found');
-	Zotlabs\Extend\Hook::register('startup', 'addon/dreamhost/dreamhost.php','dreamhost_init');
+	Code\Extend\Hook::register('page_not_found', 'addon/dreamhost/dreamhost.php','dreamhost_page_not_found');
+	Code\Extend\Hook::register('startup', 'addon/dreamhost/dreamhost.php','dreamhost_init');
 }
 
 function dreamhost_unload() {
-	Zotlabs\Extend\Hook::unregister('page_not_found', 'addon/dreamhost/dreamhost.php','dreamhost_page_not_found');
-	Zotlabs\Extend\Hook::unregister('startup', 'addon/dreamhost/dreamhost.php','dreamhost_init');
+	Code\Extend\Hook::unregister('page_not_found', 'addon/dreamhost/dreamhost.php','dreamhost_page_not_found');
+	Code\Extend\Hook::unregister('startup', 'addon/dreamhost/dreamhost.php','dreamhost_init');
 }
 
 function dreamhost_page_not_found($x) {

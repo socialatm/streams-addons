@@ -9,9 +9,9 @@
  */
 
 
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
-use Zotlabs\Lib\System;
+use Code\Extend\Hook;
+use Code\Extend\Route;
+use Code\Lib\System;
 
 function opensearch_load() {
 	Hook::register('build_pagehead','addon/opensearch/opensearch.php','opensearch_build_pagehead');

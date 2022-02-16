@@ -9,9 +9,9 @@
  * Maintainer: Mario
  */
 
-use Zotlabs\Lib\Apps;
-use Zotlabs\Extend\Hook;
-use Zotlabs\Extend\Route;
+use Code\Lib\Apps;
+use Code\Extend\Hook;
+use Code\Extend\Route;
 
 //require_once('addon/gallery/Mod_Gallery.php');
 

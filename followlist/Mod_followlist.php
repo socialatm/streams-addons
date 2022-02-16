@@ -1,12 +1,12 @@
 <?php
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Web\Controller;
-use Zotlabs\Lib\ASCollection;
-use Zotlabs\Lib\Connect;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Lib\ServiceClass;
+use Code\Web\Controller;
+use Code\Lib\ASCollection;
+use Code\Lib\Connect;
+use Code\Lib\Apps;
+use Code\Lib\ServiceClass;
     
 class Followlist extends Controller {
 

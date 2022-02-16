@@ -2,8 +2,8 @@
 
 use Ramsey\Uuid\Uuid;
 use Ramsey\Uuid\Exception\UnableToBuildUuidException;
-use Zotlabs\Extend\Route;
-use Zotlabs\Extend\Hook;
+use Code\Extend\Route;
+use Code\Extend\Hook;
 
 // please visit /queueworker on your site to configure after installation.
 // Ideally the configuration link should go in the plugin_admin stuff
@@ -293,7 +293,7 @@ class QueueWorkerUtils {
 		$workers = self::GetWorkerCount();
 		if ($workers < self::$maxworkers) {
 			logger("Less than max active workers ($workers) max = " . self::$maxworkers . ".", LOGGER_DEBUG);
-			proc_run('php', 'Zotlabs/Daemon/Run.php', ['Queueworker']);
+			proc_run('php', 'Code/Daemon/Run.php', ['Queueworker']);
 		}
 	}
 
@@ -445,7 +445,7 @@ class QueueWorkerUtils {
 				$workers = self::GetWorkerCount();
 				if ($workers < self::$maxworkers) {
 					logger("Less than max active workers ($workers) max = " . self::$maxworkers . ".", LOGGER_DEBUG);
-					proc_run('php', 'Zotlabs/Daemon/Run.php', ['Queueworker']);
+					proc_run('php', 'Code/Daemon/Run.php', ['Queueworker']);
 				}
 
 				$jobs++;
@@ -455,7 +455,7 @@ class QueueWorkerUtils {
 				$argv     = $workinfo['argv'];
 				logger('Run: process: ' . json_encode($argv), LOGGER_DEBUG);
 
-				$cls  = '\\Zotlabs\\Daemon\\' . $argv[0];
+				$cls  = '\\Code\\Daemon\\' . $argv[0];
 				$argv = flatten_array_recursive($argv);
 				$argc = count($argv);
 				$cls::run($argc, $argv);
@@ -491,7 +491,7 @@ class QueueWorkerUtils {
 					);
 					continue;
 				}
-				$cls = '\\Zotlabs\\Daemon\\' . $argv[0];
+				$cls = '\\Code\\Daemon\\' . $argv[0];
 				$cls::run($argc, $argv);
 				q("delete from workerq where workerq_id = %d",
 					$work[0]['workerq_id']

@@ -1,13 +1,13 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 use App;
-use Zotlabs\Lib\Apps;
-use Zotlabs\Lib\Libsync;
-use Zotlabs\Lib\PConfig;
-use Zotlabs\Lib\Navbar;
-use Zotlabs\Web\Controller;
+use Code\Lib\Apps;
+use Code\Lib\Libsync;
+use Code\Lib\PConfig;
+use Code\Lib\Navbar;
+use Code\Web\Controller;
 
 class Zotpost extends Controller {
 

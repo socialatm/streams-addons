@@ -1,6 +1,6 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 /**
  * -----------------------------------------------------------------------------

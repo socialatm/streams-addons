@@ -9,16 +9,16 @@
  *
  */
 
-use Zotlabs\Lib\Apps;
+use Code\Lib\Apps;
 
 function randplace_load() {
-	Zotlabs\Extend\Hook::register('post_local', 'addon/randplace/randplace.php', 'randplace_post_hook');
-	Zotlabs\Extend\Route::register('addon/randplace/Mod_randplace.php', 'randplace');
+	Code\Extend\Hook::register('post_local', 'addon/randplace/randplace.php', 'randplace_post_hook');
+	Code\Extend\Route::register('addon/randplace/Mod_randplace.php', 'randplace');
 }
 
 function randplace_unload() {
-	Zotlabs\Extend\Hook::unregister('post_local', 'addon/randplace/randplace.php', 'randplace_post_hook');
-	Zotlabs\Extend\Route::unregister('addon/randplace/Mod_randplace.php', 'randplace');
+	Code\Extend\Hook::unregister('post_local', 'addon/randplace/randplace.php', 'randplace_post_hook');
+	Code\Extend\Route::unregister('addon/randplace/Mod_randplace.php', 'randplace');
 }
 
 function randplace_post_hook(&$item) {

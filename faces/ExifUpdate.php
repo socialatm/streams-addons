@@ -1,6 +1,6 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
 /**
  * Write  the names of the face recognition into the images

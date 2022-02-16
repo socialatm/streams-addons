@@ -1,8 +1,8 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Access\AccessControl;
+use Code\Access\AccessControl;
 
 /**
  * separate ZAP and Hubzilla

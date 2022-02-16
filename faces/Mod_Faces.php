@@ -1,12 +1,12 @@
 <?php
 
-namespace Zotlabs\Module;
+namespace Code\Module;
 
-use Zotlabs\Lib\Apps;
-use Zotlabs\Web\Controller;
-use Zotlabs\Lib\Libsync;
-use Zotlabs\Lib\Channel;
-use Zotlabs\Lib\Libacl;
+use Code\Lib\Apps;
+use Code\Web\Controller;
+use Code\Lib\Libsync;
+use Code\Lib\Channel;
+use Code\Lib\Libacl;
 
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
@@ -103,7 +103,7 @@ class Faces extends Controller {
 			}
 		}
 		if (argc() > 2 && argv(2) === "stats") {
-			$html = \Zotlabs\Module\getStatisticsChannelAsHTML($this->owner['channel_id']);
+			$html = \Code\Module\getStatisticsChannelAsHTML($this->owner['channel_id']);
 			$o = replace_macros(get_markup_template('faces_stats.tpl', 'addon/faces'), array(
 				'$channelnick' => $channel['channel_address'],
 				'$facesstatistics' => $html
@@ -126,10 +126,10 @@ class Faces extends Controller {
 
 		// Does the user want to set write permissions?
 		if ($isWriteParam) {
-			$aclselect_e = Libacl::populate($this->acl_item_write, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+			$aclselect_e = Libacl::populate($this->acl_item_write, false, \Code\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
 			$lockstate = (($this->acl_item_write['allow_cid'] || $this->acl_item_write['allow_gid'] || $this->acl_item_write['deny_cid'] || $this->acl_item_write['deny_gid']) ? 'lock' : 'unlock');
 		} else {
-			$aclselect_e = Libacl::populate($this->acl_item, false, \Zotlabs\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+			$aclselect_e = Libacl::populate($this->acl_item, false, \Code\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
 			$lockstate = (($this->acl_item['allow_cid'] || $this->acl_item['allow_gid'] || $this->acl_item['deny_cid'] || $this->acl_item['deny_gid']) ? 'lock' : 'unlock');
 		}
 
