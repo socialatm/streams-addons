@@ -8,6 +8,8 @@ use Code\Lib\Libsync;
 use Code\Lib\Channel;
 use Code\Lib\Libacl;
 use Code\Lib\Head;
+use Code\Render\Theme;                                                                                                                                            
+
     
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
@@ -105,7 +107,7 @@ class Faces extends Controller {
 		}
 		if (argc() > 2 && argv(2) === "stats") {
 			$html = \Code\Module\getStatisticsChannelAsHTML($this->owner['channel_id']);
-			$o = replace_macros(get_markup_template('faces_stats.tpl', 'addon/faces'), array(
+			$o = replace_macros(Theme::get_template('faces_stats.tpl', 'addon/faces'), array(
 				'$channelnick' => $channel['channel_address'],
 				'$facesstatistics' => $html
 			));
@@ -157,7 +159,7 @@ class Faces extends Controller {
 		}
 
 		Head::add_css('/addon/faces/view/css/faces.css');
-		$o = replace_macros(get_markup_template('faces.tpl', 'addon/faces'), array(
+		$o = replace_macros(Theme::get_template('faces.tpl', 'addon/faces'), array(
 			'$status' => $ret['status'],
 			'$message' => $ret['message'],
 			'$can_write' => $this->can_write ? 'true' : 'false',

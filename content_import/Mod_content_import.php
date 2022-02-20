@@ -7,6 +7,7 @@ use Code\Lib\Apps;
 use Code\Web\HTTPSig;
 use Code\Web\Controller;
 use Code\Lib\Channel;
+use Code\Render\Theme;
 
 class Content_import extends Controller {
 
@@ -132,7 +133,7 @@ class Content_import extends Controller {
 			return login();
 		}
 
-		$o = replace_macros(get_markup_template('content_import.tpl','addon/content_import'),array( 
+		$o = replace_macros(Theme::get_template('content_import.tpl','addon/content_import'),array( 
 			'$header' => t('Content Import'),
 			'$desc' => t('This will import all your conversations and cloud files from a cloned channel on another server. This may take a while if you have lots of posts and or files.'),
 			'$items' => [ 'items', t('Include posts'), true, t('Conversations, Articles, Cards, and other posted content'), [ t('No'),t('Yes') ]],

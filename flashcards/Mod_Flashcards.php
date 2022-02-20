@@ -12,7 +12,7 @@ use Code\Access\AccessControl;
 use Code\Lib\Channel;
 use Code\Lib\Libacl;
 use Code\Lib\Head;
-    
+use Code\Render\Theme;                                                                                                                                                
 class Flashcards extends Controller {
     
     private $version = "2.08";
@@ -67,7 +67,7 @@ class Flashcards extends Controller {
 
         Head::add_css('/addon/flashcards/view/css/flashcards.css');  
 
-        $o = replace_macros(get_markup_template('flashcards.tpl','addon/flashcards'),array(
+        $o = replace_macros(Theme::get_template('flashcards.tpl','addon/flashcards'),array(
                 '$post_url' => 'flashcards/' . $this->owner['channel_address'],
                 '$nick' => $this->owner['channel_address'],
                 '$is_owner' => $this->is_owner,
@@ -248,8 +248,8 @@ class Flashcards extends Controller {
 
         $lockstate = (($f['allow_cid'] || $f['allow_gid'] || $f['deny_cid'] || $f['deny_gid']) ? 'lock' : 'unlock');
 
-        //$o = replace_macros(get_markup_template('attach_edit.tpl'), array(
-        $o = replace_macros(get_markup_template('flashcards_attach_edit.tpl','addon/flashcards'),array(
+        //$o = replace_macros(Theme::get_template('attach_edit.tpl'), array(
+        $o = replace_macros(Theme::get_template('flashcards_attach_edit.tpl','addon/flashcards'),array(
                 '$boxid' => $box_id,
                 '$file' => $f,
                 '$uid' => $channel['channel_id'],

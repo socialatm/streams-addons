@@ -5,6 +5,8 @@ namespace Code\Module;
 use App;
 use Code\Lib\Apps;
 use Code\Web\Controller;
+use Code\Render\Theme;                                                                                                                                            
+
 
 class Fuzzloc extends Controller {
 
@@ -39,15 +41,15 @@ class Fuzzloc extends Controller {
 			return $o;
 		}
 
-		$sc = replace_macros(get_markup_template('field_input.tpl'), [
+		$sc = replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field'	=> [ 'minfuzz', t('Minimum offset in meters'), get_pconfig(local_channel(),'fuzzloc','minfuzz') ],
 		]);
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field'	=> [ 'maxfuzz', t('Maximum offset in meters'), get_pconfig(local_channel(),'fuzzloc','maxfuzz') ],
 		]);
 
-		$o = replace_macros(get_markup_template('settings_addon.tpl'), [
+		$o = replace_macros(Theme::get_template('settings_addon.tpl'), [
 			'$action_url'          => 'fuzzloc',
 			'$form_security_token' => get_form_security_token("fuzzloc"),
 			'$title'               => t('Fuzzy Location'),

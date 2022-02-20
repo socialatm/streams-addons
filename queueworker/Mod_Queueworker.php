@@ -4,6 +4,8 @@ namespace Code\Module;
 
 use App;
 use Code\Web\Controller;
+use Code\Render\Theme;                                                                                                                                            
+
 
 require_once(dirname(__FILE__) . '/queueworker.php');
 
@@ -71,7 +73,7 @@ class Queueworker extends Controller {
 
 		$sc = '';
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field' => [
 				'queueworker_maxworkers',
 				t('Max queueworker threads'),
@@ -84,7 +86,7 @@ class Queueworker extends Controller {
 		$workermaxage = ($workermaxage >= 120) ? $workermaxage : 300;
 		set_config('queueworker', 'max_queueworker_age', $workermaxage);
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field' => [
 				'queueworker_max_age',
 				t('Assume workers dead after'),
@@ -97,7 +99,7 @@ class Queueworker extends Controller {
 		$queueworkersleep = ($queueworkersleep > 100) ? $queueworkersleep : 100;
 		set_config('queueworker', 'queue_worker_sleep', $queueworkersleep);
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field' => [
 				'queue_worker_sleep',
 				t('Pause before starting next task'),
@@ -106,7 +108,7 @@ class Queueworker extends Controller {
 			]
 		]);
 
-		$tpl = get_markup_template('settings_addon.tpl');
+		$tpl = Theme::get_template('settings_addon.tpl');
 		$content .= replace_macros($tpl, [
 				'$action_url' => 'queueworker',
 				'$form_security_token' => get_form_security_token('queueworker'),

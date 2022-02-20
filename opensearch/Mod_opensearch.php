@@ -4,6 +4,8 @@ namespace Code\Module;
 use App;
 use Code\Web\Controller;
 use Code\Lib\System;
+use Code\Render\Theme;                                                                                                                                            
+
 
 
 class Opensearch extends Controller {
@@ -24,7 +26,7 @@ class Opensearch extends Controller {
 
 		header("Content-type: application/opensearchdescription+xml");
 
-		echo replace_macros(get_markup_template('opensearch.tpl','addon/opensearch'), [ 
+		echo replace_macros(Theme::get_template('opensearch.tpl','addon/opensearch'), [ 
 			'$project'        => t('$Projectname'),
 			'$search_project' => t('Search $Projectname'),
 			'$baseurl'        => z_root(),

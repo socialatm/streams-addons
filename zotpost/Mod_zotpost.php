@@ -8,7 +8,8 @@ use Code\Lib\Libsync;
 use Code\Lib\PConfig;
 use Code\Lib\Navbar;
 use Code\Web\Controller;
-
+use Code\Render\Theme;
+    
 class Zotpost extends Controller {
 
 	function post() {
@@ -62,23 +63,23 @@ class Zotpost extends Controller {
 
 		$sc = $text;
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field'	=>  [ 'zotpost_server', t('Zot server URL'), $api, t('https://example.com') ]
 		]);
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), [
 			'$field'	=>  [ 'zotpost_channel', t('Zot channel name'), $channel, t('Nickname') ]
 		]);
 
-		$sc .= replace_macros(get_markup_template('field_password.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_password.tpl'), [
 			'$field'	=>  [ 'zotpost_password', t('Zot password'), $password, '' ]
 		]);
 
-		$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), [
+		$sc .= replace_macros(Theme::get_template('field_checkbox.tpl'), [
 			'$field'	=>  [ 'zotpost_default', t('Send public postings to Zot channel by default'), $defchecked, '', [ t('No'),t('Yes') ] ],
 		]);
 
-		return replace_macros(get_markup_template('generic_app_settings.tpl'), [
+		return replace_macros(Theme::get_template('generic_app_settings.tpl'), [
 			'$addon' 	=> [ 'zotpost', t('Zotpost Settings'), '', t('Submit') ],
 			'$content'	=> $sc
 		]);

@@ -9,7 +9,8 @@
  */
 
 use Code\Extend\Hook;
-
+use Code\Render\Theme;
+    
 function logrot_load() {
 		Hook::register('logger', 'addon/logrot/logrot.php','logrot_logger');
 }
@@ -19,8 +20,8 @@ function logrot_unload() {
 }
 
 
-function logrot_plugin_admin(&$a, &$o) {
-	$t = get_markup_template("admin.tpl", "addon/logrot/");
+function logrot_plugin_admin(&$o) {
+	$t = Theme::get_template("admin.tpl", "addon/logrot/");
 	$logrotpath = get_config('logrot', 'logrotpath');
 	if(! $logrotpath)
 		$logrotpath = '';

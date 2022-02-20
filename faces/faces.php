@@ -2,7 +2,7 @@
 
 use Code\Extend\Route;
 use Code\Extend\Hook;
-use Code\Lib\Channel;
+use Code\Render\Theme;                                                                                                                                           use Code\Lib\Channel;
     
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
@@ -103,7 +103,7 @@ function faces_plugin_admin(&$a, &$o) {
 	}
 
 
-	$t = get_markup_template("admin.tpl", "addon/faces/");
+	$t = Theme::get_template("admin.tpl", "addon/faces/");
 
 	$limit = get_config('faces', 'limit');
 	if (!$limit) {

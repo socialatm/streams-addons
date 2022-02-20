@@ -4,6 +4,8 @@ namespace Code\Module;
 
 use Code\Lib\Apps;
 use Code\Lib\Libsync;
+use Code\Render\Theme;                                                                                                                                            
+
 
 class Nsfw extends \Code\Web\Controller {
 
@@ -38,15 +40,15 @@ class Nsfw extends \Code\Web\Controller {
 
 		$sc = $text;
 
-		$sc .= replace_macros(get_markup_template('field_input.tpl'), array(
+		$sc .= replace_macros(Theme::get_template('field_input.tpl'), array(
 			'$field'	=> array('nsfw-words', t('Comma separated list of keywords to hide'), $words, t('Word, /regular-expression/, lang=xx, lang!=xx'))
 		));
 
-//		$sc .= replace_macros(get_markup_template('field_checkbox.tpl'), array(
+//		$sc .= replace_macros(Theme::get_template('field_checkbox.tpl'), array(
 //			'$field'	=> array('nsfw-collapse', t('Collapse entire conversation if a match is found'), get_pconfig(local_channel(),'nsfw','collapse_all',true), '' )
 //		));
 
-		$s = replace_macros(get_markup_template('generic_app_settings.tpl'), array(
+		$s = replace_macros(Theme::get_template('generic_app_settings.tpl'), array(
 			'$addon' 	=> array('nsfw', t('Not Safe For Work Settings'), t('General Purpose Content Filter'), t('Submit')),
 			'$content'	=> $sc
 		));
