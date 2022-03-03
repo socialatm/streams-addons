@@ -13,6 +13,8 @@ use Code\Lib\Apps;
 use Code\Extend\Hook;
 use Code\Extend\Route;
 use Code\Lib\Head;
+use Code\Render\Theme;                                                                                                                                            
+
     
 //require_once('addon/gallery/Mod_Gallery.php');
 
@@ -90,7 +92,7 @@ function gallery_page_end(&$str) {
 	Head::add_css('/addon/gallery/lib/photoswipe/dist/default-skin/default-skin.css');
 	Head::add_css('/addon/gallery/view/css/gallery.css');
 
-	$tpl = get_markup_template('gallery_dom.tpl', 'addon/gallery');
+	$tpl = Theme::get_template('gallery_dom.tpl', 'addon/gallery');
 	$str .= replace_macros($tpl, []);
 }
 

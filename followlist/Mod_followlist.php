@@ -7,6 +7,8 @@ use Code\Lib\ASCollection;
 use Code\Lib\Connect;
 use Code\Lib\Apps;
 use Code\Lib\ServiceClass;
+use Code\Render\Theme;                                                                                                                                            
+
     
 class Followlist extends Controller {
 
@@ -126,7 +128,7 @@ class Followlist extends Controller {
 			}
 		}
 
-		return replace_macros(get_markup_template('followlist.tpl','addon/followlist'), [
+		return replace_macros(Theme::get_template('followlist.tpl','addon/followlist'), [
 			'$page_title'          => t('Followlist'),
 			'$limits'              => sprintf( t('You may import up to %d records'), $max_records), 
 			'$form_security_token' => get_form_security_token("followlist"),

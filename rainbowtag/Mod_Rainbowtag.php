@@ -5,6 +5,8 @@ namespace Code\Module;
 use App;
 use Code\Lib\Apps;
 use Code\Web\Controller;
+use Code\Render\Theme;                                                                                                                                            
+
 
 class Rainbowtag extends Controller {
 
@@ -26,7 +28,7 @@ class Rainbowtag extends Controller {
 		$content = '<b>Rainbow Tag App Installed:</b><br>';
 		$content .= $desc;
 
-		$tpl = get_markup_template("settings_addon.tpl");
+		$tpl = Theme::get_template("settings_addon.tpl");
 
 		$o = replace_macros($tpl, array(
 			'$action_url' => '',

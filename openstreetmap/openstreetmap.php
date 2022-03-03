@@ -9,7 +9,8 @@
 
 use Code\Extend\Hook;
 use Code\Lib\Head;
-
+use Code\Render\Theme;
+    
 function openstreetmap_load() {
 	Hook::register('render_location', 'addon/openstreetmap/openstreetmap.php', 'openstreetmap_location');
 	Hook::register('generate_map', 'addon/openstreetmap/openstreetmap.php', 'openstreetmap_generate_map');
@@ -192,8 +193,8 @@ function osm_latlon_to_bbox($lat, $lon, $zoom) {
 }
 
 
-function openstreetmap_plugin_admin($a,&$o) {
-	$t = get_markup_template("admin.tpl", "addon/openstreetmap/");
+function openstreetmap_plugin_admin(&$o) {
+	$t = Theme::get_template("admin.tpl", "addon/openstreetmap/");
 	$tmsserver = get_config('openstreetmap', 'tmsserver', 'http://www.openstreetmap.org');
 	$nomserver = get_config('openstreetmap', 'nomserver', 'http://nominatim.openstreetmap.org/search.php');
 	$zoom = intval(get_config('openstreetmap', 'zoom', 16));

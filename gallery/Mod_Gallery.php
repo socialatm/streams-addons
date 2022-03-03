@@ -7,6 +7,8 @@ use Code\Lib\Apps;
 use Code\Lib\Libprofile;
 use Code\Lib\Channel;
 use Code\Lib\Navbar;
+use Code\Render\Theme;                                                                                                                                            
+
 
 require_once('include/attach.php');
 
@@ -134,7 +136,7 @@ class Gallery extends \Code\Web\Controller {
 			}
 		}
 
-		$tpl = get_markup_template('gallery.tpl', 'addon/gallery');
+		$tpl = Theme::get_template('gallery.tpl', 'addon/gallery');
 		$o = replace_macros($tpl, [
 			'$title' => t('Gallery'),
 			'$albums' => $items,
