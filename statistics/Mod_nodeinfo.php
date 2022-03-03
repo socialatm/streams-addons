@@ -17,7 +17,7 @@ class Nodeinfo extends Controller {
 				'name' => System::get_project_name(),
 				'version' => (($hidden) ? EMPTY_STR : System::get_project_version())
 			],
-			'protocols'         => [ 'zot' ],
+			'protocols'         => [ 'nomad', 'zot' ],
 			'services'          => [],
 			'openRegistrations' => ((intval(get_config('system','register_policy')) === REGISTER_OPEN) ? true : false),
 
