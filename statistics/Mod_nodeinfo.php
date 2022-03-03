@@ -4,12 +4,13 @@ namespace Code\Module;
 use Code\Web\Controller;
 use Code\Lib\System;
 use Code\Extend\Hook;
-
+use Code\Lib\Config;
+    
 class Nodeinfo extends Controller {
 
 	function init() {
 
-		$hidden = get_config('system','hide_in_statistics');
+		$hidden = Config::Get('system', 'hide_in_statistics');
 
 		$arr = [
 			'version'           => '2.0',
@@ -19,21 +20,21 @@ class Nodeinfo extends Controller {
 			],
 			'protocols'         => [ 'nomad', 'zot' ],
 			'services'          => [],
-			'openRegistrations' => ((intval(get_config('system','register_policy')) === REGISTER_OPEN) ? true : false),
+			'openRegistrations' => ((intval(Config::Get('system', 'register_policy')) === REGISTER_OPEN) ? true : false),
 
 			'usage' => [
 				'users' => [
-					'total' => (($hidden) ? 0 : intval(get_config('system','channels_total_stat'))),
-					'activeHalfyear' => (($hidden) ? 0 : intval(get_config('system','channels_active_halfyear_stat'))),
-					'activeMonth' => (($hidden) ? 0 : intval(get_config('system','channels_active_monthly_stat'))),
+					'total' => (($hidden) ? 0 : intval(Config::Get('system', 'channels_total_stat'))),
+					'activeHalfyear' => (($hidden) ? 0 : intval(Config::Get('system', 'channels_active_halfyear_stat'))),
+					'activeMonth' => (($hidden) ? 0 : intval(Config::Get('system', 'channels_active_monthly_stat'))),
 				],
-				'localPosts' => (($hidden) ? 0 : intval(get_config('system','local_posts_stat'))),
-				'localComments' => (($hidden) ? 0 : intval(get_config('system','local_comments_stat'))),
+				'localPosts' => (($hidden) ? 0 : intval(Config::Get('system', 'local_posts_stat'))),
+				'localComments' => (($hidden) ? 0 : intval(Config::Get('system', 'local_comments_stat'))),
 			],
-			'metadata' => [ 'nodeName' => get_config('system','sitename') ]
+			'metadata' => [ 'nodeName' => Config::Get('system', 'sitename') ]
 		];
 
-		if (get_config('system','activitypub', ACTIVITYPUB_ENABLED)) {
+		if (Config::Get('system', 'activitypub', ACTIVITYPUB_ENABLED)) {
 			$arr['protocols'][] = 'activitypub';
 		}
 
@@ -50,7 +51,7 @@ class Nodeinfo extends Controller {
 			$arr['services']['inbound'] = $iservices;
 		}
 
-		Hook::call('nodeinfo',$arr);
+		Hook::call('nodeinfo', $arr);
 
 		json_return_and_die($arr);
 	}
