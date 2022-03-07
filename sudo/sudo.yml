@@ -1,0 +1,4 @@
+name: Sudo
+description: 'Allow site administrator to access/administer protected channels and content'
+author: 'Mike Macgirvin'
+version: '1.0'

@@ -1,0 +1,5 @@
+name: Opensearch
+description: 'Opensearch provider interface'
+version: '1.0'
+author: 'Mike Macgirvin'
+maintainer: none

@@ -1,0 +1,5 @@
+name: 'ABC Music'
+description: 'Render ABC music notation as musical scores'
+version: 1.0Z
+author: 'Olivier Migeot <https://abcentric.net/profile/olivierm>'
+maintainer: 'Mike Macgirvin <https://z.macgirvin.com/channel/mike>'

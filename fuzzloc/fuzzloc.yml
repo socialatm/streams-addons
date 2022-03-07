@@ -1,0 +1,5 @@
+name: 'Fuzzy Location'
+description: 'If you have browser location enabled for your posts, provide a bit of fuzziness to your actual location'
+version: '1.0'
+author: 'Mike Macgirvin'
+maintainer: none

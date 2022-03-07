@@ -1,0 +1,5 @@
+name: 'Content Importer'
+description: 'import content and file storage to a cloned channel'
+version: '1.0'
+author: 'Mike Macgirvin'
+maintainer: 'Mike Macgirvin <mike@macgirvin.com>'

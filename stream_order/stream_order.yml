@@ -1,0 +1,5 @@
+name: 'Stream Order'
+description: 'Provides an app to switch the post ordering'
+version: '1.0'
+author: 'Mike Macgirvin <http://macgirvin.com/profile/mike>'
+maintainer: 'Mike Macgirvin <mike@macgirvin.com>'

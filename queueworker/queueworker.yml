@@ -1,0 +1,5 @@
+name: queueworker
+description: 'Next generation queue worker for backgrounded tasks (BETA)'
+version: 0.8.0
+author: 'Matthew Dent <dentm42@dm42.net>'
+minversion: 4.2.1

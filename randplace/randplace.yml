@@ -1,0 +1,4 @@
+name: 'Random Place'
+description: 'Sample plugin, sets a random place when posting.'
+version: '1.0'
+author: 'Mike Macgirvin <mike@macgirvin.com>'
