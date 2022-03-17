@@ -41,8 +41,9 @@ require_once('include/import.php');
 
 	$j = json_decode($x['body'],true);
 
-	if(! ($j['item'] || count($j['item'])))
+    if(! (isset($j['item']) && is_array($j['item']) && count($j['item']))) {
 		killme();
+    }
 
 	import_items($channel,$j['item'],false,((array_key_exists('relocate',$j)) ? $j['relocate'] : null));
 
