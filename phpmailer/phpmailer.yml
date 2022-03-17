@@ -1,0 +1,5 @@
+name: phpmailer
+description: 'use phpmailer instead of built-in mail() function'
+version: '1.1'
+author: 'Mike Macgirvin <mike@macgirvin.com>'
+maintainer: none

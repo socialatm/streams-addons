@@ -1,0 +1,4 @@
+name: 'Zot Crosspost Connector (zotpost)'
+description: 'Relay public postings to another Zot or Zot6 channel'
+version: '1.0'
+maintainer: none

@@ -1,0 +1,4 @@
+name: 'Twitter API'
+description: 'Implements a reasonable and useful subset the Twitter V1 and V1.1 API'
+version: '1.0'
+maintainer: none

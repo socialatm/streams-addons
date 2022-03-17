@@ -1,0 +1,5 @@
+name: 'LDAP Authenticate'
+description: 'Authenticate an account against an LDAP directory'
+version: '1.0'
+author: 'Mike Macgirvin'
+maintainer: 'Mike Macgirvin'

@@ -1,0 +1,7 @@
+name: 'Nodeinfo Statistics'
+description: 'Generates some statistics for the-federation.info'
+version: '3.0'
+author:
+    - 'Mike Macgirvin'
+    - 'Michael Vogel <https://pirati.ca/profile/heluecht>'
+maintainer: none

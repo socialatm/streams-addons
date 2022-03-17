@@ -1,0 +1,5 @@
+name: 'Not Safe For Work'
+description: 'Collapse posts with inappropriate content'
+version: '2.0'
+author: 'Mike Macgirvin <http://macgirvin.com/profile/mike>'
+maintainer: 'Mike Macgirvin <mike@macgirvin.com>'

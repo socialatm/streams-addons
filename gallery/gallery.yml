@@ -1,0 +1,6 @@
+name: Gallery
+description: 'Album gallery and photo viewer based on photoswipe'
+version: '0.6'
+minversion: 3.8.8
+author: Mario
+maintainer: Mario
