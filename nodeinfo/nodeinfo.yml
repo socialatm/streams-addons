@@ -1,5 +1,5 @@
-name: 'Nodeinfo Statistics'
-description: 'Generates some statistics for the-federation.info'
+name: 'Nodeinfo'
+description: 'Provide site discovery'
 version: '3.0'
 author:
     - 'Mike Macgirvin'
