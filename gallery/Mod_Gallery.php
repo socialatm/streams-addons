@@ -15,11 +15,7 @@ require_once('include/attach.php');
 class Gallery extends \Code\Web\Controller {
 
 	function init() {
-	
-		if(observer_prohibited()) {
-			return;
-		}
-	
+		
 		if(argc() > 1) {
 			$nick = argv(1);
 	

@@ -286,11 +286,6 @@ class Faces extends Controller {
 
 		$owner_uid = $this->owner['channel_id'];
 
-		if (observer_prohibited(true)) {
-			logger('Stop: observer prohibited', LOGGER_DEBUG);
-			return array('status' => false, 'errormsg' => 'observer prohibited');
-		}
-
 		if (!Apps::addon_app_installed($owner_uid, 'faces')) {
 			logger('Stop: Owner profil has not addon installed', LOGGER_DEBUG);
 			return array('status' => false, 'errormsg' => 'Owner profil has not addon installed');
