@@ -2,7 +2,8 @@
 
 use Code\Web\HTTPSig;
 use Code\Lib\Channel;
-
+use Code\Lib\Url;
+    
 require_once('include/cli_startup.php');
 require_once('include/attach.php');
 require_once('include/import.php');
@@ -29,7 +30,7 @@ require_once('include/import.php');
 	];
 
 	$headers = HTTPSig::create_sig($headers,$channel['channel_prvkey'],Channel::url($channel),true,'sha512');		
-	$x = z_fetch_url($hz_server . '/api/z/1.0/file/export?f=&zap_compat=1&file_id=' . $attach_id,false,$redirects,[ 'headers' => $headers ]);
+	$x = Url::get($hz_server . '/api/z/1.0/file/export?f=&zap_compat=1&file_id=' . $attach_id,[ 'headers' => $headers ]);
 
 	if(! $x['success']) {
 		logger('no API response',LOGGER_DEBUG);

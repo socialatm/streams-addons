@@ -4,6 +4,7 @@ use Code\Extend\Hook;
 use Code\Extend\Route;
 use Code\Lib\Apps;
 use Code\Lib\PConfig;
+use Code\Lib\Url;
 
 /**
  * Name: Zot Crosspost Connector (zotpost)
@@ -115,12 +116,12 @@ function zotpost_post_hook(&$b) {
 	$postdata =  [ 'body' => $b['body'], 'title' => $b['title'], 'source' => (($b['app']) ? : 'ZAP/ZotPost') ];
 
 	if (strlen($b['body'])) {
-		$ret = z_post_url($api . '/z/1.0/item/update', $postdata, 0, [ 'http_auth' => $channel . ':' . $password ]);
+		$ret = Url::post($api . '/z/1.0/item/update', $postdata, 0, [ 'http_auth' => $channel . ':' . $password ]);
 		if ($ret['success']) {
 			logger('zotpost: returns: ' . print_r($ret['body'],true));
 		}
 		else {
-			logger('zotpost: z_post_url failed: ' . print_r($ret['debug'],true));
+			logger('zotpost: post failed: ' . print_r($ret['debug'],true));
 		}
 	}
 }

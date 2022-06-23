@@ -9,6 +9,7 @@
 
 use Code\Extend\Hook;
 use Code\Lib\Head;
+use Code\Lib\Url;
 use Code\Render\Theme;
     
 function openstreetmap_load() {
@@ -99,7 +100,7 @@ function openstreetmap_generate_named_map(&$b) {
 
 	$args = '?q=' . urlencode($b['location']) . '&format=json';
 
-	$x = z_fetch_url($nomserver . $args);
+	$x = Url::get($nomserver . $args);
 
 	if ($x['success']) {
 		$j = json_decode($x['body'],true);
