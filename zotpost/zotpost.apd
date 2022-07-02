@@ -1,6 +1,0 @@
-version: 1.2
-url: $baseurl/zotpost
-requires: local_channel
-name: ZotPost
-photo: $baseurl/images/zot-300.png
-categories: Networking
