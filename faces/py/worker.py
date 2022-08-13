@@ -570,7 +570,8 @@ class Worker:
         f.close()
         logging.debug("directory " + dir + " - stored face representations in file " + path)
 
-        if logging.root.level >= logging.DEBUG:
+        is_needed = False # seems useless because there is the big statistics csv containing all results
+        if logging.root.level >= logging.DEBUG and is_needed:
             path = os.path.join(dir, self.file_name_face_representations_dbg)
             pd.set_option('display.max_colwidth', None)
             df = df.drop('representation', axis=1)

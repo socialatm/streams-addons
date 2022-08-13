@@ -126,14 +126,8 @@ else:
 # stop after first match of a face (if more than model is used)
 if args["first_result"]:
     config += ";first_result=" + args["first_result"]
-else:
-    config += ";first_result=" + "on"
-
-# opposite of first_result
-if args["enforce"]:
+elif args["enforce"]:
     config += ";enforce=" + args["enforce"]
-else:
-    config += ";enforce=" + "on"
 
 # write statistics into csv files to compare detectors and models
 if args["statistics_mode"]:

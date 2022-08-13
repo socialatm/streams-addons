@@ -25,6 +25,7 @@ class Worker:
         self.proc_id = None
         self.db = None
         self.file_name_face_representations = "faces.pkl"
+        self.file_name_face_representations_dbg = "faces_debug.csv"
         self.file_name_facial_attributes = "facial_attributes.csv"
         self.file_name_face_names = "faces.csv"
         self.file_name_faces_statistic = "faces_statistics.csv"
@@ -95,6 +96,7 @@ class Worker:
 
         self.folder = None
         self.faces_pkl = None
+        self.faces_pkl_dbg = None
         self.faces_csv = None
         self.faces_attr = None
         self.faces_statistics = None
@@ -228,6 +230,7 @@ class Worker:
             return
         if self.check_file_by_name(self.file_name_face_representations) is False:
             return
+        self.check_file_by_name(self.file_name_face_representations_dbg)
         self.check_file_by_name(self.file_name_facial_attributes)  # for cleanup
 
         self.cleanup()
@@ -420,6 +423,7 @@ class Worker:
                 return
             if self.check_file_by_name(self.file_name_face_names) is False:
                 return
+            self.check_file_by_name(self.file_name_face_representations_dbg)
 
             # ---
             # Concatenate all face representations of all directories
@@ -586,6 +590,8 @@ class Worker:
     def check_file_by_name(self, file_name):
         if file_name == self.file_name_face_representations:
             self.faces_pkl = None
+        if file_name == self.file_name_face_representations_dbg:
+            self.faces_pkl_dbg = None
         elif file_name == self.file_name_face_names:
             self.faces_csv = None
         elif file_name == self.file_name_facial_attributes:
@@ -608,6 +614,9 @@ class Worker:
                 return True
             elif file_name == self.file_name_facial_attributes:
                 self.faces_attr = path
+                return True
+            elif file_name == self.file_name_face_representations_dbg:
+                self.faces_pkl_dbg = path
                 return True
         logging.debug("directory " + self.folder + " - skipping... no file or write permission, file " + path)
         return False
@@ -684,6 +693,16 @@ class Worker:
         pickle.dump(df, f)
         f.close()
         logging.debug("directory " + self.folder + " - stored face representations in file " + self.faces_pkl)
+
+        is_needed = False # seems useless because there is the big statistics csv containing all results
+        if logging.root.level >= logging.DEBUG and is_needed:
+            if self.faces_pkl_dbg and os.path.exists(self.faces_pkl_dbg) is False:
+                logging.debug("directory " + self.folder + " - dbg csv file does not exist " + self.faces_pkl_dbg)
+            else:
+                pd.set_option('display.max_colwidth', None)
+                df = df.drop('representation', axis=1)
+                df.to_csv(self.faces_pkl_dbg, index=False, sep=';', na_rep='')
+
         return True
 
     def get_facial_attributes(self):

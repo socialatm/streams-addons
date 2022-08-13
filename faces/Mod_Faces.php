@@ -20,6 +20,7 @@ class Faces extends Controller {
     private $observer;
     private $addonDirName = "faces";
     private $fileNameEmbeddings = "faces.pkl";
+    private $fileNameEmbeddingsDebug = "faces_debug.csv";
     private $fileNameNames = "faces.csv";
     private $fileNameAttributes = "facial_attributes.csv";
     private $fileNameFacesStatistic = "faces_statistics.csv";
@@ -263,6 +264,16 @@ class Faces extends Controller {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
                         $dir->createFile($this->fileNameEmbeddings);
                     }
+                    $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
+                    if ($loglevel >= LOGGER_DEBUG) {
+                        if (!$dir->childExists($this->fileNameEmbeddingsDebug)) {
+                            $dir->createFile($this->fileNameEmbeddingsDebug);
+                        }
+                    } else {
+                        if ($dir->childExists($this->fileNameEmbeddingsDebug)) {
+                            $dir->getChild($this->fileNameEmbeddingsDebug)->delete();
+                        }
+                    }
                     if (!$dir->childExists($this->fileNameNames)) {
                         $dir->createFile($this->fileNameNames);
                     } else {
@@ -491,9 +502,9 @@ class Faces extends Controller {
     }
 
     private function showRemovePage($loglevel) {
-        
+
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
-        if($block) {
+        if ($block) {
             $o = "Not available. Why? The Python scripts for face detection and recognition are blocked on this server.";
             return $o;
         }
