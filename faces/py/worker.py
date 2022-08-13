@@ -172,7 +172,9 @@ class Worker:
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read directory " + self.dirImages)
             sys.exit(1)
-        for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links):
+        exclude = set(['lost+found', '.Trash-1000'])
+        for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links, topdown=True):
+            dirnames[:] = [d for d in dirnames if d not in exclude]  # works because of topdown=True is set
             logging.debug("directory " + dir + " - start processing directory")
             self.process_dir(dir)
         logging.info(self.finder.detector_name + " finished")
@@ -467,7 +469,6 @@ class Worker:
         self.store_face_names(df_names, abs_dir)
         if self.statistics_mode:
             self.store_face_presentations(df_recognized, abs_dir)
-
 
     # Add new images to a pandas.DataFrame for
     # - faces representations, faces.pkl, or
