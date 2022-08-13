@@ -264,16 +264,16 @@ class Faces extends Controller {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
                         $dir->createFile($this->fileNameEmbeddings);
                     }
-                    $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
-                    if ($loglevel >= LOGGER_DEBUG) {
-                        if (!$dir->childExists($this->fileNameEmbeddingsDebug)) {
-                            $dir->createFile($this->fileNameEmbeddingsDebug);
-                        }
-                    } else {
-                        if ($dir->childExists($this->fileNameEmbeddingsDebug)) {
-                            $dir->getChild($this->fileNameEmbeddingsDebug)->delete();
-                        }
-                    }
+//                    $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
+//                    if ($loglevel >= LOGGER_DEBUG) {
+//                        if (!$dir->childExists($this->fileNameEmbeddingsDebug)) {
+//                            $dir->createFile($this->fileNameEmbeddingsDebug);
+//                        }
+//                    } else {
+//                        if ($dir->childExists($this->fileNameEmbeddingsDebug)) {
+//                            $dir->getChild($this->fileNameEmbeddingsDebug)->delete();
+//                        }
+//                    }
                     if (!$dir->childExists($this->fileNameNames)) {
                         $dir->createFile($this->fileNameNames);
                     } else {
