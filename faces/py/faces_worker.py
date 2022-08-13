@@ -189,8 +189,8 @@ class Worker:
         self.util.is_css_position = self.finder.css_position
 
     def run(self, dir_images, proc_id, channel_id, doRecognize):
-        logging.info("dir=" + dir_images + ", proc_id=" + proc_id + ", channel_id=" + str(
-            channel_id) + ", " + self.finder.detector_name)
+        logging.info("start with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
+                     proc_id + ", channel_id=" + str(channel_id))
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read directory " + self.dirImages)
@@ -220,8 +220,8 @@ class Worker:
                     logging.debug("no recognition is run for channel id = " + str(self.channel))
                     continue
         self.write_alive_signal(self.FINISHED)
-        logging.info("OK, Good bye...")
-        logging.debug("OK")
+        logging.info("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
+                     proc_id + ", channel_id=" + str(channel_id))
 
     def process_dir(self):
         logging.debug("directory " + self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
@@ -694,7 +694,7 @@ class Worker:
         f.close()
         logging.debug("directory " + self.folder + " - stored face representations in file " + self.faces_pkl)
 
-        is_needed = False # seems useless because there is the big statistics csv containing all results
+        is_needed = False  # seems useless because there is the big statistics csv containing all results
         if logging.root.level >= logging.DEBUG and is_needed:
             if self.faces_pkl_dbg and os.path.exists(self.faces_pkl_dbg) is False:
                 logging.debug("directory " + self.folder + " - dbg csv file does not exist " + self.faces_pkl_dbg)
