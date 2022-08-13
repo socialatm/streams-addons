@@ -806,11 +806,6 @@ class Worker:
             df_models = df_models.append(row, ignore_index=True)
             df_models.to_csv(self.models_statistics)
             logging.debug("Wrote model statistics to file=" + self.file_name_models_statistic)
-        else:
-            if os.path.exists(self.faces_statistics):
-                os.remove(self.faces_statistics)
-            if os.path.exists(self.models_statistics):
-                os.remove(self.models_statistics)
 
     def set_time_to_wait(self, seconds):
         self.timeToWait = seconds
