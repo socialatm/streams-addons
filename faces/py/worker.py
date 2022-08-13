@@ -8,6 +8,7 @@ import logging
 import sys
 import faces_exiftool
 import faces_util
+import numpy as np
 
 deepface_spec = importlib.util.find_spec("deepface")
 if deepface_spec is not None:
@@ -560,6 +561,13 @@ class Worker:
         pickle.dump(df, f)
         f.close()
         logging.debug("directory " + dir + " - stored face representations in file " + path)
+
+        if logging.root.level >= logging.DEBUG:
+            path = os.path.join(dir, "faces_debug.csv")
+            pd.set_option('display.max_colwidth', None)
+            df = df.drop('representation', axis=1)
+            df.to_csv(path, index=False, sep=';', na_rep='')
+
         return True
 
     def get_facial_attributes(self, dir):
