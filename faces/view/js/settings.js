@@ -59,6 +59,7 @@ function fillGUI(config) {
     createCheckboxes(config.distance_metrics, "#face_metrics", true);
     createCheckboxes(config.demography, "#face_attributes", true);
     createCheckboxes(config.statistics, "#face_statistics", true);
+    createCheckboxes(config.history, "#face_history", true);
     createCheckboxes(config.enforce, "#face_enforce_all", true);
     createCheckboxes(config.faces_defaults, "#face_detaults");
     createCheckboxes(config.faces_experimental, "#face_experimental");
@@ -121,7 +122,7 @@ function presetDefault() {
         var checkboxes = document.getElementsByClassName(group);
         setToDefault(checkboxes, false);
     });
-    checkboxgroups = ["face_attributes", "face_statistics", "face_enforce_all"];
+    checkboxgroups = ["face_attributes", "face_statistics", "face_history", "face_enforce_all"];
     checkboxgroups.forEach(group => {
         var checkboxes = document.getElementsByClassName(group);
         setToDefault(checkboxes, true);

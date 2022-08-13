@@ -23,7 +23,9 @@ parser.add_argument("--min_face_width_percent")
 parser.add_argument("--min_face_width_pixel")
 parser.add_argument("--css_position")
 parser.add_argument("--first_result")
+parser.add_argument("--enforce")
 parser.add_argument("--statistics_mode")
+parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
 
@@ -127,11 +129,23 @@ if args["first_result"]:
 else:
     config += ";first_result=" + "on"
 
+# opposite of first_result
+if args["enforce"]:
+    config += ";enforce=" + args["enforce"]
+else:
+    config += ";enforce=" + "on"
+
 # write statistics into csv files to compare detectors and models
 if args["statistics_mode"]:
     config += ";statistics_mode=" + args["statistics_mode"]
 else:
     config += ";statistics_mode=" + "off"
+
+# write a history of recognition
+if args["history"]:
+    config += ";history=" + args["history"]
+else:
+    config += ";history=" + "off"
 
 # in percent of image
 if args["min_face_width_percent"]:
@@ -188,3 +202,4 @@ for detector in detectors:
     counter = counter + 1
 
 db.close()
+logging.info("OK, good by...")

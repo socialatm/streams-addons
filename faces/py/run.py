@@ -17,7 +17,9 @@ parser.add_argument("--min_face_width_percent")
 parser.add_argument("--min_face_width_pixel")
 parser.add_argument("--css_position")
 parser.add_argument("--first_result")
+parser.add_argument("--enforce")
 parser.add_argument("--statistics_mode")
+parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
 
@@ -87,16 +89,15 @@ def read_config_file():
     logging.debug("read config from file " + conf_file)
     with open(conf_file, "r") as f:
         dict_conf = json.load(f)
+    no_list = ['statistics', 'enforce', 'history']
     for key in dict_conf:
         elements = dict_conf[key]
         param = ""
         for element in elements:
             name = element[0]
             value = element[1]
-            if key == "statistics" or key == "enforce":
-                param = "off"
-                if value:
-                    param = "on"
+            if name in no_list:
+                param = str(value)
             elif key == "min_face_width":
                 param = str(value)
                 config += ";min_face_width_" + name + "=" + param
@@ -139,11 +140,23 @@ def get_default_config():
     else:
         config += ";first_result=" + "off"
 
+    # opposite of first_result
+    if args["enforce"]:
+        config += ";enforce=" + args["enforce"]
+    else:
+        config += ";enforce=" + "off"
+
     # write statistics into csv files to compare detectors and models
     if args["statistics_mode"]:
         config += ";statistics_mode=" + args["statistics_mode"]
     else:
         config += ";statistics_mode=" + "on"
+
+    # write a history of the recognition
+    if args["history"]:
+        config += ";history=" + args["history"]
+    else:
+        config += ";history=" + "on"
 
     # in percent of image
     if args["min_face_width_percent"]:

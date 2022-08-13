@@ -38,6 +38,7 @@ class FaceRecognition {
         $demographyConfig = $this->getParamString($config, "demography");
         $first_resultConfig = $this->getParamStringDirectly($config, "first_result", "enforce");
         $statistics_modeConfig = $this->getParamStringDirectly($config, "statistics_mode", "statistics");
+        $history_modeConfig = $this->getParamStringDirectly($config, "history", "history");
         $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width");
 
         @include('.htconfig.php');
@@ -48,6 +49,7 @@ class FaceRecognition {
                 . $first_resultConfig
                 . $minFaceWidthConfig
                 . $statistics_modeConfig
+                . $history_modeConfig
                 . $rm_params
                 . " --loglevel " . $loglevel . $logfileparam
                 . $detectorsConfig . $modelsConfig . $distanceMetricsConfig . $demographyConfig);
@@ -86,9 +88,6 @@ class FaceRecognition {
         $param = "";
         $values = $config[$configName];
         $value = $values[0][1];
-        if ($configName === "enforce") {
-            $value = !$value;
-        }
         if ($value) {
             $param = "on";
         } else {

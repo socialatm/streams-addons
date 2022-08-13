@@ -33,10 +33,18 @@
         <div>Faces smaller than this will be ignored. </div>
     </div>
     <h2>Statistics</h2>
+    <div id="face_history">
+        <h3>Keep History</h3>
+        <div>This keeps a record of how correct the recognition works over time
+            This will allow you to activate the statistics at any time later (see below).</div>
+    </div>
     <div id="face_statistics">
         <h3>Write Statistics into a CSV File</h3>
-        <div>Activate this if you want to look at statistics for example if you
-            want to compare the effectivness of detectors, models and distance metrics.</div>
+        <div>Activate this if you want to write all deteted and recognized faces 
+            into one single CSV file "faces/faces_statistics.csv" and if you want 
+            to compare the results of different combinations of detectors, models
+            and distance metrics. The results will go into a CSV file "faces/models_statistics.csv".
+            Make sure to activate the "history" above.</div>
     </div>
     <div id="face_enforce_all">
         <h3>Enforce all Models to match Faces</h3>

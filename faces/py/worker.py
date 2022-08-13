@@ -24,6 +24,7 @@ class Worker:
         self.recognizer = None
         self.dirImages = None
         self.file_name_face_representations = "faces.pkl"
+        self.file_name_face_representations_dbg = "faces_debug.csv"
         self.file_name_facial_attributes = "facial_attributes.csv"
         self.file_name_face_names = "faces.csv"
         self.file_name_faces_statistic = "faces_statistics.csv"
@@ -31,11 +32,12 @@ class Worker:
         self.dir_addon = "faces"
 
         # Watch this!
-        # What happens itself.statistics_mode = True
+        # What happens if self.keep_history = True
         # The file .faces.pkl will be written if the face recognition finds something.
         # Q: Why does it matter?
         # A: In case the face recognition runs for ZOT/Nomad and the channel has clones
         #    the written file will trigger a file sync of .faces.pkl. between the clones (servers).
+        self.keep_history = False  # True/False
         self.statistics_mode = False  # True/False
 
         self.columnNamesFaceRecognition = [
@@ -116,7 +118,9 @@ class Worker:
             conf = element.split("=")
             if len(conf) < 2:
                 continue
-            if conf[0].strip().lower() == 'optional-face-data':
+            key = conf[0].strip().lower()
+            value = conf[1].strip().lower()
+            if key == 'optional-face-data':
                 self.columnsToInclude = []
                 s = conf[1].split(",")
                 for column in s:
@@ -126,32 +130,36 @@ class Worker:
                     else:
                         logging.warning(column + " is not a valid column in faces.csv")
                         logging.warning("Valid columns are: " + str(self.columnsToIncludeAll))
-            elif conf[0].strip().lower() == 'log_data':
-                if conf[1].strip().lower() == "on":
+            elif key == 'log_data':
+                if value == "on":
                     self.log_data = True
-                if conf[1].strip().lower() == "off":
+                if value == "off":
                     self.log_data = False
-            elif conf[0].strip().lower() == 'statistics_mode' or conf[0].strip().lower() == 'statistics':
-                if conf[1].strip().lower() == "on":
+            elif key == 'statistics_mode' or key == 'statistics':
+                if value == "on" or value == 'true':
                     self.statistics_mode = True
-            elif conf[0].strip().lower() == 'sort_column':
-                column = conf[1].strip().lower()
+            elif key == 'history':
+                if value == "on" or value == "true":
+                    self.keep_history = True
+            elif key == 'sort_column':
+                column = value
                 if column in self.columnsSort:
                     self.sort_column = column
-            elif conf[0].strip().lower() == 'sort_direction':
-                if conf[1].strip().lower() == "1":
+            elif key == 'sort_direction':
+                if value == "1":
                     self.sort_direction = False
-            elif conf[0].strip().lower() == 'follow_sym_links':
-                if conf[1].strip().lower() == "on":
+            elif key == 'follow_sym_links':
+                if value == "on":
                     self.follow_sym_links = True
-            elif conf[0].strip().lower() == 'rm_detectors':
+            elif key == 'rm_detectors':
                 self.removeDetectors = conf[1].strip()
                 logging.debug("Configuration rm_detectors=" + self.removeDetectors)
-            elif conf[0].strip().lower() == 'rm_models':
+            elif key == 'rm_models':
                 self.removeModels = conf[1].strip()
                 logging.debug("Configuration rm_models=" + self.removeModels)
         logging.debug("Configuration log_data=" + str(self.log_data))
         logging.debug("Configuration statistics_mode=" + str(self.statistics_mode))
+        logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
         logging.debug("Configuration sort_direction=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
@@ -468,7 +476,7 @@ class Worker:
         abs_dir = os.path.join(self.dirImages, dir)
         logging.debug("directory " + dir + " - faces have changed or where None before. Storing to file")
         self.store_face_names(df_names, abs_dir)
-        if self.statistics_mode:
+        if self.keep_history:
             self.store_face_presentations(df_recognized, abs_dir)
 
     # Add new images to a pandas.DataFrame for
@@ -563,7 +571,7 @@ class Worker:
         logging.debug("directory " + dir + " - stored face representations in file " + path)
 
         if logging.root.level >= logging.DEBUG:
-            path = os.path.join(dir, "faces_debug.csv")
+            path = os.path.join(dir, self.file_name_face_representations_dbg)
             pd.set_option('display.max_colwidth', None)
             df = df.drop('representation', axis=1)
             df.to_csv(path, index=False, sep=';', na_rep='')

@@ -35,7 +35,7 @@ class Recognizer:
                 else:
                     self.first_result = False
             if conf[0].strip().lower() == 'enforce':
-                if conf[1].strip().lower() == "on":
+                if conf[1].strip().lower() == "on" or conf[1].strip().lower() == "true":
                     self.first_result = False
                 else:
                     self.first_result = True

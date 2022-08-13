@@ -89,6 +89,9 @@ class FaceConfiguration {
         if (!$experimental_allowed) {
             $config["statistics"][0][1] = false;
             $config["statistics"][0][2] = true;
+            
+            $config["history"][0][1] = false;
+            $config["history"][0][2] = true;
 
             $config["enforce"][0][1] = false;
             $config["enforce"][0][2] = true;
@@ -100,6 +103,8 @@ class FaceConfiguration {
             $config["faces_defaults"][0][2] = false;
         } else {
             $config["statistics"][0][2] = false;
+            
+            $config["history"][0][2] = false;
 
             $config["enforce"][0][2] = false;
 
@@ -167,6 +172,7 @@ class FaceConfiguration {
         $config = $this->addConfigElement("demography", $this->available_attributes, $config, false);
 
         $config = $this->addConfigElement("statistics", "statistics", $config, false);
+        $config = $this->addConfigElement("history", "history", $config, false);
         $config = $this->addConfigElement("enforce", "enforce", $config, false);
         $config = $this->addConfigElement("faces_defaults", "reset", $config, false);
         $config = $this->addConfigElement("faces_experimental", "experimental", $config, false);
