@@ -1,37 +1,233 @@
+var zoom = 3;
+var minZoomLoaded = 1;
+var imageCounter = 0;
+var loadedCountMaxMultiplier = 3;
+var loadedCountMax = loadedCountMaxMultiplier * zoom;  // How many picture to load befor stopping. After the stop the user has to scroll down to load more images.
+var loadedCount = 0;
+var isFaceRecognitionRunning = false;
+var sortDirectionReverse = false;
+var stopLoadingImages = false;
+var blockScrolledToEnd = false;
+
+var endPanel = null;
+
+// TODO set log level by server
+var loglevel = 3; // 0 = errors/warnings, 1 = info, 2 = debug, 3 = dump data structures
+
+var images = [];
+var receivedFaceEncodings = [];
+var receivedNames = [];
+var picturesProcessedID = [];
+var files_name = []; // async http post for jquery >= 1.8 seems to be not asynchronous anymore
+var counter_files_name = 0;
+
+var server_procid = "";
+var server_time = "";
+
 function t() {
     var now = new Date();
     var dateString = now.toISOString();
     return dateString;
 }
 
-var minZoomLoaded = 3;
-var zoom = 3;
-var faceEditControls = "";
+function clear() {
+    images = [];
+    faces = [];
+    receivedFaceEncodings = [];
+    receivedNames = [];
+    picturesProcessedID = [];
+    countFilteredImages = images.length;
+    files_name = [];
+    counter_files_name = 0;
+    $("#face-panel-pictures").empty();
+}
 
-//https://www.w3schools.com/jsref/prop_element_offsettop.asp
+$(".collapseit").click(function () {
+    ((loglevel >= 2) ? console.log(t() + "remove options shown") : null);
+    var content = this.nextElementSibling;
+    if (content.style.display === "block") {
+        content.style.display = "none";
+    } else {
+        content.style.display = "block";
+    }
+    //document.getElementById("face-panel-config-remove").style.visibility = "visible"; 
+});
+
+function getMinWidth() {
+    var w = $('#min_face_width').val();
+    ((loglevel >= 2) ? console.log(t() + "min width=" + w) : null);
+    return w;
+}
+
+function getLogLevel() {
+    var logLevel = document.getElementById("faces-log-level").value;
+    ((loglevel >= 2) ? console.log(t() + "logLevel=" + logLevel) : null);
+    return logLevel;
+}
+
+function postStart(isStart) {
+    var recognize = "0";
+    if (!isStart) {
+        recognize = "1";
+    }
+    var postURL = window.location + "/start";
+    ((loglevel >= 1) ? console.log(t() + " about to start the face detection and recognition: url = " + postURL) : null);
+
+    $.post(postURL, {recognize: recognize}, function (data) {
+        if (!data['status']) {
+            ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
+            return;
+        }
+        ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
+        ((loglevel >= 3) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
+        if (data['names']) {
+            loadFaceData(data['names']); // creates list of images
+        }
+        waitForFinishedFaceDetection();
+    },
+            'json');
+}
+
+function postUpdate() {
+    var action = new Array();
+    var postURL = window.location + "/results";
+    //clear();
+    ((loglevel >= 1) ? console.log(t() + " about to get the results of the face detection and recognition: url = " + postURL) : null);
+    $.post(postURL, {action}, function (data) {
+        if (!data['status']) {
+            ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
+            return;
+        }
+        ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
+        ((loglevel >= 3) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
+        if (data['names']) {
+            loadFaceData(data['names']); // creates list of images
+        }
+    },
+            'json');
+}
+
+function loadFaceData(files) {
+    var i;
+    for (i = 0; i < files.length; i++) {
+        var f = files[i];
+        ((loglevel >= 2) ? console.log(t() + " Received file " + f) : null);
+        var url = window.location.origin + "/cloud/" + f;
+        jQuery.ajax({
+            url: url,
+            success: function (data) {
+                ((loglevel >= 3) ? console.log(t() + " loaded " + data) : null);
+                var lines = data.split(/\r?\n/);
+                for (let i = 0; i < lines.length; i++) {
+                    readFace(lines[i], f);
+                }
+                if (++counter_files_name === files.length) {
+                    ((loglevel >= 3) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
+                    if (stopLoadingImages) {
+                        return;
+                    }
+                    filterAndSort();
+                    appendPictures();
+                }
+            },
+            async: true
+        });
+    }
+}
+
+function readFace(csv, csvFile) {
+    ((loglevel >= 3) ? console.log(t() + " line " + csv) : null);
+    // id,file,position,face_nr,detector,model,name,time_named,name_recognized
+    // GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,"[126, 174, 228, 302]",1,,,,,
+    // GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,"[126, 174, 228, 302]",1,,,Brigitte Bardot,,Brigitte Bardot
+    var i = csv.indexOf(",");
+    if (i < 0) {
+        ((loglevel >= 3) ? console.log(t() + " line without seperator char, no face to read ") : null);
+        return;
+    }
+    var id = csv.substring(0, csv.indexOf(","));
+    if (id === "id") {
+        ((loglevel >= 3) ? console.log(t() + " ignoring line. Seems to be the line containig the  headers (column names) ") : null);
+        return;
+    }
+    var csv = csv.substring(csv.indexOf(",") + 1);
+    var file = csv.substring(0, csv.indexOf(","));
+    var channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
+    var url = "/cloud/" + channel_name + "/" + file;
+    var csv = csv.substring(csv.indexOf(",") + 2);
+    var position = csv.substring(1, csv.indexOf("]"));
+    var pos = position.split(",").map(Number);
+    if (pos.length != 4) {
+        ((loglevel >= 3) ? console.log(t() + " ignoring line ") : null);
+        return;
+    }
+    var csv = csv.substring(csv.indexOf("]") + 3);
+    var splittees = csv.split(",");
+    face = {
+        id: id,
+        csv_file: csvFile,
+        url: url,
+        pos: pos,
+        face_nr: splittees[0],
+        name: splittees[1],
+        name_recognized: splittees[2],
+        time_named: splittees[3],
+        exif_date: splittees[4],
+        detector: splittees[5],
+        model: splittees[6],
+    };
+    appendName({name: face.name});
+    appendFaceToImages(face, images);
+}
+
+function appendFaceToImages(face, images) {
+    var existingFace = getFaceForId(face.id);
+    if (existingFace) {
+        ((loglevel >= 2) ? console.log(t() + " try to update face id=" + face.id + " of image=" + face['url']) : null);
+        updateFace(face);
+        return;
+    }
+    var appended = false;
+    images.forEach(image => {
+        if (image['url'] === face['url']) {
+            var existingFace = getFaceAtSamePosition(image, face);
+            if (!existingFace) {
+                image['faces'].push(face);
+                ((loglevel >= 2) ? console.log(t() + " appended face to image = " + face['url']) : null);
+            } else {
+                face.id = existingFace.id;
+                updateFace(face);
+            }
+            appended = true;
+        }
+    });
+    if (appended) {
+        return;
+    }
+    if (face.name.trim() == "-ignore-") {
+        return;
+    }
+    var faces = [];
+    faces.push(face);
+    var image = {id: imageCounter++, url: face['url'], faces: faces, pass: true, exif_date: face['exif_date']};
+    images.push(image);
+    ((loglevel >= 2) ? console.log(t() + " created new image = " + face['url']) : null);
+}
+
 
 function editName(faceFrame) {
     hideEditFrame();
 
-    var name_id = $(faceFrame).attr("name_id");
-    ((loglevel >= 0) ? console.log(t() + " user starts do edit name id =" + name_id + " Checking permissions...") : null);
-    if (!isSearchMe) {
-        if (is_owner) {
-            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name. observer = owner") : null);
-        } else if (can_write) {
-            ((loglevel >= 0) ? console.log(t() + " Yes, write permission to edit this name. observer != owner") : null);
-        } else {
-            ((loglevel >= 0) ? console.log(t() + " Neither owner nor write permission") : null);
-            return;
-        }
-    }
+    var id = $(faceFrame).attr("id");
+    ((loglevel >= 1) ? console.log(t() + " user starts do edit face id =" + id) : null);
 
     ((loglevel >= 2) ? console.log(t() + " figure out where to position the input field and buttons") : null);
 
-    var id = $(faceFrame).attr("id");
 
     var r = getCssValueAsNumber($(faceFrame).css("right"));
     var l = getCssValueAsNumber($(faceFrame).css("left"));
+    var top = getCssValueAsNumber($(faceFrame).css("top"));
+    var bottom = getCssValueAsNumber($(faceFrame).css("bottom"));
 
     var par = $(faceFrame).parent();
     var img = par.find('img:first');
@@ -44,7 +240,14 @@ function editName(faceFrame) {
     var options = document.getElementById("face-name-list-search").innerHTML;
     document.getElementById("face-name-list-set").innerHTML = options;
 
-    faceFrameEdit.style.top = offsetTop + "px";
+    //faceFrameEdit.style.top = offsetTop + "px";
+    if (top > bottom) {
+        faceFrameEdit.style.bottom = bottom + 5 + "px";
+        faceFrameEdit.style.top = "";
+    } else {
+        faceFrameEdit.style.top = top + 5 + "px";
+        faceFrameEdit.style.bottom = "";
+    }
     if (l > r) {
         faceFrameEdit.style.right = r + 5 + "px";
         faceFrameEdit.style.left = "";
@@ -52,139 +255,76 @@ function editName(faceFrame) {
         faceFrameEdit.style.left = l + 5 + "px";
         faceFrameEdit.style.right = "";
     }
-//    var name_shown = faceFrame.getElementsByClassName("face-name-shown")[0].innerHTML;
-    var name_shown = faceFrame.getElementsByClassName("face-name-shown")[0].getAttribute('nameandowner');
+    var name_shown = faceFrame.innerText;
     document.getElementById("input-face-name").value = name_shown;
     document.getElementById("input-face-name").setAttribute("face_id", id); // to read out the face id if the user edits the name
     document.getElementById("input-face-name").focus();
 
-    if (isSearchMe) {
-        $('#face-edit-set-name').hide();
-        $('#face-edit-set-unknown').hide();
-        document.getElementById("input-face-name").disabled = true;
-    }
-
-    ((loglevel >= 0) ? console.log(t() + " edit frame  was opened and shows name = " + name_shown) : null);
-}
-
-function getIdForNameAndOwner(nameandowner) {
-    var i;
-    for (i = 0; i < receivedNames.length; i++) {
-        var name = receivedNames[i].nameAndOwner;
-        if (name === nameandowner) {  // double check just in case
-            ((loglevel >= 2) ? console.log(t() + " found id = " + receivedNames[i].id + " for = " + nameandowner) : null);
-            return receivedNames[i].id;
-        }
-    }
-    ((loglevel >= 1) ? console.log(t() + " found not id for = " + nameandowner) : null);
-    return 0;
-}
-
-function appendNames() {
-    ((loglevel >= 1) ? console.log(t() + " start to append received name to the name list (as option value)") : null);
-    var i;
-    for (i = 0; i < receivedNames.length; i++) {
-        var id = receivedNames[i].id;
-        var name = receivedNames[i].name;
-        if (receivedNames[i].xchan_hash != "") {
-            receivedNames[i].nameAndOwner = receivedNames[i].name + " (" + receivedNames[i].channel_address + ")";
-        } else {
-            receivedNames[i].nameAndOwner = receivedNames[i].name;
-        }
-        name = name.trim();
-        if (!isIdInList(id, "face-name-list-search")) {  // double check just in case
-            $(".face-name-list").append("<option value=\"" + receivedNames[i].nameAndOwner + "\" xchan_hash=\"" + receivedNames[i].xchan_hash + "\" nameid=\"" + id + "\" channel_id=\"" + receivedNames[i].channel_id + "\" channel_address=\"" + receivedNames[i].channel_address + "\">" + receivedNames[i].nameAndOwner + "</option>");
-            ((loglevel >= 0) ? console.log(t() + " append name = " + receivedNames[i].nameAndOwner + " with channel id = " + receivedNames[i].channel_id + " and name id = " + id) : null);
-        }
-    }
-}
-
-function clearNameList() {
-    $(".face-name-list").empty();
-    receivedNames = [];
-    ((loglevel >= 0) ? console.log(t() + " cleared name list") : null);
+    ((loglevel >= 1) ? console.log(t() + " edit frame  was opened and shows name = " + name_shown) : null);
 }
 
 function appendName(name) {
-    ((loglevel >= 1) ? console.log(t() + " append single name to list (as option value)") : null);
+    ((loglevel >= 3) ? console.log(t() + " append single name to list (as option value)") : null);
     if (!name) {
-        ((loglevel >= 1) ? console.log(t() + " name is null") : null);
+        ((loglevel >= 2) ? console.log(t() + " name is null") : null);
+        return;
+    }
+    if (name.name == "") {
+        ((loglevel >= 3) ? console.log(t() + " name is empty") : null);
         return;
     }
     // append in ui
-    if (!isIdInList(name.id, "face-name-list-search")) {
-        if (name.xchan_hash != "") {
-            name.nameAndOwner = name.name + " (" + name.channel_address + ")";
-        } else {
-            name.nameAndOwner = name.name;
-        }
-        $(".face-name-list").append("<option value=\"" + name.nameAndOwner + "\" xchan_hash=\"" + name.xchan_hash + "\" nameid=\"" + name.id + "\" channel_id=\"" + name.channel_id + "\" channel_address=\"" + name.channel_address + "\">" + name.nameAndOwner + "</option>");
-        ((loglevel >= 0) ? console.log(t() + " append name = " + name.nameAndOwner + " with channel id = " + name.channel_id + " and name id = " + name.id) : null);
+    if (!isNameInList(name.name, "face-name-list-search")) {
+        $(".face-name-list").append("<option value=\"" + name.name + "\">" + name.name + "</option>");
+        ((loglevel >= 1) ? console.log(t() + " append name = " + name.name) : null);
     }
     // append to list received names
     var i;
     for (i = 0; i < receivedNames.length; i++) {
-        var existing_id = receivedNames[i].id;
-        if (existing_id == name.id) {
-            ((loglevel >= 1) ? console.log(t() + " name does exist already in array or received names") : null);
+        var existing_name = receivedNames[i].name;
+        if (existing_name == name.name) {
+            ((loglevel >= 2) ? console.log(t() + " name does exist already in array or received names") : null);
             return;
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " appending name to array or received name as well") : null);
+    ((loglevel >= 3) ? console.log(t() + " appending name to array or received name as well") : null);
     receivedNames.push(name);
 }
 
-function isIdInList(id, selector) {
-    ((loglevel >= 1) ? console.log(t() + " is name id = " + id + " in list with selector = " + selector + " ?") : null);
-    var o = document.getElementById(selector);
-    var i;
-    for (i = 0; i < o.options.length; i++) {
-        var listID = o.options[i].getAttribute("nameid");
-        if (listID == id) {
-            ((loglevel >= 1) ? console.log(t() + " yes") : null);
-            return true;
-        }
-    }
-    ((loglevel >= 1) ? console.log(t() + " no") : null);
-    return false;
-}
-
 function isNameInList(name, selector) {
-    ((loglevel >= 1) ? console.log(t() + " is name = " + name + " in list with selector = " + selector + " ?") : null);
+    ((loglevel >= 2) ? console.log(t() + " is name = " + name + " in list with selector = " + selector + " ?") : null);
     var o = document.getElementById(selector);
     var i;
     for (i = 0; i < o.options.length; i++) {
         var text = o.options[i].text;
         if (text == name) {
-            ((loglevel >= 1) ? console.log(t() + " yes") : null);
+            ((loglevel >= 2) ? console.log(t() + " yes") : null);
             return true;
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " no") : null);
+    ((loglevel >= 2) ? console.log(t() + " no") : null);
     return false;
 }
 
+
 function setName() {
     var face_id_full = document.getElementById("input-face-name").getAttribute("face_id");
-    var name_shown = document.getElementById(face_id_full).getElementsByClassName("face-name-shown")[0].getAttribute('nameAndOwner');
+    var name_shown = document.getElementById(face_id_full).innerText;
     var name = document.getElementById("input-face-name").value.trim();
-    ((loglevel >= 0) ? console.log(t() + " start to set new face name new = " + name + " was name = " + name_shown + " with face id=" + face_id_full) : null);
+    ((loglevel >= 1) ? console.log(t() + " start to set new face name new = " + name + " was name = " + name_shown + " with face id=" + face_id_full) : null);
     if (name === name_shown) {
-        ((loglevel >= 0) ? console.log(t() + " name did not change") : null);
-        var verified_id = document.getElementById(face_id_full).getAttribute("person_verified_id");
-        if (verified_id != "0") {
-            ((loglevel >= 0) ? console.log(t() + " Do nothing, was verified already") : null);
+        ((loglevel >= 1) ? console.log(t() + " name did not change") : null);
+        var isVerified = document.getElementById(face_id_full).getAttribute("isVerified");
+        if (isVerified == "1") {
+            ((loglevel >= 1) ? console.log(t() + " Do nothing, was verified already") : null);
             hideEditFrame();
             return;
         }
     }
-    if (name == "") {
-        ((loglevel >= 0) ? console.log(t() + " Input field for name was emtpy. This will set all name date for a face encoding to the defaults: verified, guessed, unknowns, ignore. Why? This will give the face recognition the chance to guess the face again, despite it was set to verified or unknown before.") : null);
-        name = -3;
-    } else {
+    if (name != "") {
         if (!isNameInList(name, "face-name-list-search")) {
-            ((loglevel >= 0) ? console.log(t() + " The new name = " + name + " will be appened to the name list (as option value) as soon as it was successfully sent to the server.") : null);
-//        $(".face-name-list").append("<option value=\"" + name + "\" nameid=\"" + -1 + "\">" + name + "</option>");
+            ((loglevel >= 1) ? console.log(t() + " The new name = " + name + " will be appened to the name list (as option value) as soon as it was successfully sent to the server.") : null);
+            appendName({name: name});
         }
         ((loglevel >= 1) ? console.log(t() + " The style of the frame will be changed after it was successfully sent to the server.") : null);//    document.getElementById(face_id_full).style.border = "medium solid green";
     }
@@ -193,127 +333,111 @@ function setName() {
 
 function setNameUnkown() {
     var face_id_full = document.getElementById("input-face-name").getAttribute("face_id");
-    ((loglevel >= 0) ? console.log(t() + " set face name > unknown - face id=" + face_id_full) : null);
+    ((loglevel >= 1) ? console.log(t() + " set face name > unknown - face id=" + face_id_full) : null);
     ((loglevel >= 1) ? console.log(t() + " The style of the frame will be changed after it was successfully sent to the server.") : null);
     preparePostName(face_id_full, -1);
 }
 
 function setNameIgnore() {
     var face_id_full = document.getElementById("input-face-name").getAttribute("face_id");
-    ((loglevel >= 0) ? console.log(t() + "set face name > ignore - face id=" + face_id_full) : null);
+    ((loglevel >= 1) ? console.log(t() + "set face name > ignore - face id=" + face_id_full) : null);
     ((loglevel >= 1) ? console.log(t() + " The style of the frame will be changed after it was successfully sent to the server.") : null);
     preparePostName(face_id_full, -2);
 }
+
 function preparePostName(face_id_full, name) {
-    ((loglevel >= 0) ? console.log(t() + " start to prepare name  to send it to the server, face id = " + face_id_full) : null);
-    var encoding_id = face_id_full.split("-")[1];
-    var marked_ignore = 0;
-    var person_marked_unknown = 0;
-    var person_verified = 0;
-    var new_name = "";
-    var xchan_hash = "";
+    ((loglevel >= 1) ? console.log(t() + " start to prepare name  to send it to the server, face id = " + face_id_full) : null);
+    var face_id = face_id_full.split("-")[1];
     if (name === -2) {
-        marked_ignore = 1;
-        name = "";
+        // clicked "ignore"
+        name = "-ignore-";
     } else if (name === -1) {
-        person_marked_unknown = 1;
+        // clickt "unknown"
         name = "";
     } else if (name === -3) {
         // let the face recognition try to guess
-        person_marked_unknown = 0;
-        // let the face recognition try to guess (after the next http get it will be to late for the user to set "ignore" back to "0")
-        marked_ignore = 0;
         name = "";
-    } else {
-        var i;
-        for (i = 0; i < receivedNames.length; i++) {
-            var id = receivedNames[i].id;
-            var listName = receivedNames[i].nameAndOwner;
-            if (name === listName) {
-                person_verified = id;
-                xchan_hash = receivedNames[i].xchan_hash
-                break;
-            }
-        }
-        if (person_verified === 0) {
-            new_name = name;
-        }
     }
-    var name_shown = document.getElementById(face_id_full).getElementsByClassName("face-name-shown")[0].getAttribute('nameAndOwner');
-    var name_id_old = getIdForNameAndOwner(name_shown);
+    var name_old = document.getElementById(face_id_full).innerText;
+    var face = getFaceForId(face_id);
+    var file = face['url'];
+    var position = face['pos'];
+    name = name.replace(",", " ");  // format of csv 
     unsentNames.push({
-        "id": encoding_id, // the encoding id will be send as "id" as response from server
-        "encoding_id": encoding_id,
-        "person_verified": person_verified,
-        "person_marked_unknown": person_marked_unknown,
-        "marked_ignore": marked_ignore,
-        "new_name": new_name,
-        "name": name,
-        "name_id_old": name_id_old,
-        "xchan_hash": xchan_hash,
-    })
+        "id": face_id,
+        "file": file,
+        "position": position,
+        "name_old": name_old,
+        "name": name
+    });
     hideEditFrame();
     postNames();
 }
 
+
 var unsentNames = [];
 
-function removeNameFromUnsentList(faces) {
+function removeNameFromUnsentList(face) {
+    if (!face) {
+        ((loglevel >= 1) ? console.log(t() + " can not remove face id from unsent list because the id is null (received as server response)") : null);
+        return false;
+    }
+    ((loglevel >= 1) ? console.log(t() + "remove face from unsent list, face = " + JSON.stringify(face)) : null);
+    var faceID = face.id;
     var hasRemoved = false;
-    var k;
-    for (k = 0; k < faces.length; k++) {
-        var face = faces[k];
-        var i;
-        for (i = 0; i < unsentNames.length; i++) {
-            var id = unsentNames[i].id;
-            if (face.id === id) {
-                unsentNames.remove(unsentNames[i]);
-                ((loglevel >= 0) ? console.log(t() + " removed face with id = " + id + " from list of unsent faces") : null);
-                hasRemoved = true;
-                break;
-            }
+    var i;
+    for (i = 0; i < unsentNames.length; i++) {
+        var id = unsentNames[i].id;
+        if (faceID === id) {
+            //unsentNames.remove(unsentNames[i]);
+            unsentNames.splice(i, 1);
+            ((loglevel >= 1) ? console.log(t() + " removed face with id = " + id + " from list of unsent faces") : null);
+            hasRemoved = true;
+            break;
         }
     }
-    ((loglevel >= 0) ? console.log(t() + " Success yes/no for: face was removed from list of unsent faces : " + hasRemoved) : null);
+    ((loglevel >= 1) ? console.log(t() + " Success yes/no for: face was removed from list of unsent faces : " + hasRemoved) : null);
+    return hasRemoved;
 }
 
+
+
 function postNames() {
-    ((loglevel >= 0) ? console.log(t() + " post the next name in the list of unsent faces ") : null);
+    ((loglevel >= 1) ? console.log(t() + " post the next name in the list of unsent faces ") : null);
     if (unsentNames.length === 0) {
-        ((loglevel >= 0) ? console.log(t() + " no name left to send ") : null);
+        ((loglevel >= 1) ? console.log(t() + " no name left to send ") : null);
         clearCounterNamesSending();
-//        postSearch();
+        if (!isFaceRecognitionRunning) {
+            postStart(false);
+        }
         return;
     }
-    var name = unsentNames[0];
-    var nameString = JSON.stringify(name);
-    ((loglevel >= 0) ? console.log(t() + " About to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
+    var action = new Array();
+    action["face"] = unsentNames[0];
+    var nameString = JSON.stringify(unsentNames[0]);
+    ((loglevel >= 1) ? console.log(t() + " About to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
     animate_on();
     setCounterNamesSending();
-    var postURL = getURL() + "/name";
-    ((loglevel >= 0) ? console.log(t() + " url =  " + postURL) : null);
-    $.post(postURL, {name: nameString}, function (data) {
-        ((loglevel >= 0) ? console.log(t() + " Received response from server after posting a name") : null);
-        if (isSearchMe) {
-            ((loglevel >= 0) ? console.log(t() + "The tagged user deleted one of his face encodings. Reloading the whole page so the user can check it...") : null);
-            window.location.href = getURL();
-        }
-        removeNameFromUnsentList(data['encodings']);
+    var postURL = window.location + "/name";
+    ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);
+    $.post(postURL, {face: unsentNames[0]}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " Received response from server after posting a name") : null);
         if (data['status']) {
-            ((loglevel >= 0) ? console.log(t() + " Server response to sending the name was without errors") : null);
-            appendName(data['name']);
-            // this will update the names and frames for the one single face that was sent and received again
-            var faces = data['encodings'];
-            updateFaces(faces);
-            postNames();
+            ((loglevel >= 1) ? console.log(t() + " Server response to sending the name was without errors") : null);
+            if (removeNameFromUnsentList(data['face'])) {
+                styleFaceFrame(data['face']);
+                postNames();
+            } else {
+                ((loglevel >= 1) ? console.log(t() + " Stop sendings names because failed to removed a name/face frome the unsent list. The name/face was received from the server (as response to set its name)") : null);
+                clearCounterNamesSending();
+            }
         } else {
-            ((loglevel >= 0) ? console.log(t() + " Error sending name. Server responded with: " + data['errormsg']) : null);
+            ((loglevel >= 0) ? console.log(t() + " Error sending name. Server responded with: " + data['message']) : null);
             clearCounterNamesSending();
         }
     },
             'json');
 }
-
 
 function updateFaces(encodings) {
     // the values of faces changed
@@ -336,6 +460,11 @@ function updateFaces(encodings) {
     }
 }
 
+$(".faces-search-inputs").focus(function () {
+    stopLoadingImages = true;
+});
+
+
 function addSearchName() {
     ((loglevel >= 1) ? console.log(t() + " selected a search name") : null);
     var name = document.getElementById("input-search-name").value.trim();
@@ -344,27 +473,21 @@ function addSearchName() {
         return;
     }
     if (!isNameInList(name, "face-name-list-search")) {
-        ((loglevel >= 0) ? console.log(t() + " you can not search for a name that is not known") : null);
+        ((loglevel >= 1) ? console.log(t() + " you can not search for a name that is not known") : null);
         return;
     }
-    ((loglevel >= 0) ? console.log(t() + " search name = " + name) : null);
-    var names = document.querySelectorAll('[searchnameid]');
+    ((loglevel >= 1) ? console.log(t() + " search name = " + name) : null);
+    var buttons = document.querySelectorAll('[searchnameid]');
+    document.getElementsByClassName('btn-face-search-name');
     var i;
-    for (i = 0; i < names.length; i++) {
+    for (i = 0; i < buttons.length; i++) {
         var text = names[i].innerText.trim();
         if (text == name) {
-            ((loglevel >= 0) ? console.log(t() + " seach name already selected " + name) : null);
+            ((loglevel >= 1) ? console.log(t() + " seach name already selected " + name) : null);
             return;
         }
     }
-//    if (checked = document.getElementById('face-search-and').checked) {
-//    }
-    var id = getIdForNameAndOwner(name);
-    if (id == 0) {
-        ((loglevel >= 0) ? console.log(t() + " can not search for a name with an unknown id ") : null);
-        return;
-    }
-    $("#face-active-filter-names").append("<button class=\"btn btn-face-search-name\" searchnameid=\"" + id + "\">" + name + " <i class=\"fa fa-remove fa-lg\"></i></button>");
+    $("#face-active-filter-names").append("<button class=\"btn btn-face-search-name\">" + name + " <i class=\"fa fa-remove fa-lg faces-search-inputs\"></i></button>");
     ((loglevel >= 1) ? console.log(t() + " created button for search name =  " + name) : null);
     search();
 }
@@ -389,64 +512,137 @@ $("#face-search-and").change(function () {
     search();
 });
 
-var blockAppending = false;
+
 var filterStringServer = "";
-var filterNames = [];
 var oldestImageLoadedId = "";
 var mostRecentImageLoadedId = "";
+var filter = null;
 function search() {
+    ((loglevel >= 1) ? console.log(t() + " search was called ") : null);
+    $("#face-panel-pictures").empty();
     oldestImageLoadedId = "";
     mostRecentImageLoadedId = "";
-    isAppendingToTop = false;
-    createFilterString();
+    filterAndSort();
+    picturesProcessedID = [];
     // stop loading images
-    ((loglevel >= 0) ? console.log(t() + " Clear some arrays received from server (images, encodings, names) to stop the loading of images ") : null);
-    blockAppending = true;
-    receivedImages = [];
-    receivedFaceEncodings = [];
-    receivedNames = [];
-    picturesProcessed = [];
     ((loglevel >= 1) ? console.log(t() + " Remove pictures ") : null);
     $("#face-panel-pictures").empty();
-
-    // send search filter to server
-    postSearch();
+    animate_on();
+    appendPictures();
 }
+
+
+var countFilteredImages = 0;
+
+function filterAndSort() {
+    createFilterString();
+    filterImages();
+    images.sort(compareExifDates);
+    stopLoadingImages = false;
+}
+
+function filterImages() {
+    if (!filter) {
+        countFilteredImages = images.length;
+        return;
+    }
+    countFilteredImages = 0;
+    var names = filter.names;
+    var i;
+    for (i = 0; i < images.length; i++) {
+        var faces = images[i].faces;
+
+        var passedTime = false;
+        var passedName = false;
+
+        var date = images[i].exif_date;
+        if (!date || date == "") {
+            continue;
+        }
+        var splittees = date.split("T");
+        if (splittees.length != 2) {
+            break;
+        }
+        date = splittees[0];
+        if (date >= filter.from && date <= filter.to) {
+            passedTime = true;
+            if (names.length == 0) {
+                passedName = true;
+            } else {
+                var and = filter.and;
+                for (k = 0; k < names.length; k++) {
+                    var name = names[k];
+                    var passedName = false;
+                    for (j = 0; j < faces.length; j++) {
+                        var face = faces[j];
+                        if ((face.name != "" && name == face.name) || (face.name == "" && face.time_named == "" && name == face.name_recognized)) {
+                            passedName = true;
+                            break;
+                        }
+                    }
+                    if (!and && passedName) {
+                        break;
+                    }
+                    if (and && !passedName) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (passedName && passedTime) {
+            images[i]['pass'] = true;
+            countFilteredImages += 1;
+            ((loglevel >= 3) ? console.log(t() + " image id=" + images[i].id + " passed the filter") : null);
+        } else {
+            images[i]['pass'] = false;
+            ((loglevel >= 3) ? console.log(t() + " image id=" + images[i].id + " did not pass the filter") : null);
+        }
+    }
+}
+
+function compareExifDates(a, b) {
+    if (a.exif_date < b.exif_date) {
+        if (sortDirectionReverse) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    if (a.exif_date > b.exif_date) {
+        if (sortDirectionReverse) {
+            return 1;
+        } else {
+            return -1;
+        }
+    }
+    return 0;
+}
+
 
 function createFilterString() {
     $("#input-search-name").val("");
 
-    filterNames = [];
+    var filterNames = [];
     ((loglevel >= 1) ? console.log(t() + " look for search buttons containing the search names ") : null);
     var buttons = document.getElementsByClassName("btn-face-search-name");
     var i;
     for (i = 0; i < buttons.length; i++) {
-        var id = buttons[i].getAttribute("searchnameid");
-        var xchan_hash = geXChanForID(id);
-        filterNames.push({"id": id});
-//        filterNames.push({"xchan_hash": xchan_hash});
-        ((loglevel >= 1) ? console.log(t() + " append search name with id = " + id + " and xchan_hash=" + xchan_hash) : null);
+        var name = buttons[i].innerText.trim();
+        filterNames.push(name);
+        ((loglevel >= 1) ? console.log(t() + " append search name=" + name) : null);
     }
 
     toogleAndCheckbox();
     var checked = $("#face-search-and")[0].checked;
     ((loglevel >= 1) ? console.log(t() + " AND = " + checked) : null);
 
-    var from = $("#face-date-from").val() + " 00:00:00";
-    var to = $("#face-date-to").val() + " 23:59:59";
+    var from = $("#face-date-from").val();
+    var to = $("#face-date-to").val();
     ((loglevel >= 1) ? console.log(t() + " from = " + from) : null);
     ((loglevel >= 1) ? console.log(t() + " to = " + to) : null);
 
-    var filter = {"from": from, "to": to, "names": filterNames, "and": checked};
-
-    if (isAppendingToTop) {
-        filter.mostRecentImageLoadedId = mostRecentImageLoadedId;
-    } else {
-        filter.oldestImageLoadedId = oldestImageLoadedId;
-    }
-
-    filterStringServer = JSON.stringify(filter);
-    ((loglevel >= 0) ? console.log(t() + " filter (search) for server is = " + filterStringServer) : null);
+    filter = {"from": from, "to": to, "names": filterNames, "and": checked};
 }
 
 function toogleAndCheckbox() {
@@ -458,8 +654,10 @@ function toogleAndCheckbox() {
     }
 }
 
+
+
 function getCssValueAsNumber(s) {
-    ((loglevel >= 1) ? console.log(t() + " get CSS value = " + s + " as number") : null);
+    ((loglevel >= 3) ? console.log(t() + " get CSS value = " + s + " as number") : null);
     var i = 0;
     if (isNaN(s)) {
         if (s.indexOf(".") >= 0) {
@@ -469,13 +667,14 @@ function getCssValueAsNumber(s) {
             s = s.substring(0, s.indexOf("px"));
         }
         i = parseInt(s);
-        ((loglevel >= 1) ? console.log(t() + " return CSS value = " + s + " as number = " + i) : null);
+        ((loglevel >= 2) ? console.log(t() + " return CSS value = " + s + " as number = " + i) : null);
         return i;
     } else {
         ((loglevel >= 1) ? console.log(t() + " return CSS value = " + s + " as  = " + s + " (failed to parse)") : null);
         return s;
     }
 }
+
 
 function hideEditFrame() {
     $(".face-frame-edit").css({top: '99%'});
@@ -503,6 +702,7 @@ function showFooterFilter() {
     document.getElementById("input-search-name").focus();
 }
 
+
 var isShowFrameON = true;
 $("#button-faces-hide-frames").click(function () {
     ((loglevel >= 1) ? console.log(t() + " user clicked button to show/hide faces") : null);
@@ -522,7 +722,7 @@ $("#button-faces-hide-frames").click(function () {
         styleAllAgain();
         isShowFrameON = true;
     }
-//    zoomPictures();
+    //    zoomPictures();
 });
 
 $("#button_faces_zoom_in").click(function () {
@@ -533,7 +733,7 @@ $("#button_faces_zoom_in").click(function () {
         return;
     }
     if (zoom < minZoomLoaded) {
-        search();
+        //search();
         minZoomLoaded = zoom;
     } else {
         zoomPictures();
@@ -551,6 +751,7 @@ $("#button_faces_zoom_out").click(function () {
 });
 
 function zoomPictures() {
+    loadedCountMax = zoom * loadedCountMaxMultiplier;
     if (zoom < 1) {
         var containers = document.getElementsByClassName("img-container");
         var i;
@@ -592,49 +793,46 @@ function zoomLastPictures(img) {
     }
     var w = $("#face-panel-pictures").width();
     var containers = document.getElementsByClassName("img-container-zoomable");
-//    if (containers.length === 1) {
-//        return;
-//    }
-    if (containers.length < zoom) {
-        $(".img-container-zoomable").css("width", (100 / zoom).toString() + "%");
+    if (containers.length === 1) {
         return;
     }
-    var zoomedImages = [];
-    var h;
+    // if (containers.length < zoom) {
+    //     $(".img-container-zoomable").css("width", (100 / zoom).toString() + "%");
+    //     return;
+    // }
+    var zoomendContainers = [];
+    var zoomenedImages = [];
+    var h = 0;
+    var w_all = 0;
     var i;
     for (i = 0; i < containers.length; i++) {
         var img_container = containers[i];
-        if (i === 0) {
-            h = img_container.clientHeight;
+        var img = img_container.getElementsByTagName("img")[0];
+        if (h == 0) {
+            h = img.naturalHeight;
+            w_all = w_all + img.naturalWidth;
+            zoomenedImages[i] = ({h: img.naturalHeight, w: img.naturalWidth, factor: 1});
         } else {
-            var img = img_container.getElementsByTagName("img")[0];
-            var img_natural_px_height = img.naturalHeight;
-            var img_natural_px_width = img.naturalWidth;
-            var w_for_same_height = h * img_natural_px_width / img_natural_px_height;
-            img_container.style.width = w_for_same_height + "px";
-            var buffer = 10;
-            var w_all = w_for_same_height + w + buffer;
-            var factor = w / w_all;
-            var j;
+            var factor = h / img.naturalHeight;
+            w_all = w_all + factor * img.naturalWidth;
+            var factor_all = w / w_all;
+            zoomenedImages[i] = ({w: img.naturalWidth, factor: factor});
             for (j = 0; j <= i; j++) {
-                var h_pix = containers[j].clientHeight;
-                var w_pix = containers[j].clientWidth;
-                var w_percent_IS = w_pix * 100 / w;
-                var w_percent = factor * w_percent_IS;
-//                containers[j].style.width = Math.floor(w_percent) + "%"; // This does not look well. Take 20 px buffer instead, see above
+                var w_pix = zoomenedImages[j]["w"] * zoomenedImages[j]["factor"] * factor_all;
+                var w_percent = w_pix * 100 / w;
                 containers[j].style.width = w_percent + "%";
-                zoomedImages[j] = containers[j];
+                zoomendContainers[j] = containers[j];
             }
-            h = img_container.clientHeight;
         }
         if (i === zoom - 1) {
             var k;
-            for (k = 0; k < zoomedImages.length; k++) {
-                zoomedImages[k].classList.remove("img-container-zoomable");
+            for (k = 0; k < zoomendContainers.length; k++) {
+                zoomendContainers[k].classList.remove("img-container-zoomable");
             }
             var id = img_container.id.split("-")[2];
             id = img_container.id;
-            $("<div class=\"img-container face-img-spacer\"  style=\"min-width: 100%; min-height: 1px;\"> </div>").insertAfter("#" + id);
+            //$("<div class=\"img-container face-img-spacer\"  style=\"min-width: 100%; min-height: 1px;\"> </div>").insertAfter("#" + id);
+            $("<div class=\"img-container face-img-spacer\"  style=\"min-width: 100%; height: 1px;\"> </div>").insertAfter("#" + id);
             zoomLastPictures();
             return;
         }
@@ -648,37 +846,28 @@ function openSingleImage(img) {
 }
 
 function appendPicture(img) {
-    ((loglevel >= 0) ? console.log(t() + " start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
+    ((loglevel >= 1) ? console.log(t() + " start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
     var html = "";
-    var faces = img.encodings;
+    var faces = img.faces;
     var i;
     for (i = 0; i < faces.length; i++) {
-        ((loglevel >= 0) ? console.log(t() + " append face number = " + i + " in image") : null);
+        ((loglevel >= 2) ? console.log(t() + " append face number = " + i + " in image") : null);
         // row from db table face_encodings (joined with attach.hash to complete the URL)
         var face = faces[i];
         if (i === 0) {
-            var url = window.location.href;
-            url = url.substring(0, url.indexOf("/faces"));
-            var src = img.src; // hash of the picture from db table attach
-            // background on hubzilla/zap: every picture was resized when uploaded
-            if (zoom > 0 && zoom < 4) {
-                src += "-" + zoom;
-
-            } else if (zoom > 3) {
-                src += "-3"
-            }
-            var url = url + "/photo/" + src;
+            var url = face.url;
             var width = (100 / zoom).toString() + "%";
-            html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\" width=\"" + width + "\">";
+            //html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\" width=\"" + width + "\">";
+            html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\">";
             html += "   <div class=\"face-container\">";
-            html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onerror=\"showDeleteButtonForTaggedContact(" + face.id + ")\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
+            html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
         }
-        ((loglevel >= 0) ? console.log(t() + " adding face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
+        ((loglevel >= 2) ? console.log(t() + " adding face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
         var top = 1;
         var left = 1;
         var bottom = 98;
         var right = 98;
-        html += "           <div class=\"face-frame face-frame-name\" id=\"face-" + face.id + "\" finder=\"" + face.f + "\" style=\"top: " + top + "%;left: " + left + "%; bottom: " + bottom + "%; right: " + right + "%;\" onclick=\"editName(this)\">";
+        html += "           <div class=\"face-frame face-frame-name\" id=\"face-" + face.id + "\" model=\"" + face.model + "\" style=\"top: " + top + "%;left: " + left + "%; bottom: " + bottom + "%; right: " + right + "%;\" onclick=\"editName(this)\">";
         html += "               <h4 class=\"face-name-shown\">" + face.id + "</h4>";
         html += "           </div>";
         if (i === faces.length - 1) {
@@ -690,219 +879,262 @@ function appendPicture(img) {
     }
     if (mostRecentImageLoadedId == "") {
         mostRecentImageLoadedId = img.id;
-        ((loglevel >= 0) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
     }
 
     if (oldestImageLoadedId == 0) {
         oldestImageLoadedId = img.id;
-        ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
     } else if (img.id < oldestImageLoadedId) {
         oldestImageLoadedId = img.id;
-        ((loglevel >= 0) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
     }
-
-    if (blockAppending) {
-        // just in case a seach was started meanwhile
-        ((loglevel >= 0) ? console.log(t() + " was interrupted to show image to user. A new server request was started.") : null);
+    if (stopLoadingImages) {
         return;
     }
-    if (isAppendingToTop) {
-        $("#face-panel-pictures").prepend(html);
-    } else {
-        $("#face-panel-pictures").append(html);
-    }
+    animate_on();
+    $("#face-panel-pictures").append(html);
 }
 
 function getImageForId(id) {
     var i;
-    for (i = 0; i < receivedImages.length; i++) {
-        if (id == receivedImages[i].id) {
-            ((loglevel >= 1) ? console.log(t() + " returning image for id = " + id + " found in the list of received images") : null);
-            return receivedImages[i];
+    for (i = 0; i < images.length; i++) {
+        if (id == images[i].id) {
+            ((loglevel >= 3) ? console.log(t() + " returning image for id = " + id + " found in the list of received images") : null);
+            return images[i];
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " found no image for id = " + id + " in the list of received images") : null);
+    ((loglevel >= 3) ? console.log(t() + " found no image for id = " + id + " in the list of received images") : null);
+    return false;
 }
 
-function showDeleteButtonForTaggedContact(face_id) {
-    $("#face-panel-pictures").append("No permission to view this image. Use the button to remove your tag. <button class=\"btn btn-face-delete-me\" id=\"deleteme-" + face_id + "\" onclick=\"postDeleteMyEncoding(" + face_id + ")\">Remove Me <i class=\"fa fa-remove fa-lg\"></i></button>");
-    ((loglevel >= 1) ? console.log(t() + " created button to delete the tag from image, encoding_id =  " + face_id) : null);
-    appendNextPicture();
-}
-
-function postDeleteMyEncoding(face_id) {
-    var postURL = getURL();
-    ((loglevel >= 0) ? console.log(t() + " url =  " + postURL) : null);
-    $.post(postURL, {delete_encoding_id: face_id}, function (data) {
-        ((loglevel >= 0) ? console.log(t() + " Received response from server to delete an enconding (for a tagged contact without the permission to view the image)") : null);
-        if (data['status']) {
-            ((loglevel >= 0) ? console.log(t() + "The tagged user deleted one of his face encodings. Reloading the whole page so the user can check it...") : null);
-            window.location.href = getURL();
-        } else {
-            ((loglevel >= 0) ? console.log(t() + " Error deleting a face encoding. Server responded with: " + data['errormsg']) : null);
+function getFaceForId(id) {
+    var i;
+    for (i = 0; i < images.length; i++) {
+        var faces = images[i].faces;
+        for (j = 0; j < faces.length; j++) {
+            var face = faces[j];
+            if (id == face.id) {
+                ((loglevel >= 3) ? console.log(t() + " returning face for id = " + id + " found in the list of received images") : null);
+                return face;
+            }
         }
-        animate_off();
-    },
-            'json');
+    }
+    ((loglevel >= 3) ? console.log(t() + " found no face for id = " + id + " in the list of received images") : null);
+    return false
+}
+
+function updateFace(face) {
+    var i;
+    for (i = 0; i < images.length; i++) {
+        var faces = images[i].faces;
+        for (j = 0; j < faces.length; j++) {
+            var f = faces[j];
+            if (f.id == face.id) {
+                ((loglevel >= 3) ? console.log(t() + " update face id = " + face.id + " in the underlying data array") : null);
+                images[i].faces[j] = face;
+                ((loglevel >= 3) ? console.log(t() + " style face frame for id = " + face.id) : null);
+                styleFaceFrame(face);
+                return true;
+            }
+        }
+    }
+    ((loglevel >= 1) ? console.log(t() + " found no faces for id = " + id + " to update") : null);
+    return false;
+}
+
+// If faces are updated they have not always the same face id because the are found by different detectors/models.
+// Check the position of existing faces (frames arround faces) to avoid multiple frames around a same face.
+function getFaceAtSamePosition(image, face) {
+    ((loglevel >= 3) ? console.log(t() + " try to find a face at the same position=" + face.pos + " in image=" + face.url + ", faces id=" + face.id) : null);
+    var faces = image.faces;
+    for (j = 0; j < faces.length; j++) {
+        var f = faces[j];
+        // margins left, right, top, bottom in percent
+        middle_of_face_x = face.pos[0] + (100 - (face.pos[1] + face.pos[0])) / 2;
+        middle_of_face_y = face.pos[2] + (100 - (face.pos[2] + face.pos[3])) / 2;
+        end_of_row_face_x = 100 - f.pos[1];
+        end_of_row_face_y = 100 - f.pos[3];
+        // is middle of face inside row position?
+        if ((f.pos[0] < middle_of_face_x) && (middle_of_face_x < (end_of_row_face_x))) {
+            if ((f.pos[2] < middle_of_face_y) && (middle_of_face_y < (end_of_row_face_y))) {
+                middle_of_row_face_x = f.pos[0] + (100 - (f.pos[1] + f.pos[0])) / 2
+                middle_of_row_face_y = f.pos[2] + (100 - (f.pos[2] + f.pos[3])) / 2
+                end_of_face_x = 100 - face.pos[1];
+                end_of_face_y = 100 - face.pos[3];
+                // is middle of row position inside face ?
+                if ((face.pos [0] < middle_of_row_face_x) && (middle_of_row_face_x < (end_of_face_x))) {
+                    if ((face.pos[2] < middle_of_row_face_y) && (middle_of_row_face_y < (end_of_face_y))) {
+                        ((loglevel >= 3) ? console.log(t() + " yes, found a face id=" + f.id + " at position=" + f.pos + " in image=" + face.url) : null);
+                        return f;
+                    }
+                }
+            }
+        }
+    }
+    ((loglevel >= 3) ? console.log(t() + " did not find a face at position=" + face.pos + " in image=" + face.url + " for id=" + face.id) : null);
+    return false;
 }
 
 function setFrameSizes(img) {
     ((loglevel >= 1) ? console.log(t() + " start to set frame size") : null);
     var px_width = img.naturalWidth;
     var px_height = img.naturalHeight;
-    ((loglevel >= 1) ? console.log(t() + " img h=" + px_height + "px, w=" + px_width + "px, id=" + img.id) : null);
+    ((loglevel >= 2) ? console.log(t() + " img h=" + px_height + "px, w=" + px_width + "px, id=" + img.id) : null);
     var splittees = img.id.split("-");
     var img_id = splittees[1];
     var image = getImageForId(img_id);
-    var faces = image.encodings;
+    var faces = image.faces;
     var i;
     for (i = 0; i < faces.length; i++) {
         var face = faces[i];
-        var faceLocation = face.l;
-        var locArray = faceLocation.split(",");
-        // face_recogntion (finder2): left, right, top, bottom coordinates of the face (in persent)
+        // What to use depends on the face recognition scripts
+        // a) in percent margins [left, right, top, bottom] default
+        // b) in pixel:          [x, y, h, w]               from left, top corner in pixel
+        var faceLocation = face.pos;
         var nameFrame = document.getElementById("face-" + face.id);
-        ((loglevel >= 0) ? console.log(t() + " face id = " + face.id) : null);
-        nameFrame.style.top = locArray[2] + "%";
-        nameFrame.style.left = locArray[0] + "%";
-        nameFrame.style.bottom = locArray[3] + "%";
-        nameFrame.style.right = locArray[1] + "%";
+        if (!nameFrame) {
+            return;
+        }
+        ((loglevel >= 3) ? console.log(t() + " face id = " + face.id) : null);
+        nameFrame.style.top = faceLocation[2] + "%";
+        nameFrame.style.left = faceLocation[0] + "%";
+        nameFrame.style.bottom = faceLocation[3] + "%";
+        nameFrame.style.right = faceLocation[1] + "%";
         styleFaceFrame(face);
     }
-    ((loglevel >= 1) ? console.log(t() + " finished to set frame size") : null);
-    if (isAppendingToTop) {
-        zoomPictures();
-    } else {
-        zoomLastPictures(img);
-    }
+    ((loglevel >= 3) ? console.log(t() + " finished to set frame size") : null);
+    zoomLastPictures(img);
     appendNextPicture();
 }
 
+
 function styleFaceFrame(face) {
-
-    // person_verified = pv
-    // person_recognized = pr
-    // person_unknown = pu
-
-    ((loglevel >= 0) ? console.log(t() + " face = " + JSON.stringify(Object.assign({}, face))) : null);
+    if (!face) {
+        ((loglevel >= 2) ? console.log(t() + " style frame for face = null > can not style (update frame style and name) ") : null);
+        return;
+    }
+    ((loglevel >= 2) ? console.log(t() + " style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
     var nameFrame = document.getElementById("face-" + face.id);
     if (!nameFrame) {
         // no image yet to update (happens after http get = loading the page)
-        ((loglevel >= 1) ? console.log(t() + " no image yet to update (happens after http get = loading the page") : null);
+        // ((loglevel >= 1) ? console.log(t() + " no image yet to update (happens 1. after http get = loading the page, or 2. after show face frames again after hidden if images where not displayed yet") : null);
         return;
     }
     var name = "";
     var name_id = "0";
-    if (face.pv != 0) {
-        // prio 1 because the user said this is person XY
-        if (isSearchMe) {
-            nameFrame.style.border = "medium dashed red";
-        } else {
-            nameFrame.style.border = "rgba(255,255,255,.5)";
+    var isVerified = "0";
+    if (!face.name_recognized) {  // This can happen if the user sets the name to "unknown"
+        face.name_recognized = "";  // avoid "undefined"
+    }
+    if (face.name != "") {
+        // prio 1 because this face was given a name by user
+        if (face.name == "-ignore-") {
+            document.getElementById("face-" + face.id).remove();
+            return;
         }
-        name = getNameForID(face.pv);
-        name_id = face.pv;
-        ((loglevel >= 1) ? console.log(t() + " verified name id = " + name_id) : null);
-    } else if (face.pu == 1) {
-        // prio 2 because the user said this a person I can't remember the name at the moment or that completly unknown
-        nameFrame.style.border = "thin dotted black";
-        ((loglevel >= 1) ? console.log(t() + " unknown name") : null);
-    } else if (face.pi == 1) {
-        // prio 3 because the user want to ignore this face. 
-        // The frame is invisible but the user can click on it to change the name.
-        // After the next "http get" this will vanish from the ui completely
         nameFrame.style.border = "rgba(255,255,255,.5)";
-        ((loglevel >= 1) ? console.log(t() + " ignored name") : null);
-    } else if (face.pr != 0) {
-        // prio 4 because this is guessed by the face recognition
+        name = face.name;
+        isVerified = "1";
+        ((loglevel >= 3) ? console.log(t() + " verified face, id = " + face.id) : null);
+    } else if (face.name_recognized != "") {
+        // prio 2 because this is guessed by the face recognition
         nameFrame.style.border = "medium dashed red";
-        name = getNameForID(face.pr);
-        if (name === "") {
-            nameFrame.style.border = "medium dotted red";
+        if (face.time_named == "") {
+            name = face.name_recognized;
         }
-        name_id = face.pr;
-        ((loglevel >= 1) ? console.log(t() + " recognized name id = " + name_id + " (guessed by the face recognition)") : null);
+        ((loglevel >= 3) ? console.log(t() + " recognized face, id = " + face.id + " (guessed by face recognition)") : null);
     } else {
-        // prio 5 because this is the default if nothing is known about this face
+        // prio 3 because this is the default if nothing is known about this face
         nameFrame.style.border = "medium dotted red";
-        ((loglevel >= 1) ? console.log(t() + " nothing known about this and therefor styled as dotted red") : null);
+        ((loglevel >= 3) ? console.log(t() + " nothing known about this and therefor styled as dotted red") : null);
     }
     nameFrame.getElementsByClassName("face-name-shown")[0].innerHTML = name;
-    var nameAndOwner = getNameAndOwnerForID(name_id);
-    nameFrame.getElementsByClassName("face-name-shown")[0].setAttribute("nameAndOwner", nameAndOwner);
-    ((loglevel >= 0) ? console.log(t() + " frame shows name = " + nameAndOwner) : null);
-    nameFrame.setAttribute("name_id", name_id);
-    // used to decide later if to post the name to the server or not
-    nameFrame.setAttribute("person_verified_id", face.pv); // this one is important
-    nameFrame.setAttribute("person_recognized_id", face.pr); // could be used for some statistics 
-    nameFrame.setAttribute("person_not_known", face.pu); // could be used for some statistics 
+    nameFrame.setAttribute("isVerified", isVerified);
+    ((loglevel >= 2) ? console.log(t() + " frame shows name = " + name) : null);
 }
 
 function styleAllAgain() {
-    ((loglevel >= 0) ? console.log(t() + " start - style all again") : null);
-    var k;
-    for (k = 0; k < receivedFaceEncodings.length; k++) {
-        styleFaceFrame(receivedFaceEncodings[k]);
+    ((loglevel >= 1) ? console.log(t() + " start - style all again") : null);
+    var i;
+    for (i = 0; i < images.length; i++) {
+        var faces = images[i].faces;
+        for (j = 0; j < faces.length; j++) {
+            var face = faces[j];
+            ((loglevel >= 3) ? console.log(t() + " style face frame for id = " + face.id) : null);
+            styleFaceFrame(face);
+        }
     }
     ((loglevel >= 1) ? console.log(t() + " finished - style all again") : null);
 }
 
-function getNameForID(id) {
-    var k;
-    for (k = 0; k < receivedNames.length; k++) {
-        var list_id = receivedNames[k].id;
-        if (id == list_id) {
-            ((loglevel >= 1) ? console.log(t() + " return name = " + receivedNames[k].name + " for id = " + id) : null);
-            return receivedNames[k].name;
+function checkServerStatus(status) {
+    if (!status) {
+        showServerStatus(0);
+    } else if (!isFaceRecognitionRunning) {
+        showServerStatus(0);
+    } else {
+        var proc = status["procid"];
+        var utc = status["utc"];
+        if (proc != server_procid) {
+            server_procid = proc;
+            server_time = utc;
+            ((loglevel >= 1) ? console.log(t() + " server status with new procid=" + server_procid + ", time=" + server_time) : null);
+            showServerStatus(0);
+        } else {
+            var seconds = (new Date()).getTime() / 1000;
+            seconds = Math.round(seconds);
+            date = new Date(server_time);
+            seconds_stored = date.getTime() / 1000;
+            var elapsed = seconds - seconds_stored;
+            ((loglevel >= 1) ? console.log(t() + " server status updated with procid=" + server_procid + ", time=" + utc + ", calculated and shown elapsed=" + elapsed + "s") : null);
+            showServerStatus(elapsed, status["elapsed"]);
+
         }
     }
-    // Sometimes persons are deleted from the list of known persons but the
-    // still exist in encodings. The next run of the face recognition would fix this.
-    ((loglevel >= 0) ? console.log(t() + " found no name for id = " + id + ". Why: Sometimes persons are deleted from the list of known persons but still exist in encodings. The next run of the face recognition will fix this.") : null);
-    return "";
 }
 
-function geXChanForID(id) {
-    var k;
-    for (k = 0; k < receivedNames.length; k++) {
-        var list_id = receivedNames[k].id;
-        if (id == list_id) {
-            ((loglevel >= 1) ? console.log(t() + " return xchan_hash = " + receivedNames[k].xchan_hash + " for id = " + id) : null);
-            return receivedNames[k].xchan_hash;
+function showServerStatus(seconds, elapsed_server) {
+    if (seconds != 0) {
+        document.getElementById("faces_server_status").style.visibility = "visible";
+        if (elapsed_server > 60) {
+            document.getElementById("faces_server_status").style.color = "red";
+        } else {
+            document.getElementById("faces_server_status").style.color = "green";
         }
+        document.getElementById("faces_server_status").innerHTML = seconds + "s";
+    } else {
+        document.getElementById("faces_server_status").style.visibility = "hidden";
+        document.getElementById("faces_server_status").innerHTML = "";
     }
-    // Sometimes persons are deleted from the list of known persons but the
-    // still exist in encodings. The next run of the face recognition would fix this.
-    ((loglevel >= 0) ? console.log(t() + " found no xchan_hash for id = " + id + ". Why: Sometimes persons are deleted from the list of known persons but still exist in encodings. The next run of the face recognition will fix this.") : null);
-    return "";
 }
 
-function getNameAndOwnerForID(id) {
-    var k;
-    for (k = 0; k < receivedNames.length; k++) {
-        var list_id = receivedNames[k].id;
-        if (id == list_id) {
-            ((loglevel >= 1) ? console.log(t() + " return name-and-owner = " + receivedNames[k].name + " for id = " + id) : null);
-            return receivedNames[k].nameAndOwner;
-        }
+async function waitForFinishedFaceDetection() {
+    isFaceRecognitionRunning = true;
+    var ms = 5000;
+    var url = window.location + "/status";
+    while (isFaceRecognitionRunning) {
+        var action = new Array();
+        var postURL = window.location + "/status";
+        ((loglevel >= 1) ? console.log(t() + " about to get the status of the face detection and recognition: url = " + postURL) : null);
+        $.post(postURL, {action}, function (data) {
+            ((loglevel >= 1) ? console.log(t() + " received server status " + JSON.stringify(data)) : null);
+            if (data['running']) {
+                checkServerStatus(data['status']);
+            } else {
+                isFaceRecognitionRunning = false;
+                checkServerStatus(data['status']);
+                if (unsentNames.length === 0) {
+                    postUpdate();
+                } else {
+                    postNames();
+                }
+            }
+        },
+                'json');
+        ((loglevel >= 1) ? console.log(t() + " wait for the face detection to finish, url= " + url + ", wait time=" + ms + " ms") : null);
+        await sleep(ms);
     }
-    // Sometimes persons are deletet from the list of known persons but the
-    // still exist in encodings. The next run of the face recognition would fix this.
-    ((loglevel >= 0) ? console.log(t() + " found no name-and-owner for id = " + id + ". Why: Sometimes persons are deleted from the list of known persons but still exist in encodings. The next run of the face recognition will fix this.") : null);
-    return "";
-}
-
-function getIdForName(name) {
-    var i;
-    for (i = 0; i < receivedNames.length; i++) {
-        var text = receivedNames[i].name;
-        if (text == name) {
-            ((loglevel >= 1) ? console.log(t() + " return id = " + receivedNames[i].id + " for name = " + name) : null);
-            return receivedNames[i].id;
-        }
-    }
-    ((loglevel >= 1) ? console.log(t() + " found no id for name = " + name) : null);
-    return "0";
 }
 
 function sleep(ms) {
@@ -910,47 +1142,50 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function appendNextPicture() {
-    ((loglevel >= 0) ? console.log(t() + " 'Sleep 0.5 seconds befor loading next picture...") : null);
-    await sleep(200);
-    ((loglevel >= 1) ? console.log(t() + " woke up from sleeping to appending the next picture ") : null);
-    if (blockAppending) {
-        // just in case a seach was started meanwhile
-        ((loglevel >= 0) ? console.log(t() + " woke up from sleeping but was told to stopp appending the next picture ") : null);
+function appendNextPicture() {
+    ((loglevel >= 1) ? console.log(t() + " append next picture...") : null);
+    if (stopLoadingImages) {
+        ((loglevel >= 1) ? console.log(t() + " appending pictures was blocked ") : null);
         return;
     }
     appendPictures();
 }
 
-var can_write = false;
-var receivedImages;
-var receivedFaceEncodings;
-var receivedNames;
-var picturesProcessed = [];
-var loglevel = -1; // will be set by server
-
 function appendPictures() {
-    ((loglevel >= 0) ? console.log(t() + " start to append next picture... pictures processed so far = " + picturesProcessed.length) : null);
-    setCounterImagesLoading();
-    html = "";
+    ((loglevel >= 1) ? console.log(t() + " start to append next picture... pictures processed so far = " + picturesProcessedID.length) : null);
     var k;
-    for (k = 0; k < receivedImages.length; k++) {
-        var img = receivedImages[k];
+    for (k = 0; k < images.length; k++) {
+        if (stopLoadingImages) {
+            return;
+        }
+        var img = images[k];
         var id = img.id;
-        if (picturesProcessed.includes(id)) {
-            ((loglevel >= 1) ? console.log(t() + " image with id = " + id + " was processed already. Continue...") : null);
+        if (picturesProcessedID.includes(id)) {
+            ((loglevel >= 3) ? console.log(t() + " image with id = " + id + " was processed already. Continue...") : null);
             continue;
         }
-        picturesProcessed.push(img.id);
+        if (!img.pass) {
+            ((loglevel >= 3) ? console.log(t() + " image with id = " + id + " did not pass the filter. Continue...") : null);
+            continue;
+        }
+        if (loadedCount >= loadedCountMax) {
+            ((loglevel >= 1) ? console.log(t() + " loaded " + loadedCount + " images. Scroll down to load more images") : null);
+            clearCounterImagesLoading();
+            return;
+
+        }
+        picturesProcessedID.push(img.id);
+        loadedCount = loadedCount + 1;
+
+        setCounterImagesLoading();
         appendPicture(img);
         break;
     }
-    if (receivedImages.length === k) {
-        ((loglevel >= 0) ? console.log(t() + " all images where processed. Reached end of list of images") : null);
-        clearCounterImagesLoading(true);
+    if (images.length === k) {
+        ((loglevel >= 1) ? console.log(t() + " all images where processed. Reached end of list of images") : null);
+        clearCounterImagesLoading();
     }
 }
-
 
 function animate_on() {
     document.getElementById("button_share_box").style.visibility = "visible";
@@ -962,28 +1197,23 @@ function animate_on() {
 function animate_off() {
     $('#button_share_box').find('.fa').removeClass("fa-spin").removeClass("fa-fw");
     document.getElementById("button_share_box").style.visibility = "hidden";
-    $('#face-scoll-top-message').text("");
-    $('#face-scoll-top-message').fadeOut();
+    $('#face-scroll-top-message').text("");
+    $('#face-scroll-top-message').fadeOut();
     ((loglevel >= 1) ? console.log(t() + " animate off") : null);
 }
 
-function clearCounterImagesLoading(isLoadAgain) {
+function clearCounterImagesLoading() {
+    loadedCount = 0;
+    blockScrolledToEnd = false;
     $("#button_share_box_counter_download").html('<sub></sub>');
     ((loglevel >= 1) ? console.log(t() + " clear image counter shown to user") : null);
     animate_off();
-    var shouldLoadMore = isEndVisible();
-    ((loglevel >= 0) ? console.log(t() + " after loading images > is end visible= " + shouldLoadMore) : null);
-    if (shouldLoadMore && isLoadAgain) {
-        loadMoreImages();
-    } else {
-        blockSearch = false;
-    }
 }
 
 function setCounterImagesLoading() {
-    $("#button_share_box_counter_download").html('<sub>' + picturesProcessed.length + "/" + receivedImages.length + '</sub>');
+    $("#button_share_box_counter_download").html('<sub>' + picturesProcessedID.length + "/" + images.length + '</sub>');
     $("#button_share_box").css({'color': 'green'});
-    ((loglevel >= 1) ? console.log(t() + " set counter for images to load to " + picturesProcessed.length + "/" + receivedImages.length) : null);
+    ((loglevel >= 1) ? console.log(t() + " set counter for images to load to " + picturesProcessedID.length + "/" + images.length) : null);
 }
 
 function clearCounterNamesSending() {
@@ -998,236 +1228,6 @@ function setCounterNamesSending() {
     ((loglevel >= 1) ? console.log(t() + " set counter names to send to " + unsentNames.length) : null);
 }
 
-function startFaceDetection() {
-    var postURL = window.location.href + "/start";
-    ((loglevel >= 0) ? console.log(t() + " about to post the request to start the face detection and recognition: url = " + postURL) : null);
-    $.post(postURL, {something: ""}, function (data) {
-        if (data['status']) {
-            ((loglevel >= 0) ? console.log(t() + " Server response: Successfully started face detection and recognition.") : null);
-        } else {
-            ((loglevel >= 0) ? console.log(t() + " Server did send and error for starting face detection: " + data['errormsg']) : null);
-        }
-    },
-            'json');
-
-}
-
-
-function postSearch() {
-    blockSearch = true;
-    animate_on();
-    var postURL = getURL();
-    if (!isSearchMe) {
-        postURL = getURL() + "/search";
-    }
-    ((loglevel >= 0) ? console.log(t() + " about to post a search to the server: url = " + postURL + " , filter = " + filterStringServer) : null);
-    $.post(postURL, {filter: filterStringServer}, function (data) {
-        blockAppending = false;
-        if (data['status']) {
-            ((loglevel >= 0) ? console.log(t() + " Successfully received pictures from server.") : null);
-            if (data['images'].length < 1) {
-                ((loglevel >= 0) ? console.log(t() + " But no results where received from server.") : null);
-                clearCounterImagesLoading(false);
-                return;
-            }
-            receivedImages = data['images'];
-            if (isAppendingToTop) {
-                receivedImages = receivedImages.reverse();
-            }
-            ((loglevel >= 2) ? console.log(t() + " received images = " + JSON.stringify(Object.assign({}, receivedImages))) : null);
-//            receivedFaceEncodings = [];
-            var i;
-            for (i = 0; i < receivedImages.length; i++) {
-                var encs = receivedImages[i].encodings;
-                var k;
-                for (k = 0; k < encs.length; k++) {
-                    receivedFaceEncodings.push(encs[k]);
-                    ((loglevel >= 0) ? console.log(t() + " received face encoding = " + JSON.stringify(Object.assign({}, encs[k]))) : null);
-                }
-            }
-            clearNameList();
-            receivedNames = data['names'];
-            if (!receivedNames) {
-                ((loglevel >= 0) ? console.log(t() + " received names = " + JSON.stringify(Object.assign({}, receivedNames))) : null);
-            }
-            appendNames();
-            updateFaces(receivedFaceEncodings); // updates all name frames in ui
-            appendPictures();
-        } else {
-            ((loglevel >= 0) ? console.log(t() + " Server did send and error for searching pictures: " + data['errormsg']) : null);
-            animate_off();
-        }
-        ((loglevel >= 0) ? console.log(t() + " finished processing server response for a search - leaving function") : null);
-    },
-            'json');
-}
-
-function getURL() {
-    var postURL = window.location.href;
-    var url = window.location.href;
-    if (url.indexOf("?") > 1) {
-        var splittees = url.split("?");
-        postURL = splittees[0];
-    }
-    return postURL;
-}
-
-$('#aclModal').on('hidden.bs.modal', function (e) {
-    ((loglevel >= 0) ? console.log(t() + " ACL modal dialog was closed by user") : null);
-    if (hasOpenedWritePermission && !isWritePermission) {
-        ((loglevel >= 0) ? console.log(t() + " ACL modal dialog for view permissions was closed because the modal dialog for write permissions was openend. Do not send the ACSLs.") : null);
-        return;
-    }
-    var acls = $('.acl-field');
-    var groupAllow = [];
-    var groupDeny = [];
-    var contactAllow = [];
-    var contactDeny = [];
-    var k;
-    for (k = 0; k < acls.length; k++) {
-        var name = acls[k].getAttribute("name");
-        var value = acls[k].value;
-        if (name == "contact_allow[]") {
-            contactAllow.push(value);
-        } else if (name == "group_allow[]") {
-            groupAllow.push(value);
-        } else if (name == "contact_deny[]") {
-            contactDeny.push(value);
-        } else if (name == "group_deny[]") {
-            groupDeny.push(value);
-        }
-    }
-    var acl_to_send = {
-        contact_allow: contactAllow,
-        group_allow: groupAllow,
-        contact_deny: contactDeny,
-        groupDeny: groupDeny,
-        isWrite: isWritePermission};
-    acl_to_send_json = JSON.stringify(acl_to_send);
-    postACLs(acl_to_send_json);
-});
-
-var windowWritePermission;
-
-$('#aclModal').on('shown.bs.modal', function (e) {
-    ((loglevel >= 0) ? console.log(t() + " ACL modal dialog is shown by user") : null);
-    if (hasOpenedWritePermission) {
-        openWritePermissionsModal();
-    }
-    var labels = $(".section-content-wrapper").find("label");
-    if (labels) {
-        if (labels.length > 0) {
-            var label = labels[0];
-            if (isWritePermission) {
-                label.innerHTML = "Who can write?";
-            } else {
-                label.innerHTML = "Who can see this?";
-            }
-        }
-    }
-});
-
-function openWritePermissionsModal() {
-    var f = document.getElementById('faces_load_write_permissions');
-    window.open('', '_self');
-    f.submit();
-    $('#aclModal').modal('toggle');
-}
-
-function postACLs(acl_string) {
-    var postURL = getURL() + "/permissions";
-    ((loglevel >= 0) ? console.log(t() + " Sending request to get ACL: url = " + postURL + " , acl = " + acl_string) : null);
-    if (!isWritePermission) {
-        animate_on();
-    }
-    $("#jot-perms-icon").html('<sup>!</sup>');
-    $.post(postURL, {acl: acl_string}, function (data) {
-        if (data['status']) {
-            $("#jot-perms-icon").html('<sup></sup>');
-            $("#jot-perms-icon").css({'color': ''});
-            ((loglevel >= 0) ? console.log(t() + " Successfully sent ACLs to server.") : null);
-        } else {
-            $("#jot-perms-icon").html('<sup>!</sup>');
-            $("#jot-perms-icon").css({'color': 'red'});
-            ((loglevel >= 0) ? console.log(t() + " Error sending ACLs: " + data['errormsg']) : null);
-        }
-        if (!isWritePermission) {
-            animate_off();
-        } else {
-            $('#dbtn-acl').remove();
-            history.back();
-        }
-    });
-}
-var startTimePressLockIcon = 0;
-var hasOpenedWritePermission = false;
-$('#dbtn-acl').mousedown(function (event) {
-    startTimePressLockIcon = Date.now();
-    switch (event.which) {
-        case 1:
-            ((loglevel >= 0) ? console.log(t() + " lock icon was left clicked mouse down") : null);
-            hasOpenedWritePermission = false;
-            break;
-        case 2:
-            ((loglevel >= 0) ? console.log(t() + " lock icon was middle clicked") : null);
-            hasOpenedWritePermission = true;
-            break;
-        case 3:
-            ((loglevel >= 0) ? console.log(t() + " lock icon was right clicked") : null);
-            hasOpenedWritePermission = true;
-            break;
-        default:
-            ((loglevel >= 0) ? console.log(t() + " lock icon was.... You have a strange Mouse!") : null);
-    }
-}).mouseup(function (event) {
-    switch (event.which) {
-        case 1:
-            ((loglevel >= 0) ? console.log(t() + " lock icon was left clicked mouse up") : null);
-            var endTimePressLockIcon = Date.now();
-            var elapsedMilliseconds = endTimePressLockIcon - startTimePressLockIcon;
-            ((loglevel >= 0) ? console.log(t() + " lock icon was pressed for " + elapsedMilliseconds + " milliseconds") : null);
-            if (elapsedMilliseconds > 500) {
-                hasOpenedWritePermission = true;
-            }
-            break;
-        default:
-            ((loglevel >= 0) ? console.log(t() + " ignore elapsed time the lock icon was pressed") : null);
-    }
-});
-
-function onTouchStart(e) {
-    startTimePressLockIcon = Date.now();
-}
-
-function onTouchEnd(e) {
-    ((loglevel >= 0) ? console.log(t() + " lock icon fired touchend") : null);
-    var endTimePressLockIcon = Date.now();
-    var elapsedMilliseconds = endTimePressLockIcon - startTimePressLockIcon;
-    ((loglevel >= 0) ? console.log(t() + " lock icon was touched for " + elapsedMilliseconds + " milliseconds") : null);
-    if (elapsedMilliseconds > 500) {
-        openWritePermissionsModal();
-    } else {
-        hasOpenedWritePermission = false;
-    }
-}
-
-
-function formatDate(date) {
-    var d = new Date(date),
-            month = '' + (d.getMonth() + 1),
-            day = '' + d.getDate(),
-            year = d.getFullYear();
-
-    if (month.length < 2)
-        month = '0' + month;
-    if (day.length < 2)
-        day = '0' + day;
-
-    var rDate = [year, month, day].join('-');
-    ((loglevel >= 2) ? console.log(t() + " formated date = " + rDate) : null);
-    return rDate;
-}
-
 function initDate(fromS, toS) {
     fromS = checkDateString(fromS);
     toS = checkDateString(toS);
@@ -1238,7 +1238,7 @@ function initDate(fromS, toS) {
         from = new Date(fromS);
     }
     if (toS == "") {
-//        to = new Date(new Date().setDate(today.getDate() + 1));
+        //        to = new Date(new Date().setDate(today.getDate() + 1));
         to = new Date();
     } else {
         to = new Date(toS);
@@ -1249,120 +1249,63 @@ function initDate(fromS, toS) {
 }
 
 function checkDateString(s) {
-    ((loglevel >= 0) ? console.log(t() + " check date = " + s) : null);
+    ((loglevel >= 1) ? console.log(t() + " check date = " + s) : null);
     var i = s.search(/\d\d\d\d-\d\d-\d\d/);
-    ((loglevel >= 0) ? console.log(t() + " date check found index = " + i) : null);
+    ((loglevel >= 1) ? console.log(t() + " date check found index = " + i) : null);
     if (i < 0) {
         return "";
     }
     return s;
 }
 
-function isModeSearchMe() {
-    var url = getURL();
-    if (url.toLocaleLowerCase().endsWith("/searchme")) {
-        $('#attach_edit_form_acl').hide();
-        $('#button-faces-filter').hide();
-        return true;
+$("#button_faces_zoom_in").click(function () {
+    ((loglevel >= 1) ? console.log(t() + " user clicked zoom in") : null);
+    if (zoom > 0) {
+        zoom -= 1;
+    } else {
+        return;
     }
-    return false;
-}
+    if (zoom < minZoomLoaded) {
+        //search();
+        minZoomLoaded = zoom;
+    } else {
+        zoomPictures();
+    }
+});
 
-var isSearchMe = false;
-
-var blockSearch = true;
 var observerEnd = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting === true) {
         ((loglevel >= 0) ? console.log(t() + " scrolled to end") : null);
-        if (!blockSearch) {
-            loadMoreImages();
+        if (!blockScrolledToEnd) {
+            blockScrolledToEnd = true;
+            ((loglevel >= 1) ? console.log(t() + " loading more images was NOT blocked") : null);
+            appendNextPicture();
+        } else {
+            ((loglevel >= 1) ? console.log(t() + " loading more images WAS blocked") : null);
         }
     }
 }, {threshold: [1]});
 
-function loadMoreImages() {
-    ((loglevel >= 0) ? console.log(t() + " load more images") : null);
-    if (oldestImageLoadedId == "") {
-        return;
-    }
-    isAppendingToTop = false;
-    createFilterString();
-    postSearch();
-}
-
-function isEndVisible() {
-    var elem = $("#face-scoll-end")
-    var docViewTop = $(window).scrollTop();
-    var docViewBottom = docViewTop + $(window).height();
-
-    var elemTop = $(elem).offset().top;
-    var elemBottom = elemTop + $(elem).height();
-
-    return ((elemBottom <= docViewBottom) && (elemTop >= docViewTop));
-}
-var observerTop = new IntersectionObserver(function (entries) {
-    if (entries[0].isIntersecting === true) {
-        ((loglevel >= 0) ? console.log(t() + " scrolled to top") : null);
-        if (!blockSearch) {
-            loadNewImages();
-        }
-    }
-}, {threshold: [1]});
-
-var isAppendingToTop = false;
-function loadNewImages() {
-    ((loglevel >= 0) ? console.log(t() + " load new images") : null);
-    isAppendingToTop = true;
-    $('#face-scoll-top-message').text("Loading...");
-    $("#face-scoll-top-message").css("background-color", "red");
-    $('#face-scoll-top-message').fadeIn();
-    startFaceDetection();
-    createFilterString();
-    postSearch();
-}
-
-var isWritePermission = 0;
 
 $(document).ready(function () {
+    $("aside").remove(); // use 100% with
+    $("main").css({'max-width': "100%"}); // use 100% with
+    document.getElementById("faces_server_status").style.visibility = "hidden";
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
-    isWritePermission = parseInt($("#isWritePermission").text());
-    if (isWritePermission === 1) {
-        document.getElementById("dbtn-acl").click();
-        return;
-    }
-    document.getElementById("dbtn-acl").addEventListener("touchstart", onTouchStart, false);
-    document.getElementById("dbtn-acl").addEventListener("touchend", onTouchEnd, false);
     observerEnd.observe(document.querySelector("#face-scoll-end"));
-    observerTop.observe(document.querySelector("#face-scoll-top"));
     faceEditControls = $("#template-face-frame-edit-controls").html();
     $("#template-face-frame-edit-controls").remove();
-    var dFrom = $("#faces_date_from").text();
-    ((loglevel >= 0) ? console.log(t() + " date from = " + dFrom) : null);
-    var dTo = $("#faces_date_to").text();
-    ((loglevel >= 0) ? console.log(t() + " date to = " + dTo) : null);
-    initDate(dFrom, dTo);
-//    createFilterString()
-    var v = $("#faces_can_write").text();
-    can_write = (v === 'true');
-    ((loglevel >= 0) ? console.log(t() + " can write = " + can_write) : null);
-    var io = $("#faces_is_owner").text();
-    is_owner = (io === 'true');
-    if (!is_owner) {
-        $("#dbtn-acl").prop("disabled", true);
-    }
-    ((loglevel >= 0) ? console.log(t() + " is owner = " + is_owner) : null);
-    ((loglevel >= 0) ? console.log(t() + " can write = " + can_write) : null);
-//    $('#region_1').remove();
-//    $('#region_3').remove();
+    endPanel = $("#face-scroll-end").html();
+    $("#face-scroll-end").remove();
+    initDate("", "");
     zoom = parseInt($("#faces_zoom").text());
-    ((loglevel >= 0) ? console.log(t() + " zoom = " + zoom) : null);
-    isSearchMe = isModeSearchMe();
-//    postSearch();
-    search();
-    if (!isSearchMe) {
-        startFaceDetection();
-    }
-}
-);
+    ((loglevel >= 1) ? console.log(t() + " zoom = " + zoom) : null);
+    //--------------------------------------------------------------------------
+    postStart(true);
+});
 
+
+//readFace("GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,\"[126, 174, 228, 302]\",1,,,,,");
+//readFace("GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,\"[126, 174, 228, 302]\",1,,,Brigitte Bardot,,Brigitte Bardot");
+//images.forEach(showImage);

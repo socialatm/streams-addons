@@ -1,4 +1,4 @@
-version: 1.16 beta
+version: 2.0 beta
 url: $baseurl/faces/$nick
 requires: local_channel
 name: Faces

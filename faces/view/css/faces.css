@@ -1,4 +1,3 @@
-
 * {
     box-sizing: border-box;
 }
@@ -6,7 +5,7 @@
 .img-container {
     float: left;
     width: 100%;
-    height: 100%;
+    /* height: 100%; */
 }
 
 .img-face {
@@ -85,17 +84,30 @@
     visibility: hidden;
 }
 
-#face-scoll-top {
+#face-edit-set-name {
+    color:green;
+}
+
+#face-edit-set-ignore {
+    color:red;
+}
+
+#face-scroll-top {
     height:2px;
     width: 100%;
 }
 
-#face-scoll-top {
-    height:2px;
+#face-scroll-end {
+    min-height:2px;
     width: 100%;
 }
 
 #face-scoll-top-message {
     height:20px;
     width: 100%;
+}
+
+.collapsible {
+    display: none;
+    font-size: 20px;
 }

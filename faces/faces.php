@@ -1,327 +1,418 @@
 <?php
 
 use Code\Extend\Route;
-use Code\Extend\Hook;
-use Code\Render\Theme;                                                                                                                                           use Code\Lib\Channel;
-    
-require_once('addon/faces/FacesPortability.php');
-require_once('addon/faces/FacesPermission.php');
-require_once('addon/faces/FacesStatistics.php');
+use Code\Render\Theme;
 
 /**
  * Name: Faces
  * Description: Detect faces in images and make a guess who it is.
- * Version: 1.16 beta
- * Author: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
- * Maintainer: Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )
+ * Version: 2.0 beta
+ * Author: Tom Wiedenhöft
+ * Maintainer: Tom Wiedenhöft
  *
  */
 function faces_load() {
-	Route::register('addon/faces/Mod_Faces.php', 'faces');
-	Hook::register('identity_basic_export', 'addon/faces/faces.php', 'export');
-	Hook::register('import_channel', 'addon/faces/faces.php', 'import');
-	Hook::register('process_channel_sync_delivery', 'addon/faces/faces.php', 'import');
-	Hook::register('perm_is_allowed', 'addon/faces/faces.php', 'faces_perm_is_allowed');
-	faces_create_database_tables();
+    Route::register('addon/faces/Mod_Faces.php', 'faces');
 }
 
 function faces_unload() {
-	Route::unregister('addon/faces/Mod_Faces.php', 'faces');
-	Hook::unregister('identity_basic_export', 'addon/faces/faces.php', 'export');
-	Hook::unregister('import_channel', 'addon/faces/faces.php', 'import');
-	Hook::unregister('process_channel_sync_delivery', 'addon/faces/faces.php', 'import');
-	Hook::unregister('perm_is_allowed', 'addon/faces/faces.php', 'faces_perm_is_allowed');
+    Route::unregister('addon/faces/Mod_Faces.php', 'faces');
 }
 
-function faces_perm_is_allowed(&$a) {
-	if ($a['permission'] === 'view_faces') {
-		$a['result'] = check_faces_view_permission($a);
-	}
-	if ($a['permission'] === 'write_faces') {
-		$a['result'] = check_faces_write_permission($a);
-	}
-}
+function faces_plugin_admin(&$o) {
+    $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
 
-function export(&$a) {
-	$encs = Code\Module\attach_face_encodings_export_data($a['channel_id']);
-	if ($encs) {
-		$a['data']['faces_encoding'] = $encs;
-	}
-	$names = [];
-	$names = \Code\Module\attach_face_names_export_data($a['channel_id']);
-	if ($names) {
-		$a['data']['faces_person'] = $names;
-	}
-}
+    $pythoncheckmsg = "";
+    $ret = testPythonVersion();
+    if (!$ret['status']) {
+        $pythoncheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+        $block = true;
+    } else {
+        $pythoncheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+    }
 
-function import(&$a) {
-	Code\Module\import_faces_all($a);
-}
+    $deepfacecheckmsg = "";
+    $ret = testDeepfaceVersion();
+    if (!$ret['status']) {
+        $deepfacecheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+        $block = true;
+    } else {
+        $deepfacecheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+    }
 
-function faces_plugin_admin(&$a, &$o) {
+    $mysqlconnectorcheckmsg = "";
+    $ret = testMySQLConnectorVersion();
+    if (!$ret['status']) {
+        $mysqlconnectorcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+        $block = true;
+    } else {
+        $mysqlconnectorcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+    }
 
-	$pythoncheckmsg = "";
-	$finder1msg = "";
-	$finder1checked = 0;
-	$finder2msg = "";
-	$finder2checked = 0;
-	$exiftoolmsg = "";
-	$exiftoolchecked = 0;
+    $ret = testExiftool();
+    if (!$ret['status']) {
+        $exiftoolcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+    } else {
+        $exiftoolcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+    }
 
-	$ret = testPythonVersion();
-	if (!$ret['status']) {
-		$pythoncheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-	} else {
-		$pythoncheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+    // set default values
+    $detectors = get_config('faces', 'detectors');
+    if (!$detectors) {
+        $detectors = "retinaface";
+        set_config('faces', 'detectors', $detectors);
+    }
+    $models = get_config('faces', 'models');
+    if (!$models) {
+        $models = 'Facenet512';
+        set_config('faces', 'models', $models);
+    }
+    $demography = get_config('faces', 'demography');
+    if (!$demography) {
+        $demography = 'off';
+        set_config('faces', 'demography', $demography);
+    }
+    $distance_metrics = get_config('faces', 'distance_metrics');
+    if (!$distance_metrics) {
+        $distance_metrics = 'cosine,euclidean_l2';
+        set_config('faces', 'distance_metrics', $distance_metrics);
+    }
 
-		$finder1checked = get_config('faces', 'finder1');
-		$ret = testPythonVersionCV2();
-		if (!$ret['status']) {
-			$finder1checked = 0;
-			$finder1msg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-		} else {
-			$finder1msg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-		}
+    $zoom = get_config('faces', 'zoom');
+    if (!$zoom) {
+        $zoom = 3;
+    }
+    
+    $experimental_allowed = get_config('faces', 'experimental_allowed') ? get_config('faces', 'experimental_allowed') : false;
 
-		$finder2checked = get_config('faces', 'finder2');
-		$ret = testPythonVersionFaceRecognition();
-		if (!$ret['status']) {
-			$finder2checked = 0;
-			$finder2msg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-		} else {
-			$finder2msg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-		}
-	}
+    $t = Theme::get_template("admin.tpl", "addon/faces/");
 
-	$exiftoolchecked = get_config('faces', 'exiftool');
-	$ret = testExiftool();
-	if (!$ret['status']) {
-		$exiftoolchecked = 0;
-		$exiftoolmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-	} else {
-		$exiftoolmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-	}
-
-
-	$t = Theme::get_template("admin.tpl", "addon/faces/");
-
-	$limit = get_config('faces', 'limit');
-	if (!$limit) {
-		$limit = 100;
-	}
-
-	$zoom = get_config('faces', 'zoom');
-	if (!$zoom) {
-		$zoom = 3;
-	}
-
-	$maximages = get_config('faces', 'maximages');
-	if (!$maximages) {
-		$maximages = 6;
-	}
-	
-	$stats = \Code\Module\getStatisticsAsHTML();
-
-	$o = replace_macros($t, array(
-		'$submit' => t('Submit'),
-		'$limit' => array('limit', 'Number of Images to dectect per Loop (Face Detection Scripts)', $limit, 'Number of images per detection loop (default = 100)'),
-		'$finder1' => array('finder1', "Finder 1", $finder1checked, "opencv , dnn, sklearn"),
-		'$finder1msg' => $finder1msg,
-		'$finder1config' => array('finder1config', "Finder 1 - Configuration", get_config('faces', 'finder1config'), "Leave empty or overwrite the defaults"),
-		'$finder2' => array('finder2', "Finder 2", $finder2checked, "face_recognition"),
-		'$finder2msg' => $finder2msg,
-		'$finder2config' => array('finder2config', "Finder 2 - Configuration", get_config('faces', 'finder2config'), "Leave empty or overwrite the defaults"),
-		'$exiftool' => array('exiftool', "Write Names into Images", $exiftoolchecked, "Exiftool"),
-		'$exiftoolmsg' => $exiftoolmsg,
-		'$pythoncheckmsg' => $pythoncheckmsg,
-		'$deletetables' => array('deletetables', "Delete Faces and Names of all Users", false, "Delete all rows in db tables this addon created"),
-		'$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
-		'$maximages' => array('maximages', 'Number of Images the Browser loads at once (autoload)', $maximages, 'Allowed values: 2 - 20, default = 6)'),
-		'$facesstatistics' => $stats,
-	));
+    $o = replace_macros($t, array(
+        '$submit' => "Submit and Test",
+        '$pythoncheckmsg' => $pythoncheckmsg,
+        '$deepfacecheckmsg' => $deepfacecheckmsg,
+        '$mysqlconnectorcheckmsg' => $mysqlconnectorcheckmsg,
+        '$exiftoolcheckmsg' => $exiftoolcheckmsg,
+        '$ramcheckmsg' => get_config('faces', 'ramcheck'),
+        '$block' => array('block', "block", $block, "Do not allow the python scripts to run on this server"),
+        '$retinaface' => array('retinaface', "retinaface", str_contains($detectors, "retinaface"), "accurate"),
+        '$mtcnn' => array('mtcnn', "mtcnn", str_contains($detectors, "mtcnn"), "accurate"),
+        '$ssd' => array('ssd', "ssd", str_contains($detectors, "ssd"), "fast"),
+        '$opencv' => array('opencv', "opencv", str_contains($detectors, "opencv"), "fast"),
+        '$Facenet512' => array('Facenet512', "Facenet512", str_contains($models, "Facenet512"), "accurate - by Google"),
+        '$ArcFace' => array('ArcFace', "ArcFace", str_contains($models, "ArcFace"), "accurate"),
+        '$VGGFace' => array('VGGFace', "VGG-Face", str_contains($models, "VGG-Face"), "fast"),
+        '$Facenet' => array('Facenet', "Facenet", preg_match("/\bFacenet\b/", $models), "by Google"),
+        '$OpenFace' => array('OpenFace', "OpenFace", str_contains($models, "OpenFace"), "fast"),
+        '$DeepFace' => array('DeepFace', "DeepFace", str_contains($models, "DeepFace"), "by Facebook"),
+        '$SFace' => array('SFace', "SFace", str_contains($models, "SFace"), "new"),
+        '$cosine' => array('cosine', "cosine", str_contains($distance_metrics, "cosine"), "fast"),
+        '$euclidean_l2' => array('euclidean_l2', "euclidean_l2", str_contains($distance_metrics, "euclidean_l2"), "sometimes more reliable"),
+        '$euclidean' => array('euclidean', "euclidean", preg_match("/\beuclidean\b/", $distance_metrics), ""),
+        '$Emotion' => array('Emotion', "Emotion", str_contains($demography, "Emotion"), ""),
+        '$Age' => array('Age', "Age", str_contains($demography, "Age"), ""),
+        '$Gender' => array('Gender', "Gender", str_contains($demography, "Gender"), ""),
+        '$Race' => array('Race', "Race", str_contains($demography, "Race"), ""),
+        '$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
+        '$experimental_allowed' => array('experimental_allowed', 'allow experimental mode', $experimental_allowed, 'Allow users to use more than one detector, model, distance metric and to analyse facial attributes (gender, race, emotion, age)'),
+    ));
 }
 
 function faces_plugin_admin_post(&$a) {
-	$limit = ((x($_POST, 'limit')) ? intval(trim($_POST['limit'])) : 100);
-	$finder1 = ((x($_POST, 'finder1')) ? true : false);
-	$finder1config = ((x($_POST, 'finder1config')) ? notags(trim($_POST['finder1config'])) : '');
-	$finder2 = ((x($_POST, 'finder2')) ? true : false);
-	$finder2config = ((x($_POST, 'finder2config')) ? notags(trim($_POST['finder2config'])) : '');
-	$exiftool = ((x($_POST, 'exiftool')) ? true : false);
-	$deletetables = ((x($_POST, 'deletetables')) ? true : false);
-	$zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : 3);
-	$maximages = ((x($_POST, 'maximages')) ? intval(trim($_POST['maximages'])) : 6);
 
+    $block = ((x($_POST, 'block')) ? x($_POST, 'block') : false);
+    set_config('faces', 'block_python', $block);
 
-	$ret = testPythonVersion();
-	if (!$ret['status']) {
-		$finder1 = 0;
-		$finder2 = 0;
-	} else {
-		// check finders just in case the admin is not knowing what he is doing
-		$ret = testPythonVersionCV2();
-		if (!$ret['status']) {
-			$finder1 = 0;
-		}
-		$ret = testPythonVersionFaceRecognition();
-		if (!$ret['status']) {
-			$finder2 = 0;
-		}
-	}
-	$ret = testExiftool();
-	if (!$ret['status']) {
-		$exiftool = 0;
-	}
+    // detectors
+    $detectors = [];
 
+    $retinaface = ((x($_POST, 'retinaface')) ? true : false);
+    if ($retinaface) {
+        $detectors[] = 'retinaface';
+    }
+    $mtcnn = ((x($_POST, 'mtcnn')) ? true : false);
+    if ($mtcnn) {
+        $detectors[] = 'mtcnn';
+    }
+    $ssd = ((x($_POST, 'ssd')) ? true : false);
+    if ($ssd) {
+        $detectors[] = 'ssd';
+    }
+    $opencv = ((x($_POST, 'opencv')) ? true : false);
+    if ($opencv) {
+        $detectors[] = 'opencv';
+    }
 
-	if ($limit < 10) {
-		$limit = 100;
-	}
-	if ($limit > 10000) {
-		$limit = 10000;
-	}
+    if (!$retinaface && !$mtcnn && !$ssd && !$opencv) {
+        $detectors[] = 'retinaface';
+    }
 
-	if ($zoom > 6) {
-		$zoom = 6;
-	} else if ($zoom < 1) {
-		$zoom = 1;
-	}
+    $detectorsconfig = implode(",", $detectors);
+    set_config('faces', 'detectors', preg_replace('/\s+/', '', $detectorsconfig));
 
-	if ($maximages > 20) {
-		$maximages = 20;
-	} else if ($maximages < 2) {
-		$maximages = 2;
-	}
+    // models
+    $models = [];
 
-	set_config('faces', 'limit', $limit);
-	set_config('faces', 'finder1', $finder1);
-	set_config('faces', 'finder1config', preg_replace('/\s+/', '', $finder1config));
-	set_config('faces', 'finder2', $finder2);
-	set_config('faces', 'finder2config', preg_replace('/\s+/', '', $finder2config));
-	set_config('faces', 'exiftool', $exiftool);
-	set_config('faces', 'zoom', $zoom);
-	set_config('faces', 'maximages', $maximages);
+    $Facenet512 = ((x($_POST, 'Facenet512')) ? true : false);
+    if ($Facenet512) {
+        $models[] = 'Facenet512';
+    }
 
-	if ($deletetables) {
-		faces_drop_database_tables();
-	}
+    $ArcFace = ((x($_POST, 'ArcFace')) ? true : false);
+    if ($ArcFace) {
+        $models[] = 'ArcFace';
+    }
 
-	info(t('Settings updated.') . EOL);
-}
+    $VGGFace = ((x($_POST, 'VGGFace')) ? true : false);
+    if ($VGGFace) {
+        $models[] = 'VGG-Face';
+    }
 
-function faces_create_database_tables() {
-	$str = file_get_contents('addon/faces/faces_schema_mysql.sql');
-	$arr = explode(';', $str);
-	$errors = false;
-	foreach ($arr as $a) {
-		if (strlen(trim($a))) {
-			$r = q(trim($a));
-			if (!$r) {
-				$errors .= t('Errors encountered creating database tables.') . $a . EOL;
-			}
-		}
-	}
-	if ($errors) {
-		notice('Error creating the database tables');
-		logger('Error creating the database tables: ' . $errors, LOGGER_DEBUG);
-	} else {
-		info('Installation successful');
-		logger('Database tables installed successfully', LOGGER_NORMAL);
-	}
-}
+    $Facenet = ((x($_POST, 'Facenet')) ? true : false);
+    if ($Facenet) {
+        $models[] = 'Facenet';
+    }
 
-function faces_drop_database_tables() {
-	$errors = false;
-	foreach (array('faces_encoding', 'faces_person', 'faces_proc') as $table) {
-		$r = q("delete from %s;", dbesc($table));
-		if (!$r) {
-			$errors .= t('Errors encountered deleting all rows of database table ' . $table . '.') . EOL;
-		}
-	}
-	if ($errors) {
-		notice('Errors encountered deleting faces database tables.');
-		logger('Errors encountered deleting faces database tables: ' . $errors, LOGGER_DEBUG);
-	} else {
-		info('Database tables deleted for addon faces.');
-		logger('Database tables deleted for addon faces.', LOGGER_NORMAL);
-	}
-}
+    $OpenFace = ((x($_POST, 'OpenFace')) ? true : false);
+    if ($OpenFace) {
+        $models[] = 'OpenFace';
+    }
 
-function testPythonVersionCV2() {
-	$cmd = 'python3 -c "import cv2; print(cv2.__version__)"';
-	exec($cmd, $o);
-	$ret_string = "";
-	if ($o[0]) {
-		$ret_string = trim($o[0]);
-		logger("CV2 version: " . $ret_string, LOGGER_DEBUG);
-		$main_revision = substr($ret_string, 0, 1);
-		$main_revision_number = intval($main_revision);
-		if ($main_revision_number < 4) {
-			return array('status' => false, 'message' => 'Failed: CV2 version < 4 (found' . $ret_string . ')', LOGGER_DEBUG);
-		}
-	} else {
-		return array('status' => false, 'message' => 'Failed: Could not load python module cv2', LOGGER_DEBUG);
-	}
-	$o = [];
-	$cmd = 'python3 -c "import sklearn; print(sklearn.__version__)"';
-	exec($cmd, $o);
-	if (!$o[0]) {
-		logger("python module sklearn was not found", LOGGER_DEBUG);
-		return array('status' => false, 'message' => 'Failed: Could not load python module sklearn');
-	} else {
-		logger("sklearn version=" . $o[0]);
-	}
-	// test if the files are available
-	$o = [];
-	$cmd = "python3 " . getcwd() . "/addon/faces/py/availability.py";
-	exec($cmd, $o);
-	$line = "";
-	foreach ($o as $line) {
-		logger($line, LOGGER_DEBUG);
-	}
-	if (trim($line) != "ok") {
-		return array('status' => false, 'message' => 'Failed: Finder 1 could not find the ressources ', LOGGER_DEBUG);
-	}
-	return array('status' => true, 'message' => 'Result self check: found version = ' . $ret_string . LOGGER_NORMAL);
-}
+    $DeepFace = ((x($_POST, 'DeepFace')) ? true : false);
+    if ($DeepFace) {
+        $models[] = 'DeepFace';
+    }
 
-function testPythonVersionFaceRecognition() {
-	$cmd = 'python3 -c "import face_recognition; print(face_recognition.__version__)"';
-	exec($cmd, $o);
-	if (!$o[0]) {
-		return array('status' => false, 'message' => 'Failed: Could not load python module face_recognition');
-	}
-	logger("face_recognition version: " . $o[0], LOGGER_NORMAL);
-	return array('status' => true, 'message' => 'Result self check: found version = ' . $o[0]);
+    $SFace = ((x($_POST, 'SFace')) ? true : false);
+    if ($SFace) {
+        $models[] = 'SFace';
+    }
+
+    if (!$Facenet512 && !$ArcFace && !$VGGFace && !$Facenet && !$OpenFace && !$DeepFace && !$SFace) {
+        $models[] = 'Facenet512';
+    }
+
+    $modelsconfig = implode(",", $models);
+    set_config('faces', 'models', preg_replace('/\s+/', '', $modelsconfig));
+
+    // distance_metrics
+    $distance_metrics = [];
+
+    $cosine = ((x($_POST, 'cosine')) ? true : false);
+    if ($cosine) {
+        $distance_metrics[] = 'cosine';
+    }
+
+    $euclidean_l2 = ((x($_POST, 'euclidean_l2')) ? true : false);
+    if ($euclidean_l2) {
+        $distance_metrics[] = 'euclidean_l2';
+    }
+
+    $euclidean = ((x($_POST, 'euclidean')) ? true : false);
+    if ($euclidean) {
+        $distance_metrics[] = 'euclidean';
+    }
+
+    if (!$cosine && !$euclidean_l2 && !$euclidean) {
+        $distance_metrics[] = 'cosine,euclidean_l2';
+    }
+
+    $metricsconfig = implode(",", $distance_metrics);
+    set_config('faces', 'distance_metrics', preg_replace('/\s+/', '', $metricsconfig));
+
+    // demography
+    $demography = [];
+
+    $Emotion = ((x($_POST, 'Emotion')) ? true : false);
+    if ($Emotion) {
+        $demography[] = 'Emotion';
+    }
+
+    $Age = ((x($_POST, 'Age')) ? true : false);
+    if ($Age) {
+        $demography[] = 'Age';
+    }
+
+    $Gender = ((x($_POST, 'Gender')) ? true : false);
+    if ($Gender) {
+        $demography[] = 'Gender';
+    }
+
+    $Race = ((x($_POST, 'Race')) ? true : false);
+    if ($Race) {
+        $demography[] = 'Race';
+    }
+
+    if (!$Emotion && !$Age && !$Gender && !$Race) {
+        $demography[] = 'off';
+    }
+
+    $demographyconfig = implode(",", $demography);
+    set_config('faces', 'demography', preg_replace('/\s+/', '', $demographyconfig));
+
+    info(t('Settings updated.') . EOL);
+
+    $detectors = get_config('faces', 'detectors');
+    $models = get_config('faces', 'models');
+    $demography = get_config('faces', 'demography');
+
+    // stop python script if running
+    $procid = random_string(10);
+    set_config("faces", "status", "started " . datetime_convert() . " pid " . $procid);
+
+    // Check the configuration
+    $ret = testDeepfaceModules($detectors, $models, $demography);
+    
+    // unblock execution of python script
+    set_config("faces", "status", "finished " . datetime_convert() . " pid " . $procid);
+
+    // correct the configuration if nesseccary
+    $d = $ret['d'];
+    if (sizeof($d) > 0) {
+        $detectors = implode(",", $d);
+    } else {
+        $detectors = "retinaface";
+    }
+    set_config('faces', 'detectors', $detectors);
+    logger("set detectors to " . $detectors, LOGGER_NORMAL);
+    $m = $ret['m'];
+    if (sizeof($m) > 0) {
+        $models = implode(",", $m);
+    } else {
+        $models = 'Facenet512';
+    }
+    set_config('faces', 'models', $models);
+    logger("set models to " . $models, LOGGER_NORMAL);
+    $dm = $ret['dm'];
+    if (sizeof($dm) > 0) {
+        $demography = implode(",", $dm);
+    } else {
+        $demography = 'off';
+    }
+    set_config('faces', 'demography', $demography);
+    logger("set demography to " . $demography, LOGGER_NORMAL);
+
+    $zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : 3);
+    if ($zoom > 6) {
+        $zoom = 6;
+    } else if ($zoom < 1) {
+        $zoom = 1;
+    }
+    set_config('faces', 'zoom', $zoom);
+    logger("set zoom to " . $zoom, LOGGER_NORMAL);    
+
+    $experimental_allowed = ((x($_POST, 'experimental_allowed')) ? true : false);
+    set_config('faces', 'experimental_allowed', $experimental_allowed);
+    logger("set experimental_allowed to " . $experimental_allowed, LOGGER_NORMAL);  
+
+    $ramcheckmsg = $ret["r"];
+    set_config('faces', 'ramcheck', $ramcheckmsg);
 }
 
 function testPythonVersion() {
-	$cmd = 'python3 -c "import platform;print(platform.python_version())"';
-	exec($cmd, $o);
-	if ($o[0]) {
-		$ret_string = trim($o[0]);
-		logger("python version: " . $ret_string, LOGGER_DEBUG);
-		$version = substr($ret_string, 0, 3);
-		$version_number = (float) $version;
-		if ($version_number < 3.4) {
-			return array('status' => false, 'message' => 'Failed: python version < 3.4 (found ' . $ret_string . ')', LOGGER_DEBUG);
-		}
-	} else {
-		return array('status' => false, 'message' => 'Failed: python3 not found', LOGGER_DEBUG);
-	}
-	return array('status' => true, 'message' => 'Result self check: found  python version = ' . $o[0], LOGGER_NORMAL);
+    $cmd = 'python3 -c "import platform;print(platform.python_version())"';
+    exec($cmd, $output, $r);
+    if ($output[0]) {
+        $ret_string = trim($output[0]);
+        logger("python version: " . $ret_string, LOGGER_DEBUG);
+        $version = substr($ret_string, 0, 3);
+        $version_number = (float) $version;
+        if ($version_number < 3.5) {
+            return array('status' => false, 'message' => 'Failed: python version < 3.5 (found ' . $ret_string . ')');
+        }
+    } else {
+        return array('status' => false, 'message' => 'Failed: python3 not found');
+    }
+    return array('status' => true, 'message' => 'Found  python version = ' . $output[0]);
+}
+
+function testDeepfaceVersion() {
+    $cmd = 'pip show deepface';
+    exec($cmd, $output);
+    $ret_string = "";
+    if ($output[0]) {
+        foreach ($output as $line) {
+            logger($line, LOGGER_DEBUG);
+            if (str_starts_with(strtolower($line), "version:")) {
+                $ret_string = $line;
+                break;
+            }
+        }
+        if ($ret_string == "") {
+            $ret_string = $output[0];
+            return array('status' => false, 'message' => 'Failed: deepface not found (found ' . $ret_string . ')', LOGGER_DEBUG);
+        }
+    } else {
+        return array('status' => false, 'message' => 'Failed: deefaces not found (exec wihout return value)', LOGGER_DEBUG);
+    }
+    return array('status' => true, 'message' => 'Found  deepface ' . $ret_string, LOGGER_NORMAL);
+}
+
+function testMySQLConnectorVersion() {
+    $cmd = 'pip show mysql-connector-python';
+    exec($cmd, $output);
+    $ret_string = "";
+    if ($output[0]) {
+        foreach ($output as $line) {
+            logger($line, LOGGER_DEBUG);
+            if (str_starts_with(strtolower($line), "version:")) {
+                $ret_string = $line;
+                break;
+            }
+        }
+        if ($ret_string == "") {
+            $ret_string = $output[0];
+            return array('status' => false, 'message' => 'Failed: mysql-connector-python not found (found ' . $ret_string . ')', LOGGER_DEBUG);
+        }
+    } else {
+        return array('status' => false, 'message' => 'Failed: mysql-connector-python not found (exec wihout return value)', LOGGER_DEBUG);
+    }
+    return array('status' => true, 'message' => 'Found  mysql-connector-python ' . $ret_string, LOGGER_NORMAL);
+}
+
+function testDeepfaceModules($pdetectors, $pmodels, $pdemography) {
+    if ($pdetectors === "") {
+        $pdetectors = "retinaface";
+    }
+    if ($pmodels === "") {
+        $pmodels = "Facenet512";
+    }
+    if ($pdemography === "") {
+        $pdemography = "off";
+    }
+    $detectors = [];
+    $models = [];
+    $demography = [];
+    $ram = 0;
+    $cmd = "python3 /var/www/mywebsite/addon/faces/py/availability.py --detectors " . $pdetectors . " --models " . $pmodels . " --demography " . $pdemography;
+    exec($cmd, $output);
+    foreach ($output as $line) {
+        logger($line, LOGGER_DEBUG);
+        if (str_starts_with(strtolower($line), "found model")) {
+            $splittees = explode(" ", $line);
+            $models[] = $splittees[2];
+        }
+        if (str_starts_with(strtolower($line), "found detector")) {
+            $splittees = explode(" ", $line);
+            $detectors[] = $splittees[2];
+        }
+        if (str_starts_with(strtolower($line), "found demography")) {
+            $splittees = explode(" ", $line);
+            $demography[] = $splittees[2];
+        }
+        if (str_starts_with(strtolower($line), "ram")) {
+            $ram = $line;
+        }
+    }
+    return array('d' => $detectors, 'm' => $models, 'dm' => $demography, 'r' => $ram);
 }
 
 function testExiftool() {
-	$cmd = 'exiftool -ver';
-	exec($cmd, $o);
-	if (!$o[0]) {
-		return array('status' => false, 'message' => 'Failed: Exiftool not found', LOGGER_DEBUG);
-	}
-	logger("Exiftool version: " . $o[0], LOGGER_DEBUG);
-	return array('status' => true, 'message' => 'Result self check: found  exiftool version = ' . $o[0], LOGGER_NORMAL);
-}
-
-function getFacesStatisticsAsHtml() {
-	$html = \Code\Module\getStatisticsAsHTML();
+    $cmd = 'exiftool -ver';
+    exec($cmd, $o);
+    if (!$o[0]) {
+        return array('status' => false, 'message' => 'Failed: Exiftool not found', LOGGER_DEBUG);
+    }
+    logger("Exiftool version: " . $o[0], LOGGER_DEBUG);
+    return array('status' => true, 'message' => 'Found  exiftool version = ' . $o[0], LOGGER_NORMAL);
 }

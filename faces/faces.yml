@@ -1,5 +1,5 @@
 name: Faces
 description: 'Detect faces in images and make a guess who it is.'
-version: '1.16 beta'
-author: 'Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )'
-maintainer: 'Tom Wiedenhöft ( channel: https://z.digitalesparadies.de/channel/faces )'
+version: '2.0 beta'
+author: 'Tom Wiedenhöft'
+maintainer: 'Tom Wiedenhöft'

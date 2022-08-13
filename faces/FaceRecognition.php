@@ -4,116 +4,143 @@ namespace Code\Module;
 
 class FaceRecognition {
 
-	private $defaultProcId = 0;
-	private $localDebug = 0;
+    function start($storeDirectory, $channel_id, $config, $rm_params) {
+        if (!$rm_params) {
+            $isRunning = $this->isScriptRunning();
+            if ($isRunning) {
+                return;
+            }
+        } else {
+            logger("Start the python script despite another one is still running. Set a new procid. This will stopp a running python script ", LOGGER_DEBUG);
+        }
+        $procid = random_string(10);
+        set_config("faces", "status", "started " . datetime_convert() . " pid " . $procid);
 
-	function test() {
-		$cmd = escapeshellcmd("python3 " . getcwd() . "/addon/faces/py/faces.py -t OK");
-		exec($cmd, $o);
-		if ($o[0] === 'OK') {
-			return true;
-		} else {
-			return false;
-		}
-	}
+        $logfile = get_config('logrot', 'logrotpath') . '/faces.log';
+        $logfileparam = " --logfile " . $logfile;
+        if (!$logfile) {
+            $logfileparam = "";
+        } else {
+            if (!is_writable($logfile)) {
+                logger("PLEASE CHECK PATH OR PERMISSIONS! Can not write log file " . $logfile, LOGGER_DEBUG);
+                $logfileparam = "";
+            }
+        }
+        $logEnabled = get_config('system', 'debugging');
+        if (!$logEnabled) {
+            $logfile = '';
+        }
+        $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
 
-	function detect() {
-		if ($this->localDebug) {
-			if (!$this->test()) {
-				return array('status' => false, 'message' => 'python script failed to start');
-			}
-		}
-		$ret = $this->isScriptRunning();
-		if ($ret['status']) {
-			return array('status' => $ret['status'], 'message' => $ret['message']);
-		}
+        $detectorsConfig = $this->getParamString($config, "detectors");
+        $modelsConfig = $this->getParamString($config, "models");
+        $distanceMetricsConfig = $this->getParamString($config, "distance_metrics");
+        $demographyConfig = $this->getParamString($config, "demography");
+        $first_resultConfig = $this->getParamStringDirectly($config, "first_result", "enforce");
+        $statistics_modeConfig = $this->getParamStringDirectly($config, "statistics_mode", "statistics");
+        $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width");
 
-		$logfile = get_config('logrot', 'logrotpath') . '/faces.log';
-		$logfileparam = " --logfile " . $logfile;
-		if (!$logfile)
-			$logfileparam = "";
-		else {
-			if (!is_writable($logfile)) {
-				logger("PLEASE CHECK PATH OR PERMISSIONS! Can not write log file " . $logfile, LOGGER_DEBUG);
-				$logfileparam = "";
-			}
-		}
-		$logEnabled = get_config('system', 'debugging');
-		if (!$logEnabled) {
-			$logfile = '';
-			$this->localDebug = 0;
-		}
-		$loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
-		$limit = get_config('faces', 'limit');
+        @include('.htconfig.php');
+        $cmd = escapeshellcmd("python3 " . getcwd() . "/addon/faces/py/faces.py"
+                . " --host " . $db_host . " --user " . $db_user . " --pass " . $db_pass . " --db " . $db_data
+                . " --imagespath " . $storeDirectory . " --channelid " . $channel_id
+                . " --procid " . $procid
+                . $first_resultConfig
+                . $minFaceWidthConfig
+                . $statistics_modeConfig
+                . $rm_params
+                . " --loglevel " . $loglevel . $logfileparam
+                . $detectorsConfig . $modelsConfig . $distanceMetricsConfig . $demographyConfig);
 
-		$channel_id = "0";
+        logger('The pyhton script will be executed using the following command ...', LOGGER_DEBUG);
+        // overwrite password
+        $a = explode(" ", $cmd);
+        $key = array_search("--pass", $a);
+        $a[$key + 1] = "xxx";
+        logger(implode(" ", $a), LOGGER_DEBUG);
 
-		$finderConfig = "";
-		if (get_config('faces', 'finder1') == "1") {
-			$finderConfig .= " --finder1 " . (get_config('faces', 'finder1config') ? get_config('faces', 'finder1config') : "confidence=0.5;minsize=20");
-		}
-		if (get_config('faces', 'finder2') == "1") {
-			$finderConfig .= " --finder2 " . (get_config('faces', 'finder2config') ? get_config('faces', 'finder2config') : "tolerance=0.6;model=hog");
-		}
+        // python3 /var/www/mywebsite/addon/faces/py/faces.py --host 127.0.0.1 --user mywebsite --pass . --db mywebsite --imagespath /var/www/mywebsite --channelid 0 --procid 3941887e4f --loglevel 2 --logfile /var/www/log/faces.log --detectors retinaface,ssd --models Facenet512,VGG-Face --demography Age,Gender
+        exec($cmd . ' > /dev/null 2>/dev/null &');
+    }
 
-		@include('.htconfig.php');
-		$r = q("update faces_proc set created = '%s', updated = '%s', running = %d where proc_id = %d ", dbesc(datetime_convert()), dbesc(datetime_convert()), intval(1), intval(0));
-		$cmd = escapeshellcmd("python3 " . getcwd() . "/addon/faces/py/faces.py"
-				. " --host " . $db_host . " --user " . $db_user . " --pass " . $db_pass . " --db " . $db_data
-				. " --imagespath " . getcwd() . " --channelid " . $channel_id
-				. " --limit " . $limit
-				. " --procid " . $this->defaultProcId
-				. " --loglevel " . $loglevel . $logfileparam . " --logconsole " . $this->localDebug
-				. $finderConfig);
+    private function getParamString($config, $name) {
+        $param = "";
+        $values = $config[$name];
+        for ($i = 0; $i < sizeof($values); $i++) {
+            $elName = $values[$i][0];
+            $value = $values[$i][1];
+            if ($value) {
+                if (strlen($param) > 0) {
+                    $param .= ",";
+                }
+                $param .= $elName;
+            }
+        }
+        if (strlen($param) > 0) {
+            $param = " --" . $name . " " . $param;
+        }
+        return $param;
+    }
 
-		logger('The pyhton script will be executed using the following command ...', LOGGER_DEBUG);
-		logger($cmd, LOGGER_DEBUG);
+    private function getParamStringDirectly($config, $name, $configName) {
+        $param = "";
+        $values = $config[$configName];
+        $value = $values[0][1];
+        if ($configName === "enforce") {
+            $value = !$value;
+        }
+        if ($value) {
+            $param = "on";
+        } else {
+            $param = "off";
+        }
+        $param = " --" . $name . " " . $param;
+        return $param;
+    }
 
-		if ($this->localDebug) {
-			exec($cmd, $o);
-			logger('The pyhton script finished. The messages are...', LOGGER_DEBUG);
-			$ret['message'] = $ret['message'] . '<br>debug messages from pyhthon script... ';
-			foreach ($o as $line) {
-				$ret['message'] = $ret['message'] . '<br>' . $line;
-				logger($line, LOGGER_DEBUG);
-			}
-		} else {
-			exec($cmd . ' > /dev/null 2>/dev/null &'); // production
-		}
+    private function getParamStringTextField($config, $name) {
+        $param = "";
+        $values = $config[$name];
+        for ($i = 0; $i < sizeof($values); $i++) {
+            $elName = $values[$i][0];
+            $value = $values[$i][1];
+            $param .= " --" . $name . "_" . $elName . " " . $value;
+        }
+        return $param;
+    }
 
-		return array('status' => true, 'message' => $ret['message']);
-	}
+    function isScriptRunning() {
+        $txt = get_config("faces", "status");
+        if (!$txt) {
+            logger('The python script was never started befor', LOGGER_DEBUG);
+            return false;
+        }
+        logger('status face recognition: ' . $txt, LOGGER_DEBUG);
+        $a = explode(' ', $txt);
+        $status = $a[0];
 
-	function isScriptRunning() {
-		$r = q("SELECT * FROM faces_proc WHERE proc_id = %d", intval($this->defaultProcId));
-		if (!$r) {
-			$msg = 'First time the python script is started (empty table for processes)';
-			logger($msg, LOGGER_DEBUG);
-			q("insert into faces_proc ( proc_id, running ) 
-					values ( %d, %d ) ", intval($this->defaultProcId), intval(1)
-			);
-			return array('status' => false, 'message' => $msg);
-		}
-		$updated = $r[0]["updated"];
-		if ($r[0]["running"] == 1) {
-			$elapsed = strtotime(datetime_convert()) - strtotime($updated); // both UTC
-			if ($elapsed > 60 * 10) {
-				// Th Python script writes a timestamp "updated" every 10 seconds to indicate it is still running.
-				// Now we are 10 minutes away from the last "updated" written by the script.
-				// It might be that the python script hangs or was stopped.
-				$msg = 'The script was started and did not finish yet. Please watch this condition. Why? It might be that the python script hangs, run into errors or was stopped externally. The last update by the script was at ' . $updated . '. This is more then 10 minutes ago. This is unusual because the script writes a time stamp every 10 seconds to indicate that it is still running.';
-				logger($msg, LOGGER_DEBUG);
-				return array('status' => false, 'message' => $msg);
-			}
-		} else if ($r[0]["running"] == 0) {
-			// The python script is not running.
-			$msg = 'The python script was not running.';
-			logger($msg, LOGGER_DEBUG);
-			return array('status' => false, 'message' => $msg);
-		}
-		$msg = 'The python script is still running. Last update: ' . $updated;
-		logger($msg, LOGGER_DEBUG);
-		return array('status' => true, 'message' => $msg);
-	}
+        if (sizeof($a) != 5) {
+            logger("Status face recognition: not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_DEBUG);
+            return false;
+        }
+
+        if (strtolower($status) == "finished") {
+            logger("Status face recognition: finished", LOGGER_DEBUG);
+            return false;
+        }
+
+        $updated = $a[1] . " " . $a[2];
+        $elapsed = strtotime(datetime_convert()) - strtotime($updated); // both UTC
+        if ($elapsed > 60 * 10) {
+            // Th Python script writes a timestamp "updated" every 10 seconds to indicate it is still running.
+            // Now we are 10 minutes away from the last "updated" written by the script.
+            // It might be that the python script hangs or was stopped.
+            $msg = 'The script did not finish yet. Please watch this condition. Why? It might be that the python script hangs, run into errors or was stopped externally. The last update by the script was at ' . $updated . '. This is more then 10 minutes ago. This is unusual because the script writes a time stamp every 10 seconds to indicate that it is still running.';
+            logger($msg, LOGGER_DEBUG);
+            return false;
+        }
+        logger('The python script is still running. Last update: ' . $updated, LOGGER_DEBUG);
+        return true;
+    }
 
 }

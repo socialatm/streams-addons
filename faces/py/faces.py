@@ -1,91 +1,190 @@
 import faces_worker
-import logger
 import faces_db
 import argparse
 import sys
 import distutils
+import logging
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-t")
 parser.add_argument("--host", help="db host url")
 parser.add_argument("--user", help="db user")
 parser.add_argument("--pass", help="db pass")
 parser.add_argument("--db", help="db")
-parser.add_argument("--limit")
 parser.add_argument("--imagespath", help="absolute path to image dir")
 parser.add_argument("--channelid", help="channel id, default is 0")
 parser.add_argument("--loglevel")
 parser.add_argument("--logfile")
-parser.add_argument("--logconsole")
-parser.add_argument("--finder1")
-parser.add_argument("--finder2")
+parser.add_argument("--detectors")
+parser.add_argument("--models")
+parser.add_argument("--demography")
 parser.add_argument("--procid")
+parser.add_argument("--distance_metrics")
+parser.add_argument("--min_face_width_percent")
+parser.add_argument("--min_face_width_pixel")
+parser.add_argument("--css_position")
+parser.add_argument("--first_result")
+parser.add_argument("--statistics_mode")
+parser.add_argument("--rm_detectors")
+parser.add_argument("--rm_models")
+
 args = vars(parser.parse_args())
 
-if args["t"]:
-    print(args["t"])
-    sys.exit(0)
-
-#+++++++++++++
+# +++++++++++++
 # start logger
-#+++++++++++++
+# +++++++++++++
+frm = logging.Formatter("{asctime} {levelname} {process} {filename} {lineno}: {message}",
+                        style="{")
+logger = logging.getLogger()
+log_file = args["logfile"]
+print("param logfile=" + log_file)
+if (log_file is not None) and (log_file != ""):
+    handler_file = logging.FileHandler(log_file, "w")
+    handler_file.setFormatter(frm)
+    logger.addHandler(handler_file)
+    print("yes, logger is configured to write to file")
 
-logger = logger.Logger()
-# logger.loglevel = logger.LOGGER_TRACE
-logger.loglevel = int(args["loglevel"])
-# logger.console = 1
-logger.console = int(args["logconsole"])
-# logger.setFile("/var/log/faces.log")
-logger.setFile(args["logfile"])
-logger.clear()
-logger.log("Started logger", 2)
+loglevel = int(args["loglevel"])
+print("param loglevel=" + str(loglevel))
+""" 
+values from PHP...
+LOGGER_NORMAL 0
+LOGGER_TRACE 1
+LOGGER_DEBUG 2
+LOGGER_DATA 3
+LOGGER_ALL 4
+"""
+if loglevel:
+    if loglevel < 0:
+        logger.setLevel(logging.NOTSET)
+    elif loglevel >= 2:
+        logger.setLevel(logging.DEBUG)
+    elif loglevel >= 0:
+        logger.setLevel(logging.INFO)
+    print("yes, log level is configured")
+else:
+    logger.setLevel(logging.INFO)
+logging.info("started logging")
 
-#+++++++++++++++++++
+logData = False
+if loglevel >= 4:
+    logData = True
+
+# +++++++++++++++++++
 # load db connection
-#+++++++++++++++++++
-
-logger.log("db host = " + args["host"], 2)
-logger.log("db user = " + args["user"], 2)
-logger.log("db pass = " + args["pass"], 2)
-logger.log("db db = " + args["db"], 2)
-logger.log("db limit = " + args["limit"], 2)
-logger.log("image dir = " + args["imagespath"], 2)
-logger.log("channel id = " + args["channelid"], 2)
-if args["finder1"] is not None:
-    logger.log("finder1 = " + args["finder1"], 2)
-if args["finder2"] is not None:
-    logger.log("finder2 = " + args["finder2"], 2)
-logger.log("proc id = " + args["procid"], 2)
-
-db = faces_db.Database(logger)
+# +++++++++++++++++++
+logging.debug("db host = " + args["host"])
+logging.debug("db user = " + args["user"])
+# logging.debug("db pass = " + args["pass"])
+logging.debug("db db = " + args["db"])
+db = faces_db.Database(logData)
 # db.connect("hubzilla", ".", "127.0.0.1", "hubzilla")
 db.connect(args["user"], args["pass"], args["host"], args["db"])
 
-#++++++++++++++++++++
-# load face detectors
-#++++++++++++++++++++
+# +++++++++++++++++++
+# run parameters
+# +++++++++++++++++++
 
-worker = faces_worker.Worker()
-logger.log("set logger in worker", 2)
-worker.logger = logger
-logger.log("set db in worker", 2)
-worker.db = db
-logger.log("set channel id = " + args["channelid"] + " in worker", 2)
-worker.channel_id = int(args["channelid"])
-logger.log("set db limit = " + args["limit"] + " in worker", 2)
-worker.limit = int(args["limit"])
-if args["finder1"] is not None:
-    worker.setFinder1(args["finder1"])
-if args["finder2"] is not None:
-    worker.setFinder2(args["finder2"])
+if args["imagespath"] is None:
+    logging.error("image directory is not set, exit program...")
+    sys.exit()
+logging.debug("image dir = " + args["imagespath"])
 
+if args["procid"] is None:
+    logging.error("procid is not set, exit program...")
+    sys.exit()
+logging.debug("procid = " + args["procid"])
 
-#+++++++++++++++++++
-# run face detectors
-#+++++++++++++++++++
+channel_id = 0
+if args["channelid"]:
+    channel_id = int(args["channelid"])
 
-logger.log("About to run worker", 2)
-worker.run(args["imagespath"], int(args["procid"]))
+# +++++++++++++++++++
+# create config
+# +++++++++++++++++++
 
+config = ""
+
+if args["distance_metrics"]:
+    config = "distance_metrics=" + args["distance_metrics"]
+else:
+    config = "distance_metrics=" + "cosine,euclidean_l2,euclidean"
+
+if args["demography"]:
+    config += ";analyse=" + args["demography"]
+else:
+    # config += ";analyse=" + "emotion,age,gender,race"
+    config += ";analyse=" + "off"
+
+if args["models"]:
+    config += ";model=" + args["models"]
+else:
+    # config += ";models=" + "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace"
+    config += ";model=" + "Facenet512"
+
+# stop after first match of a face (if more than model is used)
+if args["first_result"]:
+    config += ";first_result=" + args["first_result"]
+else:
+    config += ";first_result=" + "on"
+
+# write statistics into csv files to compare detectors and models
+if args["statistics_mode"]:
+    config += ";statistics_mode=" + args["statistics_mode"]
+else:
+    config += ";statistics_mode=" + "off"
+
+# in percent of image
+if args["min_face_width_percent"]:
+    config += ";min_face_width_percent=" + args["min_face_width_percent"]
+else:
+    config += ";min_face_width_percent=" + "5"
+
+# in pixel
+if args["min_face_width_pixel"]:
+    config += ";min_face_width_pixel=" + args["min_face_width_pixel"]
+else:
+    config += ";min_face_width_pixel=" + "50"
+
+# position of face in image
+# on... in percent as used by css in browsers
+# off... in pixel as calculated by face detection
+if args["css_position"]:
+    config += ";css_position=" + args["css_position"]
+else:
+    config += ";css_position=" + "on"
+
+if logData:
+    config += ";log_data=on"
+
+# list of detectors to remove
+if args["rm_detectors"]:
+    config += ";rm_detectors=" + args["rm_detectors"]
+
+# list of models to remove
+if args["rm_models"]:
+    config += ";rm_models=" + args["rm_models"]
+
+# d = "	retinaface,mtcnn,ssd,opencv"
+d = "retinaface"
+if args["detectors"]:
+    d = args["detectors"]
+logging.debug("detectors = " + d)
+detectors = d.split(",")
+
+doRecognize = False
+counter = 1
+for detector in detectors:
+    worker = faces_worker.Worker()
+    logging.debug("set db in worker")
+    worker.set_db(db)
+    worker.configure(config + ";detector_backend=" + detector)
+    # +++++++++++++++++++
+    # run
+    # +++++++++++++++++++
+    logging.debug("About to run worker using detector " + detector)
+    if counter == len(detectors):
+        doRecognize = True
+    worker.run(args["imagespath"], args["procid"], channel_id, doRecognize)
+    counter = counter + 1
 
 db.close()

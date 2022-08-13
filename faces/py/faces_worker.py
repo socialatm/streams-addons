@@ -1,356 +1,869 @@
-import datetime
-from PIL import Image
-import os
-
 import importlib
+import os
+import pickle
+import pandas as pd
+import time
+import datetime
+import logging
+import sys
+import faces_exiftool
+import faces_util
 
-cv2_spec = importlib.util.find_spec("cv2")
-sklearn_spec = importlib.util.find_spec("sklearn")
-if cv2_spec is not None and sklearn_spec is not None:
-    import face_finder_1
+deepface_spec = importlib.util.find_spec("deepface")
+if deepface_spec is not None:
+    import faces_finder
+    import faces_recognizer
 
-face_recognition_spec = importlib.util.find_spec("face_recognition")
-if face_recognition_spec is not None:
-    import face_finder_2
 
 class Worker:
 
     def __init__(self):
-        self.logger = None
-        # self.channel_id
-        # applies to the recognition only (has no effect on detection)
-        # -1 default: every channel (user) uses his own face encoding only
-        #  0 : kind of admin usage. Does not care wich face encoding belongs to wich channel
-        # >0 : recognize faces for this channel only (has no effect on detection)
-        self.channel_id = -1
-        self.limit = 100
-        self.finder1 = None
-        self.finder2 = None
-        self.time_lastupdated = ''
-        self.time_is_awake = 10
+        self.log_data = False
+        self.finder = None
+        self.recognizer = None
+        self.dirImages = None
+        self.proc_id = None
+        self.db = None
+        self.file_name_face_representations = "faces.pkl"
+        self.file_name_facial_attributes = "facial_attributes.csv"
+        self.file_name_face_names = "faces.csv"
+        self.file_name_faces_statistic = "faces_statistics.csv"
+        self.file_name_models_statistic = "models_statistics.csv"
+        self.dir_addon = "faces"
 
-    def setFinder1(self, csv):
-        self.logger.log("set finder1 using csv=" + csv, 2)
-        cv2_spec = importlib.util.find_spec("cv2")
-        sklearn_spec = importlib.util.find_spec("sklearn")
-        if cv2_spec is not None and sklearn_spec is not None:
-            self.finder1 = face_finder_1.Finder()
-            self.finder1.load(self.logger, csv)
+        # Watch this!
+        # What happens itself.statistics_mode = True
+        # The file .faces.pkl will be written if the face recognition finds something.
+        # Q: Why does it matter?
+        # A: In case the face recognition runs for ZOT/Nomad and the channel has clones
+        #    the written file will trigger a file sync of .faces.pkl. between the clones (servers).
+        self.statistics_mode = False  # True/False
+
+        self.columnNamesFaceRecognition = [
+            'id',
+            'file',
+            'position',
+            'face_nr',
+            'name',
+            'name_recognized',
+            'time_named',
+            'exif_date',
+            'detector',
+            'model',
+            'duration_detection',
+            'duration_representation',
+            'time_created',
+            'representation',
+            'distance',
+            'distance_metric',
+            'duration_recognized',
+            'directory'
+        ]
+        self.columnNameFacialAttributes = [
+            'file',
+            'position',
+            'detector',
+            'emotions',
+            'dominant_emotion',
+            'age',
+            'gender',
+            'races',
+            'dominant_race',
+            'created',
+            'duration'
+        ]
+        self.columnsToIncludeAll = ["model", "detector", "duration_detection", "duration_representation",
+                                    "time_created", "distance", "distance_metric", "duration_recognized"]
+        self.columnsToInclude = ["model", "detector"]
+        self.columnsSort = ["file", "position", "face_nr", "name", "name_recognized", "time_named", "exif_date",
+                            "detector", "model"]
+        self.timeLastAliveSignal = 0
+        self.timeToWait = 10  # second
+        self.timeBackUp = 60 * 5  # second
+        self.lockFile = None
+        self.RUNNING = "running"
+        self.FINISHED = "finished"
+        self.pid = ""
+        self.exiftool = None
+        self.removeDetectors = ""
+        self.removeModels = ""
+        self.IGNORE = "-ignore-"
+        self.sort_column = "exif_date"
+        self.sort_direction = True
+        self.follow_sym_links = False
+
+        self.folder = None
+        self.faces_pkl = None
+        self.faces_csv = None
+        self.faces_attr = None
+        self.faces_statistics = None
+        self.models_statistics = None
+        self.channel = None
+        self.util = faces_util.Util()
+
+    def set_finder(self, csv):
+        deepface_spec = importlib.util.find_spec("deepface")
+        if deepface_spec is not None:
+            self.finder = faces_finder.Finder()
+            self.finder.configure(csv)
         else:
-            self.logger.log("FAILED to set finder1. Reason: module sklearn not found", 1)
+            logging.error("FAILED to set finder. Reason: module deepface not found")
 
-    def setFinder2(self, csv):
-        self.logger.log("set finder2 using csv=" + csv, 2)
-        face_recognition_spec = importlib.util.find_spec("face_recognition")
-        if face_recognition_spec is not None:
-            self.finder2 = face_finder_2.Finder()
-            self.finder2.load(self.logger, csv)
+    def set_recognizer(self, csv):
+        deepface_spec = importlib.util.find_spec("deepface")
+        if deepface_spec is not None:
+            self.recognizer = faces_recognizer.Recognizer()
+            self.recognizer.configure(csv)
         else:
-            self.logger.log("FAILED to set finder2. Reason: module face_recognition not found", 1)
+            logging.critical("FAILED to set finder. Reason: module deepface not found")
 
-    def run(self, dir_images, proc_id):
+    def set_db(self, db):
+        self.db = db
+        logging.debug("database was set")
+
+    def configure(self, csv):
+        # example csv
+        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics_mode=True
+        for element in csv.split(";"):
+            conf = element.split("=")
+            if len(conf) < 2:
+                continue
+            if conf[0].strip().lower() == 'optional-face-data':
+                self.columnsToInclude = []
+                s = conf[1].split(",")
+                for column in s:
+                    column = column.strip().lower()
+                    if column in self.columnsToIncludeAll:
+                        self.columnsToInclude.append(column)
+                    else:
+                        logging.warning(column + " is not a valid column in faces.csv")
+                        logging.warning("Valid columns are: " + str(self.columnsToIncludeAll))
+            elif conf[0].strip().lower() == 'log_data':
+                if conf[1].strip().lower() == "on":
+                    self.log_data = True
+                if conf[1].strip().lower() == "off":
+                    self.log_data = False
+            elif conf[0].strip().lower() == 'statistics_mode' or conf[0].strip().lower() == 'statistics':
+                if conf[1].strip().lower() == "on":
+                    self.statistics_mode = True
+            elif conf[0].strip().lower() == 'sort_column':
+                column = conf[1].strip().lower()
+                if column in self.columnsSort:
+                    self.sort_column = column
+            elif conf[0].strip().lower() == 'sort_direction':
+                if conf[1].strip().lower() == "1":
+                    self.sort_direction = False
+            elif conf[0].strip().lower() == 'follow_sym_links':
+                if conf[1].strip().lower() == "on":
+                    self.follow_sym_links = True
+            elif conf[0].strip().lower() == 'rm_detectors':
+                self.removeDetectors = conf[1].strip()
+                logging.debug("Configuration rm_detectors=" + self.removeDetectors)
+            elif conf[0].strip().lower() == 'rm_models':
+                self.removeModels = conf[1].strip()
+                logging.debug("Configuration rm_models=" + self.removeModels)
+        logging.debug("Configuration log_data=" + str(self.log_data))
+        logging.debug("Configuration statistics_mode=" + str(self.statistics_mode))
+        logging.debug("Configuration sort_column=" + self.sort_column)
+        logging.debug("Configuration sort_direction=" + str(self.sort_direction))
+        logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
+
+        self.set_finder(csv)
+        self.set_recognizer(csv)
+
+        self.exiftool = faces_exiftool.ExifTool()
+        if not self.exiftool.getVersion():
+            logging.warning(
+                "Exiftool is not available 'exiftool -ver'. Exiftool is used to read the date and time from images.")
+            self.exiftool = None
+
+        self.util.is_css_position = self.finder.css_position
+
+    def run(self, dir_images, proc_id, channel_id, doRecognize):
+        logging.info("dir=" + dir_images + ", proc_id=" + proc_id + ", channel_id=" + str(
+            channel_id) + ", " + self.finder.detector_name)
         self.dirImages = dir_images
+        if os.access(self.dirImages, os.R_OK) is False:
+            logging.error("can not read directory " + self.dirImages)
+            self.stop()
         self.proc_id = proc_id
-        self.logger.log("Started with: limit=" + str(self.limit) + ", channel_id=" + str(self.channel_id) + ", time_is_awake=" + str(self.time_is_awake) + ", proc_id=" + str(self.proc_id) + ", image dir=" + self.dirImages, 1)
-        if self.logger.file is not None:        
-            self.logger.log("Started logger with: log file=" + self.logger.file + ", log level=" + str(self.logger.loglevel)  + ", log console=" + str(self.logger.console), 1)
+        self.write_alive_signal(self.RUNNING)
+        # get all channel_id's (users) that have the app faces installed
+        query = "select app_channel from app where app_plugin = 'faces' AND app_channel != 0"
+        data = {}
+        app_channels = self.db.select(query, data)
+        # loop through every user who has the faces addon switched on
+        for app_channel in app_channels:
+            self.channel = app_channel[0]
+            query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s"
+            data = (self.channel, self.file_name_face_names)
+            folders = self.db.select(query, data)
+            if len(folders) == 0:
+                logging.info("no files " + self.file_name_face_names + " for channel_id " + str(self.channel))
+                continue
+            for f in folders:
+                self.folder = f[0]
+                self.process_dir()
+            if doRecognize:
+                if channel_id == 0 or channel_id == self.channel:
+                    self.recognize(folders)
+                else:
+                    logging.debug("no recognition is run for channel id = " + str(self.channel))
+                    continue
+        self.write_alive_signal(self.FINISHED)
+        logging.info("OK, Good bye...")
+        logging.debug("OK")
 
-        # check images size to avoid DecompressionBombWarning and running out of memory
-        Image.warnings.simplefilter('error', Image.DecompressionBombWarning)
+    def process_dir(self):
+        logging.debug("directory " + self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
 
-        counter_1 = 1
-        counter_2 = 1
-        i = 1
-        while counter_1 > 0 or counter_2 > 0:
-            self.logger.name = ""
-            self.selectChannelIDs()
-            self.logger.log("Starting loop " + str(i), 1)
-            if self.finder1 is not None:
-                self.finder = self.finder1
-                counter_1 = self.loopFiles()
-            else:
-                counter_1 = 0
-            if self.finder2 is not None:
-                self.finder = self.finder2
-                counter_2 = self.loopFiles()
-            else:
-                counter_2 = 0
-            self.logger.log("Finished loop " + str(i), 1)
-            i += 1
+        if self.check_file_by_name(self.file_name_face_names) is False:
+            return
+        if self.check_file_by_name(self.file_name_face_representations) is False:
+            return
+        self.check_file_by_name(self.file_name_facial_attributes)  # for cleanup
 
-        self.logger.log("Finished looping", 1)
-        self.updateFinished()
+        self.cleanup()
+        self.detect()
+        self.analyse()
 
-    def loopFiles(self):
-        counter = self.detect()
-        if self.channel_id > -1:
-            self.recognize(self.channel_id)
-        else:
-            for cid in self.chan_ids:
-                self.recognize(cid)
-        return counter
+    # Find and store all face representations for face recognition.
+    # The face representations are stored in binary pickle file.
+    def detect(self):
+        logging.debug("directory " + self.folder + " - 2. Step: detecting new images ---")
 
-    def updateFinished(self):
-        time_now = datetime.datetime.now(datetime.timezone.utc)
-        msg = self.getStatus("Result")
-        query = ("UPDATE faces_proc SET updated = %s, finished = %s, running = %s, summary = %s WHERE proc_id = %s")
-        data = (time_now, time_now, "0", msg, str(self.proc_id))
-        self.db.update(query, data)
+        df = self.get_face_representations()  # pandas.DataFrame holding all face representation
 
-    def updateAwake(self):
-        time_now = datetime.datetime.now(datetime.timezone.utc)
-        if self.time_lastupdated == '':
-            self.time_lastupdated = time_now
-        elapsed = (time_now - self.time_lastupdated).total_seconds()
-        if self.time_is_awake < elapsed:
-            msg = self.getStatus("Status")
-            query = ("UPDATE faces_proc SET updated = %s, summary = %s WHERE proc_id = %s")
-            data = (time_now, msg, str(self.proc_id))
-            self.db.update(query, data)
-
-    def getStatus(self, header):
-        msg = header
-        if self.finder1 is not None:
-            msg = self.appendStatusMessage(self.finder1, msg)
-        if self.finder2 is not None:
-            msg = self.appendStatusMessage(self.finder2, msg)
-        return msg
-
-    def appendStatusMessage(self, f, msg):
-        msg += " Finder " + f.name
-        msg += ": detected " + str(f.count_detected) + " faces in " + str(f.count_files) + " files"
-        msg += ", predicted " + str(f.count_predicted) + " / " + str(f.count_compared) + " faces using " + str(f.count_trained) + " verified faces."
-        return msg
-
-    def recognize(self, cid):
-        self.logger.log("Read known face encodings from database for channel id=" + str(cid) + "...", 2)
-        # load verified encodings
-        if cid != 0:
-            query = ("SELECT "
-                            "encoding_id, encoding, location, person_verified "
-                        "FROM "
-                            "faces_encoding "
-                        "WHERE "
-                            "person_verified != 0 AND "
-                            "finder = %(finder)s AND "
-                            "channel_id = %(channel_id)s  AND "
-                            "encoding != ''")
-            data = {'finder': self.finder.id, 'channel_id': cid}
-        else:
-            self.logger.log("Select all face encodings to train the model because channel_id=" + str(cid), 2)
-            query = ("SELECT "
-                            "encoding_id, encoding, location, person_verified "
-                        "FROM "
-                            "faces_encoding "
-                        "WHERE "
-                            "finder = %(finder)s AND "
-                            "person_verified != 0 AND "
-                            "encoding != ''")
-            data = { 'finder': self.finder.id }
-
-        rows = self.db.select(query, data)
-
-        result = self.finder.train(rows)
-        numberVerifiedFaces = len(rows)
-
-        if not result[0]:
-            status = result[1]
-            self.logger.log("Summarized result: " + status, 1)
+        images = self.add_new_images(df, self.file_name_face_representations)
+        if len(images) == 0:
+            logging.debug("directory " + self.folder + " - No new images for face detection in directory")
             return
 
-        self.logger.log("Read unknown face encodings from database for channel id=" + str(cid) + "...", 2)
-        # load encodings to recognize
-        if cid != 0:
-            query = ("SELECT "
-                            "encoding_id, encoding, location, person_verified "
-                        "FROM "
-                            "faces_encoding "
-                        "WHERE "
-                            "encoding != '' AND "
-                            "finder = %(finder)s AND "
-                            "person_verified = 0 AND "
-                            "person_marked_unknown = 0 AND "
-                            "marked_ignore = 0 AND "
-                            "channel_id = %(channel_id)s ")
-            data = { 'finder': self.finder.id, 'channel_id': cid }
-        else:
-            self.logger.log("Select all face encodings to recognize because channel_id=" + str(cid), 2)
-            query = ("SELECT "
-                            "encoding_id, encoding, location, person_verified "
-                        "FROM "
-                            "faces_encoding "
-                        "WHERE "
-                            "encoding != '' AND "
-                            "finder = %(finder)s AND "
-                            "person_verified = 0 AND "
-                            "person_marked_unknown = 0 AND "
-                            "marked_ignore = 0")
-            data = { 'finder': self.finder.id }
+        logging.info("directory " + self.folder + " - new images found - start detection and recognition")
 
-        rows = self.db.select(query, data)
-        predictedFaces = self.finder.recognize(rows)
+        if not self.finder.is_loaded():
+            self.finder.load()
+            self.write_alive_signal(self.RUNNING)
 
-        query = ("UPDATE faces_encoding "
-                    "SET "
-                        "person_recognized = %s, "
-                        "distance = %s, "
-                        "recognized_updated = %s, "
-                        "recognized_time = %s "
-                    "WHERE encoding_id = %s ")
-        counter_guessed = 0
-        for data in predictedFaces:
-            self.db.update(query, data)
-            self.updateAwake()
-            counter_guessed += 1
-        msg = "Predicted " + str(counter_guessed) + " faces using " +  str(numberVerifiedFaces) + " faces verified by user(s)."
-        self.logger.log("Summarized result: " + msg, 1)
+        time_start_detection = time.time()
+        logging.debug("directory " + self.folder + " - start to detect faces for " + str(len(images)) + " images")
+        for image in images:
+            # The list of models per detector can change. Do not find existing representations again.
+            path = image[0]
+            os_path_on_server = os.path.join(self.dirImages, image[1])
+            existing_models = []
+            if df is not None:
+                existing_models = df.loc[
+                    (df["file"] == path) & (df["detector"] == self.finder.detector_name), "model"].values
+            faces = self.finder.detect(path, os_path_on_server, existing_models)
+            if faces:
+                if df is None:
+                    df = pd.DataFrame(columns=self.columnNamesFaceRecognition)
+                for face in faces:
+                    if len(df) == 0:
+                        df.loc[len(df.index)] = face
+                    else:
+                        df.loc[max(df.index) + 1] = face
 
-    def detect(self):
-        self.logger.name = self.finder.name
-        images = self.selectImagesToDetect()
-        count_encodings = self.detectFaces(images)
-        return count_encodings
+            elapsed_time = time.time() - time_start_detection
+            if elapsed_time > self.timeBackUp:
+                if self.store_face_presentations(df) is False:
+                    return
+                logging.info("directory " + self.folder + " - store face representations: elapsed time=" + str(
+                    elapsed_time) + " > " + str(self.timeBackUp))
+                time_start_detection = time.time()
+            self.write_alive_signal(self.RUNNING)
+        # Why not storing the faces (faces.csv) at this point of time?
+        # - The face detection and the creation of the face representations are cpu, memory and time-consuming
+        # - In praxis
+        #   o The user uploads some or many more pictures to a directory
+        #   o The user opens the addon. This will start the face detection that runs for a couple of minutes
+        #   o Meanwhile the user clicks on some faces and name the faces or changes some face names. The changes
+        #     are written into to faces.csv
+        # - After some time the face detection has ended and will write faces.csv.
+        #   This overwrites the face names the user has set in the meantime.
+        logging.info("directory " + self.folder + " - finished detection of faces in " + str(len(images)) + " images")
+        df = self.write_exif_dates(df)
 
-    def detectFaces(self, images):
-        self.logger.log("Start to detect faces in " + str(len(images)) + " images", 1)
-        count_encodings = 0
-        for (id, os_path, uid) in images:
-            is_update = True
-            abs_path = self.dirImages + "/" + os_path
-            self.logger.log("start to detect faces in file with id=" + str(id) + " , abs_path=" + abs_path, 2)
-            if not os.access(abs_path, os.R_OK):
-                self.logger.log("WARNING Skip this images. Why? File might not exist or missing permissions. Face_recognition failed to load file " + abs_path, 1)
-                self.writeErrorDetectingFacesInImage(id)
+        if self.store_face_presentations(df) is False:
+            return
+        self.init_face_names(df)
+
+    # Find and store all facial attributes, emotion, age, gender, race
+    # What facial attributes to find is configurable, see method setFinder().
+    def analyse(self):
+        if not self.finder.is_analyse_on():
+            return
+
+        if self.check_file_by_name(self.file_name_facial_attributes) is False:
+            return
+
+        logging.debug("directory " + self.folder + " - 3. Step: analysing facial attributes ---")
+        df = self.get_facial_attributes()  # pandas.DataFrame holding all facial attributes
+
+        images = self.add_new_images(df, self.file_name_facial_attributes)
+        if len(images) == 0:
+            logging.debug("directory " + self.folder + " - No new images for analysis of facial attributes")
+            return
+
+        logging.info("directory " + self.folder + " - new images found - start analyzing attributes...")
+
+        if not self.finder.is_loaded():
+            self.finder.load()
+            self.write_alive_signal(self.RUNNING)
+
+        logging.debug("directory " + self.folder + " - start to analyse faces in " + str(len(images)) + " images")
+        for image in images:
+            path = image[0]
+            os_path_on_server = os.path.join(self.dirImages, image[1])
+            faces = self.finder.analyse(path, os_path_on_server)
+            self.write_alive_signal(self.RUNNING)
+            if faces:
+                if df is None:
+                    df = pd.DataFrame(columns=self.columnNameFacialAttributes)
+                for face in faces:
+                    df.loc[len(df.index)] = face
+
+        logging.debug("directory " + self.folder + " - finished analyse of faces in " + str(len(images)) + " images")
+        self.store_facial_attributes(df)
+
+    # -------------------------------------------------------------
+    # Basic steps:
+    # 1. In every directory
+    #    - Load all DataFrames holding the face representations (faces.pkl)
+    #    - Load all DataFrames holding the names (faces.csv)
+    #    - Write all names (set by the user) from faces.csv to faces.pkl
+    # 2. Add all DataFrames to get one big DataFrame holding all face representation and known names
+    # 4. Try to recognize known faces in every directory
+    # 5. Check if the recognition found new faces or changed names
+    # 6. Write the CSV (faces.csv) if the values for "name" or "name_recognized" have changed
+    #
+    def recognize(self, folders):
+        logging.info("START COMPARING FACES for channel " + str(self.channel) + ". Loading all necessary data...")
+        df = self.load_face_names(folders)
+        if df is None:
+            return
+
+        # Loop through models
+        # - loop through the list of ordered models (start parameter)
+        # - optionally stop recognition after a match (start parameter)
+        logging.debug("Get all faces with a name and with a face representation")
+        df_no_name = df.loc[(df['name'] == "") & (df['name'] != self.IGNORE) & (df['representation'] != "") & (
+                df['time_named'] == ""), ['id', 'representation', 'model', 'file', 'face_nr']]
+        models = df.model.unique()
+        for model in models:
+            logging.debug("Start recognition using model=" + model + " Gathering faces as training data...")
+            df_training_data = df.loc[(df['model'] == model) & (df['name'] != "") & (df['name'] != self.IGNORE) & (
+                    df['representation'] != ""), ['id', 'representation', 'name']]
+            if len(df_training_data) == 0:
+                logging.debug("No training data (names set) for model=" + model)
+                continue
+            self.recognizer.train(df_training_data, model)
+            df_model = df_no_name.loc[df_no_name['model'] == model]
+            if len(df_model) == 0:
+                logging.debug("No faces to search for model=" + model)
+                continue
+            faces = self.recognizer.recognize(df_model)
+            if faces:
+                for face in faces:
+                    face_id = face['id']
+                    df.loc[df['id'] == face_id, ['name_recognized', 'duration_recognized', 'distance',
+                                                 'distance_metric']] = [face['name_recognized'],
+                                                                        face['duration_recognized'], face['distance'],
+                                                                        face['distance_metric']]
+                if self.recognizer.first_result:
+                    df_no_name = self.remove_other_than_recognized(faces, df_no_name)
+            self.write_alive_signal(self.RUNNING)
+
+        most_effective_method = self.util.get_most_successful_method(df, False)
+
+        directories = df.directory.unique()
+        for d in directories:
+            df_directory = df[df['directory'] == d]
+            self.store_face_names_if_changed(df_directory, d, most_effective_method)
+
+        self.write_statistics(df, self.dirImages)
+
+    def remove_other_than_recognized(self, faces, df):
+        for face in faces:
+            face_id = face["id"]
+            face = df.loc[df['id'] == face_id, ["file", "face_nr"]]
+            if len(face) == 0:
+                continue  # has different detector and was removed in loop before
+            file = face["file"].item()
+            face_nr = face["face_nr"].item()
+            f = df.loc[(df['file'] == file) & (df['face_nr'] == face_nr)]
+            keys = f.index
+            if len(keys) == 1:
+                return df
+            df = df.drop(keys[1:])
+        return df
+
+    def load_face_names(self, folders):
+        # df
+        # df is the one big pandas.DataFrame that holds
+        # - all face representations
+        # - all names
+        # - over all directories
+        df = None
+        for f in folders:
+            self.folder = f[0]
+
+            if self.check_file_by_name(self.file_name_face_representations) is False:
+                return
+            if self.check_file_by_name(self.file_name_face_names) is False:
+                return
+
+            # ---
+            # Concatenate all face representations of all directories
+            df_representations = self.get_face_representations()
+            if df_representations is None:
                 continue
 
-            faces = self.finder.detect(abs_path)
+            # ---
+            # Read names in directory
+            df_names = self.get_face_names()
 
-            if not faces[0]:
-                status = faces[1]
-                if status == "error":
-                    self.logger.log("Error when trying to read file id=" + str(id), 1)
-                    self.writeErrorDetectingFacesInImage(id)
-                    continue
-                elif status == "no face":
-                    self.logger.log("No face in image found for file id=" + str(id), 2)
-                    self.writeNoFaceFoundInImage(id)
-                    continue
-                else:
-                    self.logger.log("Possible programming error. No face in image found for file id=" + str(id), 1)
-                    self.writeErrorDetectingFacesInImage(id)
-                    continue
+            if df_names is not None:
+                df_names.loc[(df_names['name'].isna() == True), 'name'] = ""  # get rid of "nan" values
+                df_names.loc[(df_names['time_named'].isna() == True), 'time_named'] = ""  # get rid of "nan" values
 
-            for face in faces:
-                #self.logger.log(str(face), 2)
-                encoding, box, confidence, faceImg, elapsed, locationCSS = face
-                #cv2.imshow("Detected", faceImg)
-                #cv2.waitKey(0)
-                if is_update:
-                    self.writeFaceEncodingForImage(id, encoding, box, confidence, elapsed, locationCSS)
-                    is_update = False
-                else:
-                    self.insertFaceEncoding(id, uid, encoding, box, confidence, elapsed, locationCSS)
-                count_encodings += 1
+                # ---
+                # Write all known names into the face representations
+                # Background:
+                # This step is needed if
+                #  - "statistics mode" is not switched on
+                #  - names are written
+                # Background:
+                # If the "statistics mode" is NOT switched on then names are stored only in the file ".faces.csv"
+                # If the "statistics mode" IS switched on then names are stored along with the face representations
+                # in the file ".faces.pkl".
+                for face in df_names.itertuples():
+                    df_representations.loc[(df_representations['id'] == face.id), ['name', 'time_named']] = [face.name,
+                                                                                                             face.time_named]
 
-            self.proc_message = "Detected " +str(count_encodings) + " faces in " + str(len(images)) + " images. "
-            self.updateAwake()
-        return count_encodings
+            # ---
+            # Find same faces (by position) in images and write the name set by the user into every face.
+            # Explanation:
+            # - faces are found by different detectors for different models
+            # - a face is the same if found
+            #   o in same file
+            #   o at same position (x, y, h, w)
+            df_representations = self.util.number_unique_faces(df_representations)
+            df_representations = self.util.copy_name_to_same_faces(df_representations)
 
-    def insertFaceEncoding(self, id, uid, encoding, location, confidence, elapsed, locationCSS):
-        self.logger.log("Insert into faces_encoding: face encoding for file id=" + str(id) + ", finder id=" + str(self.finder.id), 2)
-        time_string = datetime.datetime.now(datetime.timezone.utc)
-        query = ("INSERT INTO faces_encoding "
-                      "(finder, channel_id, id, encoding, location, location_css, confidence, encoding_created, encoding_time) "
-                      "VALUES (%(finder)s, %(channel_id)s, %(image)s, %(encoding)s, %(location)s, %(locationCSS)s, %(confidence)s, %(encoding_created)s, %(encoding_time)s)")
-        data = {
-            'finder': str(self.finder.id),
-            'channel_id': uid,
-            'image': str(id),
-            'encoding': encoding,
-            'location': location,
-            'locationCSS': locationCSS,
-            'confidence': str(confidence),
-            'encoding_created': time_string,
-            'encoding_time': elapsed,
-        }
-        self.db.update(query, data)
+            # ---
+            # Concatenate all face representations (including known names) of all directories
+            if df is None:
+                df = df_representations
+            else:
+                df = pd.concat([df, df_representations], ignore_index=True)
 
-    def writeFaceEncodingForImage(self, id, encoding, location, confidence, elapsed, locationCSS):
-        self.logger.log("Update faces_encoding: face encoding for file id=" + str(id) + ", finder id=" + str(self.finder.id), 2)
-        time_string = datetime.datetime.now(datetime.timezone.utc)
-        query = ("UPDATE faces_encoding "
-                    "SET "
-                        "encoding_created = %s, "
-                        "encoding = %s, "
-                        "encoding_time = %s, "
-                        "confidence = %s, "
-                        "location = %s, "
-                        "location_css = %s "
-                    "WHERE id = %s AND finder = %s")
-        data = (time_string, encoding, elapsed, str(confidence), location, locationCSS, str(id), str(self.finder.id))
-        self.db.update(query, data)
+        if df is None:
+            return df
 
-    def writeErrorDetectingFacesInImage(self, id):
-        self.logger.log("Update faces_encoding: face detection throw an error, file id=" + str(id), 2)
-        time_string = datetime.datetime.now(datetime.timezone.utc)
-        query = ("UPDATE faces_encoding "
-                    "SET "
-                        "error = %s "
-                    "WHERE id = %s AND finder = %s")
-        data = ("1", str(id), str(self.finder.id))
-        self.db.update(query, data)
+        # column 'directory' to have a quick filter for directories
+        def append_directory(x):
+            path = x['file']
+            index = path.rfind("/")
+            if index < 0:
+                directory = path
+            else:
+                directory = path[0:index]
+            return directory
 
-    def writeNoFaceFoundInImage(self, id):
-        self.logger.log("Update faces_encoding: image with no face, file id=" + str(id), 2)
-        time_string = datetime.datetime.now(datetime.timezone.utc)
-        query = ("UPDATE faces_encoding "
-                    "SET "
-                        "encoding_created = %s, "
-                        "no_faces = %s "
-                    "WHERE id = %s  AND finder = %s")
-        data = (time_string, "1", str(id), str(self.finder.id))
-        self.db.update(query, data)
+        df['directory'] = df.apply(append_directory, axis=1)
+        logging.debug("Appended directory to each face")
 
-    def selectImagesToDetect(self):
+        return df
+
+    # The main goal of this function is to avoid writing results (.faces.csv)
+    # if nothing has changed after the process of face recognition.
+    # Why does it matter?
+    # A file is synchronized between ZOT-/Nomad clones as soon as a file is stored via webDAV
+    #
+    # param df_recognized data frame that is the result after the process of face recognition
+    # param df_current    data frame that is read from the .faces.csv
+    def store_face_names_if_changed(self, df_recognized, faces_dir, most_effective_method):
+        if self.check_file_by_display_path(self.file_name_face_representations, faces_dir) is False:
+            return
+        if self.check_file_by_display_path(self.file_name_face_names, faces_dir) is False:
+            return
+        if self.init_face_names(df_recognized):
+            return
+        df_names = self.get_face_names()
+        # copy new or changed names.... the user might have changed names while the face recognition was running
+        for face in df_names.itertuples():
+            # copy changed names into the results (it fact all names but changed or new names are the reason)
+            df_recognized.loc[(df_recognized['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
+        # remove ignored names
+        keys = df_names.loc[(df_names['name'] == self.IGNORE)].index
+        if len(keys) > 0:
+            df_names = df_names.drop((keys))
+            logging.debug("directory " + self.folder + " - removed " + str(len(keys)) + " ignored faces in face names")
+        df_names.loc[(df_names['name'].isna() == True), 'name'] = ""  # get rid of "nan" values
+        df_names.loc[(df_names['name_recognized'].isna() == True), 'name_recognized'] = ""  # get rid of "nan" values
+        # apply changed names using the timestamps
+        df_recognized = self.util.copy_name_to_same_faces(df_recognized)
+        # "reduce" result file
+        df = self.util.filter_by_last_named(df_recognized)
+        if most_effective_method is not None:  # for unit testing
+            df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
+        else:
+            df = self.util.minimize_results(df, False)
+        # compare the content of the results (face recognition) with the content of the file containing the names
+        # (that might have changed while the face recognition was running)
+        # has any name or recognized name changed while the face recognition was running?
+        has_names_changed = self.util.has_any_name_changed(df, df_names)
+        if has_names_changed:
+            self.write_results(df_recognized, df)
+        else:
+            logging.debug("faces have not changed. No need to store faces to file.")
+
+    def write_results(self, df_recognized, df_names):
+        self.write_alive_signal(self.RUNNING)
+        df_names.drop('directory', axis=1, inplace=True)
+        logging.debug("faces have changed or where None before. Storing to file.")
+        self.store_face_names(df_names)
+        if self.statistics_mode:
+            self.store_face_presentations(df_recognized)
+
+    # Add new images to a pandas.DataFrame for
+    # - faces representations, faces.pkl, or
+    # - facial attributes, faces_attributes.csv
+    # - names of faces, faces.csv
+    #
+    # df...  pandas.DataFrame
+    # dir... String, directory
+    def add_new_images(self, df, storage):
+        images = self.get_images()
+        new_images = []
+        for image in images:
+            path = image[0]
+            # Look for new images
+            if df is None:
+                new_images.append(image)
+            else:
+                if storage is self.file_name_face_representations:
+                    for model_name in self.finder.model_names:
+                        if not ((df['file'] == path) & (df['model'] == model_name) & (
+                                df['detector'] == self.finder.detector_name)).any():
+                            # path AND detector AND model do not exist in one row in stored DataFrame
+                            logging.debug(
+                                "directory " + self.folder + " - adding image because new combination of image=" + path + " AND model=" + model_name + " AND detector=" + self.finder.detector_name)
+                            new_images.append(image)
+                            break
+                if storage is self.file_name_facial_attributes:
+                    if not ((df['file'] == path) & (df['detector'] == self.finder.detector_name)).any():
+                        # path AND detector do not exist in one row in stored DataFrame
+                        logging.debug(
+                            "directory " + self.folder + " - adding image because new combination of image=" + path + " AND detector=" + self.finder.detector_name)
+                        new_images.append(image)
+
+        return new_images
+
+    def get_images(self):
         images = []
-        self.logger.log("Select images with no face detection performed for channel", 2)
-        query = ("SELECT "
-                        "a.id, "
-                        "a.content, "
-                        "a.uid, "
-                        "e.error, "
-                        "e.no_faces, "
-                        "e.encoding "
-                    "FROM "
-                        "attach a "
-                    "INNER JOIN "
-                        "faces_encoding e "
-                        "USING (id) "
-                    "WHERE "
-                        "e.encoding='' AND "
-                        "e.finder=%(finder)s AND "
-                        "e.no_faces=0 AND "
-                        "a.is_photo=1 AND "
-                        "e.error=0 "
-                    "ORDER "
-                        "BY a.id DESC "
-                    "LIMIT %(limit)s")
-
-        data = { 'finder': self.finder.id, 'limit': self.limit }
-        rows = self.db.select(query, data)
-        for (id, content, uid, error, no_faces, encoding) in rows:
-            os_path = str(content.decode())
-            self.logger.log("id=" + str(id) + " , os_path=" + os_path + " , uid=" + str(uid), 2)
-            images.append([id, os_path, uid]);
-        self.logger.log("Found " + str(len(images)) + " not encoded images in table attach limited by " + str(self.limit), 1)
+        query = ("SELECT display_path, os_path "
+                 "FROM `attach` "
+                 "WHERE `uid` = %s AND "
+                 "`folder` = %s AND "
+                 "`is_photo` = '1' AND "
+                 "( `filetype` = 'image/jpeg' OR `filetype` = 'image/png')")
+        data = (self.channel, self.folder)
+        images = self.db.select(query, data)
+        if len(images) == 0:
+            logging.debug("directory " + self.folder + " - no images in this directory")
         return images
 
-    def selectChannelIDs(self):
-        query = ("SELECT channel_id, id FROM faces_encoding group by channel_id")
-        data = { }
+    def check_file_by_name(self, file_name):
+        if file_name == self.file_name_face_representations:
+            self.faces_pkl = None
+        elif file_name == self.file_name_face_names:
+            self.faces_csv = None
+        elif file_name == self.file_name_facial_attributes:
+            self.faces_attr = None
+
+        query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `folder` = %s AND `filename` = %s LIMIT 1"
+        data = (self.channel, self.folder, file_name)
+        r = self.db.select(query, data)
+        if len(r) == 0:
+            logging.debug("directory " + self.folder + " - skipping... no file " + file_name)
+            return False
+
+        path = os.path.join(self.dirImages, r[0][0])
+        if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.W_OK):
+            if file_name == self.file_name_face_representations:
+                self.faces_pkl = path
+                return True
+            elif file_name == self.file_name_face_names:
+                self.faces_csv = path
+                return True
+            elif file_name == self.file_name_facial_attributes:
+                self.faces_attr = path
+                return True
+        logging.debug("directory " + self.folder + " - skipping... no file or write permission, file " + path)
+        return False
+
+    def check_file_by_channel(self, file_name):
+        if file_name == self.file_name_faces_statistic:
+            self.faces_statistics = None
+        elif file_name == self.file_name_models_statistic:
+            self.models_statistics = None
+
+        display_path = os.path.join(self.dir_addon, file_name)
+        query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
+        data = (self.channel, display_path)
+        r = self.db.select(query, data)
+        if len(r) == 0:
+            logging.debug("skipping... no file " + display_path)
+            return False
+
+        path = os.path.join(self.dirImages, r[0][0])
+        if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.W_OK):
+            if file_name == self.file_name_faces_statistic:
+                self.faces_statistics = path
+                return True
+            elif file_name == self.file_name_models_statistic:
+                self.models_statistics = path
+                return True
+        logging.debug("skipping... no file or write permission, file " + display_path)
+        return False
+
+    def check_file_by_display_path(self, file_name, display_dir):
+        if file_name == self.file_name_face_names:
+            self.faces_csv = None
+        elif file_name == self.file_name_face_representations:
+            self.faces_pkl = None
+
+        display_path = os.path.join(display_dir, file_name)
+        query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
+        data = (self.channel, display_path)
+        r = self.db.select(query, data)
+        if len(r) == 0:
+            logging.debug("skipping... no file " + display_path)
+            return False
+
+        path = os.path.join(self.dirImages, r[0][0])
+        if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.W_OK):
+            if file_name == self.file_name_face_names:
+                self.faces_csv = path
+                return True
+            elif file_name == self.file_name_face_representations:
+                self.faces_pkl = path
+                return True
+        logging.debug("skipping... no file or write permission, file " + display_path)
+        return False
+
+    def get_face_representations(self):
+        # Load stored face representations
+        df = None  # pandas.DataFrame that holds all face representations
+        if os.stat(self.faces_pkl).st_size == 0:
+            logging.debug("directory " + self.folder + " - file face representations is empty yet " + self.faces_pkl)
+            return df
+        if os.path.exists(self.faces_pkl):
+            f = open(self.faces_pkl, 'rb')
+            df = pickle.load(f)
+            f.close()
+            logging.debug("directory " + self.folder + " - loaded face representations from file " + self.faces_pkl)
+        return df
+
+    def store_face_presentations(self, df):
+        if os.path.exists(self.faces_pkl) is False:
+            logging.debug("directory " + self.folder + " - face representations does not exist " + self.faces_pkl)
+            return False
+        df = df.reset_index(drop=True)
+        f = open(self.faces_pkl, "wb")
+        pickle.dump(df, f)
+        f.close()
+        logging.debug("directory " + self.folder + " - stored face representations in file " + self.faces_pkl)
+        return True
+
+    def get_facial_attributes(self):
+        # Load stored facial attributes
+        df = None  # pandas.DataFrame that holds all facial attributes
+        if self.faces_attr is None:
+            return df  # might happen if the feature was switched off
+        if os.stat(self.faces_attr).st_size == 0:
+            logging.debug("directory " + self.folder + " - file facial attributes is empty yet " + self.faces_attr)
+            return df
+        if os.path.exists(self.faces_attr):
+            df = pd.read_csv(self.faces_attr)
+            logging.debug("directory " + self.folder + " - loaded facial attributes from file " + self.faces_attr)
+        return df
+
+    def store_facial_attributes(self, df):
+        df.to_csv(self.faces_attr, index=False)
+        logging.debug("directory " + self.folder + " - stored facial attributes in file " + self.faces_attr)
+
+    def get_face_names(self):
+        # Load stored names
+        df = None  # pandas.DataFrame that holds all face names
+        if os.stat(self.faces_csv).st_size == 0:
+            logging.debug("directory " + self.folder + " - file holding face names is empty yet " + self.faces_csv)
+            return df
+        if os.path.exists(self.faces_csv):
+            df = pd.read_csv(self.faces_csv)
+            logging.debug("directory " + self.folder + " - loaded face names from file " + self.faces_csv)
+        return df
+
+    def init_face_names(self, df_representation):
+        df_names = self.get_face_names()
+        if (df_names is None) or (len(df_names) == 0):
+            logging.debug("No face names yet or no longer because images where delete in dir. File=" + self.faces_csv)
+            most_effective_method = self.util.get_most_successful_method(df_representation, False)
+            df_names = self.util.filter_by_last_named(df_representation)
+            df_names = self.util.number_unique_faces(df_names)
+            if most_effective_method is not None:  # for unit testing
+                df_names = self.util.keep_most_effectiv_method_only(df_names, most_effective_method)
+            else:
+                df_names = self.util.minimize_results(df_names, False)
+            self.write_results(df_representation, df_names)
+            return True
+        else:
+            return False
+
+    def store_face_names(self, df):
+        df = self.util.minimize_results(df, False)
+        for column in self.columnsToIncludeAll:
+            if column not in df.columns:  # for unit testing
+                continue
+            if column not in self.columnsToInclude:
+                df = df.drop(column, axis=1)
+        if 'representation' in df.columns:  # for unit testing
+            df = df.drop('representation', axis=1)
+        df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+        if os.path.exists(self.faces_csv):
+            df.to_csv(self.faces_csv, index=False)
+        logging.debug("directory " + self.folder + " - stored face names in file " + self.faces_csv)
+
+    def cleanup(self):
+        logging.debug("directory " + self.folder + " - 1. Step: cleaning up ---")
+        imgs = self.get_images()
+        images = []
+        for i in imgs:
+            images.append(i[0])
+        df = self.get_face_representations()
+        if df is not None:
+            keys = self.util.remove_detector_model(df, self.removeModels, self.removeDetectors, self.folder)
+            i = df[~df.file.isin(images)].index
+            keys.extend(i.to_list())
+            if len(keys) > 0:
+                df = df.drop(keys)
+                if self.store_face_presentations(df):
+                    if len(i) > 0:
+                        logging.info("directory " + self.folder + " - " + str(
+                            len(images)) + " image(s) where deleted and removed from face representations")
+
+        df = self.get_face_names()
+        if df is not None:
+            keys = self.util.remove_detector_model(df, self.removeModels, self.removeDetectors, self.folder)
+            i = df[~df.file.isin(images)].index
+            keys.extend(i.to_list())
+            if len(keys) > 0:
+                df = df.drop(keys)
+                self.store_face_names(df)
+                if len(i) > 0:
+                    logging.info("directory " + self.folder + " - " + str(
+                        len(images)) + " image(s) where deleted and removed from face names")
+
+        df = self.get_facial_attributes()
+        if df is not None:
+            keys = self.util.remove_detector_model(df, "", self.removeDetectors, self.folder)
+            i = df[~df.file.isin(images)].index
+            keys.extend(i.to_list())
+            if len(keys) > 0:
+                df = df.drop(keys)
+                self.store_facial_attributes(df)
+                if len(i) > 0:
+                    logging.info("directory " + self.folder + " - " + str(
+                        len(i)) + " image(s) where deleted and removed from facial attributes")
+
+    def write_statistics(self, df, most_effective_method):
+        self.write_alive_signal(self.RUNNING)
+        if self.statistics_mode:
+            if self.check_file_by_channel(self.file_name_faces_statistic) is False:
+                return
+            df = df.drop('representation', axis=1)
+            df.to_csv(self.faces_statistics)
+            logging.debug("Wrote face statistics to file=" + self.file_name_faces_statistic)
+            if self.check_file_by_channel(self.file_name_models_statistic) is False:
+                return
+            df_models = self.util.get_most_successful_method(df, True)
+            name_count = len(df.name.unique()) - 1
+            files = df.file.unique()
+            message = str(len(files)) + " images, " + str(name_count) + " different names, minimum face width " + str(
+                self.finder.min_face_width_percent) + " % of image or " + str(self.finder.min_face_width_pixel) + " px"
+            row = {'model': message, 'detector': "", 'accuracy': "", 'detected': "", 'verified': "", 'recognized': "",
+                   'correct': "", 'wrong': "", 'ignored': "", 'seconds': "", 'seconds/face': ""}
+            df_models = df_models.append(row, ignore_index=True)
+            df_models.to_csv(self.models_statistics)
+            logging.debug("Wrote model statistics to file=" + self.file_name_models_statistic)
+
+    def set_time_to_wait(self, seconds):
+        self.timeToWait = seconds
+
+    def write_alive_signal(self, status):
+        self.check_pid()
+        elapsed_time = time.time() - self.timeLastAliveSignal
+        if elapsed_time < self.timeToWait and status != self.FINISHED:
+            return
+        now = datetime.datetime.utcnow()
+        content = status + " " + now.strftime('%Y-%m-%d %H:%M:%S') + " pid " + self.proc_id
+        query = "UPDATE config SET v = %s WHERE cat = %s AND k = %s"
+        data = (content, 'faces', 'status')
+        self.db.update(query, data)
+        logging.debug("lock status written to db:  " + content)
+        self.timeLastAliveSignal = time.time()
+
+    def check_pid(self):
+        query = "SELECT v FROM config WHERE cat = 'faces' AND k = 'status'"
+        data = {}
         rows = self.db.select(query, data)
-        self.chan_ids = []
-        for (channel_id, id) in rows:
-            self.logger.log("channel_id=" + str(channel_id), 2)
-            self.chan_ids.append(channel_id)
-        self.logger.log("Found " + str(len(self.chan_ids)) + " distinct channels in table faces_encoding", 1)
+        if len(rows) != 1:
+            logging.critical("Found " + str(len(rows)) + " results for status in database")
+            self.stop()
+        status = rows[0][0]
+        splittees = status.split()
+        if splittees[3] != "pid" or len(splittees) != 5:
+            logging.critical("4th and 5th element is no pid. Found status:  " + status)
+            self.stop()
+        if splittees[4] != self.proc_id:
+            logging.critical("Found wrong pid: own=" + self.proc_id + ", found= " + splittees[4])
+            self.stop()
+
+    def stop(self):
+        self.db.close()
+        logging.error("Stopping program. Good By...")
+        sys.exit()
+
+    def write_exif_dates(self, df):
+        if not self.exiftool:
+            return df
+        df.loc[(df['exif_date'].isna() == True), 'exif_date'] = ""  # get rid of "nan" values
+        exif_date = ""
+        files = df.file.unique()
+        for file in files:
+            exif_dates = df.loc[(df['file'] == file) & (df['exif_date'] != ""), "exif_date"]
+            if len(exif_dates) > 0:
+                exif_date = exif_dates.values[0]
+                logging.debug("directory " + self.folder + " - exif date exists '" + exif_date + "' for image=" + file)
+            else:
+                query = ("SELECT os_path "
+                         "FROM `attach` "
+                         "WHERE `uid` = %s AND "
+                         "`folder` = %s AND "
+                         "`is_photo` = '1' AND "
+                         "`display_path` = %s")
+                data = (self.channel, self.folder, file)
+                os_path = self.db.select(query, data)
+                if len(os_path) == 0:
+                    logging.debug("directory " + self.folder + " - skipping... no " + file)
+                    continue
+                path = os.path.join(self.dirImages, os_path[0][0])
+                exif_date = self.exiftool.getDate(path)
+                logging.debug("directory " + self.folder + " - exif date = '" + exif_date + "' for image=" + file)
+            if exif_date != "":
+                df.loc[(df['file'] == file) & (df['exif_date'] == ""), "exif_date"] = exif_date
+            continue
+        return df
