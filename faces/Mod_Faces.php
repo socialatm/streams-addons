@@ -91,6 +91,10 @@ class Faces extends Controller {
                     // API: /faces/nick/remove
                     $o = $this->showRemovePage($loglevel);
                     return $o;
+                case 'help':
+                    // API: /faces/nick/help
+                    $o = $this->showHelpPage();
+                    return $o;
                 default:
                     break;
             }
@@ -542,6 +546,11 @@ class Faces extends Controller {
         if ($params !== "") {
             $this->startFaceRecognition("start", $params);
         }
+    }
+
+    private function showHelpPage() {
+        $o = replace_macros(Theme::get_template('help.tpl', 'addon/faces'), array());
+        return $o;
     }
 
 }
