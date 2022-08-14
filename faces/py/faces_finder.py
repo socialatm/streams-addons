@@ -16,6 +16,8 @@ class Finder:
 
     def __init__(self):
         self.model_names = []
+        self.model_name_default = "Facenet512"  # default
+        self.conf_models = ""
         self.models = None
         # 'DeepID' gives invalid results
         self.models_valid = ['VGG-Face', 'Facenet', 'Facenet512', 'ArcFace', 'OpenFace', 'DeepFace', 'SFace']
@@ -26,6 +28,7 @@ class Finder:
         self.emotion_model = None
         self.gender_model = None
         self.race_model = None
+        self.conf_demography = ""
         self.is_analyse = True  # default, can be set by caller
         self.is_analyse_emotion = False  # default, can be set by caller
         self.is_analyse_age = False  # default, can be set by caller
@@ -88,7 +91,8 @@ class Finder:
                                     "sensitive. Loading default detector...")
                     logging.warning("Valid detectors are: " + str(self.detectors))
 
-            elif conf[0].strip().lower() == 'analyse' or  conf[0].strip().lower() == 'demography':
+            elif conf[0].strip().lower() == 'analyse' or conf[0].strip().lower() == 'demography':
+                self.conf_demography = conf[1]
                 for demography in conf[1].split(","):
                     if demography.strip().lower() == "off":
                         self.is_analyse_emotion = False
@@ -136,18 +140,19 @@ class Finder:
                             self.min_face_width_pixel) + " pixel")
 
         if len(self.model_names) == 0:
-            self.model_names.append("Facenet512")  # default
+            self.model_names.append(self.model_name_default)  # default
 
     # load the detector and all models
     def load(self):
         if len(self.model_names) == 0:
-            self.model_names.append("Facenet512")  # default
+            self.model_names.append(self.model_name_default)  # default
         for model_name in self.model_names:
             if self.models is None:
                 self.models = {}
             self.models[model_name] = DeepFace.build_model(model_name)
             logging.debug("loaded face recognition model " + model_name)
             self.log_ram()
+        self.conf_models = (','.join(self.model_names))
         self.detector = FaceDetector.build_model(self.detector_name)
         logging.debug("loaded detector backend " + self.detector_name)
 
@@ -209,13 +214,16 @@ class Finder:
 
         image_height, image_width, c = img.shape
 
+        counter = 0
         for face, (x, y, w, h) in faces:
             w_percent = w * 100 / image_width
-            if (w_percent < self.min_face_width_percent) or (w < self.min_face_width_pixel):  # discard small detected faces
+            if (w_percent < self.min_face_width_percent) or (
+                    w < self.min_face_width_pixel):  # discard small detected faces
                 logging.debug(
                     "Ignore face because width=" + str(w_percent) + " % (" + str(w) + "px) is is less than " + str(
                         self.min_face_width_percent) + " % or " + str(self.min_face_width_pixel) + " px")
                 continue
+            counter += 1
             tic = time.time()
             region = [x, y, w, h]
             custom_face = img[y:y + h, x:x + w]
@@ -309,8 +317,9 @@ class Finder:
                 round(time.time() - start_time, 5)) + " seconds for facial attributes in " + path)
             faces_to_return.append(self.get_empty_face_analyse(path, start_time))
         else:
-            logging.info(str(len(faces)) + " face(s) in " + str(
-                round(time.time() - start_time, 5)) + " seconds for facial attributes in " + path)
+            logging.info(str(counter) + "(" + str(len(faces)) + ") faces in " + str(
+                round(time.time() - start_time,
+                      5)) + "s " + self.detector_name + " models=" + self.conf_demography + " " + path)
         return faces_to_return
 
     def detect(self, path, os_path_on_server, existing_models):
@@ -344,7 +353,8 @@ class Finder:
         count_2 = 0  # for logging only
         for face, (x, y, w, h) in faces:
             w_percent = w * 100 / image_width
-            if (w_percent < self.min_face_width_percent) or (w < self.min_face_width_pixel):  # discard small detected faces
+            if (w_percent < self.min_face_width_percent) or (
+                    w < self.min_face_width_pixel):  # discard small detected faces
                 logging.debug(
                     "Ignore face because width=" + str(w_percent) + " % (" + str(w) + "px) is is less than " + str(
                         self.min_face_width_percent) + " % or " + str(self.min_face_width_pixel) + " px")
@@ -419,9 +429,10 @@ class Finder:
                 # prevent that the combination of file AND detector AND model is found again as "new"
                 faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, ""))
         else:
-            logging.info(str(len(faces)) + " / " + str(count_1) + " face(s) (found / large enough), " + str(
-                count_2) + "  embeddings, detector=" + self.detector_name + ", duration=" + str(
-                round(time.time() - start_time, 5)) + " seconds, image=" + path)
+            logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
+                         str(round(time.time() - start_time,
+                                   5)) + "s " + self.detector_name + " models=" + self.conf_models +
+                         " " + path)
         return faces_to_return
 
     def get_random_string(self):

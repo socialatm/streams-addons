@@ -176,7 +176,7 @@ class Worker:
         self.util.is_css_position = self.finder.css_position
 
     def run(self, dir_images, do_recognize):
-        logging.info(self.finder.detector_name + " started")
+        logging.info("detector is " + self.finder.detector_name)
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read directory " + self.dirImages)
@@ -186,7 +186,7 @@ class Worker:
             dirnames[:] = [d for d in dirnames if d not in exclude]  # works because of topdown=True is set
             logging.debug("directory " + dir + " - start processing directory")
             self.process_dir(dir)
-        logging.info(self.finder.detector_name + " finished")
+        logging.debug(self.finder.detector_name + " finished")
         if do_recognize:
             self.recognize()
 
@@ -212,7 +212,7 @@ class Worker:
             logging.debug("directory " + dir + " - No new images for face detection in directory")
             return
 
-        logging.info("directory " + dir + " - new images found - start detection and recognition")
+        logging.debug(dir + " - searching faces in " + str(len(images)) + " new  images")
 
         if not self.finder.is_loaded():
             self.finder.load()
@@ -252,7 +252,7 @@ class Worker:
         #     are written into to faces.csv
         # - After some time the face detection has ended and will write faces.csv.
         #   This overwrites the face names the user has set in the meantime.
-        logging.info("directory " + dir + " - finished detection of faces in " + str(len(images)) + " images")
+        logging.debug("directory " + dir + " - finished detection of faces in " + str(len(images)) + " images")
         df = self.write_exif_dates(df, dir)
 
         if self.store_face_presentations(df, dir) is False:
@@ -273,7 +273,7 @@ class Worker:
             logging.debug("directory " + dir + " - No new images for analysis of facial attributes")
             return
 
-        logging.info("directory " + dir + " - new images found - start analyzing attributes...")
+        logging.debug(dir + " - analyzing facial attribute in " + str(len(images)) + " new images")
 
         if not self.finder.is_loaded():
             self.finder.load()
@@ -570,7 +570,7 @@ class Worker:
         f.close()
         logging.debug("directory " + dir + " - stored face representations in file " + path)
 
-        is_needed = False # seems useless because there is the big statistics csv containing all results
+        is_needed = False  # seems useless because there is the big statistics csv containing all results
         if logging.root.level >= logging.DEBUG and is_needed:
             path = os.path.join(dir, self.file_name_face_representations_dbg)
             pd.set_option('display.max_colwidth', None)
@@ -650,8 +650,7 @@ class Worker:
                 df = df.drop(keys)
                 if self.store_face_presentations(df, dir):
                     if len(i) > 0:
-                        logging.info("directory " + dir + " - " + str(
-                            len(images)) + " image(s) where deleted and removed from face representations")
+                        logging.info(dir + " - " + str(len(images)) + " faces removed from face representations")
 
         df = self.get_face_names(dir)
         if df is not None:
@@ -662,8 +661,7 @@ class Worker:
                 df = df.drop(keys)
                 self.store_face_names(df, dir)
                 if len(i) > 0:
-                    logging.info("directory " + dir + " - " + str(
-                        len(images)) + " image(s) where deleted and removed from face names")
+                    logging.info(dir + " - " + str(len(images)) + " faces removed from face names")
 
         df = self.get_facial_attributes(dir)
         if df is not None:
@@ -674,8 +672,7 @@ class Worker:
                 df = df.drop(keys)
                 self.store_facial_attributes(df, dir)
                 if len(i) > 0:
-                    logging.info("directory " + dir + " - " + str(
-                        len(i)) + " image(s) where deleted and removed from facial attributes")
+                    logging.info(dir + " - " + str(len(i)) + " faces removed from facial attributes")
 
     def write_statistics(self, df, most_effective_method):
         if self.statistics_mode:

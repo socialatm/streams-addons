@@ -220,8 +220,8 @@ class Worker:
                     logging.debug("no recognition is run for channel id = " + str(self.channel))
                     continue
         self.write_alive_signal(self.FINISHED)
-        logging.info("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
-                     proc_id + ", channel_id=" + str(channel_id))
+        logging.debug("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
+                      proc_id + ", channel_id=" + str(channel_id))
 
     def process_dir(self):
         logging.debug("directory " + self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
@@ -778,8 +778,8 @@ class Worker:
                 df = df.drop(keys)
                 if self.store_face_presentations(df):
                     if len(i) > 0:
-                        logging.info("directory " + self.folder + " - " + str(
-                            len(images)) + " image(s) where deleted and removed from face representations")
+                        logging.info(self.folder + " - " + str(len(images)) +
+                                     " faces removed from face representations")
 
         df = self.get_face_names()
         if df is not None:
@@ -791,7 +791,7 @@ class Worker:
                 self.store_face_names(df)
                 if len(i) > 0:
                     logging.info("directory " + self.folder + " - " + str(
-                        len(images)) + " image(s) where deleted and removed from face names")
+                        len(images)) + " faces removed from face names")
 
         df = self.get_facial_attributes()
         if df is not None:
@@ -803,7 +803,7 @@ class Worker:
                 self.store_facial_attributes(df)
                 if len(i) > 0:
                     logging.info("directory " + self.folder + " - " + str(
-                        len(i)) + " image(s) where deleted and removed from facial attributes")
+                        len(i)) + " faces removed from facial attributes")
 
     def write_statistics(self, df, most_effective_method):
         self.write_alive_signal(self.RUNNING)

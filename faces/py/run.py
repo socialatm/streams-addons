@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--imagespath", help="absolute path to image dir")
 parser.add_argument("--loglevel")
 parser.add_argument("--logfile")
+parser.add_argument("--log_data")
 parser.add_argument("--detectors")
 parser.add_argument("--models")
 parser.add_argument("--demography")
@@ -16,9 +17,8 @@ parser.add_argument("--distance_metrics")
 parser.add_argument("--min_face_width_percent")
 parser.add_argument("--min_face_width_pixel")
 parser.add_argument("--css_position")
-parser.add_argument("--first_result")
 parser.add_argument("--enforce")
-parser.add_argument("--statistics_mode")
+parser.add_argument("--statistics")
 parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
@@ -75,12 +75,13 @@ if imgdir is None:
     logging.info("Missing parameter --imagespath ? Using current directory " + imgdir + " to find pictures")
 logging.info("image directory = " + imgdir)
 
+
 # +++++++++++++++++++
 # create config
 # +++++++++++++++++++
 
 def read_config_file():
-    config = ""
+    csv = ""
     addon_dir = worker.Worker().dir_addon
     conf_file = os.path.join(imgdir, addon_dir, "config.json")
     if not os.path.exists(conf_file) or not os.access(conf_file, os.R_OK):
@@ -100,101 +101,50 @@ def read_config_file():
                 param = str(value)
             elif key == "min_face_width":
                 param = str(value)
-                config += ";min_face_width_" + name + "=" + param
+                csv += ";min_face_width_" + name + "=" + param
             elif value:
                 if len(param) > 0:
                     param += ","
                 param += name
         if len(param) > 0:
-            config += ";" + key + "=" + param
-    return config
+            csv += ";" + key + "=" + param
+    return csv
 
 
-def get_default_config():
-    if args["distance_metrics"]:
-        config = "distance_metrics=" + args["distance_metrics"]
+def check_param(param):
+    name = param[0]
+    default_value = param[1]
+    global config
+    if args[name]:
+        if config.find(name) != -1:
+            config = re.sub(name + "=.*?;", name + "=" + args[name] + ";", config)
+        else:
+            config += ";" + name + "=" + args[name]
     else:
-        config = "distance_metrics=" + "cosine,euclidean_l2,euclidean"
+        if config.find(name) == -1 and default_value != "":
+            config += ";" + name + "=" + default_value
 
-    if args["demography"]:
-        config += ";analyse=" + args["demography"]
-    else:
-        # config += ";analyse=" + "emotion,age,gender,race"
-        config += ";analyse=" + "emotion,age,gender,race"
 
-    if args["detectors"]:
-        config += ";detectors=" + args["detectors"]
-    else:
-        # config += ";detectors=" + "retinaface,mtcnn,ssd,opencv"
-        config += ";detectors=" + "retinaface"
-
-    if args["models"]:
-        config += ";models=" + args["models"]
-    else:
-        # config += ";models=" + "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace"
-        config += ";models=" + "Facenet512"
-
-    # stop after first match of a face (if more than model is used)
-    if args["first_result"]:
-        config += ";first_result=" + args["first_result"]
-    else:
-        config += ";first_result=" + "off"
-
-    # opposite of first_result
-    if args["enforce"]:
-        config += ";enforce=" + args["enforce"]
-    else:
-        config += ";enforce=" + "off"
-
-    # write statistics into csv files to compare detectors and models
-    if args["statistics_mode"]:
-        config += ";statistics_mode=" + args["statistics_mode"]
-    else:
-        config += ";statistics_mode=" + "on"
-
-    # write a history of the recognition
-    if args["history"]:
-        config += ";history=" + args["history"]
-    else:
-        config += ";history=" + "on"
-
-    # in percent of image
-    if args["min_face_width_percent"]:
-        config += ";min_face_width_percent=" + args["min_face_width_percent"]
-    else:
-        config += ";min_face_width_percent=" + "1"
-
-    # in pixel
-    if args["min_face_width_pixel"]:
-        config += ";min_face_width_pixel=" + args["min_face_width_pixel"]
-    else:
-        config += ";min_face_width_pixel=" + "50"
-
-    # position of face in image
-    # on... in percent as used by css in browsers
-    # off... in pixel as calculated by face detection
-    if args["css_position"]:
-        config += ";css_position=" + args["css_position"]
-    else:
-        config += ";css_position=" + "on"
-
-    if logData:
-        config += ";log_data=on"
-
-    # list of detectors to remove
-    if args["rm_detectors"]:
-        config += ";rm_detectors=" + args["rm_detectors"]
-
-    # list of models to remove
-    if args["rm_models"]:
-        config += ";rm_models=" + args["rm_models"]
-
-    return config
+def read_config_params():
+    param_list = [["distance_metrics", "cosine,euclidean_l2,euclidean"],
+                  ["demography", "emotion,age,gender,race"],  # off
+                  ["detectors", "retinaface"],  # "retinaface,mtcnn,ssd,opencv"
+                  ["models", "Facenet512"],  # "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace"
+                  ["enforce", "on"],  # "on|off"
+                  ["statistics", "on"],  # "on|off"
+                  ["history", "on"],  # "on|off"
+                  ["min_face_width_percent", "1"],
+                  ["min_face_width_pixel", "50"],
+                  ["css_position", "on"],  # "on|off" position of face in image, css is used by browsers
+                  ["log_data", "on"],  # "on|off"
+                  ["rm_detectors", ""],  # list of detectors to remove
+                  ["rm_models", ""]]  # list of models to remove
+    for param in param_list:
+        check_param(param)
 
 
 config = read_config_file()
-if config == "":
-    config = get_default_config()
+read_config_params()
 
 detectors = config.split("detectors=")[1].split(";")[0].split(",")
 config = re.sub("detectors=.*?;", "", config)

@@ -125,7 +125,7 @@ class Recognizer:
                     faces_recognized.append(face_recognized)
                     matches += 1
                     break
-        logging.info("model '" + self.model_name + "' with'" + str(matches) + "' matches in '" + str(
-            len(faces)) + "' faces, '" + str(time.time() - start_time) + "' seconds")
+        logging.info(str(matches) + " matches in " + str(len(faces)) + " faces " + str(time.time() - start_time) +
+                     "s " + self.model_name)
 
         return faces_recognized
