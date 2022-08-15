@@ -1390,8 +1390,8 @@ function api_format_items($r,$user_info,$type = 'json') {
 		}
 
 		$ret[] = $status;
-	};
-	return $ret;
+	}
+    return $ret;
 }
 
 

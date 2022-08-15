@@ -4,6 +4,7 @@ namespace Code\Module;
 
 use App;
 use Code\Lib\Apps;
+use Code\Lib\PermissionDescription;
 use Code\Web\Controller;
 use Code\Storage\Directory;
 use Code\Storage\File;
@@ -12,7 +13,9 @@ use Code\Access\AccessControl;
 use Code\Lib\Channel;
 use Code\Lib\Libacl;
 use Code\Lib\Head;
-use Code\Render\Theme;                                                                                                                                                
+use Code\Render\Theme;
+use Exception;
+
 class Flashcards extends Controller {
     
     private $version = "2.08";
@@ -27,7 +30,7 @@ class Flashcards extends Controller {
 
     function init() {		
 		
-        $this->observer = \App::get_observer();
+        $this->observer = App::get_observer();
 		
 		logger('This is the observer...', LOGGER_DEBUG);
 		logger(print_r($this->observer, true), LOGGER_DEBUG);
@@ -41,7 +44,7 @@ class Flashcards extends Controller {
 		
 		if(!$this->owner) {			
 			if (local_channel()) { // if no channel name was provided, assume the current logged in channel
-				$channel = \App::get_channel();
+				$channel = App::get_channel();
 				logger('No nick but local channel - channel = ' . $channel);
 				if ($channel && $channel['channel_address']) {
 					$nick = $channel['channel_address'];
@@ -237,9 +240,9 @@ class Flashcards extends Controller {
             json_return_and_die(array('status' => false, 'errormsg' => 'box ID ' . $file . ' not found.'));
             return;
         }
-        $channel = \App::get_channel();
+        $channel = App::get_channel();
 
-        $aclselect_e = Libacl::populate($f, false, \Code\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+        $aclselect_e = Libacl::populate($f, false, PermissionDescription::fromGlobalPermission('view_storage'));
 
         $lockstate = (($f['allow_cid'] || $f['allow_gid'] || $f['deny_cid'] || $f['deny_gid']) ? 'lock' : 'unlock');
 
@@ -284,7 +287,7 @@ class Flashcards extends Controller {
             return;
         }
 
-        $channel = \App::get_channel();
+        $channel = App::get_channel();
 
         $acl = new AccessControl($channel); // Hubzilla: $acl = new AccessList($channel);
         $acl->set_from_array($_POST);
@@ -321,7 +324,7 @@ class Flashcards extends Controller {
 		$dirFlashcards = new Directory($nick . '/flashcards/', $this->authObserver);
 		try {
 			$boxFiles = $dirFlashcards->getChildren();
-		} catch (\Exception $e) {
+		} catch (Exception $e) {
 			logger('permission denied for path ' . $nick_fc . '/flashcards/', LOGGER_DEBUG);
 			return false;
 		}
@@ -350,7 +353,7 @@ class Flashcards extends Controller {
 
 		$this->getAuthObserver();
 		
-		$baseURL = \App::get_baseurl();
+		$baseURL = App::get_baseurl();
         
         $boxes = [];
 
@@ -359,7 +362,7 @@ class Flashcards extends Controller {
 			$boxFiles;
 			try {
 				$boxFiles = $dirFlashcards->getChildren();
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				logger('permission denied for path ' . $nick_fc . '/flashcards/', LOGGER_DEBUG);
 				continue;
 			}
@@ -752,7 +755,7 @@ class Flashcards extends Controller {
 							// Remove the try-catch if everythings works fine on Hubzilla and ZAP.
 							// Code\Storage\BasicAuth was not used correctly (or changed).
 							$shareDir->getChild($sharedFileName)->delete();
-						} catch (\Exception $e) {
+						} catch (Exception $e) {
 							logger('Please report to the devs. This could be a bug with the usages of Code\Storage\BasicAuth. This caused a permission denied to delete a file in owned directory ', LOGGER_DEBUG);
 							continue;
 						}

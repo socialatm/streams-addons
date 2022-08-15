@@ -4,10 +4,11 @@ namespace Code\Module;
 
 use Code\Lib\Apps;
 use Code\Lib\Libsync;
-use Code\Render\Theme;                                                                                                                                            
+use Code\Render\Theme;
+use Code\Web\Controller;
 
 
-class Nsfw extends \Code\Web\Controller {
+class Nsfw extends Controller {
 
 
 	function post() {

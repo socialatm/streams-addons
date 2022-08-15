@@ -4,8 +4,9 @@ namespace Code\Module;
 
 use Code\Lib\Apps;
 use Code\Lib\Libsync;
+use Code\Web\Controller;
 
-class Stream_order extends \Code\Web\Controller {
+class Stream_order extends Controller {
 
 
 	function get() {

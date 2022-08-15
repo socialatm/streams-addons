@@ -7,12 +7,13 @@ use Code\Lib\Apps;
 use Code\Lib\Libprofile;
 use Code\Lib\Channel;
 use Code\Lib\Navbar;
-use Code\Render\Theme;                                                                                                                                            
+use Code\Render\Theme;
+use Code\Web\Controller;
 
 
 require_once('include/attach.php');
 
-class Gallery extends \Code\Web\Controller {
+class Gallery extends Controller {
 
 	function init() {
 		
