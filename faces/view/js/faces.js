@@ -1288,8 +1288,6 @@ var observerEnd = new IntersectionObserver(function (entries) {
 
 
 $(document).ready(function () {
-    $("aside").remove(); // use 100% with
-    $("main").css({'max-width': "100%"}); // use 100% with
     document.getElementById("faces_server_status").style.visibility = "hidden";
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
