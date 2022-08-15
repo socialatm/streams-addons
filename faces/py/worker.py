@@ -9,6 +9,8 @@ import sys
 import faces_exiftool
 import faces_util
 import numpy as np
+import pyarrow as pa
+import pyarrow.parquet as pq
 
 deepface_spec = importlib.util.find_spec("deepface")
 if deepface_spec is not None:
@@ -23,10 +25,14 @@ class Worker:
         self.finder = None
         self.recognizer = None
         self.dirImages = None
+        self.use_parquet = True
         self.file_name_face_representations = "faces.pkl"
+        self.file_name_face_representations_parquet = "faces.parquet"
         self.file_name_face_representations_dbg = "faces_debug.csv"
         self.file_name_facial_attributes = "facial_attributes.csv"
+        self.use_json = True
         self.file_name_face_names = "faces.csv"
+        self.file_name_face_names_json = "faces.json"
         self.file_name_faces_statistic = "faces_statistics.csv"
         self.file_name_models_statistic = "models_statistics.csv"
         self.dir_addon = "faces"
@@ -554,29 +560,46 @@ class Worker:
     def get_face_representations(self, dir):
         # Load stored face representations
         df = None  # pandas.DataFrame that holds all face representations
+        df_parquet = None
+        df_pkl = None
+
+        # parquet
+        path = os.path.join(dir, self.file_name_face_representations_parquet)
+        if os.path.exists(path):
+            df_parquet = pd.read_parquet(path, engine="pyarrow")
+            logging.debug("directory " + dir + " - loaded face representations from file " + path)
+
+        # pkl
         path = os.path.join(dir, self.file_name_face_representations)
         if os.path.exists(path):
             f = open(path, 'rb')
-            df = pickle.load(f)
+            df_pkl = pickle.load(f)
             f.close()
             logging.debug("directory " + dir + " - loaded face representations from file " + path)
+
+        if self.use_parquet:
+            df = df_parquet
+        else:
+            df = df_pkl
+        if df is not None and len(df) == 0:
+            return None
         return df
 
     def store_face_presentations(self, df, dir):
         df = df.reset_index(drop=True)
+
+        # parquet:
+        path = os.path.join(dir, self.file_name_face_representations_parquet)
+        df.to_parquet(path, engine="pyarrow")
+        logging.debug("directory " + dir + " - stored face representations in file " + path)
+
+        # pkl
         path = os.path.join(dir, self.file_name_face_representations)
         f = open(path, "wb")
         pickle.dump(df, f)
         f.close()
+
         logging.debug("directory " + dir + " - stored face representations in file " + path)
-
-        is_needed = False  # seems useless because there is the big statistics csv containing all results
-        if logging.root.level >= logging.DEBUG and is_needed:
-            path = os.path.join(dir, self.file_name_face_representations_dbg)
-            pd.set_option('display.max_colwidth', None)
-            df = df.drop('representation', axis=1)
-            df.to_csv(path, index=False, sep=';', na_rep='')
-
         return True
 
     def get_facial_attributes(self, dir):
@@ -599,13 +622,28 @@ class Worker:
     def get_face_names(self, dir):
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
+        df_json = None
+        df_csv = None
+
+        # json
+        path = os.path.join(dir, self.file_name_face_names_json)
+        if os.path.exists(path):
+            df_json = pd.read_json(path)
+            logging.debug("directory " + dir + " - loaded face representations from file " + path)
+
+        # csv
         path = os.path.join(dir, self.file_name_face_names)
         if os.path.exists(path):
             if os.stat(path).st_size == 0:
                 logging.info("directory " + dir + " - file holding face names is empty " + path)
                 return df
-            df = pd.read_csv(path)
+            df_csv = pd.read_csv(path)
             logging.debug("directory " + dir + " loaded face names from file " + path)
+
+        if self.use_json:
+            df = df_json
+        else:
+            df = df_csv
         return df
 
     def init_face_names(self, df_representation, dir):
@@ -634,6 +672,12 @@ class Worker:
         if 'representation' in df.columns:  # for unit testing
             df = df.drop('representation', axis=1)
         df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+
+        # json
+        path = os.path.join(self.dirImages, dir, self.file_name_face_names_json)
+        df.to_json(path)
+
+        # csv
         path = os.path.join(self.dirImages, dir, self.file_name_face_names)
         df.to_csv(path, index=False)
         logging.debug("directory " + dir + " - stored face names in file " + path)

@@ -48,14 +48,14 @@ class Recognizer:
     def train(self, names, model_name):
         self.names = names
         self.model_name = model_name
+        logging.info("Received  " + str(len(names)) + " face(s) for model='" + model_name + "' as training data")
+
+    # Params
     # faces... pandas.DataFrame
     # model_name... name of the face regognition model, e.g. 'VGG-Face', 'Facenet', 'Facenet512', 'ArcFace'
     # return... an array of faces that where recognized
     def recognize(self, faces):
         faces_recognized = []
-        logging.info("Received  " + str(len(names)) + " face(s) for model='" + model_name + "' as training data")
-
-    # Params
         if len(faces) == 0:
             logging.debug("Received no face to recognize")
             return False
@@ -117,8 +117,8 @@ class Recognizer:
                     face_recognized = {}
                     face_recognized['id'] = face['id']
                     face_recognized['name_recognized'] = name
-                    face_recognized['duration_recognized'] = round(time.time() - tic, 5)
-                    face_recognized['distance'] = best_distance
+                    face_recognized['duration_recognized'] = str(round(time.time() - tic, 5))
+                    face_recognized['distance'] = str(best_distance)
                     face_recognized['distance_metric'] = self.distance_metric
                     logging.debug("a face was recognized as " + str(name) + ", face id=" + str(
                         face['id']) + ", model=" + self.model_name + ", file=" + face['file'])

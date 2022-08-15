@@ -267,6 +267,8 @@ class Faces extends Controller {
                 if ($child->getContentType() === strtolower('image/jpeg') || $child->getContentType() === strtolower('image/png')) {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
                         $dir->createFile($this->fileNameEmbeddings);
+                    } else {
+                        $this->touch($dir->getChild($this->fileNameEmbeddings));
                     }
 //                    $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
 //                    if ($loglevel >= LOGGER_DEBUG) {
@@ -281,11 +283,13 @@ class Faces extends Controller {
                     if (!$dir->childExists($this->fileNameNames)) {
                         $dir->createFile($this->fileNameNames);
                     } else {
+                        $this->touch($dir->getChild($this->fileNameNames));
                         $this->files_names[] = $path . "/" . $this->fileNameNames;
                     }
                     if (!$dir->childExists($this->fileNameAttributes)) {
                         $dir->createFile($this->fileNameAttributes);
                     } else {
+                        $this->touch($dir->getChild($this->fileNameAttributes));
                         $this->files_attributes[] = $path . "/" . $this->fileNameAttributes;
                     }
                     $check = false;
@@ -295,6 +299,10 @@ class Faces extends Controller {
                 $this->checkDataFiles($child, $p);
             }
         }
+    }
+    
+    private function touch($file) {
+        
     }
 
     private function getUserDir() {
