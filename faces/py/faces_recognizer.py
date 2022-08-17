@@ -118,7 +118,7 @@ class Recognizer:
                     face_recognized['id'] = face['id']
                     face_recognized['name_recognized'] = name
                     face_recognized['duration_recognized'] = str(round(time.time() - tic, 5))
-                    face_recognized['distance'] = str(best_distance)
+                    face_recognized['distance'] = best_distance
                     face_recognized['distance_metric'] = self.distance_metric
                     logging.debug("a face was recognized as " + str(name) + ", face id=" + str(
                         face['id']) + ", model=" + self.model_name + ", file=" + face['file'])

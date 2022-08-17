@@ -342,7 +342,7 @@ class Finder:
             logging.debug("Found no faces in image " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, ""))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0.0]))
             return faces_to_return
         image_height, image_width, c = img.shape
         toc = time.time()
@@ -412,7 +412,7 @@ class Finder:
                 face_to_return.append(round(toc - tic, 5))
                 face_to_return.append(datetime.utcnow())
                 face_to_return.append(representation)
-                face_to_return.append('')  # distance
+                face_to_return.append(-1)  # distance
                 face_to_return.append('')  # distance_metric
                 face_to_return.append('')  # duration_recognized
                 face_to_return.append('')  # directory
@@ -427,7 +427,7 @@ class Finder:
                 round(time.time() - start_time, 5)) + " seconds for face representations in " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, ""))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0.0]))
         else:
             logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
                          str(round(time.time() - start_time,
@@ -454,10 +454,10 @@ class Finder:
             self.detector_name,
             model_name,
             round(time.time() - start_time, 5),
-            '',
+            -1,
             datetime.utcnow(),
-            '',  # representation
-            '',
+            [0.0],  # representation
+            0.0,
             '',
             '',
             ''  # directory
@@ -467,7 +467,7 @@ class Finder:
     def get_empty_face_analyse(self, path, start_time):
         empty_face = [
             path,
-            '',
+            [0.0],
             self.detector_name,
             '',
             '',
