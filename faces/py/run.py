@@ -16,6 +16,8 @@ parser.add_argument("--demography")
 parser.add_argument("--distance_metrics")
 parser.add_argument("--min_face_width_percent")
 parser.add_argument("--min_face_width_pixel")
+parser.add_argument("--train")
+parser.add_argument("--result")
 parser.add_argument("--css_position")
 parser.add_argument("--enforce")
 parser.add_argument("--statistics")
@@ -135,6 +137,8 @@ def read_config_params():
                   ["history", "on"],  # "on|off"
                   ["min_face_width_percent", "1"],
                   ["min_face_width_pixel", "50"],
+                  ["train", "224"],
+                  ["result", "50"],
                   ["css_position", "on"],  # "on|off" position of face in image, css is used by browsers
                   ["log_data", "on"],  # "on|off"
                   ["rm_detectors", ""],  # list of detectors to remove

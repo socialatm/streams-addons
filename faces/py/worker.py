@@ -38,7 +38,7 @@ class Worker:
         self.keep_history = False  # True/False
         self.statistics_mode = False  # True/False
         self.columnsToIncludeAll = ["model", "detector", "duration_detection", "duration_representation",
-                                    "time_created", "distance", "distance_metric", "duration_recognized"]
+                                    "time_created", "distance", "distance_metric", "duration_recognized", "width"]
         self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.csv
         self.columnsSort = ["file", "position", "face_nr", "name", "name_recognized", "time_named", "exif_date",
                             "detector", "model"]
@@ -193,14 +193,13 @@ class Worker:
             faces = self.finder.detect(image, os_path_on_server, existing_models)
             if faces:
                 for face in faces:
-                    df = self.util.add_row_embedding(df, faces[0])
+                    df = self.util.add_row_embedding(df, face)
 
             elapsed_time = time.time() - time_start_detection
             if elapsed_time > self.timeBackUp:
                 if self.store_face_presentations(df, dir) is False:
                     return
-                logging.info("directory " + dir + " - store face representations: elapsed time=" +
-                             str(elapsed_time) + " > " + str(self.timeBackUp))
+                logging.debug(dir + " - elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
                 time_start_detection = time.time()
         # Why not storing the faces (faces.csv) at this point?
         # - The face detection and the creation of the face representations are cpu, memory and time-consuming
@@ -265,17 +264,44 @@ class Worker:
         if df is None:
             return
 
+        def include_as_training_data(row):
+            w = row['width']
+            if w < self.finder.min_width_train:
+                return 0
+            return 1
+
+        def include_as_result_data(row):
+            w = row['width']
+            if w < self.finder.min_width_result:
+                return 0
+            return 1
+
+        df['min_size_train'] = df.apply(include_as_training_data, axis=1)
+        df['min_size_result'] = df.apply(include_as_result_data, axis=1)
+
+        df.loc[(df['min_size_result']) < 1 & (df['name'] == ""),
+               ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
+
+        logging.debug("Get all faces with a name, face representation and min width")
+        df_no_name = df.loc[
+            (df['name'] == "") &
+            (df['name'] != self.IGNORE) &
+            (df['duration_representation'] != 0.0) &
+            (df['min_size_result'] == 1) &
+            (df['time_named'] == ""), ['id', 'representation', 'model', 'file', 'face_nr']]
+
         # Loop through models
-        # - loop through the list of ordered models (start parameter)
-        # - optionally stop recognition after a match (start parameter)
-        logging.debug("Get all faces with a name and with a face representation")
-        df_no_name = df.loc[(df['name'] == "") & (df['name'] != self.IGNORE) & (df['representation'] != "") & (
-                df['time_named'] == ""), ['id', 'representation', 'model', 'file', 'face_nr']]
+        # - loop through the ordered list models (start parameter)
+        # - optionally stop recognition after a first match (start parameter)
         models = df.model.unique()
         for model in models:
             logging.debug("Start recognition using model=" + model + " Gathering faces as training data...")
-            df_training_data = df.loc[(df['model'] == model) & (df['name'] != "") & (df['name'] != self.IGNORE) & (
-                    df['representation'] != ""), ['id', 'representation', 'name']]
+            df_training_data = df.loc[
+                (df['model'] == model) &
+                (df['name'] != "") &
+                (df['name'] != self.IGNORE) &
+                (df['min_size_train'] == 1) &
+                (df['representation'] != ""), ['id', 'representation', 'name']]
             if len(df_training_data) == 0:
                 logging.debug("No training data (names set) for model=" + model)
                 continue
@@ -296,6 +322,9 @@ class Worker:
                     df_no_name = self.remove_other_than_recognized(faces, df_no_name)
 
         most_effective_method = self.util.get_most_successful_method(df, False)
+
+        df = df.drop('min_size_train', axis=1)
+        df = df.drop('min_size_result', axis=1)
 
         directories = df.directory.unique()
         for d in directories:
@@ -513,7 +542,7 @@ class Worker:
         df = None  # pandas.DataFrame that holds all face representations
         path = os.path.join(dir, self.file_name_face_representations)
         if os.path.exists(path):
-            df_parquet = pd.read_parquet(path, engine="pyarrow")
+            df = pd.read_parquet(path, engine="pyarrow")
             logging.debug("directory " + dir + " - loaded face representations from file " + path)
         if df is not None and len(df) == 0:
             return None

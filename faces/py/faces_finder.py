@@ -37,6 +37,8 @@ class Finder:
         self.min_face_width_percent = 5  # in %, can be set by caller
         self.min_face_width_pixel = 50  # in px, can be set by caller
         self.css_position = True
+        self.min_width_train = 224
+        self.min_width_result = 50
 
     # parameter csv
     #   example:
@@ -138,6 +140,28 @@ class Finder:
                     logging.warning(
                         str(pixel) + " is not a valid number for the minimal faces width. Take the default:  " + str(
                             self.min_face_width_pixel) + " pixel")
+
+            elif conf[0].strip().lower() == 'train':
+                pixel = conf[1]
+                if pixel.isdigit():
+                    self.min_width_train = int(pixel)
+                    logging.debug("set the minimal faces width of training data to " +
+                                  str(self.min_width_train) + " pixel")
+                else:
+                    logging.warning(
+                        str(pixel) + " is not a valid number for the minimal faces width for training data. " +
+                        "Take the default:  " + str(self.min_width_train) + " pixel")
+
+            elif conf[0].strip().lower() == 'result':
+                pixel = conf[1]
+                if pixel.isdigit():
+                    self.min_width_result = int(pixel)
+                    logging.debug("set the minimal faces width of result data to " +
+                                  str(self.min_width_result) + " pixel")
+                else:
+                    logging.warning(
+                        str(pixel) + " is not a valid number for the minimal faces width for result data. " +
+                        "Take the default:  " + str(self.min_width_result) + " pixel")
 
         if len(self.model_names) == 0:
             self.model_names.append(self.model_name_default)  # default
@@ -342,7 +366,7 @@ class Finder:
             logging.debug("Found no faces in image " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0.0]))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0))
             return faces_to_return
         image_height, image_width, c = img.shape
         toc = time.time()
@@ -362,7 +386,7 @@ class Finder:
             count_1 = count_1 + 1
             for model_name in self.model_names:
                 if model_name in existing_models:
-                    logging.debug("Ignoring model in file because it exists, file= " + path)
+                    logging.debug("Ignoring model " + model_name + " in file because it exists, file= " + path)
                     continue
                 tic = time.time()
                 region = [x, y, w, h]
@@ -392,7 +416,7 @@ class Finder:
                         custom_face.shape[1:3]) + ") than the FaceDetector (" + str(
                         input_shape) + ") detector=" + self.detector_name + ", model=" + model_name + ", file= " + path)
                     # prevent that the combination of file AND detector AND model is found again as "new"
-                    faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h]))
+                    faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h], 0))
                     continue
                 count_2 = count_2 + 1
 
@@ -400,7 +424,8 @@ class Finder:
                 face_to_return = []
                 face_to_return.append(self.get_random_string())
                 face_to_return.append(path)
-                face_to_return.append(self.calculate_css_location(x, y, w, h, image_height, image_width))
+                face_to_return.append(self.calculate_css_location(x, y, w, h, image_height, image_width)),
+                face_to_return.append(w)
                 face_to_return.append(0)  # face_nr
                 face_to_return.append('')  # name
                 face_to_return.append('')  # name_recognized
@@ -411,10 +436,10 @@ class Finder:
                 face_to_return.append(duration_detection)
                 face_to_return.append(round(toc - tic, 5))
                 face_to_return.append(datetime.utcnow())
-                face_to_return.append(representation)
+                face_to_return.append(np.float64(representation))  # models use float32 and float64
                 face_to_return.append(-1)  # distance
                 face_to_return.append('')  # distance_metric
-                face_to_return.append('')  # duration_recognized
+                face_to_return.append(0.0)  # duration_recognized
                 face_to_return.append('')  # directory
 
                 faces_to_return.append(face_to_return)
@@ -427,7 +452,7 @@ class Finder:
                 round(time.time() - start_time, 5)) + " seconds for face representations in " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0.0]))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0))
         else:
             logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
                          str(round(time.time() - start_time,
@@ -441,11 +466,12 @@ class Finder:
             s += random.choice(string.ascii_letters)
         return s
 
-    def get_empty_face_detection(self, path, start_time, model_name, pos):
+    def get_empty_face_detection(self, path, start_time, model_name, pos, width):
         empty_face = [
             self.get_random_string(),
             path,
             pos,
+            width,
             0,
             '',  # name
             '',  # name_recognized
@@ -454,12 +480,12 @@ class Finder:
             self.detector_name,
             model_name,
             round(time.time() - start_time, 5),
-            -1,
+            0,
             datetime.utcnow(),
             [0.0],  # representation
             0.0,
             '',
-            '',
+            0.0,  # duration_recognized
             ''  # directory
         ]
         return empty_face
@@ -467,7 +493,7 @@ class Finder:
     def get_empty_face_analyse(self, path, start_time):
         empty_face = [
             path,
-            [0.0],
+            [0],
             self.detector_name,
             '',
             '',
@@ -495,8 +521,11 @@ class Finder:
         margin_bottom_percent = (h_img - y - h) * 100 / h_img
         if margin_bottom_percent < 0:
             margin_bottom_percent = 0  # happened for mtcnn
-        location_css = [round(margin_left_percent), round(margin_right_percent), round(margin_top_percent),
-                        round(margin_bottom_percent)]
+        location_css = [
+            int(round(margin_left_percent)),
+            int(round(margin_right_percent)),
+            int(round(margin_top_percent)),
+            int(round(margin_bottom_percent))]
         return location_css
 
     def log_ram(self):

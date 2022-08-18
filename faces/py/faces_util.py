@@ -329,10 +329,10 @@ class Util:
                     return True
                 for face_b in faces_b.itertuples():
                     position_b = face_b.position
-                    #position_b = []
-                    #for el in face_b.position.strip("[] ").replace(" ", "").split(","):
-                    #for el in face_b.position.strip("[] ").split(" "):
-                        #position_b.append(int(el))
+                    # position_b = []
+                    # for el in face_b.position.strip("[] ").replace(" ", "").split(","):
+                    # for el in face_b.position.strip("[] ").split(" "):
+                    # position_b.append(int(el))
                     if self.is_same_face(face_a.iloc[0, 2], position_b):
                         if face_a.iloc[0, 4] != face_b.name or face_a.iloc[0, 5] != face_b.name_recognized:
                             return True
@@ -340,23 +340,24 @@ class Util:
 
     def create_frame_embeddings(self):
         df = pd.DataFrame({'id': pd.Series(dtype='str'),
-                   'file': pd.Series(dtype='str'),
-                   'position': pd.Series(dtype='int'),
-                   'face_nr': pd.Series(dtype='int'),
-                   'name': pd.Series(dtype='str'),
-                   'name_recognized': pd.Series(dtype='str'),
-                   'time_named': pd.Series(dtype='str'),
-                   'exif_date': pd.Series(dtype='str'),
-                   'detector': pd.Series(dtype='str'),
-                   'model': pd.Series(dtype='str'),
-                   'duration_detection': pd.Series(dtype='float'),
-                   'duration_representation': pd.Series(dtype='float'),
-                   'time_created': pd.Series(dtype='datetime64[ns]'),
-                   'representation': pd.Series(dtype='float'),
-                   'distance': pd.Series(dtype='float'),
-                   'distance_metric': pd.Series(dtype='str'),
-                   'duration_recognized': pd.Series(dtype='float'),
-                   'directory': pd.Series(dtype='str')})
+                           'file': pd.Series(dtype='str'),
+                           'position': pd.Series(dtype='int'),
+                           'width': pd.Series(dtype='int'),  # px
+                           'face_nr': pd.Series(dtype='int'),
+                           'name': pd.Series(dtype='str'),
+                           'name_recognized': pd.Series(dtype='str'),
+                           'time_named': pd.Series(dtype='str'),
+                           'exif_date': pd.Series(dtype='str'),
+                           'detector': pd.Series(dtype='str'),
+                           'model': pd.Series(dtype='str'),
+                           'duration_detection': pd.Series(dtype='float'),
+                           'duration_representation': pd.Series(dtype='float'),
+                           'time_created': pd.Series(dtype='datetime64[ns]'),
+                           'representation': pd.Series(dtype='float64'),
+                           'distance': pd.Series(dtype='float'),
+                           'distance_metric': pd.Series(dtype='str'),
+                           'duration_recognized': pd.Series(dtype='float'),
+                           'directory': pd.Series(dtype='str')})
         return df
 
     def add_row_embedding(self, df, values):
@@ -381,24 +382,25 @@ class Util:
              values[14],
              values[15],
              values[16],
-             values[17]], index=df.columns)
+             values[17],
+             values[18]], index=df.columns)
 
         df = df.append(row, ignore_index=True)
         return df
 
     def create_frame_attributes(self):
         df = pd.DataFrame({'id': pd.Series(dtype='str'),
-                   'file': pd.Series(dtype='str'),
-                   'position': pd.Series(dtype='int'),
-                   'detector': pd.Series(dtype='str'),
-                   'emotions': pd.Series(dtype='str'),
-                   'dominant_emotion': pd.Series(dtype='str'),
-                   'age': pd.Series(dtype='int'),
-                   'gender': pd.Series(dtype='str'),
-                   'races': pd.Series(dtype='str'),
-                   'dominant_race': pd.Series(dtype='str'),
-                   'created': pd.Series(dtype='str'),
-                   'duration': pd.Series(dtype='float')})
+                           'file': pd.Series(dtype='str'),
+                           'position': pd.Series(dtype='int'),
+                           'detector': pd.Series(dtype='str'),
+                           'emotions': pd.Series(dtype='str'),
+                           'dominant_emotion': pd.Series(dtype='str'),
+                           'age': pd.Series(dtype='int'),
+                           'gender': pd.Series(dtype='str'),
+                           'races': pd.Series(dtype='str'),
+                           'dominant_race': pd.Series(dtype='str'),
+                           'created': pd.Series(dtype='str'),
+                           'duration': pd.Series(dtype='float')})
         return df
 
     def add_row_attributes(self, df, values):
