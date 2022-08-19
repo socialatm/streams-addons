@@ -23,7 +23,7 @@ class Finder:
         self.models_valid = ['VGG-Face', 'Facenet', 'Facenet512', 'ArcFace', 'OpenFace', 'DeepFace', 'SFace']
         self.detector_name = "retinaface"  # default, can be set by caller
         self.detector = None
-        self.detectors = ["opencv", "ssd", "mtcnn", "retinaface"]
+        self.detectors = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
         self.age_model = None
         self.emotion_model = None
         self.gender_model = None
@@ -141,7 +141,7 @@ class Finder:
                         str(pixel) + " is not a valid number for the minimal faces width. Take the default:  " + str(
                             self.min_face_width_pixel) + " pixel")
 
-            elif conf[0].strip().lower() == 'train':
+            elif conf[0].strip().lower() == 'training':
                 pixel = conf[1]
                 if pixel.isdigit():
                     self.min_width_train = int(pixel)

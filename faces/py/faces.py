@@ -21,6 +21,8 @@ parser.add_argument("--procid")
 parser.add_argument("--distance_metrics")
 parser.add_argument("--min_face_width_percent")
 parser.add_argument("--min_face_width_pixel")
+parser.add_argument("--training")
+parser.add_argument("--result")
 parser.add_argument("--css_position")
 parser.add_argument("--first_result")
 parser.add_argument("--enforce")
@@ -153,6 +155,18 @@ if args["min_face_width_pixel"]:
 else:
     config += ";min_face_width_pixel=" + "50"
 
+# in pixel
+if args["training"]:
+    config += ";training=" + args["training"]
+else:
+    config += ";training=" + "224"
+
+# in pixel
+if args["result"]:
+    config += ";result=" + args["result"]
+else:
+    config += ";result=" + "50"
+
 # position of face in image
 # on... in percent as used by css in browsers
 # off... in pixel as calculated by face detection
@@ -172,7 +186,7 @@ if args["rm_detectors"]:
 if args["rm_models"]:
     config += ";rm_models=" + args["rm_models"]
 
-# d = "	retinaface,mtcnn,ssd,opencv"
+# d = "	retinaface,mtcnn,ssd,opencv,mediapipe"
 d = "retinaface"
 if args["detectors"]:
     d = args["detectors"]

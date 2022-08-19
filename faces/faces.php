@@ -95,10 +95,11 @@ function faces_plugin_admin(&$o) {
         '$exiftoolcheckmsg' => $exiftoolcheckmsg,
         '$ramcheckmsg' => get_config('faces', 'ramcheck'),
         '$block' => array('block', "block", $block, "Do not allow the python scripts to run on this server"),
-        '$retinaface' => array('retinaface', "retinaface", str_contains($detectors, "retinaface"), "accurate"),
+        '$retinaface' => array('retinaface', "retinaface", str_contains($detectors, "retinaface"), "slow, most accurate"),
         '$mtcnn' => array('mtcnn', "mtcnn", str_contains($detectors, "mtcnn"), "accurate"),
-        '$ssd' => array('ssd', "ssd", str_contains($detectors, "ssd"), "fast"),
-        '$opencv' => array('opencv', "opencv", str_contains($detectors, "opencv"), "fast"),
+        '$ssd' => array('ssd', "ssd", str_contains($detectors, "ssd"), "fast, less results"),
+        '$mediapipe' => array('mediapipe', "mediapipe", str_contains($detectors, "mediapipe"), "Google"),
+        '$opencv' => array('opencv', "opencv", str_contains($detectors, "opencv"), "fast, inaccurate"),
         '$Facenet512' => array('Facenet512', "Facenet512", str_contains($models, "Facenet512"), "accurate - by Google"),
         '$ArcFace' => array('ArcFace', "ArcFace", str_contains($models, "ArcFace"), "accurate"),
         '$VGGFace' => array('VGGFace', "VGG-Face", str_contains($models, "VGG-Face"), "fast"),
@@ -138,12 +139,16 @@ function faces_plugin_admin_post(&$a) {
     if ($ssd) {
         $detectors[] = 'ssd';
     }
+    $mediapipe = ((x($_POST, 'mediapipe')) ? true : false);
+    if ($mediapipe) {
+        $detectors[] = 'mediapipe';
+    }
     $opencv = ((x($_POST, 'opencv')) ? true : false);
     if ($opencv) {
         $detectors[] = 'opencv';
     }
 
-    if (!$retinaface && !$mtcnn && !$ssd && !$opencv) {
+    if (!$retinaface && !$mtcnn && !$ssd  && !$mediapipe && !$opencv) {
         $detectors[] = 'retinaface';
     }
 

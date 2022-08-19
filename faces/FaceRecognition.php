@@ -39,7 +39,8 @@ class FaceRecognition {
         $first_resultConfig = $this->getParamStringDirectly($config, "first_result", "enforce");
         $statistics_modeConfig = $this->getParamStringDirectly($config, "statistics_mode", "statistics");
         $history_modeConfig = $this->getParamStringDirectly($config, "history", "history");
-        $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width");
+        $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width_detection");
+        $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width_recognition");
 
         @include('.htconfig.php');
         $cmd = escapeshellcmd("python3 " . getcwd() . "/addon/faces/py/faces.py"
@@ -62,7 +63,7 @@ class FaceRecognition {
         logger(implode(" ", $a), LOGGER_DEBUG);
 
         // python3 /var/www/mywebsite/addon/faces/py/faces.py --host 127.0.0.1 --user mywebsite --pass . --db mywebsite --imagespath /var/www/mywebsite --channelid 0 --procid 3941887e4f --loglevel 2 --logfile /var/www/log/faces.log --detectors retinaface,ssd --models Facenet512,VGG-Face --demography Age,Gender
-        exec($cmd . ' > /dev/null 2>/dev/null &');
+        //exec($cmd . ' > /dev/null 2>/dev/null &');
     }
 
     private function getParamString($config, $name) {

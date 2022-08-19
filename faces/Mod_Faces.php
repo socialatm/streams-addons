@@ -19,12 +19,11 @@ class Faces extends Controller {
     private $owner;
     private $observer;
     private $addonDirName = "faces";
-    private $fileNameEmbeddings = "faces.pkl";
-    private $fileNameEmbeddingsDebug = "faces_debug.csv";
-    private $fileNameNames = "faces.csv";
-    private $fileNameAttributes = "facial_attributes.csv";
-    private $fileNameFacesStatistic = "faces_statistics.csv";
-    private $fileNameModelsStatistic = "models_statistics.csv";
+    private $fileNameEmbeddings = "faces.gzip";
+    private $fileNameNames = "faces.json";
+    private $fileNameAttributes = "demography.json";
+    private $fileNameFacesStatistic = "face_statistics.csv";
+    private $fileNameModelsStatistic = "model_statistics.csv";
     private $fileNameConfig = "config.json";
     private $files_names = [];
     private $files_attributes = [];
@@ -270,16 +269,6 @@ class Faces extends Controller {
                     } else {
                         $this->touch($dir->getChild($this->fileNameEmbeddings));
                     }
-//                    $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
-//                    if ($loglevel >= LOGGER_DEBUG) {
-//                        if (!$dir->childExists($this->fileNameEmbeddingsDebug)) {
-//                            $dir->createFile($this->fileNameEmbeddingsDebug);
-//                        }
-//                    } else {
-//                        if ($dir->childExists($this->fileNameEmbeddingsDebug)) {
-//                            $dir->getChild($this->fileNameEmbeddingsDebug)->delete();
-//                        }
-//                    }
                     if (!$dir->childExists($this->fileNameNames)) {
                         $dir->createFile($this->fileNameNames);
                     } else {
@@ -462,18 +451,19 @@ class Faces extends Controller {
         return $o;
     }
 
-    private function sendConfig() {
+    private function sendConfig() {        
+        $this->prepareFiles();
         $config = $this->getConfig();
         logger("Sending configuration... " . json_encode($config), LOGGER_DEBUG);
         json_return_and_die(array('config' => $config));
     }
 
-    private function setConfig() {
-        $configFile = $this->getConfigFile();
+    private function setConfig() {     
+        $this->prepareFiles();
         $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
-        $isText = ["percent", "pixel"];
+        $isText = ["percent", "pixel", "training", "result"];
         foreach ($config as $name => $values) {
             for ($i = 0; $i < sizeof($values); $i++) {
                 $elName = $values[$i][0];
@@ -491,6 +481,7 @@ class Faces extends Controller {
             }
         }
 
+        $configFile = $this->getConfigFile();
         require_once('Config.php');
         $fc = new FaceConfiguration();
         $fc->write($configFile, $config);

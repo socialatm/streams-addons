@@ -6,7 +6,7 @@ use Code\Storage\File;
 
 class FaceConfiguration {
 
-    private $available_detectors = "retinaface,mtcnn,ssd,opencv";
+    private $available_detectors = "retinaface,mtcnn,ssd,opencv,mediapipe ";
     private $available_models = "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace";
     private $available_metrics = "cosine,euclidean_l2,euclidean";
     private $available_attributes = "Emotion,Age,Gender,Race";
@@ -116,8 +116,8 @@ class FaceConfiguration {
         }
 
 
-        for ($i = 0; $i < sizeof($config["min_face_width"]); $i++) {
-            $element = $config["min_face_width"][$i];
+        for ($i = 0; $i < sizeof($config["min_face_width_detection"]); $i++) {
+            $element = $config["min_face_width_detection"][$i];
             $name = $element[0];
             $number = $element[1];
 
@@ -142,7 +142,39 @@ class FaceConfiguration {
                 }
             }
 
-            $config["min_face_width"][$i][1] = $number;
+            $config["min_face_width_detection"][$i][1] = $number;
+        }
+
+
+        for ($i = 0; $i < sizeof($config["min_face_width_recognition"]); $i++) {
+            $element = $config["min_face_width_recognition"][$i];
+            $name = $element[0];
+            $number = $element[1];
+
+            // training data
+            $min = 30;
+            $max = 10000;
+            $default = 224;
+
+            // faces to find
+            if ($name === "result") {
+                $min = 30;
+                $max = 10000;
+                $default = 50;
+            }
+
+            if (!is_numeric($number)) {
+                $number = $default;
+            } else {
+                $number = round($number);
+                if ($number > $max) {
+                    $number = $max;
+                } elseif ($number < $min) {
+                    $number = $min;
+                }
+            }
+
+            $config["min_face_width_recognition"][$i][1] = $number;
         }
 
         return $config;
@@ -176,7 +208,9 @@ class FaceConfiguration {
         $config = $this->addConfigElement("enforce", "enforce", $config, false);
         $config = $this->addConfigElement("faces_defaults", "reset", $config, false);
         $config = $this->addConfigElement("faces_experimental", "experimental", $config, false);
-        $config["min_face_width"] = [["percent", 5], ["pixel", 50]];
+        $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
+        
+        $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
 
         $config = $this->checkConfig($config);
 

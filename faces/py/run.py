@@ -16,7 +16,7 @@ parser.add_argument("--demography")
 parser.add_argument("--distance_metrics")
 parser.add_argument("--min_face_width_percent")
 parser.add_argument("--min_face_width_pixel")
-parser.add_argument("--train")
+parser.add_argument("--training")
 parser.add_argument("--result")
 parser.add_argument("--css_position")
 parser.add_argument("--enforce")
@@ -92,7 +92,7 @@ def read_config_file():
     logging.debug("read config from file " + conf_file)
     with open(conf_file, "r") as f:
         dict_conf = json.load(f)
-    no_list = ['statistics', 'enforce', 'history']
+    no_list = ['statistics', 'enforce', 'history', 'training', 'result']
     for key in dict_conf:
         elements = dict_conf[key]
         param = ""
@@ -130,14 +130,14 @@ def check_param(param):
 def read_config_params():
     param_list = [["distance_metrics", "cosine,euclidean_l2,euclidean"],
                   ["demography", "emotion,age,gender,race"],  # off
-                  ["detectors", "retinaface"],  # "retinaface,mtcnn,ssd,opencv"
+                  ["detectors", "retinaface"],  # "retinaface,mtcnn,ssd,opencv,mediapipe"
                   ["models", "Facenet512"],  # "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace"
                   ["enforce", "on"],  # "on|off"
                   ["statistics", "on"],  # "on|off"
                   ["history", "on"],  # "on|off"
                   ["min_face_width_percent", "1"],
                   ["min_face_width_pixel", "50"],
-                  ["train", "224"],
+                  ["training", "224"],
                   ["result", "50"],
                   ["css_position", "on"],  # "on|off" position of face in image, css is used by browsers
                   ["log_data", "on"],  # "on|off"

@@ -50,6 +50,7 @@ function createTextField(list, after) {
     $(html).insertAfter(after);
     $("#id_" + name).val(value);
     $("#label_" + name).html(name);
+    $("#id_" + name).addClass("belongsToExperimental"); // for presets
 }
 
 function fillGUI(config) {
@@ -63,7 +64,8 @@ function fillGUI(config) {
     createCheckboxes(config.enforce, "#face_enforce_all", true);
     createCheckboxes(config.faces_defaults, "#face_detaults");
     createCheckboxes(config.faces_experimental, "#face_experimental");
-    createTextFields(config.min_face_width, "#face_size");
+    createTextFields(config.min_face_width_detection, "#face_size_detection");
+    createTextFields(config.min_face_width_recognition, "#face_size_recognition");
 
     document.getElementById("id_reset").addEventListener("click", presetDefault);
     document.getElementById("id_experimental").addEventListener("click", presetExperimental);
@@ -127,6 +129,10 @@ function presetDefault() {
         var checkboxes = document.getElementsByClassName(group);
         setToDefault(checkboxes, true);
     });
+    $("#id_pixel").val("50");
+    $("#id_percent").val("2");
+    $("#id_result").val("50");
+    $("#id_training").val("224");
 }
 
 function presetExperimental() {

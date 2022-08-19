@@ -39,7 +39,7 @@ for model in models:
     except Exception as e:
         print(str(e))
 
-detectors = ["retinaface", "mtcnn", "ssd", "opencv"]
+detectors = ["retinaface", "mtcnn", "ssd", "opencv", "mediapipe"]
 
 if args["detectors"] is not None:
     d = args["detectors"]

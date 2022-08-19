@@ -11,6 +11,7 @@
 {{include file="field_checkbox.tpl" field=$retinaface}}
 {{include file="field_checkbox.tpl" field=$mtcnn}}
 {{include file="field_checkbox.tpl" field=$ssd}}
+{{include file="field_checkbox.tpl" field=$mediapipe}}
 {{include file="field_checkbox.tpl" field=$opencv}}
 <h2>Face  Recognition Models</h2>
 {{include file="field_checkbox.tpl" field=$Facenet512}}

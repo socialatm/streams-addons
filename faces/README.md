@@ -51,6 +51,7 @@ Install the python module deepface (as user www-data).
 
     whoami
     pip install deepface
+    pip install mediapipe
 
 Test if the user www-data is able to run the python self check successfully
 (provided the addons are found under "/var/www/mywebsite/addon"...) 
@@ -194,7 +195,7 @@ Manually delete in files
 Three steps are involved
 
 1. The **detection** process will find a face and it's position.
-   Available detectors are opencv, ssd, mtcnn, retinaface
+   Available detectors are opencv, ssd, mtcnn, retinaface, mediapipe
 2. The **recognition** process will create an encoding for each face, basically an array of numbers.
    Available models are VGG-Face, Facenet, Facenet512, ArcFace, OpenFace, DeepFace
 3. The **comparation** of encodings (faces) is done by comparing distances of arrays.

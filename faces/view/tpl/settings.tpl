@@ -28,9 +28,15 @@
             (but it is sometimes more reliable).</div>
     </div>
     <h2>Tuning</h2>
-    <div id="face_size">
-        <h3>Minimum Face Size</h3>
-        <div>Faces smaller than this will be ignored. </div>
+    <div id="face_size_detection">
+        <h3>Minimum Face Size - Detection</h3>
+        <div>Faces smaller than this will be ignored.</div>
+    </div>
+    <div id="face_size_recognition">
+        <h3>Minimum Face Size - Recognition</h3>
+        <div>"training"... faces used to find the same person in other pictures.</div>
+        <div>"result"... faces still unkown (not explicitly given a name by the user).</div>
+        <div>Sizes are in pixel. </div>
     </div>
     <h2>Statistics</h2>
     <div id="face_history">
