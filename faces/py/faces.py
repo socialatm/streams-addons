@@ -19,14 +19,14 @@ parser.add_argument("--models")
 parser.add_argument("--demography")
 parser.add_argument("--procid")
 parser.add_argument("--distance_metrics")
-parser.add_argument("--min_face_width_percent")
-parser.add_argument("--min_face_width_pixel")
+parser.add_argument("--percent")
+parser.add_argument("--pixel")
 parser.add_argument("--training")
 parser.add_argument("--result")
 parser.add_argument("--css_position")
 parser.add_argument("--first_result")
 parser.add_argument("--enforce")
-parser.add_argument("--statistics_mode")
+parser.add_argument("--statistics")
 parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
@@ -67,7 +67,7 @@ if loglevel:
     print("yes, log level is configured")
 else:
     logger.setLevel(logging.INFO)
-logging.info("started logging")
+logging.debug("started logging")
 
 logData = False
 if loglevel >= 4:
@@ -111,13 +111,13 @@ config = ""
 if args["distance_metrics"]:
     config = "distance_metrics=" + args["distance_metrics"]
 else:
-    config = "distance_metrics=" + "cosine,euclidean_l2,euclidean"
+    config = "distance_metrics=" + "euclidean,cosine,euclidean_l2"
 
 if args["demography"]:
-    config += ";analyse=" + args["demography"]
+    config += ";demography=" + args["demography"]
 else:
     # config += ";analyse=" + "emotion,age,gender,race"
-    config += ";analyse=" + "off"
+    config += ";demography=" + "off"
 
 if args["models"]:
     config += ";model=" + args["models"]
@@ -132,10 +132,10 @@ elif args["enforce"]:
     config += ";enforce=" + args["enforce"]
 
 # write statistics into csv files to compare detectors and models
-if args["statistics_mode"]:
-    config += ";statistics_mode=" + args["statistics_mode"]
+if args["statistics"]:
+    config += ";statistics=" + args["statistics"]
 else:
-    config += ";statistics_mode=" + "off"
+    config += ";statistics=" + "off"
 
 # write a history of recognition
 if args["history"]:
@@ -144,18 +144,18 @@ else:
     config += ";history=" + "off"
 
 # in percent of image
-if args["min_face_width_percent"]:
-    config += ";min_face_width_percent=" + args["min_face_width_percent"]
+if args["percent"]:
+    config += ";percent=" + args["percent"]
 else:
-    config += ";min_face_width_percent=" + "5"
+    config += ";percent=" + "5"
 
 # in pixel
-if args["min_face_width_pixel"]:
-    config += ";min_face_width_pixel=" + args["min_face_width_pixel"]
+if args["pixel"]:
+    config += ";pixel=" + args["pixel"]
 else:
-    config += ";min_face_width_pixel=" + "50"
+    config += ";pixel=" + "50"
 
-# in pixel
+# in training
 if args["training"]:
     config += ";training=" + args["training"]
 else:
@@ -193,7 +193,7 @@ if args["detectors"]:
 logging.debug("detectors = " + d)
 detectors = d.split(",")
 
-doRecognize = False
+do_recognize = False
 counter = 1
 for detector in detectors:
     worker = faces_worker.Worker()
@@ -205,8 +205,8 @@ for detector in detectors:
     # +++++++++++++++++++
     logging.debug("About to run worker using detector " + detector)
     if counter == len(detectors):
-        doRecognize = True
-    worker.run(args["imagespath"], args["procid"], channel_id, doRecognize)
+        do_recognize = True
+    worker.run(args["imagespath"], args["procid"], channel_id, do_recognize)
     counter = counter + 1
 
 db.close()

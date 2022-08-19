@@ -26,7 +26,7 @@ class Worker:
         self.dirImages = None
         self.file_name_face_representations = "faces.gzip"
         self.file_name_facial_attributes = "demography.json"
-        self.file_name_face_names_json = "faces.json"
+        self.file_name_face_names = "faces.json"
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
         self.dir_addon = "faces"
@@ -38,7 +38,7 @@ class Worker:
         # A: In case the face recognition runs for ZOT/Nomad and the channel has clones
         #    the written file will trigger a file sync of .faces.gzip. between the clones (servers).
         self.keep_history = False  # True/False
-        self.statistics_mode = False  # True/False
+        self.statistics = False  # True/False
         self.columnsToIncludeAll = ["model", "detector", "duration_detection", "duration_representation",
                                     "time_created", "distance", "distance_metric", "duration_recognized", "width"]
         self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.cs
@@ -90,7 +90,7 @@ class Worker:
 
     def configure(self, csv):
         # example csv
-        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics_mode=True
+        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics=True
         for element in csv.split(";"):
             conf = element.split("=")
             if len(conf) < 2:
@@ -112,9 +112,9 @@ class Worker:
                     self.log_data = True
                 if value == "off":
                     self.log_data = False
-            elif key == 'statistics_mode' or key == 'statistics':
+            elif key == 'statistics':
                 if value == "on" or value == 'true':
-                    self.statistics_mode = True
+                    self.statistics = True
             elif key == 'history':
                 if value == "on" or value == "true":
                     self.keep_history = True
@@ -135,7 +135,7 @@ class Worker:
                 self.removeModels = conf[1].strip()
                 logging.debug("Configuration rm_models=" + self.removeModels)
         logging.debug("Configuration log_data=" + str(self.log_data))
-        logging.debug("Configuration statistics_mode=" + str(self.statistics_mode))
+        logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
         logging.debug("Configuration sort_direction=" + str(self.sort_direction))
@@ -212,7 +212,7 @@ class Worker:
             logging.debug(self.folder + " - No new images for face detection in directory")
             return
 
-        logging.debug(self.folder + " - searching for face in " + str(len(images)) + " images")
+        logging.debug(self.folder + " - searching for faces in " + str(len(images)) + " images")
 
         if not self.finder.is_loaded():
             self.finder.load()
@@ -287,7 +287,7 @@ class Worker:
             self.write_alive_signal(self.RUNNING)
             if faces:
                 for face in faces:
-                    self.util.add_row_attributes(face)
+                    df = self.util.add_row_attributes(df,face)
 
         logging.debug(self.folder + " - finished analyse of faces in " + str(len(images)) + " images")
         self.store_facial_attributes(df)
@@ -304,9 +304,9 @@ class Worker:
     # 6. Write the CSV (faces.json) if the values for "name" or "name_recognized" have changed
     # 7. If history is switched on: write faces.gzip (including now all face embedding AND names)
     #
-    def recognize(self):
+    def recognize(self, folders):
         logging.info("START COMPARING FACES. Loading all necessary data...")
-        df = self.load_face_names()
+        df = self.load_face_names(folders)
         if df is None:
             return
 
@@ -684,7 +684,7 @@ class Worker:
         return df
 
     def store_facial_attributes(self, df):
-        df.to_json(self.file_demography, index=False)
+        df.to_json(self.file_demography)
         logging.debug(self.folder + " - stored facial attributes in file " + self.file_demography)
 
     def get_face_names(self):
@@ -769,7 +769,7 @@ class Worker:
 
     def write_statistics(self, df, most_effective_method):
         self.write_alive_signal(self.RUNNING)
-        if self.statistics_mode:
+        if self.statistics:
             if self.check_file_by_channel(self.file_name_faces_statistic) is False:
                 return
             df = df.drop('representation', axis=1)

@@ -24,7 +24,7 @@ class Worker:
         self.dirImages = None
         self.file_name_face_representations = "faces.gzip"
         self.file_name_facial_attributes = "demography.json"
-        self.file_name_face_names_json = "faces.json"
+        self.file_name_face_names = "faces.json"
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
         self.dir_addon = "faces"
@@ -36,7 +36,7 @@ class Worker:
         # A: In case the face recognition runs for ZOT/Nomad and the channel has clones
         #    the written file will trigger a file sync of .faces.pkl. between the clones (servers).
         self.keep_history = False  # True/False
-        self.statistics_mode = False  # True/False
+        self.statistics = False  # True/False
         self.columnsToIncludeAll = ["model", "detector", "duration_detection", "duration_representation",
                                     "time_created", "distance", "distance_metric", "duration_recognized", "width"]
         self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.csv
@@ -77,7 +77,7 @@ class Worker:
 
     def configure(self, csv):
         # example csv
-        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics_mode=True
+        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics=True
         for element in csv.split(";"):
             conf = element.split("=")
             if len(conf) < 2:
@@ -99,9 +99,9 @@ class Worker:
                     self.log_data = True
                 if value == "off":
                     self.log_data = False
-            elif key == 'statistics_mode' or key == 'statistics':
+            elif key == 'statistics':
                 if value == "on" or value == 'true':
-                    self.statistics_mode = True
+                    self.statistics = True
             elif key == 'history':
                 if value == "on" or value == "true":
                     self.keep_history = True
@@ -122,7 +122,7 @@ class Worker:
                 self.removeModels = conf[1].strip()
                 logging.debug("Configuration rm_models=" + self.removeModels)
         logging.debug("Configuration log_data=" + str(self.log_data))
-        logging.debug("Configuration statistics_mode=" + str(self.statistics_mode))
+        logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
         logging.debug("Configuration sort_direction=" + str(self.sort_direction))
@@ -242,7 +242,7 @@ class Worker:
             faces = self.finder.analyse(image, os_path_on_server)
             if faces:
                 for face in faces:
-                    self.util.add_row_attributes(face)
+                    df = self.util.add_row_attributes(df, face)
 
         logging.debug(dir + " - finished analyse of faces in " + str(len(images)) + " images")
         self.store_facial_attributes(df, dir)
@@ -566,13 +566,13 @@ class Worker:
 
     def store_facial_attributes(self, df, dir):
         path = os.path.join(dir, self.file_name_facial_attributes)
-        df.to_json(path, index=False)
+        df.to_json(path)
         logging.debug(dir + " - stored facial attributes in file " + path)
 
     def get_face_names(self, dir):
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
-        path = os.path.join(dir, self.file_name_face_names_json)
+        path = os.path.join(dir, self.file_name_face_names)
         if os.path.exists(path):
             df = pd.read_json(path)
             logging.debug(dir + " - loaded face representations from file " + path)
@@ -605,7 +605,7 @@ class Worker:
             df = df.drop('representation', axis=1)
         df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
 
-        path = os.path.join(self.dirImages, dir, self.file_name_face_names_json)
+        path = os.path.join(self.dirImages, dir, self.file_name_face_names)
         df.to_json(path)
 
     def cleanup(self, dir):
@@ -645,7 +645,7 @@ class Worker:
                     logging.info(dir + " - " + str(len(i)) + " faces removed from facial attributes")
 
     def write_statistics(self, df, most_effective_method):
-        if self.statistics_mode:
+        if self.statistics:
             if not self.check_file_access_statistics():
                 return
             df = df.drop('representation', axis=1)

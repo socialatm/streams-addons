@@ -196,9 +196,9 @@ Three steps are involved
 
 1. The **detection** process will find a face and it's position.
    Available detectors are opencv, ssd, mtcnn, retinaface, mediapipe
-2. The **recognition** process will create an encoding for each face, basically an array of numbers.
+2. The **recognition** process will create an encoding for each face, basically a vector.
    Available models are VGG-Face, Facenet, Facenet512, ArcFace, OpenFace, DeepFace
-3. The **comparation** of encodings (faces) is done by comparing distances of arrays.
+3. The **comparation** of encodings (faces) is done by comparing distances of vectors.
    Available distance metrics are cosine, euclidean, euclidean_l2.
    
 

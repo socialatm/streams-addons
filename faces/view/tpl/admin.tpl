@@ -22,9 +22,9 @@
 {{include file="field_checkbox.tpl" field=$DeepFace}}
 {{include file="field_checkbox.tpl" field=$SFace}}
 <h2>Distance Metrics</h2>
+{{include file="field_checkbox.tpl" field=$euclidean}}
 {{include file="field_checkbox.tpl" field=$cosine}}
 {{include file="field_checkbox.tpl" field=$euclidean_l2}}
-{{include file="field_checkbox.tpl" field=$euclidean}}
 <h2>Facial Attributes and Demography</h2>
 {{include file="field_checkbox.tpl" field=$Emotion}}
 {{include file="field_checkbox.tpl" field=$Age}}

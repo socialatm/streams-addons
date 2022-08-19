@@ -5,10 +5,7 @@
 <p>
     This addon bundles some of the most recent state-of-the-art face recognition methods
     from universitiy reserach projects all over the world as well as methods
-    developed from and used by big companies like Google and Facebook.
-</p>
-<p>
-    Some of them are trained with millions of faces from different people.
+    developed and used by big companies like Google and Facebook.
 </p>
 <h2>
     Fun
@@ -51,17 +48,18 @@
     Some background. The whole process consists of three steps
 </p>
 <<ul>
-    <li>Face detection. Find a face and its postion in a picture.
+    <li>Face detection. Find a face and its position in a picture.
         This is done by so called detectors:
         <<ul>
             <li>retinaface</li>
             <li>mtsnn</li>
             <li>ssd</li>
             <li>opencv</li>
+            <li>mediapipe (Google)</li>
         </ul>
         The results will be handed over to the next step.
     </li>
-    <li>Creation of face representations, sometimes called embeddings, basically an array of numbers.
+    <li>Creation of face representations, sometimes called embeddings, basically a vector.
         This is done by face recognition models
         <<ul>
             <li>Facnenet (Google)</li>
@@ -74,23 +72,25 @@
         </ul>
     </li>
     <li>Matching of face representations. How similar are the representations.
-        This is done by mathematiall standard methods, distance metrics.
+        This is done by mathematical standard methods.
         The distance metrics provided are
         <<ul>
             <li>cosine</li>
-            <li>euclidean_l2</li>
-            <li>Deepface (Facebook)</li>
             <li>euclidean</li>
+            <li>euclidean_l2</li>
         </ul>
     </li>
 </ul>
-<<p>
+<p>
     If you switch on every detetor and every model the addon will
     combine every detector with every face recognition model.</p>
-<<p>
+<p>
     To give you an example. You have one single picture showing one single face.
-    The addon will produceThis will give 4x7=28 results.</p>
-<<p>text</p>
+    The addon will produceThis will give 5x7=35 results.</p>
+<p>Please look at the <a href="https://github.com/serengil/deepface">official
+        documentation</a> and <a href="https://sefiks.com/talks/">public talks</a>
+    of Sefik Ilkin Serengil who is the author of the underlying backend deepface.
+</p>
 
 
 <h1>Privacy</h1>

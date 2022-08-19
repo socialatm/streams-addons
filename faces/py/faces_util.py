@@ -389,8 +389,7 @@ class Util:
         return df
 
     def create_frame_attributes(self):
-        df = pd.DataFrame({'id': pd.Series(dtype='str'),
-                           'file': pd.Series(dtype='str'),
+        df = pd.DataFrame({'file': pd.Series(dtype='str'),
                            'position': pd.Series(dtype='int'),
                            'detector': pd.Series(dtype='str'),
                            'emotions': pd.Series(dtype='str'),
@@ -418,8 +417,7 @@ class Util:
              values[7],
              values[8],
              values[9],
-             values[10],
-             values[11]], index=df.columns)
+             values[10]], index=df.columns)
 
         df = df.append(row, ignore_index=True)
         return df

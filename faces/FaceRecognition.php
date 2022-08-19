@@ -37,10 +37,10 @@ class FaceRecognition {
         $distanceMetricsConfig = $this->getParamString($config, "distance_metrics");
         $demographyConfig = $this->getParamString($config, "demography");
         $first_resultConfig = $this->getParamStringDirectly($config, "first_result", "enforce");
-        $statistics_modeConfig = $this->getParamStringDirectly($config, "statistics_mode", "statistics");
+        $statisticsConfig = $this->getParamStringDirectly($config, "statistics", "statistics");
         $history_modeConfig = $this->getParamStringDirectly($config, "history", "history");
-        $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width_detection");
-        $minFaceWidthConfig = $this->getParamStringTextField($config, "min_face_width_recognition");
+        $minFaceWidthDetectionConfig = $this->getParamStringTextField($config, "min_face_width_detection");
+        $minFaceWidthRecognitionConfig = $this->getParamStringTextField($config, "min_face_width_recognition");
 
         @include('.htconfig.php');
         $cmd = escapeshellcmd("python3 " . getcwd() . "/addon/faces/py/faces.py"
@@ -48,8 +48,9 @@ class FaceRecognition {
                 . " --imagespath " . $storeDirectory . " --channelid " . $channel_id
                 . " --procid " . $procid
                 . $first_resultConfig
-                . $minFaceWidthConfig
-                . $statistics_modeConfig
+                . $minFaceWidthDetectionConfig
+                . $minFaceWidthRecognitionConfig
+                . $statisticsConfig
                 . $history_modeConfig
                 . $rm_params
                 . " --loglevel " . $loglevel . $logfileparam
@@ -62,7 +63,7 @@ class FaceRecognition {
         $a[$key + 1] = "xxx";
         logger(implode(" ", $a), LOGGER_DEBUG);
 
-        // python3 /var/www/mywebsite/addon/faces/py/faces.py --host 127.0.0.1 --user mywebsite --pass . --db mywebsite --imagespath /var/www/mywebsite --channelid 0 --procid 3941887e4f --loglevel 2 --logfile /var/www/log/faces.log --detectors retinaface,ssd --models Facenet512,VGG-Face --demography Age,Gender
+        // python3 /var/www/mywebsite/addon/faces/py/faces.py --host 127.0.0.1 --user mywebsite --pass xxx --db mywebsite --imagespath /var/www/mywebsite/store/oj --channelid 0 --procid aeeed6d862 --first_result on --percent 2 --pixel 50 --training 224 --result 50 --statistics on --history on --loglevel 2 --logfile /var/www/log/faces.log --detectors retinaface,mtcnn,ssd,opencv,mediapipe --models Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace --distance_metrics euclidean,cosine,euclidean_l2 --demography Emotion,Age,Gender,Race
         //exec($cmd . ' > /dev/null 2>/dev/null &');
     }
 
@@ -104,7 +105,7 @@ class FaceRecognition {
         for ($i = 0; $i < sizeof($values); $i++) {
             $elName = $values[$i][0];
             $value = $values[$i][1];
-            $param .= " --" . $name . "_" . $elName . " " . $value;
+            $param .= " --" . $elName . " " . $value;
         }
         return $param;
     }
@@ -141,6 +142,16 @@ class FaceRecognition {
         }
         logger('The python script is still running. Last update: ' . $updated, LOGGER_DEBUG);
         return true;
+    }
+
+    function stop() {
+        $procid = random_string(10);
+        set_config("faces", "status", "stopped " . datetime_convert() . " pid " . $procid);
+    }
+
+    function finished() {
+        $procid = random_string(10);
+        set_config("faces", "status", "finished " . datetime_convert() . " pid " . $procid);
     }
 
 }
