@@ -480,11 +480,16 @@ class Faces extends Controller {
                 }
             }
         }
+        require_once('FaceRecognition.php');
+        $fr = new FaceRecognition();
+        $fr->stop();
 
         $configFile = $this->getConfigFile();
         require_once('Config.php');
         $fc = new FaceConfiguration();
         $fc->write($configFile, $config);
+        
+        $fr->finished();
     }
 
     private function getConfig() {
