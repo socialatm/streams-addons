@@ -4,6 +4,7 @@ namespace Code\Module;
 
 use App;
 use Code\Lib\Apps;
+use Code\Lib\PermissionDescription;
 use Code\Web\Controller;
 use Code\Lib\Channel;
 use Code\Lib\Head;
@@ -289,7 +290,7 @@ class Faces extends Controller {
             }
         }
     }
-    
+
     private function touch($file) {
         
     }
@@ -451,14 +452,14 @@ class Faces extends Controller {
         return $o;
     }
 
-    private function sendConfig() {        
+    private function sendConfig() {
         $this->prepareFiles();
         $config = $this->getConfig();
         logger("Sending configuration... " . json_encode($config), LOGGER_DEBUG);
         json_return_and_die(array('config' => $config));
     }
 
-    private function setConfig() {     
+    private function setConfig() {
         $this->prepareFiles();
         $config = $this->getConfig();
 
@@ -488,7 +489,7 @@ class Faces extends Controller {
         require_once('Config.php');
         $fc = new FaceConfiguration();
         $fc->write($configFile, $config);
-        
+
         $fr->finished();
     }
 

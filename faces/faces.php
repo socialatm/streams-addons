@@ -82,7 +82,7 @@ function faces_plugin_admin(&$o) {
     if (!$zoom) {
         $zoom = 3;
     }
-    
+
     $experimental_allowed = get_config('faces', 'experimental_allowed') ? get_config('faces', 'experimental_allowed') : false;
 
     $t = Theme::get_template("admin.tpl", "addon/faces/");
@@ -148,7 +148,7 @@ function faces_plugin_admin_post(&$a) {
         $detectors[] = 'opencv';
     }
 
-    if (!$retinaface && !$mtcnn && !$ssd  && !$mediapipe && !$opencv) {
+    if (!$retinaface && !$mtcnn && !$ssd && !$mediapipe && !$opencv) {
         $detectors[] = 'retinaface';
     }
 
@@ -267,7 +267,7 @@ function faces_plugin_admin_post(&$a) {
 
     // Check the configuration
     $ret = testDeepfaceModules($detectors, $models, $demography);
-    
+
     // unblock execution of python script
     set_config("faces", "status", "finished " . datetime_convert() . " pid " . $procid);
 
@@ -304,11 +304,11 @@ function faces_plugin_admin_post(&$a) {
         $zoom = 1;
     }
     set_config('faces', 'zoom', $zoom);
-    logger("set zoom to " . $zoom, LOGGER_NORMAL);    
+    logger("set zoom to " . $zoom, LOGGER_NORMAL);
 
     $experimental_allowed = ((x($_POST, 'experimental_allowed')) ? true : false);
     set_config('faces', 'experimental_allowed', $experimental_allowed);
-    logger("set experimental_allowed to " . $experimental_allowed, LOGGER_NORMAL);  
+    logger("set experimental_allowed to " . $experimental_allowed, LOGGER_NORMAL);
 
     $ramcheckmsg = $ret["r"];
     set_config('faces', 'ramcheck', $ramcheckmsg);

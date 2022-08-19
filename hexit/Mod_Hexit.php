@@ -2,7 +2,9 @@
 
 namespace Code\Module;
 
-class Hexit extends \Code\Web\Controller {
+use Code\Web\Controller;
+
+class Hexit extends Controller {
 
 
 	function get() {
