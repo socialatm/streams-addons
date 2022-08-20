@@ -5,8 +5,8 @@ use Code\Render\Theme;
 
 /**
  * Name: Faces
- * Description: Detect faces in images and make a guess who it is.
- * Version: 2.0 beta
+ * Description: face recognition
+ * Version: 0.1 (deepface)
  * Author: Tom Wiedenhöft
  * Maintainer: Tom Wiedenhöft
  *
@@ -84,6 +84,7 @@ function faces_plugin_admin(&$o) {
     }
 
     $experimental_allowed = get_config('faces', 'experimental_allowed') ? get_config('faces', 'experimental_allowed') : false;
+    $immediatly = get_config('faces', 'immediatly') ? get_config('faces', 'immediatly') : false;
 
     $t = Theme::get_template("admin.tpl", "addon/faces/");
 
@@ -116,6 +117,7 @@ function faces_plugin_admin(&$o) {
         '$Race' => array('Race', "Race", str_contains($demography, "Race"), ""),
         '$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
         '$experimental_allowed' => array('experimental_allowed', 'allow experimental mode', $experimental_allowed, 'Allow users to use more than one detector, model, distance metric and to analyse facial attributes (gender, race, emotion, age)'),
+        '$immediatly' => array('immediatly', 'allow immediate search', $immediatly, 'Start the face recognition always immediatly after a name was set or changed'),
     ));
 }
 
@@ -148,7 +150,7 @@ function faces_plugin_admin_post(&$a) {
         $detectors[] = 'opencv';
     }
 
-    if (!$retinaface && !$mtcnn && !$ssd  && !$mediapipe && !$opencv) {
+    if (!$retinaface && !$mtcnn && !$ssd && !$mediapipe && !$opencv) {
         $detectors[] = 'retinaface';
     }
 
@@ -309,6 +311,10 @@ function faces_plugin_admin_post(&$a) {
     $experimental_allowed = ((x($_POST, 'experimental_allowed')) ? true : false);
     set_config('faces', 'experimental_allowed', $experimental_allowed);
     logger("set experimental_allowed to " . $experimental_allowed, LOGGER_NORMAL);
+
+    $immediatly = ((x($_POST, 'immediatly')) ? true : false);
+    set_config('faces', 'immediatly', $immediatly);
+    logger("set immediatly to " . $immediatly, LOGGER_NORMAL);
 
     $ramcheckmsg = $ret["r"];
     set_config('faces', 'ramcheck', $ramcheckmsg);

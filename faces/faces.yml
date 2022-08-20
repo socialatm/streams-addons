@@ -1,5 +1,5 @@
 name: Faces
-description: 'Detect faces in images and make a guess who it is.'
-version: '2.0 beta'
+description: 'face recognition'
+version: '0.1 (deepface)'
 author: 'Tom Wiedenhöft'
 maintainer: 'Tom Wiedenhöft'

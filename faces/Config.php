@@ -87,8 +87,8 @@ class FaceConfiguration {
         $experimental_allowed = get_config('faces', 'experimental_allowed') ? get_config('faces', 'experimental_allowed') : false;
 
         if (!$experimental_allowed) {
-            $config["statistics"][0][1] = false;
-            $config["statistics"][0][2] = true;
+            $config["statistics"][0][1] = false;  // checkbox is checked
+            $config["statistics"][0][2] = true;   // checkbox is disabled
             
             $config["history"][0][1] = false;
             $config["history"][0][2] = true;
@@ -98,9 +98,12 @@ class FaceConfiguration {
 
             $config["faces_experimental"][0][1] = false;
             $config["faces_experimental"][0][2] = true;
+            
+            $config["immediatly"][0][1] = false;
+            $config["immediatly"][0][2] = true;
 
-            $config["faces_defaults"][0][1] = false;
-            $config["faces_defaults"][0][2] = false;
+            $config["faces_defaults"][0][1] = false;  // checkobox is not checked
+            $config["faces_defaults"][0][2] = false;  // checkbox is enabled
         } else {
             $config["statistics"][0][2] = false;
             
@@ -110,6 +113,8 @@ class FaceConfiguration {
 
             $config["faces_experimental"][0][1] = false;
             $config["faces_experimental"][0][2] = false;
+            
+            $config["immediatly"][0][2] = false;
 
             $config["faces_defaults"][0][1] = false;
             $config["faces_defaults"][0][2] = false;
@@ -208,6 +213,7 @@ class FaceConfiguration {
         $config = $this->addConfigElement("enforce", "enforce", $config, false);
         $config = $this->addConfigElement("faces_defaults", "reset", $config, false);
         $config = $this->addConfigElement("faces_experimental", "experimental", $config, false);
+        $config = $this->addConfigElement("immediatly", "immediatly", $config, false);
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
         
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];

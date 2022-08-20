@@ -24,6 +24,8 @@ var counter_files_name = 0;
 var server_procid = "";
 var server_time = "";
 
+var immediateSearch = false;
+
 function t() {
     var now = new Date();
     var dateString = now.toISOString();
@@ -83,6 +85,7 @@ function postStart(isStart) {
         if (data['names']) {
             loadFaceData(data['names']); // creates list of images
         }
+        setImmediateSearch(data);
         waitForFinishedFaceDetection();
     },
             'json');
@@ -103,8 +106,15 @@ function postUpdate() {
         if (data['names']) {
             loadFaceData(data['names']); // creates list of images
         }
+        setImmediateSearch(data);
     },
             'json');
+}
+
+function setImmediateSearch(data) {
+    if (data['immediatly']) {
+        immediateSearch = data['immediatly'];
+    }
 }
 
 function loadFaceData(files) {
@@ -407,7 +417,7 @@ function postNames() {
     if (unsentNames.length === 0) {
         ((loglevel >= 1) ? console.log(t() + " no name left to send ") : null);
         clearCounterNamesSending();
-        if (!isFaceRecognitionRunning) {
+        if (!isFaceRecognitionRunning && immediateSearch) {
             postStart(false);
         }
         return;

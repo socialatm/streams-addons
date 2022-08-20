@@ -243,10 +243,14 @@ class Faces extends Controller {
                 return;
             }
         }
+        $config = $this->getConfig();
+        $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
+
         json_return_and_die(array(
             'status' => true,
             'names' => $this->files_names,
             'attributes' => $this->files_attributes,
+            'immediatly' => $immediatly,
             'message' => "ok"));
     }
 
