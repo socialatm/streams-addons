@@ -4,30 +4,79 @@ namespace Code\Module;
 
 class Name {
 
-    public function write(\Code\Storage\File $file, string $image, string $name, $position)
-    {
-        logger("Try to write name '".$name."' for face at position='".implode(",",$position)."' in image=" . $image, LOGGER_DEBUG);
-        
-        $stream = $file->get();
-        //$csv = file_get_contents($file);
-        $csv = stream_get_contents($stream);
-        fclose($stream);
+    public function write(\Code\Storage\File $file, string $image, string $name, $position) {
+        logger("Try to write name '" . $name . "' for face at position='" . implode(",", $position) . "' in image=" . $image, LOGGER_DEBUG);
 
-        $csv = $this->replace($csv, $image, $name, $position);
-        if (!$csv) {
+        $stream = $file->get();
+        $contents = stream_get_contents($stream);
+        $faces = json_decode($contents, true);
+
+        $json = $this->replace($faces, $image, $name, $position);
+        if (!$json) {
             return false;
         }
 
-        logger("about to write name='" . $name . "' for face at position='" . implode(",",$position) . "'", LOGGER_DEBUG);
-        $file->put($csv);
-        logger("wrote name='" . $name . "' for face at position='".implode(",",$position)."' in image=" . $image, LOGGER_NORMAL);
+        logger("about to write name='" . $name . "' for face at position='" . implode(",", $position) . "'", LOGGER_DEBUG);
+        $file->put(json_encode($json));
+        logger("wrote name='" . $name . "' for face at position='" . implode(",", $position) . "' in image=" . $image, LOGGER_NORMAL);
 
         return true;
     }
 
-    private function replace(string $csv, string $image, string $name, $position)
-    {
-        logger("replacing name='" . $name . "' for face at position='".implode(",",$position)."'", LOGGER_DEBUG);
+    private function replace($faces, string $image, string $name, $position) {
+        logger("replacing name='" . $name . "' for face at position='" . implode(",", $position) . "'", LOGGER_DEBUG);
+        $i = 0;
+        while ($faces["file"][$i]) {
+            $file = $faces["file"][$i];
+            if ($file == $image) {
+                $pos = $faces["position"][$i];
+                if ($this->isSameFace($pos, $position)) {
+                    // $objDateTime = new DateTime('NOW'); 
+                    // $dateTimeString = $objDateTime->format(DateTime::W3C);
+                    date_default_timezone_set("UTC");
+                    $dateTimeString = date("Y-m-d\TH:i:sP");  // same as W3C format but always ...T+00:00
+                    $faces["time_named"][$i] = $dateTimeString;
+                    $faces["name"][$i] = $name;
+                    logger("Replaced name with new name='" . $name . "' for face at position='" . implode(",", $position) . "' in image='" . $image, LOGGER_DEBUG);
+                    return $faces;
+                }
+            }
+            $i++;
+        }
+        logger("No match for image='" . $image . "' with face at position=" . implode(",", $position) . ". Replacement with new name=" . $name . " was not successfull.", LOGGER_NORMAL);
+        return false;
+    }
+
+    private function isSameFace($face_a, $face_b) {
+        // margins left, right, top, bottom in percent
+        $middle_of_face_x = (int) ($face_a[0]) + ( 100 - ( (int) ($face_a[1]) + (int) ($face_a[0] ) )) / 2;
+        $middle_of_face_y = (int) ($face_a[2]) + ( 100 - ( (int) ($face_a[2]) + (int) ($face_a[3] ) )) / 2;
+        $end_of_face_b_x = 100 - $face_b[1];
+        $end_of_face_b_y = 100 - $face_b[3];
+        // is middle of face_a inside $face_b position?
+        if (($face_b[0] < $middle_of_face_x) && ($middle_of_face_x < $end_of_face_b_x)) {
+            if (($face_b[2] < $middle_of_face_y) && ($middle_of_face_y < $end_of_face_b_y)) {
+                $middle_of_face_b_x = (int) ($face_b[0]) + ( 100 - ( (int) ($face_b[1]) + (int) ($face_b[0] ) )) / 2;
+                $middle_of_face_b_y = (int) ($face_b[2]) + ( 100 - ( (int) ($face_b[2]) + (int) ($face_b[3] ) )) / 2;
+                $end_of_face_x = 100 - $face_a[1];
+                $end_of_face_y = 100 - $face_a[3];
+                // is middle of face_b position inside face_a ?
+                if (($face_a [0] < $middle_of_face_b_x) && ($middle_of_face_b_x < $end_of_face_x)) {
+                    if (($face_a[2] < $middle_of_face_b_y) && ($middle_of_face_b_y < $end_of_face_y)) {
+                        return True;
+                    }
+                }
+            }
+        }
+    }
+
+    private function startsWith($haystack, $needle) {
+        $length = strlen($needle);
+        return substr($haystack, 0, $length) === $needle;
+    }
+
+    private function replace_old($faces, string $image, string $name, $position) {
+        logger("replacing name='" . $name . "' for face at position='" . implode(",", $position) . "'", LOGGER_DEBUG);
         $s = "";
         $sep = ",";
         $nameIndex = -1;
@@ -68,12 +117,12 @@ class Name {
                 logger("header length='" . $headerLength . "'", LOGGER_DEBUG);
             } else {
                 if (sizeof($columns) < $headerLength) {
-                    logger("Wrong with csv format. Count of columns='" . sizeof($columns) . "' is less than ".$headerLength.", line='".$line."'. This might happen if the python scripts write the file just in the moment of PHP reads it.", LOGGER_NORMAL);
+                    logger("Wrong with csv format. Count of columns='" . sizeof($columns) . "' is less than " . $headerLength . ", line='" . $line . "'. This might happen if the python scripts write the file just in the moment of PHP reads it.", LOGGER_NORMAL);
                     logger($columns, LOGGER_DEBUG);
                     return false;
                 }
                 if (sizeof($columns) > $headerLength) {
-                    logger("Wrong with csv format. Count of columns='" . sizeof($columns) . "' is greater than ".$headerLength.", line='".$line."'. This might happen if the python scripts write the file just in the moment of PHP reads it.", LOGGER_NORMAL);
+                    logger("Wrong with csv format. Count of columns='" . sizeof($columns) . "' is greater than " . $headerLength . ", line='" . $line . "'. This might happen if the python scripts write the file just in the moment of PHP reads it.", LOGGER_NORMAL);
                     logger($columns, LOGGER_DEBUG);
                     return false;
                 }
@@ -96,48 +145,18 @@ class Name {
                         $dateTimeString = date("Y-m-d\TH:i:sP");  // same as W3C format but always ...T+00:00
                         $columns[$timeNamedIndex] = $dateTimeString;
                         $line = implode($sep, $columns);
-                        logger("Replaced name with new name='".$name."' for face at position='". implode(",",$position)."' in image='" . $image, LOGGER_DEBUG) ;
+                        logger("Replaced name with new name='" . $name . "' for face at position='" . implode(",", $position) . "' in image='" . $image, LOGGER_DEBUG);
                         $hasMatch = true;
                     }
                 }
                 $s = $s . PHP_EOL . $line;
             }
-                
         }
         if ($hasMatch) {
             return $s;
         }
-        logger("No match for image='" . $image . "' with face at position=" . implode(",",$position) . ". Replacement with new name=".$name." was not successfull.", LOGGER_NORMAL);
+        logger("No match for image='" . $image . "' with face at position=" . implode(",", $position) . ". Replacement with new name=" . $name . " was not successfull.", LOGGER_NORMAL);
         return false;
-    }
-
-    private function isSameFace($face_a, $face_b) {
-        // margins left, right, top, bottom in percent
-        $middle_of_face_x = (int)($face_a[0]) + ( 100 - ( (int)($face_a[1]) + (int)($face_a[0] ) )) / 2;
-        $middle_of_face_y = (int)($face_a[2]) + ( 100 - ( (int)($face_a[2]) + (int)($face_a[3] ) )) / 2;
-        $end_of_face_b_x = 100 - $face_b[1];
-        $end_of_face_b_y = 100 - $face_b[3];
-        // is middle of face_a inside $face_b position?
-        if ( ($face_b[0] < $middle_of_face_x) && ($middle_of_face_x < $end_of_face_b_x) ) {
-            if ( ($face_b[2] < $middle_of_face_y) && ($middle_of_face_y < $end_of_face_b_y) ) {
-                $middle_of_face_b_x =  (int)($face_b[0]) + ( 100 - ( (int)($face_b[1]) + (int)($face_b[0] ) )) / 2;
-                $middle_of_face_b_y = (int)($face_b[2]) + ( 100 - ( (int)($face_b[2]) + (int)($face_b[3] ) )) / 2;
-                $end_of_face_x = 100 - $face_a[1];
-                $end_of_face_y = 100 - $face_a[3];
-                // is middle of face_b position inside face_a ?
-                if (($face_a [0] < $middle_of_face_b_x) && ($middle_of_face_b_x < $end_of_face_x)) {
-                    if (($face_a[2] < $middle_of_face_b_y) && ($middle_of_face_b_y < $end_of_face_y)) {
-                        return True;
-                    }
-                }
-            }
-        }
-    }
-
-    private function startsWith($haystack, $needle)
-    {
-        $length = strlen($needle);
-        return substr($haystack, 0, $length) === $needle;
     }
 
 }

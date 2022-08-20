@@ -64,7 +64,7 @@ class FaceRecognition {
         logger(implode(" ", $a), LOGGER_DEBUG);
 
         // python3 /var/www/mywebsite/addon/faces/py/faces.py --host 127.0.0.1 --user mywebsite --pass xxx --db mywebsite --imagespath /var/www/mywebsite/store/oj --channelid 0 --procid aeeed6d862 --first_result on --percent 2 --pixel 50 --training 224 --result 50 --statistics on --history on --loglevel 2 --logfile /var/www/log/faces.log --detectors retinaface,mtcnn,ssd,opencv,mediapipe --models Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace --distance_metrics euclidean,cosine,euclidean_l2 --demography Emotion,Age,Gender,Race
-        //exec($cmd . ' > /dev/null 2>/dev/null &');
+        exec($cmd . ' > /dev/null 2>/dev/null &');
     }
 
     private function getParamString($config, $name) {

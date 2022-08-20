@@ -1,6 +1,5 @@
 import importlib
 import os
-import pickle
 import pandas as pd
 import time
 import datetime
@@ -287,7 +286,7 @@ class Worker:
             self.write_alive_signal(self.RUNNING)
             if faces:
                 for face in faces:
-                    df = self.util.add_row_attributes(df,face)
+                    df = self.util.add_row_attributes(df, face)
 
         logging.debug(self.folder + " - finished analyse of faces in " + str(len(images)) + " images")
         self.store_facial_attributes(df)
@@ -555,7 +554,6 @@ class Worker:
         return new_images
 
     def get_images(self):
-        images = []
         query = ("SELECT display_path, os_path "
                  "FROM `attach` "
                  "WHERE `uid` = %s AND "
@@ -650,10 +648,10 @@ class Worker:
     def get_face_representations(self):
         # Load stored face representations
         df = None  # pandas.DataFrame that holds all face representations
-        if os.stat(self.file_embedding).st_size == 0:
-            logging.debug(self.folder + " - file face representations is empty yet " + self.file_embedding)
-            return df
         if os.path.exists(self.file_embedding):
+            if os.stat(self.file_embedding).st_size == 0:
+                logging.debug(self.folder + " - file face representations is empty yet " + self.file_embedding)
+                return df
             df = pd.read_parquet(self.file_embedding, engine="pyarrow")
             logging.debug(self.folder + " - loaded face representations from file " + self.file_embedding)
         if df is not None and len(df) == 0:
@@ -769,14 +767,15 @@ class Worker:
 
     def write_statistics(self, df, most_effective_method):
         self.write_alive_signal(self.RUNNING)
+        if self.check_file_by_channel(self.file_name_faces_statistic) is False:
+            return
+        if self.check_file_by_channel(self.file_name_models_statistic) is False:
+            return
+
         if self.statistics:
-            if self.check_file_by_channel(self.file_name_faces_statistic) is False:
-                return
             df = df.drop('representation', axis=1)
             df.to_csv(self.file_face_statistics)
             logging.debug("Wrote face statistics to file=" + self.file_name_faces_statistic)
-            if self.check_file_by_channel(self.file_name_models_statistic) is False:
-                return
             df_models = self.util.get_most_successful_method(df, True)
             name_count = len(df.name.unique()) - 1
             files = df.file.unique()
@@ -791,9 +790,14 @@ class Worker:
             f = open(self.file_face_statistics, 'w')
             f.write("")
             f.close()
+            f = open(self.file_model_statistics, 'w')
+            f.write("")
+            f.close()
+
 
     def set_time_to_wait(self, seconds):
         self.timeToWait = seconds
+
 
     def write_alive_signal(self, status):
         self.check_pid()
@@ -807,6 +811,7 @@ class Worker:
         self.db.update(query, data)
         logging.debug("lock status written to db:  " + content)
         self.timeLastAliveSignal = time.time()
+
 
     def check_pid(self):
         query = "SELECT v FROM config WHERE cat = 'faces' AND k = 'status'"
@@ -824,10 +829,12 @@ class Worker:
             logging.critical("Found wrong pid: own=" + self.proc_id + ", found= " + splittees[4])
             self.stop()
 
+
     def stop(self):
         self.db.close()
         logging.error("Stopping program. Good By...")
         sys.exit()
+
 
     def write_exif_dates(self, df):
         if not self.exiftool:

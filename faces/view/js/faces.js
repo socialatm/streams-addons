@@ -14,7 +14,8 @@ var endPanel = null;
 // TODO set log level by server
 var loglevel = 3; // 0 = errors/warnings, 1 = info, 2 = debug, 3 = dump data structures
 
-var images = [];
+let images = [];
+let channel_name = "";
 var receivedFaceEncodings = [];
 var receivedNames = [];
 var picturesProcessedID = [];
@@ -127,10 +128,7 @@ function loadFaceData(files) {
             url: url,
             success: function (data) {
                 ((loglevel >= 3) ? console.log(t() + " loaded " + data) : null);
-                var lines = data.split(/\r?\n/);
-                for (let i = 0; i < lines.length; i++) {
-                    readFace(lines[i], f);
-                }
+                readFaces(data, f);
                 if (++counter_files_name === files.length) {
                     ((loglevel >= 3) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
                     if (stopLoadingImages) {
@@ -145,52 +143,27 @@ function loadFaceData(files) {
     }
 }
 
-function readFace(csv, csvFile) {
-    ((loglevel >= 3) ? console.log(t() + " line " + csv) : null);
-    // id,file,position,face_nr,detector,model,name,time_named,name_recognized
-    // GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,"[126, 174, 228, 302]",1,,,,,
-    // GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,"[126, 174, 228, 302]",1,,,Brigitte Bardot,,Brigitte Bardot
-    var i = csv.indexOf(",");
-    if (i < 0) {
-        ((loglevel >= 3) ? console.log(t() + " line without seperator char, no face to read ") : null);
-        return;
+function readFaces(imgs, csvFile) {
+    let i = 0;
+    while (imgs.file[i]) {
+        let face = {
+            id: imgs.id[i],
+            url: "/cloud/" + channel_name + "/" + imgs.file[i],
+            pos: imgs.position[i],
+            face_nr: imgs.face_nr[i],
+            name: imgs.name[i],
+            name_recognized: imgs.name_recognized[i],
+            time_named: imgs.time_named[i],
+            exif_date: imgs.exif_date[i],
+            csv_file: csvFile,
+        };
+        i++;
+        appendName({name: face.name});
+        appendFaceToImages(face);
     }
-    var id = csv.substring(0, csv.indexOf(","));
-    if (id === "id") {
-        ((loglevel >= 3) ? console.log(t() + " ignoring line. Seems to be the line containig the  headers (column names) ") : null);
-        return;
-    }
-    var csv = csv.substring(csv.indexOf(",") + 1);
-    var file = csv.substring(0, csv.indexOf(","));
-    var channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
-    var url = "/cloud/" + channel_name + "/" + file;
-    var csv = csv.substring(csv.indexOf(",") + 2);
-    var position = csv.substring(1, csv.indexOf("]"));
-    var pos = position.split(",").map(Number);
-    if (pos.length != 4) {
-        ((loglevel >= 3) ? console.log(t() + " ignoring line ") : null);
-        return;
-    }
-    var csv = csv.substring(csv.indexOf("]") + 3);
-    var splittees = csv.split(",");
-    face = {
-        id: id,
-        csv_file: csvFile,
-        url: url,
-        pos: pos,
-        face_nr: splittees[0],
-        name: splittees[1],
-        name_recognized: splittees[2],
-        time_named: splittees[3],
-        exif_date: splittees[4],
-        detector: splittees[5],
-        model: splittees[6],
-    };
-    appendName({name: face.name});
-    appendFaceToImages(face, images);
 }
 
-function appendFaceToImages(face, images) {
+function appendFaceToImages(face) {
     var existingFace = getFaceForId(face.id);
     if (existingFace) {
         ((loglevel >= 2) ? console.log(t() + " try to update face id=" + face.id + " of image=" + face['url']) : null);
@@ -1309,6 +1282,7 @@ $(document).ready(function () {
     initDate("", "");
     zoom = parseInt($("#faces_zoom").text());
     ((loglevel >= 1) ? console.log(t() + " zoom = " + zoom) : null);
+    channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
     //--------------------------------------------------------------------------
     postStart(true);
 });

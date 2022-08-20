@@ -426,14 +426,14 @@ class Faces extends Controller {
             $file = substr($file, $i);
             $dirname = pathinfo($file, PATHINFO_DIRNAME);
             $imgDir = new Directory($dirname, $this->getAuth());
-            $csv_file = $imgDir->getChild($this->fileNameNames);
+            $names_file = $imgDir->getChild($this->fileNameNames);
             $chan_addr = $this->owner['channel_address'];
             $i = strpos($file, "/", strlen($chan_addr));
             $image = substr($file, $i + 1);
             ////////////
             require_once('Name.php');
             $writer = new Name();
-            $success = $writer->write($csv_file, $image, $face['name'], $face['position']);
+            $success = $writer->write($names_file, $image, $face['name'], $face['position']);
             ////////////
             if (!$success) {
                 $msg = "Failed to write name='" . $face['name'] . "' at position='" . implode(",", $face['position']) . "' of image='" . $image;
