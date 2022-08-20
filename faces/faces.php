@@ -117,7 +117,7 @@ function faces_plugin_admin(&$o) {
         '$Race' => array('Race', "Race", str_contains($demography, "Race"), ""),
         '$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
         '$experimental_allowed' => array('experimental_allowed', 'allow experimental mode', $experimental_allowed, 'Allow users to use more than one detector, model, distance metric and to analyse facial attributes (gender, race, emotion, age)'),
-        '$immediatly' => array('immediatly', 'allow immediate search', $immediatly, 'Start the face recognition always immediatly after a name was set or changed'),
+        '$immediatly' => array('immediatly', 'allow immediate search', $immediatly, 'Start the face recognition always immediatly after a user changed a name'),
     ));
 }
 
