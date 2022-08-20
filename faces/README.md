@@ -50,10 +50,7 @@ Open a shell for the user www-data
 Install the python module deepface (as user www-data).
 
     whoami
-    pip install deepface
-    pip install mediapipe
-    pip install fastparquet
-    pip install pyarrow
+    pip install deepface mediapipe fastparquet pyarrow
 
 Test if the user www-data is able to run the python self check successfully
 (provided the addons are found under "/var/www/mywebsite/addon"...) 
