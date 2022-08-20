@@ -228,6 +228,7 @@ class Faces extends Controller {
             }
         }
         $this->prepareFiles();
+        $config = $this->getConfig();
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if (!$block) {
             if ($action === 'start') {
@@ -236,14 +237,12 @@ class Faces extends Controller {
                 if (isset($_POST["recognize"]) && $_POST["recognize"] == 1) {
                     $channel_id = $this->owner['channel_id']; // run the face recognition for owner channel only
                 }
-                $config = $this->getConfig();
                 $fr->start($storeDirectory, $channel_id, $config, $rm_params);
             }
             if ($rm_params) {
                 return;
             }
         }
-        $config = $this->getConfig();
         $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
 
         json_return_and_die(array(

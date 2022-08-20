@@ -23,6 +23,11 @@ class FaceConfiguration {
             $this->write($file, $config);
         } else {
             $config = $this->checkConfig($config);
+            $toCompare = json_encode($config);
+            if ($contents != $toCompare) {
+                // the admin might have changed the settings meanwhile
+                $this->write($file, $config);
+            }
         }
 
 
@@ -30,7 +35,7 @@ class FaceConfiguration {
     }
 
     function write(\Code\Storage\File $file, $config) {
-        $config = $this->checkConfig($config);
+        //$config = $this->checkConfig($config);
 
         $json = json_encode($config);
 
@@ -79,6 +84,20 @@ class FaceConfiguration {
             }
         }
 
+        if (!$found) {
+            // switch first allowed on
+            for ($i = 0; $i < sizeof($config[$group]); $i++) {
+                $element = $config[$group][$i];
+                $name = $element[0];
+                $value = $element[1];
+                $disabled = $element[2];
+                if (!$disabled) {
+                    $config[$group][$i][1] = true;
+                    break;
+                }
+            }
+        }
+
         return $config;
     }
 
@@ -89,7 +108,7 @@ class FaceConfiguration {
         if (!$experimental_allowed) {
             $config["statistics"][0][1] = false;  // checkbox is checked
             $config["statistics"][0][2] = true;   // checkbox is disabled
-            
+
             $config["history"][0][1] = false;
             $config["history"][0][2] = true;
 
@@ -98,27 +117,31 @@ class FaceConfiguration {
 
             $config["faces_experimental"][0][1] = false;
             $config["faces_experimental"][0][2] = true;
-            
-            $config["immediatly"][0][1] = false;
-            $config["immediatly"][0][2] = true;
 
             $config["faces_defaults"][0][1] = false;  // checkobox is not checked
             $config["faces_defaults"][0][2] = false;  // checkbox is enabled
         } else {
             $config["statistics"][0][2] = false;
-            
+
             $config["history"][0][2] = false;
 
             $config["enforce"][0][2] = false;
 
             $config["faces_experimental"][0][1] = false;
             $config["faces_experimental"][0][2] = false;
-            
-            $config["immediatly"][0][2] = false;
 
             $config["faces_defaults"][0][1] = false;
             $config["faces_defaults"][0][2] = false;
         }
+
+        $immediate_search_allowed = get_config('faces', 'immediatly') ? get_config('faces', 'immediatly') : false;
+        if (!$immediate_search_allowed) {
+            $config["immediatly"][0][1] = false;
+            $config["immediatly"][0][2] = true;
+        } else {
+            $config["immediatly"][0][2] = false;
+        }
+
 
 
         for ($i = 0; $i < sizeof($config["min_face_width_detection"]); $i++) {
@@ -215,7 +238,7 @@ class FaceConfiguration {
         $config = $this->addConfigElement("faces_experimental", "experimental", $config, false);
         $config = $this->addConfigElement("immediatly", "immediatly", $config, false);
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
-        
+
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
 
         $config = $this->checkConfig($config);

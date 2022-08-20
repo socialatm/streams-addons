@@ -43,6 +43,8 @@
         <h3>Keep History</h3>
         <div>This keeps a record of how correct the recognition works over time
             This will allow you to activate the statistics at any time later (see below).</div>
+        <div>If the "immediate search" is switched on (see below) it might be more
+        save to switch the "history" on as well.</div>
     </div>
     <div id="face_statistics">
         <h3>Write Statistics into a CSV File</h3>
@@ -58,6 +60,14 @@
             want to compare the effectivness of detectors, models and distance metrics.
             If switched on this will slow down face matching.</div>
         <div>Recommended: Switch off</div>
+    </div>
+    <h2>Performance</h2>
+    <div id="face_performance">
+        <h3>Immediate Search</h3>
+        <div>Start the face recognition always immediatly after a users has set
+         or changed a name. Advantage: The names will be updated in the
+        browser as soon as the face recognition finds a person. Disadvantage:
+        Increased server load.</div>
     </div>
 
     <hr/>

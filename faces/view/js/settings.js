@@ -62,6 +62,7 @@ function fillGUI(config) {
     createCheckboxes(config.statistics, "#face_statistics", true);
     createCheckboxes(config.history, "#face_history", true);
     createCheckboxes(config.enforce, "#face_enforce_all", true);
+    createCheckboxes(config.immediatly, "#face_performance", true);
     createCheckboxes(config.faces_defaults, "#face_detaults");
     createCheckboxes(config.faces_experimental, "#face_experimental");
     createTextFields(config.min_face_width_detection, "#face_size_detection");
@@ -124,7 +125,7 @@ function presetDefault() {
         var checkboxes = document.getElementsByClassName(group);
         setToDefault(checkboxes, false);
     });
-    checkboxgroups = ["face_attributes", "face_statistics", "face_history", "face_enforce_all"];
+    checkboxgroups = ["face_attributes", "face_statistics", "face_history", "face_enforce_all", "face_performance"];
     checkboxgroups.forEach(group => {
         var checkboxes = document.getElementsByClassName(group);
         setToDefault(checkboxes, true);
