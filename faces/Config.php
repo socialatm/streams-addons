@@ -84,7 +84,7 @@ class FaceConfiguration {
             }
         }
 
-        if (!$found) {
+        if (!$found && $group !== "demography") {
             // switch first allowed on
             for ($i = 0; $i < sizeof($config[$group]); $i++) {
                 $element = $config[$group][$i];
