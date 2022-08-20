@@ -64,36 +64,39 @@ Watching CPU and RAM might be usefull.
 
 Try again to see the test result only. The script should output something like
 
-    Found model Facenet512
-    RAM memory % used: 29.72
-    Found model ArcFace
-    RAM memory % used: 31.36
-    Found model VGG-Face
-    RAM memory % used: 36.55
-    Found model Facenet
-    RAM memory % used: 37.07
-    Found model OpenFace
-    RAM memory % used: 37.11
-    Found model DeepFace
-    RAM memory % used: 42.31
-    Found model SFace
-    RAM memory % used: 42.75
-    Found detector retinaface
-    RAM memory % used: 44.16
-    Found detector mtcnn
-    RAM memory % used: 44.17
-    Found detector ssd
-    RAM memory % used: 44.19
-    Found detector opencv
-    RAM memory % used: 44.21
-    Found demography Emotion
-    RAM memory % used: 42.08
-    Found demography Age
-    RAM memory % used: 47.24
-    Found demography Gender
-    RAM memory % used: 52.76
-    Found demography Race
-    RAM memory % used: 58.15
+        RAM memory % used: 21.11
+        Found model Facenet512
+        RAM memory % used: 24.75
+        Found model ArcFace
+        RAM memory % used: 26.36
+        Found model VGG-Face
+        RAM memory % used: 31.62
+        Found model Facenet
+        RAM memory % used: 31.98
+        Found model OpenFace
+        RAM memory % used: 32.0
+        Found model DeepFace
+        RAM memory % used: 37.17
+        Found model SFace
+        RAM memory % used: 37.62
+        Found detector retinaface
+        RAM memory % used: 38.98
+        Found detector mtcnn
+        RAM memory % used: 38.98
+        Found detector ssd
+        RAM memory % used: 39.03
+        Found detector mediapipe
+        RAM memory % used: 38.99
+        Found detector opencv
+        RAM memory % used: 38.99
+        Found demography Emotion
+        RAM memory % used: 39.01
+        Found demography Age
+        RAM memory % used: 44.15
+        Found demography Gender
+        RAM memory % used: 49.52
+        Found demography Race
+        RAM memory % used: 54.95
 
 You can exit the shell for www-data
 
