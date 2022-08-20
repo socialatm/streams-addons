@@ -148,7 +148,7 @@ function faces_plugin_admin_post(&$a) {
         $detectors[] = 'opencv';
     }
 
-    if (!$retinaface && !$mtcnn && !$ssd && !$mediapipe && !$opencv) {
+    if (!$retinaface && !$mtcnn && !$ssd  && !$mediapipe && !$opencv) {
         $detectors[] = 'retinaface';
     }
 

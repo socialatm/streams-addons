@@ -4,7 +4,6 @@ namespace Code\Module;
 
 use App;
 use Code\Lib\Apps;
-use Code\Lib\PermissionDescription;
 use Code\Web\Controller;
 use Code\Lib\Channel;
 use Code\Lib\Head;
