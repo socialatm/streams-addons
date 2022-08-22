@@ -224,7 +224,7 @@ function faces_plugin_admin_post(&$a) {
     }
 
     if (!$cosine && !$euclidean_l2 && !$euclidean) {
-        $distance_metrics[] = 'euclideancosine,_l2';
+        $distance_metrics[] = 'cosine,euclidean_l2';
     }
 
     $metricsconfig = implode(",", $distance_metrics);
