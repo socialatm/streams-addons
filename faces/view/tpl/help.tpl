@@ -3,20 +3,12 @@
     There are a couple of reasons why this addon was written.
 </p>
 <h2>
-    Fun and private Use
-</h2>
-<p>
-    Obvious. Search for persons in thousands of private pictures. Example: Find
-    the grannies with two grand children together in one picture - in thousands
-    of pictures over 20 years.
-</p>
-<h2>
     Reclaim AI from commercial Companies
 </h2>
 <p>
-    You can use commercial providers to recognize faces. Usually you have to upload your 
-    pictures. The companies will sell it, keep it forever, re-use your data in their own
-    interest without asking you.
+    You can use commercial providers to recognize faces. Usually you have to upload  
+    pictures to them. Keep in mind, companies have to make money. They will keep, sell and re-uses your data in their own
+    interest.
 </p>
 <p>
     Keep the data where it belongs to - to YOU.
@@ -33,7 +25,7 @@
     the need of programming skills.
 </p>
 <p>
-    Parameters you can set
+    Parameters you can set:
 </p>
 <ul>
     <li>Detectors (this is a FACE)</li>
@@ -46,7 +38,7 @@
     <li>Choose a distance metric to match faces, or use all.</li>
 </ul>
 <p>
-    Parameters you can not set
+    Parameters you can not set:
 </p>
 <ul>
     <li>Threshold of confidence: Detection - this is a FACE</li>
@@ -57,6 +49,9 @@
     </li>
     <li>Method to align and normalize faces to increase the accuracy.</li>
 </ul>
+<p>
+    Open/TODO: How usefull is it to configure these parameters as well?
+</p>
 <h2>
     Proove Myths
 </h2>
@@ -66,29 +61,35 @@
     Most of us will use face recognition for fun.
     Some just search their foto album. Others search for relatives using payed websites.
     Sometimes the consequences of this technology are quite serious.
-    In some cases people will land on terrorist lists or get blackmailed.
+    People sometimes land on terrorist lists or get blackmailed.
 </p>
 <p>
     In any case you can almost be sure as soon as you upload a photo to a commercial provider it will
-    be analyzed.
+    be used for purposes you are not asked for and did not aggreed to.
 </p>
 <p>
     Once they have it... How well do recent face recognition methods work?
     How reliably do they recognize YOU?
 </p>
 <p>
-    How many false positives produce differnet detectors and recognition models.
+    How many false positives are produced by differnet detectors and recognition models.
 </p>
 <p>
     Of course the big players like Google, Apple, Amazon,... have a bunch of other data
     to make a better prediction. They can match the metadata like location, 
     social circle and much more to tell you who is most likly on a picture.
-    But this is a different story. Face recognition can do no more magic than for
-    you in this addon.
-</p> 
+    But this is a different story. Face recognition itself can do no more magic than for
+    you.
+</p>
+
+<hr/>
+
 <h1>Technical Background</h1>
+
 <h2>Basic Steps</h2>
+
 <h3>1. Face Detection</h3>
+
 <p>
     Find a face and its position in a picture, cut the face
     out and hand it over to the next step. Available detectors:
@@ -108,7 +109,7 @@
     neutral looking avatar face. The result is handed over to the next step.
 </p>
 <h3>3. Creation of Face Representations</h3>
-<p>This process creates a face representation for each face, sometimes called embedding, basically a vector.
+<p>This process creates a face representation for each face, sometimes called embedding, basically a vector of float numbers.
     The embeddings are created once and are stored in the file face.gzip.</p>
 <p>Available face recognition models:</p>
 <ul>
@@ -120,7 +121,9 @@
     <li>VGG-Face</li>
     <li>OpenFace</li>
 </ul>
+
 <h3>4. Matching (Verification)</h3>
+
 <p>
     This process matches face representations (vectors) for similarity.
     Available metrics:
@@ -138,6 +141,7 @@
     of Sefik Ilkin Serengil who is the author of the underlying backend deepface.
 </p>
 
+<hr/>
 
 <h1>Privacy</h1>
 <p>Keep in mind: no upload of an image, no face detection.</p>
@@ -148,7 +152,7 @@
     <li>Your faces (names and face representations) will not leave your server.</li>
 </ul>
 <p>
-    If you use a public server:
+    If you use a public server (a European perspective):
 </p>
 <ul>
     <li>User consent: Activate/deactivate the face recognition yourself, 
@@ -157,7 +161,7 @@
     <li>Data protection by design and by default: Allow or deny users/groups to view and edit your faces and names,
         <a href="https://gdpr-info.eu/art-25-gdpr/">Art. 25 GDPR</a>.
     </li>
-    <li>Right to data portability:
+    <li>Right to data portability, <a href="https://gdpr-info.eu/art-20-gdpr/">Art. 20 GDPR</a>.:
         <ul>
             <li>Export your faces and names,</li>
             <li>Import your faces and names from a different provider,</li>
@@ -169,8 +173,7 @@
     </li>
     <li>Right to erasure (‘right to be forgotten’): Delete your faces and names at any time, 
         <a href="https://gdpr-info.eu/art-17-gdpr/">Art. 17 GDPR</a>,
-    <li>Right to object: , 
-        <a href="https://gdpr-info.eu/art-21-gdpr/">Art. 21 GDPR</a>
+    <li>Right to object: <a href="https://gdpr-info.eu/art-21-gdpr/">Art. 21 GDPR</a>
     </li>
 </ul>
 
