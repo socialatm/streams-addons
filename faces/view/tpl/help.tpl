@@ -2,91 +2,137 @@
 <p>
     There are a couple of reasons why this addon was written.
 </p>
-<p>
-    This addon bundles some of the most recent state-of-the-art face recognition methods
-    from universitiy reserach projects all over the world as well as methods
-    developed and used by big companies like Google and Facebook.
-</p>
 <h2>
-    Fun
+    Fun and private Use
 </h2>
 <p>
-    Obvious.
+    Obvious. Search for persons in thousands of private pictures. Example: Find
+    the grannies with two grand children together in one picture - in thousands
+    of pictures over 20 years.
 </p>
+<h2>
+    Reclaim AI from commercial Companies
+</h2>
+<p>
+    You can use commercial providers to recognize faces. Usually you have to upload your 
+    pictures. The companies will sell it, keep it forever, re-use your data in their own
+    interest without asking you.
+</p>
+<p>
+    Keep the data where it belongs to - to YOU.
+</p>
+<h2>
+    Do some Experiments of your own
+</h2>
+<p>
+    This addon bundles some of the most recent state-of-the-art face recognition methods
+    from universities as well as big companies like Google and Facebook.
+</p>
+<p>
+    This addon makes it easy for you to play around with some parameters without
+    the need of programming skills.
+</p>
+<p>
+    Parameters you can set
+</p>
+<ul>
+    <li>Detectors (this is a FACE)</li>
+    <li>Models (this face is JANE)</li>
+    <li>Combine detectors and models. Be aware that 5 detectors combined with
+        7 models will produce 35 faces (instead of one) that have to be created, stored and matched.</li>
+    <li>Set a minimum size for a face to be detected.</li>
+    <li>Set the minimum size of faces used to find the same person (to train the model).</li>
+    <li>Set the minimum size of faces still unknown and to be matched with known faces.</li>
+    <li>Choose a distance metric to match faces, or use all.</li>
+</ul>
+<p>
+    Parameters you can not set
+</p>
+<ul>
+    <li>Threshold of confidence: Detection - this is a FACE</li>
+    <li>Threshold of confidence: Recognition - this face is JANE.
+        This threshold depends on the combination model - distance metric.
+        The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds
+        <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">see</a>.
+    </li>
+    <li>Method to align and normalize faces to increase the accuracy.</li>
+</ul>
 <h2>
     Proove Myths
 </h2>
 <p>
-    AI ("artifical intellegence") is conquering more and more aspects of our lifes.
+    AI ("artifical intellegence" we should better call it machine learning)
+    is conquering more and more aspects of our lifes.
     Most of us will use face recognition for fun.
     Some just search their foto album. Others search for relatives using payed websites.
     Sometimes the consequences of this technology are quite serious.
-    There are many cases where people will land on terrorist list or get blackmailed.
+    In some cases people will land on terrorist lists or get blackmailed.
 </p>
 <p>
-    How well do recent face recognition methods work?
-    But how reliably do they recognize YOU?
+    In any case you can almost be sure as soon as you upload a photo to a commercial provider it will
+    be analyzed.
 </p>
 <p>
-    How many false positives will be produced by differnet detectors and recognition models.
+    Once they have it... How well do recent face recognition methods work?
+    How reliably do they recognize YOU?
 </p>
 <p>
-    Do you know a programm to test it on your own own pictures? Well, here it is. 
-</p>
-<h2>
-    What Face Recognition Method is the best?
-</h2>
-<p>
-    As said before this addon bundles some of the most recent face recognition methods.
+    How many false positives produce differnet detectors and recognition models.
 </p>
 <p>
-    You can switch them all on and compare the results.
-    The addon writes files showing statistics. Be warned: This will slow
-    down everthing. But you can.
-</p>
+    Of course the big players like Google, Apple, Amazon,... have a bunch of other data
+    to make a better prediction. They can match the metadata like location, 
+    social circle and much more to tell you who is most likly on a picture.
+    But this is a different story. Face recognition can do no more magic than for
+    you in this addon.
+</p> 
+<h1>Technical Background</h1>
+<h2>Basic Steps</h2>
+<h3>1. Face Detection</h3>
 <p>
-    Some background. The whole process consists of three steps
+    Find a face and its position in a picture, cut the face
+    out and hand it over to the next step. Available detectors:
 </p>
-<<ul>
-    <li>Face detection. Find a face and its position in a picture.
-        This is done by so called detectors:
-        <<ul>
-            <li>retinaface</li>
-            <li>mtsnn</li>
-            <li>ssd</li>
-            <li>opencv</li>
-            <li>mediapipe (Google)</li>
-        </ul>
-        The results will be handed over to the next step.
-    </li>
-    <li>Creation of face representations, sometimes called embeddings, basically a vector.
-        This is done by face recognition models
-        <<ul>
-            <li>Facnenet (Google)</li>
-            <li>Facenet512 (Google)</li>
-            <li>Deepface (Facebook)</li>
-            <li>SFace</li>
-            <li>ArcFace</li>
-            <li>VGG-Face</li>
-            <li>OpenFace</li>
-        </ul>
-    </li>
-    <li>Matching of face representations. How similar are the representations.
-        This is done by mathematical standard methods.
-        The distance metrics provided are
-        <<ul>
-            <li>cosine</li>
-            <li>euclidean</li>
-            <li>euclidean_l2</li>
-        </ul>
-    </li>
+<ul>
+    <li>retinaface</li>
+    <li>mtsnn</li>
+    <li>ssd</li>
+    <li>opencv</li>
+    <li>mediapipe (Google)</li>
 </ul>
+<h3>2. Alignment and Normalization</h3>
 <p>
-    If you switch on every detetor and every model the addon will
-    combine every detector with every face recognition model.</p>
+    The alignment rotates the face until the
+    eyes are at the same horizontal line. Normalization corrects the perspective,
+    light, face expression (duck face, smile,...) and produces a kind of
+    neutral looking avatar face. The result is handed over to the next step.
+</p>
+<h3>3. Creation of Face Representations</h3>
+<p>This process creates a face representation for each face, sometimes called embedding, basically a vector.
+    The embeddings are created once and are stored in the file face.gzip.</p>
+<p>Available face recognition models:</p>
+<ul>
+    <li>Facnenet (Google)</li>
+    <li>Facenet512 (Google)</li>
+    <li>Deepface (Facebook)</li>
+    <li>SFace</li>
+    <li>ArcFace</li>
+    <li>VGG-Face</li>
+    <li>OpenFace</li>
+</ul>
+<h3>4. Matching (Verification)</h3>
 <p>
-    To give you an example. You have one single picture showing one single face.
-    The addon will produceThis will give 5x7=35 results.</p>
+    This process matches face representations (vectors) for similarity.
+    Available metrics:
+</p>
+<p>
+    Available distance metrics:
+</p>
+<ul>
+    <li>cosine</li>
+    <li>euclidean</li>
+    <li>euclidean_l2</li>
+</ul>
 <p>Please look at the <a href="https://github.com/serengil/deepface">official
         documentation</a> and <a href="https://sefiks.com/talks/">public talks</a>
     of Sefik Ilkin Serengil who is the author of the underlying backend deepface.
