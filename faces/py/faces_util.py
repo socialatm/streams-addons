@@ -19,7 +19,7 @@ class Util:
             numbers = df_temp.face_nr.unique()
             for number in numbers:
                 matches = df_temp.loc[
-                    (df_temp['position'] != "") & (df_temp['file'] == file) & (df_temp['face_nr'] == number)]
+                    (df_temp['width'] > 0) & (df_temp['file'] == file) & (df_temp['face_nr'] == number)]
                 count = len(matches)
                 if count == 1:
                     df_result = pd.concat([df_result, matches], ignore_index=True)
@@ -103,7 +103,6 @@ class Util:
 
     def filter_by_last_named(self, df):
         logging.debug("filter last named faces")
-        df.loc[(df['time_named'].isna() == True), 'time_named'] = ""  # get rid of "nan" values
         df = df.sort_values(["file", "face_nr", "time_named"], ascending=[True, True, False])
         file_last = ""
         face_nr_last = ""
@@ -293,9 +292,9 @@ class Util:
                     (df_results['model'] == model) & (df_results['detector'] == detector), 'duration_representation']
                 if len(df_all) == 0:
                     continue
-                detected = df.loc[(df['model'] == model) & (df['detector'] == detector) & (df['position'] != "")]
+                detected = df.loc[(df['model'] == model) & (df['detector'] == detector) & (df['width'] > 0)]
                 recognized = df.loc[(df['model'] == model) & (df['detector'] == detector)
-                                    & (df['position'] != "") & (df['name_recognized'] != "")]
+                                    & (df['width'] > 0) & (df['name_recognized'] != "")]
                 sum_detected += len(detected)
                 sum_recognized += len(recognized)
                 accuracy = round(len(correct) * 100 / len(df_all), 1)

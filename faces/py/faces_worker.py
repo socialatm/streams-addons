@@ -497,7 +497,7 @@ class Worker:
         df_names = self.get_face_names()
         # copy new or changed names.... the user might have changed names while the face recognition was running
         for face in df_names.itertuples():
-            # copy changed names into the results (it fact all names but changed or new names are the reason)
+            # copy changed names into the results (in fact all names but changed or new names are the reason)
             df_recognized.loc[(df_recognized['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
         # remove ignored names
         keys = df_names.loc[(df_names['name'] == self.IGNORE)].index

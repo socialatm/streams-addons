@@ -77,7 +77,10 @@ class Finder:
             if len(conf) < 2:
                 continue
 
-            if conf[0].strip().lower() == 'model' or conf[0].strip().lower() == 'models':
+            key = conf[0].strip().lower()
+            value = conf[1].strip().lower()
+
+            if key == 'model' or key == 'models':
                 for m in conf[1].split(","):
                     if m in self.models_valid and m not in self.model_names:
                         self.model_names.append(m)
@@ -85,7 +88,7 @@ class Finder:
                         logging.warning(m + " is not a valid model (or already set). Hint: The model name is case " +
                                         "sensitive.  Loading default model if no more valid model name is given...")
                         logging.warning("Valid models are: " + str(self.models_valid))
-            elif conf[0].strip().lower() == 'detector_backend' or conf[0].strip().lower() == 'detectors':
+            elif key == 'detector_backend' or key == 'detectors':
                 if conf[1] in self.detectors:
                     self.detector_name = conf[1]
                 else:
@@ -93,7 +96,7 @@ class Finder:
                                     "sensitive. Loading default detector...")
                     logging.warning("Valid detectors are: " + str(self.detectors))
 
-            elif conf[0].strip().lower() == 'analyse' or conf[0].strip().lower() == 'demography':
+            elif key == 'analyse' or key == 'demography':
                 self.conf_demography = conf[1]
                 for demography in conf[1].split(","):
                     if demography.strip().lower() == "off":
@@ -115,13 +118,13 @@ class Finder:
                     elif demography.strip().lower() == 'race':
                         self.is_analyse_race = True
 
-            elif conf[0].strip().lower() == 'css_position':
-                if conf[1].strip().lower() == "on":
+            elif key == 'css_position':
+                if value == "on":
                     self.css_position = True
-                if conf[1].strip().lower() == "off":
+                if value == "off":
                     self.css_position = False
 
-            elif conf[0].strip().lower() == 'min_face_width_percent':
+            elif key == 'min_face_width_percent' or key == 'percent':
                 percent = conf[1]
                 if percent.isdigit():
                     self.min_face_width_percent = int(percent)
@@ -131,7 +134,7 @@ class Finder:
                         str(percent) + " is not a valid number for the minimal faces width. Take the default:  " + str(
                             self.min_face_width_percent) + " percent")
 
-            elif conf[0].strip().lower() == 'min_face_width_pixel':
+            elif key == 'min_face_width_pixel' or key == 'pixel':
                 pixel = conf[1]
                 if pixel.isdigit():
                     self.min_face_width_pixel = int(pixel)
@@ -141,7 +144,7 @@ class Finder:
                         str(pixel) + " is not a valid number for the minimal faces width. Take the default:  " + str(
                             self.min_face_width_pixel) + " pixel")
 
-            elif conf[0].strip().lower() == 'training':
+            elif key == 'training':
                 pixel = conf[1]
                 if pixel.isdigit():
                     self.min_width_train = int(pixel)
@@ -152,7 +155,7 @@ class Finder:
                         str(pixel) + " is not a valid number for the minimal faces width for training data. " +
                         "Take the default:  " + str(self.min_width_train) + " pixel")
 
-            elif conf[0].strip().lower() == 'result':
+            elif key == 'result':
                 pixel = conf[1]
                 if pixel.isdigit():
                     self.min_width_result = int(pixel)
@@ -244,8 +247,9 @@ class Finder:
             if (w_percent < self.min_face_width_percent) or (
                     w < self.min_face_width_pixel):  # discard small detected faces
                 logging.debug(
-                    "Ignore face because width=" + str(w_percent) + " % (" + str(w) + "px) is is less than " + str(
-                        self.min_face_width_percent) + " % or " + str(self.min_face_width_pixel) + " px")
+                    "Ignore face because width=" + str(round(w_percent, 2)) + "% or " + str(w) +
+                    "px is is less than minimum " + str(self.min_face_width_percent) + "% or " +
+                    str(self.min_face_width_pixel) + "px")
                 continue
             counter += 1
             tic = time.time()
@@ -380,8 +384,9 @@ class Finder:
             if (w_percent < self.min_face_width_percent) or (
                     w < self.min_face_width_pixel):  # discard small detected faces
                 logging.debug(
-                    "Ignore face because width=" + str(w_percent) + " % (" + str(w) + "px) is is less than " + str(
-                        self.min_face_width_percent) + " % or " + str(self.min_face_width_pixel) + " px")
+                    "Ignore face because width=" + str(round(w_percent, 2)) + "% or " + str(w) +
+                    "px is is less than minimum of " + str(self.min_face_width_percent) + "% or " +
+                    str(self.min_face_width_pixel) + "px")
                 continue
             count_1 = count_1 + 1
             for model_name in self.model_names:
