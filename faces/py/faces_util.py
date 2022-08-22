@@ -1,6 +1,7 @@
 import pandas as pd
 import time
 import logging
+import os
 
 
 class Util:
@@ -421,3 +422,16 @@ class Util:
 
         df = df.append(row, ignore_index=True)
         return df
+
+    def checkRAM(self, max):
+        ram_percent = self.getRAM()
+        if ram_percent > max:
+            logging.critical("RAM memory exceeded " + str(max) + "%")
+            return False
+        return True
+
+    def getRAM(self):
+        total_memory, used_memory, free_memory = map(int, os.popen('free -t -m').readlines()[-1].split()[1:])
+        ram_percent = int(round((used_memory / total_memory) * 100, 2))
+        logging.debug("RAM memory used: " + str(ram_percent) + "%")
+        return ram_percent

@@ -85,6 +85,8 @@ function faces_plugin_admin(&$o) {
 
     $experimental_allowed = get_config('faces', 'experimental_allowed') ? get_config('faces', 'experimental_allowed') : false;
     $immediatly = get_config('faces', 'immediatly') ? get_config('faces', 'immediatly') : false;
+    
+    $max_ram = get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80;
 
     $t = Theme::get_template("admin.tpl", "addon/faces/");
 
@@ -118,6 +120,7 @@ function faces_plugin_admin(&$o) {
         '$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
         '$experimental_allowed' => array('experimental_allowed', 'allow experimental mode', $experimental_allowed, 'Allow users to use more than one detector, model, distance metric and to analyse facial attributes (gender, race, emotion, age)'),
         '$immediatly' => array('immediatly', 'allow immediate search', $immediatly, 'Start the face recognition always immediatly after a user changed a name'),
+        '$max_ram' => array('max_ram', 'maximum allowed ram', $max_ram, 'The python scripts will stop if the server ram exceeds this value in percent'),
     ));
 }
 
@@ -221,7 +224,7 @@ function faces_plugin_admin_post(&$a) {
     }
 
     if (!$cosine && !$euclidean_l2 && !$euclidean) {
-        $distance_metrics[] = 'cosine,euclidean_l2';
+        $distance_metrics[] = 'euclideancosine,_l2';
     }
 
     $metricsconfig = implode(",", $distance_metrics);
@@ -307,6 +310,15 @@ function faces_plugin_admin_post(&$a) {
     }
     set_config('faces', 'zoom', $zoom);
     logger("set zoom to " . $zoom, LOGGER_NORMAL);
+
+    $max_ram = ((x($_POST, 'max_ram')) ? intval(trim($_POST['max_ram'])) : 80);
+    if ($max_ram > 90) {
+        $max_ram = 90;
+    } else if ($max_ram < 10) {
+        $max_ram = 10;
+    }
+    set_config('faces', 'max_ram', $max_ram);
+    logger("set max_ram " . $max_ram, LOGGER_NORMAL);
 
     $experimental_allowed = ((x($_POST, 'experimental_allowed')) ? true : false);
     set_config('faces', 'experimental_allowed', $experimental_allowed);

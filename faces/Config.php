@@ -7,7 +7,7 @@ use Code\Storage\File;
 class FaceConfiguration {
 
     private $available_detectors = "retinaface,mtcnn,ssd,opencv,mediapipe";
-    private $available_models = "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace";
+    private $available_models = "Facenet512,ArcFace,VGG-Face,SFace,Facenet,OpenFace,DeepFace";
     private $available_metrics = "euclidean,cosine,euclidean_l2";
     private $available_attributes = "Emotion,Age,Gender,Race";
 

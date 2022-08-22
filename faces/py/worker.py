@@ -59,6 +59,8 @@ class Worker:
         self.models_statistics = None
         self.util = faces_util.Util()
 
+        self.ram_allowed = 90  # %
+
     def set_finder(self, csv):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
@@ -121,12 +123,22 @@ class Worker:
             elif key == 'rm_models':
                 self.removeModels = conf[1].strip()
                 logging.debug("Configuration rm_models=" + self.removeModels)
+
+            elif conf[0].strip().lower() == 'ram':
+                ram = conf[1]
+                if ram.isdigit():
+                    self.ram_allowed = int(ram)
+                    logging.debug("set the max allowed ram to " + str(self.ram_allowed) + " %")
+                else:
+                    logging.warning(str(ram) + " is not a number. Set to default " + str(self.ram_allowed) + " %")
+
         logging.debug("Configuration log_data=" + str(self.log_data))
         logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
         logging.debug("Configuration sort_direction=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
+        logging.debug("Configuration ram=" + str(self.ram_allowed))
 
         self.set_finder(csv)
         self.set_recognizer(csv)
@@ -689,3 +701,8 @@ class Worker:
                               "' (where empty) for faces in image='" + file + "'")
             continue
         return df
+
+    def checkRAM(self):
+        if not self.util.checkRAM(self.ram_allowed):
+            logging.error("Stopping program. Good By...")
+            sys.exit(1)

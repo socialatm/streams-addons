@@ -31,6 +31,7 @@ class FaceRecognition {
             $logfile = '';
         }
         $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
+        $max_ram = (get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80);
 
         $detectorsConfig = $this->getParamString($config, "detectors");
         $modelsConfig = $this->getParamString($config, "models");
@@ -53,6 +54,7 @@ class FaceRecognition {
                 . $statisticsConfig
                 . $history_modeConfig
                 . $rm_params
+                . " --ram " . $max_ram
                 . " --loglevel " . $loglevel . $logfileparam
                 . $detectorsConfig . $modelsConfig . $distanceMetricsConfig . $demographyConfig);
 
@@ -120,7 +122,7 @@ class FaceRecognition {
         $a = explode(' ', $txt);
         $status = $a[0];
 
-        if (sizeof($a) != 5) {
+        if (sizeof($a) < 5) {
             logger("Status face recognition: not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_DEBUG);
             return false;
         }

@@ -33,6 +33,7 @@
 <h2>Performance</h2>
 {{include file="field_checkbox.tpl" field=$experimental_allowed}}
 {{include file="field_checkbox.tpl" field=$immediatly}}
+{{include file="field_input.tpl" field=$max_ram}}
 <h2>Browser Appearance</h2>
 {{include file="field_input.tpl" field=$zoom}}
 <p>Pressing the button <b>"Submit and Test"</b> will start to load all modules configured above to

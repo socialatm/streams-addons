@@ -30,6 +30,7 @@ parser.add_argument("--statistics")
 parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
+parser.add_argument("--ram")
 
 args = vars(parser.parse_args())
 
@@ -185,6 +186,11 @@ if args["rm_detectors"]:
 # list of models to remove
 if args["rm_models"]:
     config += ";rm_models=" + args["rm_models"]
+
+if args["ram"]:
+    config += ";ram=" + args["ram"]
+else:
+    config += ";ram=" + "90"
 
 # d = "	retinaface,mtcnn,ssd,opencv,mediapipe"
 d = "retinaface"

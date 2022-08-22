@@ -67,6 +67,8 @@ class Worker:
         self.channel = None
         self.util = faces_util.Util()
 
+        self.ram_allowed = 90  # %
+
     def set_finder(self, csv):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
@@ -133,12 +135,22 @@ class Worker:
             elif key == 'rm_models':
                 self.removeModels = conf[1].strip()
                 logging.debug("Configuration rm_models=" + self.removeModels)
+
+            elif conf[0].strip().lower() == 'ram':
+                ram = conf[1]
+                if ram.isdigit():
+                    self.ram_allowed = int(ram)
+                    logging.debug("set the max allowed ram to " + str(self.ram_allowed) + " %")
+                else:
+                    logging.warning(str(ram) + " is not a number. Set to default " + str(self.ram_allowed) + " %")
+
         logging.debug("Configuration log_data=" + str(self.log_data))
         logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
         logging.debug("Configuration sort_direction=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
+        logging.debug("Configuration ram=" + str(self.ram_allowed))
 
         self.set_finder(csv)
         self.set_recognizer(csv)
@@ -794,24 +806,30 @@ class Worker:
             f.write("")
             f.close()
 
-
     def set_time_to_wait(self, seconds):
         self.timeToWait = seconds
-
 
     def write_alive_signal(self, status):
         self.check_pid()
         elapsed_time = time.time() - self.timeLastAliveSignal
         if elapsed_time < self.timeToWait and status != self.FINISHED:
             return
+        self.write_status(status)
+        self.timeLastAliveSignal = time.time()
+
+    def write_status(self, status):
+        ram = self.util.getRAM()
+        if ram > self.ram_allowed:
+            status = self.FINISHED
         now = datetime.datetime.utcnow()
-        content = status + " " + now.strftime('%Y-%m-%d %H:%M:%S') + " pid " + self.proc_id
+        content = status + " " + now.strftime('%Y-%m-%d %H:%M:%S') + " pid " + self.proc_id + " ram " + str(ram)
         query = "UPDATE config SET v = %s WHERE cat = %s AND k = %s"
         data = (content, 'faces', 'status')
         self.db.update(query, data)
         logging.debug("lock status written to db:  " + content)
-        self.timeLastAliveSignal = time.time()
-
+        if ram > self.ram_allowed:
+            logging.critical("ram exceeded  " + str(self.ram_allowed) + "% , stopping program...")
+            self.stop()
 
     def check_pid(self):
         query = "SELECT v FROM config WHERE cat = 'faces' AND k = 'status'"
@@ -822,19 +840,17 @@ class Worker:
             self.stop()
         status = rows[0][0]
         splittees = status.split()
-        if splittees[3] != "pid" or len(splittees) != 5:
+        if splittees[3] != "pid" or len(splittees) < 5:
             logging.critical("4th and 5th element is no pid. Found status:  " + status)
             self.stop()
         if splittees[4] != self.proc_id:
             logging.critical("Found wrong pid: own=" + self.proc_id + ", found= " + splittees[4])
             self.stop()
 
-
     def stop(self):
         self.db.close()
         logging.error("Stopping program. Good By...")
         sys.exit()
-
 
     def write_exif_dates(self, df):
         if not self.exiftool:

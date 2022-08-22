@@ -24,6 +24,7 @@ parser.add_argument("--statistics")
 parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
+parser.add_argument("--ram")
 
 args = vars(parser.parse_args())
 
@@ -92,7 +93,7 @@ def read_config_file():
     logging.debug("read config from file " + conf_file)
     with open(conf_file, "r") as f:
         dict_conf = json.load(f)
-    no_list = ['statistics', 'enforce', 'history', 'training', 'result']
+    no_list = ['statistics', 'enforce', 'history', 'training', 'result', 'ram']
     for key in dict_conf:
         elements = dict_conf[key]
         param = ""
@@ -142,7 +143,8 @@ def read_config_params():
                   ["css_position", "on"],  # "on|off" position of face in image, css is used by browsers
                   ["log_data", "on"],  # "on|off"
                   ["rm_detectors", ""],  # list of detectors to remove
-                  ["rm_models", ""]]  # list of models to remove
+                  ["rm_models", ""]  # list of models to remove
+                  ["ram", "90"]]  # max allowed ram in percent
     for param in param_list:
         check_param(param)
 
