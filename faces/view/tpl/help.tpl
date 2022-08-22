@@ -14,8 +14,11 @@
     Keep the data where it belongs to - to YOU.
 </p>
 <h2>
-    Do some Experiments of your own
+    Make your own Experiments
 </h2>
+<p>
+    ...and choose what works best.
+</p>
 <p>
     This addon bundles some of the most recent state-of-the-art face recognition methods
     from universities as well as big companies like Google and Facebook.
