@@ -382,7 +382,7 @@ class Faces extends Controller {
         $a = explode(' ', $txt);
         $status = $a[0];
 
-        if (sizeof($a) != 5) {
+        if (sizeof($a) < 5) {
             logger("Status face recognition: not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_DEBUG);
             json_return_and_die(array('message' => 'wrong format in database', 'running' => false));
         }
