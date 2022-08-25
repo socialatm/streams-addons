@@ -24,7 +24,8 @@ class Worker:
         self.dirImages = None
         self.file_name_face_representations = "faces.gzip"
         self.file_name_facial_attributes = "demography.json"
-        self.file_name_face_names = "faces.json"
+        self.file_name_faces = "faces.json"
+        self.file_name_names = "names.json"
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
         self.dir_addon = "faces"
@@ -392,6 +393,15 @@ class Worker:
                 for face in df_names.itertuples():
                     df_representations.loc[(df_representations['id'] == face.id), ['name', 'time_named']] = [face.name,
                                                                                                              face.time_named]
+            # Read face names set from outside (usually by the user via the browser)
+            # Background:
+            #   The user will name faces in the browser.
+            #   The new or changed names will be written into a file names.json.
+            #
+            # What does happen in the next call?
+            #   1. Read the new or changed names from names.json
+            #   2. Remove the names from the file names.json (empty the data frame)
+            df_representations = self.read_new_names(df_representations, dir)
 
             # ---
             # Find same faces in images and write the name set by the user into every face.
@@ -439,7 +449,13 @@ class Worker:
         abs_dir = os.path.join(self.dirImages, faces_dir)
         if self.init_face_names(df_recognized, abs_dir):
             return
+
         df_names = self.get_face_names(abs_dir)
+
+        # new or changed name might be set from outside (usually by the user in the browser) while the
+        # detection and recognition was running
+        df_recognized = self.read_new_names(df_recognized)
+
         # copy new or changed names.... the user might have changed names while the face recognition was running
         for face in df_names.itertuples():
             # copy changed names into the results (in fact all names but changed or new names are the reason)
@@ -465,6 +481,33 @@ class Worker:
             self.write_results(df_recognized, df, faces_dir)
         else:
             logging.debug("faces have not changed. No need to store faces to file.")
+
+    def read_new_names(self, df, dir):
+        df_browser = self.get_face_names_set_by_browser(dir)
+        if df_browser is None:
+            return df
+        name_count = len(df_browser)
+        if name_count < 1:
+            logging.debug("no new or changed names set from outside")
+            return df
+
+        # copy new or changed names.... the user might have changed names while the face recognition was running
+        # ... into the file re
+        for face in df_browser.itertuples():
+            # copy changed names into the results (in fact all names but changed or new names are the reason)
+            df.loc[(df['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
+        logging.debug("copied " + str(name_count) + " names set from outside")
+
+        self.empty_names_for_browser(dir)
+
+        return df
+
+    def empty_names_for_browser(self, dir):
+        df_browser = self.util.create_frame_names()
+        path = os.path.join(dir, self.file_name_names)
+        if os.path.exists(path):
+            df_browser.to_json(path)
+        logging.debug(dir + " - wrote empty name file for browser " + path)
 
     def write_results(self, df_recognized, df_names, dir):
         df_names.drop('directory', axis=1, inplace=True)
@@ -581,11 +624,27 @@ class Worker:
         df.to_json(path)
         logging.debug(dir + " - stored facial attributes in file " + path)
 
+    def get_face_names_set_by_browser(self, dir):
+        # Load stored names
+        df = None  # pandas.DataFrame that holds all face names
+        path = os.path.join(dir, self.file_name_names)
+        if os.path.exists(self.path):
+            if os.stat(self.path).st_size == 0:
+                logging.debug(dir + " - file holding names is empty yet " + path)
+                self.empty_names_for_browser()
+                return df
+        df = pd.read_json(path)
+        logging.debug(dir + " - loaded names from file " + path)
+        return df
+
     def get_face_names(self, dir):
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
-        path = os.path.join(dir, self.file_name_face_names)
+        path = os.path.join(dir, self.file_name_faces)
         if os.path.exists(path):
+            if os.stat(self.path).st_size == 0:
+                logging.debug(dir + " - file holding names is empty yet " + path)
+                return df
             df = pd.read_json(path)
             logging.debug(dir + " - loaded face representations from file " + path)
         return df
@@ -617,7 +676,7 @@ class Worker:
             df = df.drop('representation', axis=1)
         df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
 
-        path = os.path.join(self.dirImages, dir, self.file_name_face_names)
+        path = os.path.join(self.dirImages, dir, self.file_name_faces)
         df.to_json(path)
 
     def cleanup(self, dir):
