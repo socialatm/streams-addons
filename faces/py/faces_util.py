@@ -422,14 +422,20 @@ class Util:
         df = df.append(row, ignore_index=True)
         return df
 
-    def checkRAM(self, max):
-        ram_percent = self.getRAM()
+    def create_frame_names(self):
+        df = pd.DataFrame({'id': pd.Series(dtype='str'),
+                           'name': pd.Series(dtype='str'),
+                           'time_named': pd.Series(dtype='str')})
+        return df
+
+    def check_ram(self, max):
+        ram_percent = self.get_ram()
         if ram_percent > max:
             logging.critical("RAM memory exceeded " + str(max) + "%")
             return False
         return True
 
-    def getRAM(self):
+    def get_ram(self):
         total_memory, used_memory, free_memory = map(int, os.popen('free -t -m').readlines()[-1].split()[1:])
         ram_percent = int(round((used_memory / total_memory) * 100, 2))
         logging.debug("RAM memory used: " + str(ram_percent) + "%")

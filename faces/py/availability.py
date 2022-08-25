@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import importlib
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--demography")
@@ -9,12 +10,10 @@ parser.add_argument("--models")
 args = vars(parser.parse_args())
 
 
-def printRAM():
+def print_ram():
     total_memory, used_memory, free_memory = map(int, os.popen('free -t -m').readlines()[-1].split()[1:])
     print("RAM memory % used:", round((used_memory / total_memory) * 100, 2))
 
-
-import importlib
 
 deepface_spec = importlib.util.find_spec("deepface")
 if deepface_spec is None:
@@ -23,7 +22,7 @@ if deepface_spec is None:
 
 models = ['Facenet512', 'ArcFace', 'VGG-Face', 'Facenet', 'OpenFace', 'DeepFace', 'SFace']
 # 'DeepID' did not work reliably in tests
-printRAM()
+print_ram()
 
 if args["models"] is not None:
     m = args["models"]
@@ -35,7 +34,7 @@ for model in models:
     try:
         DeepFace.build_model(model)
         print("Found model " + model)
-        printRAM()
+        print_ram()
     except Exception as e:
         print(str(e))
 
@@ -51,10 +50,9 @@ for detector in detectors:
     try:
         FaceDetector.build_model(detector)
         print("Found detector " + detector)
-        printRAM()
+        print_ram()
     except Exception as e:
         print(str(e))
-
 
 demography = ["Emotion", "Age", "Gender", "Race"]
 
@@ -69,6 +67,6 @@ for model in demography:
     try:
         DeepFace.build_model(model)
         print("Found demography " + model)
-        printRAM()
+        print_ram()
     except Exception as e:
         print(str(e))

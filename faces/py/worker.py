@@ -703,6 +703,6 @@ class Worker:
         return df
 
     def checkRAM(self):
-        if not self.util.checkRAM(self.ram_allowed):
+        if not self.util.check_ram(self.ram_allowed):
             logging.error("Stopping program. Good By...")
             sys.exit(1)

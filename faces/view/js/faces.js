@@ -69,14 +69,13 @@ function getLogLevel() {
 }
 
 function postStart(isStart) {
-    var recognize = "0";
+    let postURL = window.location + "/start";
     if (!isStart) {
-        recognize = "1";
+        postURL = window.location + "/recognize";
     }
-    var postURL = window.location + "/start";
     ((loglevel >= 1) ? console.log(t() + " about to start the face detection and recognition: url = " + postURL) : null);
 
-    $.post(postURL, {recognize: recognize}, function (data) {
+    $.post(postURL, {}, function (data) {
         if (!data['status']) {
             ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
             return;
@@ -103,7 +102,7 @@ function postUpdate() {
             return;
         }
         ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
-        ((loglevel >= 3) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
+        ((loglevel >= 2) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
             loadFaceData(data['names']); // creates list of images
         }
@@ -139,6 +138,39 @@ function loadFaceData(files) {
                 }
             },
             async: true
+        });
+    }
+}
+
+function loadFaceData_old(files) {
+    var i;
+    for (i = 0; i < files.length; i++) {
+        var f = files[i];
+        var url = window.location.origin + "/cloud/" + f;
+        ((loglevel >= 2) ? console.log(t() + " Requesting file " + url) : null);
+        var jqxhr = $.ajax({
+            type: "POST",
+            url: url,
+            data: "",
+            dataType: "json",
+            async: true
+        });
+        jqxhr.done(function (data) {
+            ((loglevel >= 2) ? console.log(t() + " success loading url " + url) : null);
+            ((loglevel >= 2) ? console.log(t() + " loaded " + data) : null);
+            readFaces(data, f);
+            if (++counter_files_name === files.length) {
+                ((loglevel >= 3) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
+                if (stopLoadingImages) {
+                    return;
+                }
+                filterAndSort();
+                appendPictures();
+            }
+        });
+        jqxhr.fail(function (data) {
+            ((loglevel >= 1) ? console.log(t() + " failed to load url " + url) : null);
+            ((loglevel >= 1) ? console.log(t() + " failed - loaded " + data) : null);
         });
     }
 }

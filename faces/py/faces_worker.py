@@ -25,7 +25,8 @@ class Worker:
         self.dirImages = None
         self.file_name_face_representations = "faces.gzip"
         self.file_name_facial_attributes = "demography.json"
-        self.file_name_face_names = "faces.json"
+        self.file_name_faces = "faces.json"
+        self.file_name_names = "names.json"
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
         self.dir_addon = "faces"
@@ -59,8 +60,9 @@ class Worker:
         self.follow_sym_links = False
 
         self.folder = None
-        self.file_embedding = None
-        self.file_names = None
+        self.file_embeddings = None
+        self.file_faces = None
+        self.file_names = None  # set by user via web browser (from outside)
         self.file_demography = None
         self.file_face_statistics = None
         self.file_model_statistics = None
@@ -180,10 +182,10 @@ class Worker:
         for app_channel in app_channels:
             self.channel = app_channel[0]
             query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s"
-            data = (self.channel, self.file_name_face_names)
+            data = (self.channel, self.file_name_faces)
             folders = self.db.select(query, data)
             if len(folders) == 0:
-                logging.info("no files " + self.file_name_face_names + " for channel_id " + str(self.channel))
+                logging.info("no files " + self.file_name_faces + " for channel_id " + str(self.channel))
                 continue
             for f in folders:
                 self.folder = f[0]
@@ -201,11 +203,12 @@ class Worker:
     def process_dir(self):
         logging.debug(self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
 
-        if self.check_file_by_name(self.file_name_face_names) is False:
+        if self.check_file_by_name(self.file_name_faces) is False:
             return
         if self.check_file_by_name(self.file_name_face_representations) is False:
             return
         self.check_file_by_name(self.file_name_facial_attributes)  # for cleanup
+        self.check_file_by_name(self.file_name_names)  # for cleanup
 
         self.cleanup()
         self.detect()
@@ -417,8 +420,9 @@ class Worker:
 
             if self.check_file_by_name(self.file_name_face_representations) is False:
                 return
-            if self.check_file_by_name(self.file_name_face_names) is False:
+            if self.check_file_by_name(self.file_name_faces) is False:
                 return
+            self.check_file_by_name(self.file_name_names)  # might be deleted but this is no serious condition
 
             # ---
             # Concatenate all face representations of all directories
@@ -444,6 +448,16 @@ class Worker:
                 for face in df_names.itertuples():
                     df_representations.loc[(df_representations['id'] == face.id),
                                            ['name', 'time_named']] = [face.name, face.time_named]
+
+            # Read face names set from outside (usually by the user via the browser)
+            # Background:
+            #   The user will name faces in the browser.
+            #   The new or changed names will be written into a file names.json.
+            #
+            # What does happen in the next call?
+            #   1. Read the new or changed names from names.json
+            #   2. Remove the names from the file names.json (empty the data frame)
+            df_representations = self.read_new_names(df_representations)
 
             # ---
             # Find same faces (by position) in images and write the name set by the user into every face.
@@ -490,20 +504,18 @@ class Worker:
     def store_face_names_if_changed(self, df_recognized, faces_dir, most_effective_method):
         if self.check_file_by_display_path(self.file_name_face_representations, faces_dir) is False:
             return
-        if self.check_file_by_display_path(self.file_name_face_names, faces_dir) is False:
+        if self.check_file_by_display_path(self.file_name_faces, faces_dir) is False:
             return
+        self.check_file_by_display_path(self.file_name_names, faces_dir)
         if self.init_face_names(df_recognized):
             return
-        df_names = self.get_face_names()
-        # copy new or changed names.... the user might have changed names while the face recognition was running
-        for face in df_names.itertuples():
-            # copy changed names into the results (in fact all names but changed or new names are the reason)
-            df_recognized.loc[(df_recognized['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
-        # remove ignored names
-        keys = df_names.loc[(df_names['name'] == self.IGNORE)].index
-        if len(keys) > 0:
-            df_names = df_names.drop((keys))
-            logging.debug(self.folder + " - removed " + str(len(keys)) + " ignored faces in face names")
+
+        df_names = self.get_face_names()  # this will read new or changed names set by the use via the web browser
+
+        # new or changed name might be set from outside (usually by the user in the browser) while the
+        # detection and recognition was running
+        df_recognized = self.read_new_names(df_recognized)
+
         # apply changed names using the timestamps
         df_recognized = self.util.copy_name_to_same_faces(df_recognized)
         # "reduce" result file
@@ -520,6 +532,32 @@ class Worker:
             self.write_results(df_recognized, df)
         else:
             logging.debug("faces have not changed. No need to store faces to file.")
+
+    def read_new_names(self, df):
+        df_browser = self.get_face_names_set_by_browser()
+        if df_browser is None:
+            return df
+        name_count = len(df_browser)
+        if name_count < 1:
+            logging.debug("no new or changed names set from outside")
+            return df
+
+        # copy new or changed names.... the user might have changed names while the face recognition was running
+        # ... into the file re
+        for face in df_browser.itertuples():
+            # copy changed names into the results (in fact all names but changed or new names are the reason)
+            df.loc[(df['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
+        logging.debug("copied " + str(name_count) + " names set from outside")
+
+        self.empty_names_for_browser()
+
+        return df
+
+    def empty_names_for_browser(self):
+        df_browser = self.util.create_frame_names()
+        if os.path.exists(self.file_names):
+            df_browser.to_json(self.file_names)
+        logging.debug(self.folder + " - wrote empty name file for browser " + self.file_names)
 
     def write_results(self, df_recognized, df_names):
         self.write_alive_signal(self.RUNNING)
@@ -580,11 +618,13 @@ class Worker:
 
     def check_file_by_name(self, file_name):
         if file_name == self.file_name_face_representations:
-            self.file_embedding = None
-        elif file_name == self.file_name_face_names:
-            self.file_names = None
+            self.file_embeddings = None
+        elif file_name == self.file_name_faces:
+            self.file_faces = None
         elif file_name == self.file_name_facial_attributes:
             self.file_demography = None
+        elif file_name == self.file_name_names:
+            self.file_names = None
 
         query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `folder` = %s AND `filename` = %s LIMIT 1"
         data = (self.channel, self.folder, file_name)
@@ -596,13 +636,16 @@ class Worker:
         path = os.path.join(self.dirImages, r[0][0])
         if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.W_OK):
             if file_name == self.file_name_face_representations:
-                self.file_embedding = path
+                self.file_embeddings = path
                 return True
-            elif file_name == self.file_name_face_names:
-                self.file_names = path
+            elif file_name == self.file_name_faces:
+                self.file_faces = path
                 return True
             elif file_name == self.file_name_facial_attributes:
                 self.file_demography = path
+                return True
+            elif file_name == self.file_name_names:
+                self.file_names = path
                 return True
         logging.debug(self.folder + " - skipping... no file or write permission, file " + path)
         return False
@@ -633,10 +676,12 @@ class Worker:
         return False
 
     def check_file_by_display_path(self, file_name, display_dir):
-        if file_name == self.file_name_face_names:
-            self.file_names = None
+        if file_name == self.file_name_faces:
+            self.file_faces = None
         elif file_name == self.file_name_face_representations:
-            self.file_embedding = None
+            self.file_embeddings = None
+        elif file_name == self.file_name_names:
+            self.file_names = None
 
         display_path = os.path.join(display_dir, file_name)
         query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
@@ -648,11 +693,14 @@ class Worker:
 
         path = os.path.join(self.dirImages, r[0][0])
         if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.W_OK):
-            if file_name == self.file_name_face_names:
-                self.file_names = path
+            if file_name == self.file_name_faces:
+                self.file_faces = path
                 return True
             elif file_name == self.file_name_face_representations:
-                self.file_embedding = path
+                self.file_embeddings = path
+                return True
+            elif file_name == self.file_name_names:
+                self.file_names = path
                 return True
         logging.debug("skipping... no file or write permission, file " + display_path)
         return False
@@ -660,23 +708,23 @@ class Worker:
     def get_face_representations(self):
         # Load stored face representations
         df = None  # pandas.DataFrame that holds all face representations
-        if os.path.exists(self.file_embedding):
-            if os.stat(self.file_embedding).st_size == 0:
-                logging.debug(self.folder + " - file face representations is empty yet " + self.file_embedding)
+        if os.path.exists(self.file_embeddings):
+            if os.stat(self.file_embeddings).st_size == 0:
+                logging.debug(self.folder + " - file face representations is empty yet " + self.file_embeddings)
                 return df
-            df = pd.read_parquet(self.file_embedding, engine="pyarrow")
-            logging.debug(self.folder + " - loaded face representations from file " + self.file_embedding)
+            df = pd.read_parquet(self.file_embeddings, engine="pyarrow")
+            logging.debug(self.folder + " - loaded face representations from file " + self.file_embeddings)
         if df is not None and len(df) == 0:
             return None
         return df
 
     def store_face_presentations(self, df):
-        if os.path.exists(self.file_embedding) is False:
-            logging.debug(self.folder + " - face representations does not exist " + self.file_embedding)
+        if os.path.exists(self.file_embeddings) is False:
+            logging.debug(self.folder + " - face representations does not exist " + self.file_embeddings)
             return False
         df = df.reset_index(drop=True)
-        df.to_parquet(self.file_embedding, engine="pyarrow", compression='gzip')
-        logging.debug(self.folder + " - stored face representations in file " + self.file_embedding)
+        df.to_parquet(self.file_embeddings, engine="pyarrow", compression='gzip')
+        logging.debug(self.folder + " - stored face representations in file " + self.file_embeddings)
 
         return True
 
@@ -697,21 +745,36 @@ class Worker:
         df.to_json(self.file_demography)
         logging.debug(self.folder + " - stored facial attributes in file " + self.file_demography)
 
+    def get_face_names_set_by_browser(self):
+        # Load stored names
+        df = None  # pandas.DataFrame that holds all face names
+        if self.file_names is None:
+            return df  # prior to this step a check might have failed
+        # double check because the file might be deleted meanwhile
+        if os.path.exists(self.file_names):
+            if os.stat(self.file_names).st_size == 0:
+                logging.debug(self.folder + " - file holding face names is empty yet " + self.file_names)
+                self.empty_names_for_browser()
+                return df
+        df = pd.read_json(self.file_names)
+        logging.debug(self.folder + " - loaded face names from file " + self.file_names)
+        return df
+
     def get_face_names(self):
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
-        if os.stat(self.file_names).st_size == 0:
-            logging.debug(self.folder + " - file holding face names is empty yet " + self.file_names)
+        if os.stat(self.file_faces).st_size == 0:
+            logging.debug(self.folder + " - file holding face names is empty yet " + self.file_faces)
             return df
-        if os.path.exists(self.file_names):
-            df = pd.read_json(self.file_names)
-            logging.debug(self.folder + " - loaded face names from file " + self.file_names)
+        if os.path.exists(self.file_faces):
+            df = pd.read_json(self.file_faces)
+            logging.debug(self.folder + " - loaded face names from file " + self.file_faces)
         return df
 
     def init_face_names(self, df_representation):
         df_names = self.get_face_names()
         if (df_names is None) or (len(df_names) == 0):
-            logging.debug("No face names yet or no longer because images where delete in dir. File=" + self.file_names)
+            logging.debug("No face names yet or no longer because images where delete in dir. File=" + self.file_faces)
             most_effective_method = self.util.get_most_successful_method(df_representation, False)
             df_names = self.util.filter_by_last_named(df_representation)
             df_names = self.util.number_unique_faces(df_names)
@@ -734,9 +797,9 @@ class Worker:
         if 'representation' in df.columns:  # for unit testing
             df = df.drop('representation', axis=1)
         df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
-        if os.path.exists(self.file_names):
-            df.to_json(self.file_names)
-        logging.debug(self.folder + " - stored face names in file " + self.file_names)
+        if os.path.exists(self.file_faces):
+            df.to_json(self.file_faces)
+        logging.debug(self.folder + " - stored face names in file " + self.file_faces)
 
     def cleanup(self):
         logging.debug(self.folder + " - 1. Step: cleaning up ---")
@@ -818,7 +881,7 @@ class Worker:
         self.timeLastAliveSignal = time.time()
 
     def write_status(self, status):
-        ram = self.util.getRAM()
+        ram = self.util.get_ram()
         if ram > self.ram_allowed:
             status = self.FINISHED
         now = datetime.datetime.utcnow()

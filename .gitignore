@@ -19,6 +19,9 @@ report/
 .DS_Store
 
 /nbproject/private/
+faces/py/.idea/
+faces/py/__pycache__/
+.gitignore
 
 #Kdevelop project files
 *.kdev4

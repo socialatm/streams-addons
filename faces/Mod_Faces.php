@@ -20,7 +20,8 @@ class Faces extends Controller {
     private $observer;
     private $addonDirName = "faces";
     private $fileNameEmbeddings = "faces.gzip";
-    private $fileNameNames = "faces.json";
+    private $fileNameFaces = "faces.json";
+    private $fileNameNames = "names.json";
     private $fileNameAttributes = "demography.json";
     private $fileNameFacesStatistic = "face_statistics.csv";
     private $fileNameModelsStatistic = "model_statistics.csv";
@@ -144,6 +145,9 @@ class Faces extends Controller {
             if ($api === 'start') {
                 // API: /faces/nick/start
                 $this->startFaceRecognition('start', false);
+            } elseif ($api === 'recognize') {
+                // API: /faces/nick/recognize
+                $this->startFaceRecognition('recognize', false);
             } elseif ($api === 'results') {
                 // API: /faces/nick/results
                 $this->startFaceRecognition('results', false);
@@ -234,10 +238,15 @@ class Faces extends Controller {
             if ($action === 'start') {
                 $storeDirectory = getcwd() . "/store/" . $this->owner['channel_address'];
                 $channel_id = 0; // run the face recognition for every channel
-                if (isset($_POST["recognize"]) && $_POST["recognize"] == 1) {
+                if ($action === 'recognize') {
                     $channel_id = $this->owner['channel_id']; // run the face recognition for owner channel only
                 }
                 $fr->start($storeDirectory, $channel_id, $config, $rm_params);
+            }
+            if ($action === 'recognize') {
+                // prevent to show old names if not processed by face recognition
+                $this->files_names = [];
+                $this->files_attributes = [];
             }
             if ($rm_params) {
                 return;
@@ -272,11 +281,14 @@ class Faces extends Controller {
                     } else {
                         $this->touch($dir->getChild($this->fileNameEmbeddings));
                     }
+                    if (!$dir->childExists($this->fileNameFaces)) {
+                        $dir->createFile($this->fileNameFaces);
+                    } else {
+                        $this->touch($dir->getChild($this->fileNameFaces));
+                        $this->files_names[] = $path . "/" . $this->fileNameFaces;
+                    }
                     if (!$dir->childExists($this->fileNameNames)) {
                         $dir->createFile($this->fileNameNames);
-                    } else {
-                        $this->touch($dir->getChild($this->fileNameNames));
-                        $this->files_names[] = $path . "/" . $this->fileNameNames;
                     }
                     if (!$dir->childExists($this->fileNameAttributes)) {
                         $dir->createFile($this->fileNameAttributes);
@@ -433,10 +445,10 @@ class Faces extends Controller {
             ////////////
             require_once('Name.php');
             $writer = new Name();
-            $success = $writer->write($names_file, $image, $face['name'], $face['position']);
+            $success = $writer->write($names_file, $image, $face['name'], $face['id']);
             ////////////
             if (!$success) {
-                $msg = "Failed to write name='" . $face['name'] . "' at position='" . implode(",", $face['position']) . "' of image='" . $image;
+                $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
                 logger($msg, LOGGER_NORMAL);
                 json_return_and_die(array('status' => false, 'message' => $msg));
             }
