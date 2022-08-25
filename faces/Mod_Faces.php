@@ -2,7 +2,9 @@
 
 namespace Code\Module;
 
+use App;
 use Code\Lib\Apps;
+use Code\Lib\PermissionDescription;
 use Code\Web\Controller;
 use Code\Lib\Libsync;
 use Code\Lib\Channel;
@@ -28,7 +30,7 @@ class Faces extends Controller {
 
 	function init() {
 
-		$this->observer = \App::get_observer();
+		$this->observer = App::get_observer();
 
 //		logger('This is the observer...', LOGGER_DEBUG);
 //		logger(print_r($this->observer, true), LOGGER_DEBUG);
@@ -49,7 +51,7 @@ class Faces extends Controller {
 		//----------------------------------------------------------------------
 		if (!$this->owner) {
 			if (local_channel()) { // if no channel name was provided, assume the current logged in channel
-				$channel = \App::get_channel();
+				$channel = App::get_channel();
 				logger('No nick but local channel - channel = ' . $channel, LOGGER_DEBUG);
 				if ($channel && $channel['channel_address']) {
 					$nick = $channel['channel_address'];
@@ -93,7 +95,7 @@ class Faces extends Controller {
 		$ret['status'] = true;
 		$ret['message'] = "";
 
-		$channel = \App::get_channel();
+		$channel = App::get_channel();
 
 		// Does the user want to remove all the face encodings and names?
 		if (argc() > 2 && argv(2) === "remove") {
@@ -106,7 +108,7 @@ class Faces extends Controller {
 			}
 		}
 		if (argc() > 2 && argv(2) === "stats") {
-			$html = \Code\Module\getStatisticsChannelAsHTML($this->owner['channel_id']);
+			$html = getStatisticsChannelAsHTML($this->owner['channel_id']);
 			$o = replace_macros(Theme::get_template('faces_stats.tpl', 'addon/faces'), array(
 				'$channelnick' => $channel['channel_address'],
 				'$facesstatistics' => $html
@@ -129,10 +131,10 @@ class Faces extends Controller {
 
 		// Does the user want to set write permissions?
 		if ($isWriteParam) {
-			$aclselect_e = Libacl::populate($this->acl_item_write, false, \Code\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+			$aclselect_e = Libacl::populate($this->acl_item_write, false, PermissionDescription::fromGlobalPermission('view_storage'));
 			$lockstate = (($this->acl_item_write['allow_cid'] || $this->acl_item_write['allow_gid'] || $this->acl_item_write['deny_cid'] || $this->acl_item_write['deny_gid']) ? 'lock' : 'unlock');
 		} else {
-			$aclselect_e = Libacl::populate($this->acl_item, false, \Code\Lib\PermissionDescription::fromGlobalPermission('view_storage'));
+			$aclselect_e = Libacl::populate($this->acl_item, false, PermissionDescription::fromGlobalPermission('view_storage'));
 			$lockstate = (($this->acl_item['allow_cid'] || $this->acl_item['allow_gid'] || $this->acl_item['deny_cid'] || $this->acl_item['deny_gid']) ? 'lock' : 'unlock');
 		}
 
@@ -481,7 +483,7 @@ class Faces extends Controller {
 		}
 		$aclArr = json_decode($a, true);
 
-		$channel = \App::get_channel();
+		$channel = App::get_channel();
 
 		require_once('ZapHubSpecific.php');
 		$zs = new ZapHubSpecific();

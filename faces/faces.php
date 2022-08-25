@@ -3,7 +3,9 @@
 use Code\Extend\Route;
 use Code\Extend\Hook;
 use Code\Render\Theme;                                                                                                                                           use Code\Lib\Channel;
-    
+use function Code\Module\attach_face_names_export_data;
+use function Code\Module\getStatisticsAsHTML;
+
 require_once('addon/faces/FacesPortability.php');
 require_once('addon/faces/FacesPermission.php');
 require_once('addon/faces/FacesStatistics.php');
@@ -48,7 +50,7 @@ function export(&$a) {
 		$a['data']['faces_encoding'] = $encs;
 	}
 	$names = [];
-	$names = \Code\Module\attach_face_names_export_data($a['channel_id']);
+	$names = attach_face_names_export_data($a['channel_id']);
 	if ($names) {
 		$a['data']['faces_person'] = $names;
 	}
@@ -120,7 +122,7 @@ function faces_plugin_admin(&$a, &$o) {
 		$maximages = 6;
 	}
 	
-	$stats = \Code\Module\getStatisticsAsHTML();
+	$stats = getStatisticsAsHTML();
 
 	$o = replace_macros($t, array(
 		'$submit' => t('Submit'),
@@ -323,5 +325,5 @@ function testExiftool() {
 }
 
 function getFacesStatisticsAsHtml() {
-	$html = \Code\Module\getStatisticsAsHTML();
+	$html = getStatisticsAsHTML();
 }
