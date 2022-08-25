@@ -129,7 +129,7 @@ def check_param(param):
 
 
 def read_config_params():
-    param_list = [["distance_metrics", "euclidean,cosine,euclidean_l2"],
+    param_list = [["distance_metrics", "euclidean_l2,cosine,euclidean"],
                   ["demography", "emotion,age,gender,race"],  # off
                   ["detectors", "retinaface"],  # "retinaface,mtcnn,ssd,opencv,mediapipe"
                   ["models", "Facenet512"],  # "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace"

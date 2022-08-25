@@ -196,7 +196,7 @@ class Worker:
                 else:
                     logging.debug("no recognition is run for channel id = " + str(self.channel))
                     continue
-        self.write_alive_signal(self.FINISHED)
+            self.write_alive_signal(self.FINISHED)
         logging.debug("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
                       proc_id + ", channel_id=" + str(channel_id))
 

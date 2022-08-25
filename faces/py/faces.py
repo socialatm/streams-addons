@@ -112,7 +112,7 @@ config = ""
 if args["distance_metrics"]:
     config = "distance_metrics=" + args["distance_metrics"]
 else:
-    config = "distance_metrics=" + "euclidean,cosine,euclidean_l2"
+    config = "distance_metrics=" + "euclidean_l2,cosine,euclidean"
 
 if args["demography"]:
     config += ";demography=" + args["demography"]

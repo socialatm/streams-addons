@@ -8,7 +8,7 @@ class FaceConfiguration {
 
     private $available_detectors = "retinaface,mtcnn,ssd,opencv,mediapipe";
     private $available_models = "Facenet512,ArcFace,VGG-Face,SFace,Facenet,OpenFace,DeepFace";
-    private $available_metrics = "euclidean,cosine,euclidean_l2";
+    private $available_metrics = "euclidean_l2,cosine,euclidean";
     private $available_attributes = "Emotion,Age,Gender,Race";
 
     function read(\Code\Storage\File $file) {

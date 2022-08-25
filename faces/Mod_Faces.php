@@ -129,6 +129,7 @@ class Faces extends Controller {
     }
 
     function post() {
+        logger('got a post request' . $api, LOGGER_DEBUG);
 
         $status = $this->permChecks();
 
@@ -142,6 +143,7 @@ class Faces extends Controller {
 
         if (argc() > 2) {
             $api = argv(2);
+            logger('api = ' . $api, LOGGER_DEBUG);
             if ($api === 'start') {
                 // API: /faces/nick/start
                 $this->startFaceRecognition('start', false);
@@ -223,19 +225,36 @@ class Faces extends Controller {
     }
 
     private function startFaceRecognition($action, $rm_params) {
+
         require_once('FaceRecognition.php');
         $fr = new FaceRecognition();
+
         if (!$rm_params) {
-            if ($fr->isScriptRunning()) {
+            if ($fr->isScriptRunning() && $action !== 'start') {
                 notice('Face detection is still busy' . EOL);
                 json_return_and_die(array('status' => true, 'message' => 'Face detection is still busy'));
             }
         }
+
         $this->prepareFiles();
         $config = $this->getConfig();
+        $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
+
+        if ($fr->isScriptRunning() && $action === 'start') {
+            // Show the images if the page is reloaded
+            logger("sending message=ok, names=" . json_encode($this->files_names) . ",  names=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+
+            json_return_and_die(array(
+                'status' => true,
+                'names' => $this->files_names,
+                'attributes' => $this->files_attributes,
+                'immediatly' => $immediatly,
+                'message' => "ok"));
+        }
+
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if (!$block) {
-            if ($action === 'start') {
+            if ($action === 'start' || $action === 'recognize') {
                 $storeDirectory = getcwd() . "/store/" . $this->owner['channel_address'];
                 $channel_id = 0; // run the face recognition for every channel
                 if ($action === 'recognize') {
@@ -252,7 +271,8 @@ class Faces extends Controller {
                 return;
             }
         }
-        $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
+
+        logger("sending message=ok, names=" . json_encode($this->files_names) . ",  names=" . json_encode($this->files_attributes), LOGGER_DEBUG);
 
         json_return_and_die(array(
             'status' => true,
