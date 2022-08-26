@@ -20,6 +20,8 @@ function faces_unload() {
 }
 
 function faces_plugin_admin(&$o) {
+    stopRunningFaceRecognition();
+    
     $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
 
     $pythoncheckmsg = "";
@@ -125,6 +127,8 @@ function faces_plugin_admin(&$o) {
 }
 
 function faces_plugin_admin_post(&$a) {
+
+    stopRunningFaceRecognition();
 
     $block = ((x($_POST, 'block')) ? x($_POST, 'block') : false);
     set_config('faces', 'block_python', $block);
@@ -266,10 +270,6 @@ function faces_plugin_admin_post(&$a) {
     $models = get_config('faces', 'models');
     $demography = get_config('faces', 'demography');
 
-    // stop python script if running
-    $procid = random_string(10);
-    set_config("faces", "status", "started " . datetime_convert() . " pid " . $procid);
-
     // Check the configuration
     $ret = testDeepfaceModules($detectors, $models, $demography);
 
@@ -330,6 +330,12 @@ function faces_plugin_admin_post(&$a) {
 
     $ramcheckmsg = $ret["r"];
     set_config('faces', 'ramcheck', $ramcheckmsg);
+}
+
+function stopRunningFaceRecognition() {
+    // stop python script if running
+    $procid = random_string(10);
+    set_config("faces", "status", "started " . datetime_convert() . " pid " . $procid);
 }
 
 function testPythonVersion() {
