@@ -84,11 +84,8 @@ class Recognizer:
                     face['model']) + " but expected model=" + self.model_name)
                 return False
 
-            def findDistance(row):
+            def find_distance(row):
                 img2_representation = row['representation']
-
-                # print(row['id'] + " " + row['model'] + " " + row['detector'] + " len img presentations " + str(len(img1_representation)) + ", " + str(len(img2_representation)))
-
                 distance = 1000  # initialize very large value
                 if self.distance_metric == 'cosine':
                     distance = dst.findCosineDistance(img1_representation, img2_representation)
@@ -97,7 +94,6 @@ class Recognizer:
                 elif self.distance_metric == 'euclidean_l2':
                     distance = dst.findEuclideanDistance(dst.l2_normalize(img1_representation),
                                                          dst.l2_normalize(img2_representation))
-
                 return distance
 
             tic = time.time()
@@ -106,7 +102,7 @@ class Recognizer:
                 self.distance_metric = distance_metric
                 threshold = thresholds[self.distance_metric]
 
-                self.names['distance'] = self.names.apply(findDistance, axis=1)
+                self.names['distance'] = self.names.apply(find_distance, axis=1)
                 self.names = self.names.sort_values(by=["distance"])
 
                 candidate = self.names.iloc[0]
@@ -120,8 +116,8 @@ class Recognizer:
                     face_recognized['duration_recognized'] = round(time.time() - tic, 5)
                     face_recognized['distance'] = best_distance
                     face_recognized['distance_metric'] = self.distance_metric
-                    logging.debug("a face was recognized as " + str(name) + ", face id=" + str(
-                        face['id']) + ", model=" + self.model_name + ", file=" + face['file'])
+                    # logging.debug("a face was recognized as " + str(name) + ", face id=" + str(
+                    #     face['id']) + ", model=" + self.model_name + ", file=" + face['file'])
                     faces_recognized.append(face_recognized)
                     matches += 1
                     break
