@@ -243,7 +243,6 @@ class Faces extends Controller {
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
             logger("sending message=ok, names=" . json_encode($this->files_names) . ",  names=" . json_encode($this->files_attributes), LOGGER_DEBUG);
-
             json_return_and_die(array(
                 'status' => true,
                 'names' => $this->files_names,
@@ -581,6 +580,10 @@ class Faces extends Controller {
             if ($param !== "") {
                 $params .= " --rm_" . $type . " " . $param;
             }
+        }
+        $rm_names = $_POST["names"];
+        if ($rm_names) {
+            $params .= " --rm_names on";
         }
         if ($params !== "") {
             $this->startFaceRecognition("start", $params);

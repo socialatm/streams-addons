@@ -24,6 +24,7 @@ parser.add_argument("--statistics")
 parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
+parser.add_argument("--rm_names")
 parser.add_argument("--ram")
 
 args = vars(parser.parse_args())
@@ -144,6 +145,7 @@ def read_config_params():
                   ["log_data", "on"],  # "on|off"
                   ["rm_detectors", ""],  # list of detectors to remove
                   ["rm_models", ""]  # list of models to remove
+                  ["rm_names", "off"],  # "on|off" remove all names either set or recognized
                   ["ram", "90"]]  # max allowed ram in percent
     for param in param_list:
         check_param(param)

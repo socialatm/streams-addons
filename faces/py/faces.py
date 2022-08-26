@@ -30,6 +30,7 @@ parser.add_argument("--statistics")
 parser.add_argument("--history")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
+parser.add_argument("--rm_names")
 parser.add_argument("--ram")
 
 args = vars(parser.parse_args())
@@ -186,6 +187,10 @@ if args["rm_detectors"]:
 # list of models to remove
 if args["rm_models"]:
     config += ";rm_models=" + args["rm_models"]
+
+# remove all names set or recognized
+if args["rm_names"]:
+    config += ";rm_names=" + args["rm_names"]
 
 if args["ram"]:
     config += ";ram=" + args["ram"]

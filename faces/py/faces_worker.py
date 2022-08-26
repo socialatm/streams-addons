@@ -54,6 +54,7 @@ class Worker:
         self.exiftool = None
         self.removeDetectors = ""
         self.removeModels = ""
+        self.is_remove_names = False
         self.IGNORE = "-ignore-"
         self.sort_column = "exif_date"
         self.sort_direction = True
@@ -137,6 +138,9 @@ class Worker:
             elif key == 'rm_models':
                 self.removeModels = conf[1].strip()
                 logging.debug("Configuration rm_models=" + self.removeModels)
+            elif key == 'rm_names':
+                if value == "on" or value == "true":
+                    self.is_remove_names = True
 
             elif conf[0].strip().lower() == 'ram':
                 ram = conf[1]
@@ -153,6 +157,7 @@ class Worker:
         logging.debug("Configuration sort_direction=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
         logging.debug("Configuration ram=" + str(self.ram_allowed))
+        logging.debug("Configuration rm_names=" + str(self.is_remove_names))
 
         self.set_finder(csv)
         self.set_recognizer(csv)
@@ -211,6 +216,7 @@ class Worker:
         self.check_file_by_name(self.file_name_names)  # for cleanup
 
         self.cleanup()
+        self.remove_names()
         self.detect()
         self.analyse()
 
@@ -839,6 +845,23 @@ class Worker:
                 self.store_facial_attributes(df)
                 if len(i) > 0:
                     logging.info(self.folder + " " + str(len(images)) + " faces removed from facial attributes")
+
+    def remove_names(self):
+        if self.is_remove_names:
+            df = self.get_face_representations()
+            if df is not None:
+                df = df.assign(name="")
+                df = df.assign(name_recognized="")
+                df = df.assign(time_named="")
+                logging.info(self.folder + " -  removed all names from embeddings file")
+                self.store_face_presentations(df)
+            df = self.get_face_names()
+            if df is not None:
+                df = df.assign(name="")
+                df = df.assign(name_recognized="")
+                df = df.assign(time_named="")
+                logging.info(self.folder + " -  removed all names from faces file")
+                self.store_face_names(df)
 
     def write_statistics(self, df, most_effective_method):
         self.write_alive_signal(self.RUNNING)

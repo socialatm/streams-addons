@@ -22,6 +22,9 @@ function createCheckboxes(list, after, belongsToExperimental) {
 function fillGUI(config) {
     createCheckboxes(config.detectors, "#face_detectors", true);
     createCheckboxes(config.models, "#face_models", true);
+    
+    config["rm_names"] = [["names", false, false]]
+    createCheckboxes(config.rm_names, "#face_names", true);
 }
 
 function requestConfig() {
