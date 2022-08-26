@@ -353,7 +353,7 @@ class Util:
                            'duration_detection': pd.Series(dtype='float'),
                            'duration_representation': pd.Series(dtype='float'),
                            'time_created': pd.Series(dtype='datetime64[ns]'),
-                           'representation': pd.Series(dtype='float64'),
+                           'representation': pd.Series(dtype='float'),
                            'distance': pd.Series(dtype='float'),
                            'distance_metric': pd.Series(dtype='str'),
                            'duration_recognized': pd.Series(dtype='float'),

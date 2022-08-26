@@ -1126,7 +1126,7 @@ function showServerStatus(seconds, elapsed_server) {
 
 async function waitForFinishedFaceDetection() {
     isFaceRecognitionRunning = true;
-    var ms = 5000;
+    var ms = 10000;
     var url = window.location + "/status";
     while (isFaceRecognitionRunning) {
         var action = new Array();

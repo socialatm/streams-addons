@@ -441,7 +441,7 @@ class Finder:
                 face_to_return.append(duration_detection)
                 face_to_return.append(round(toc - tic, 5))
                 face_to_return.append(datetime.utcnow())
-                face_to_return.append(np.float32(representation))  # most models use float32 (Facenet512 uses float64)
+                face_to_return.append(np.float64(representation))  # most models use float32 (Facenet512 uses float64)
                 face_to_return.append(-1)  # distance
                 face_to_return.append('')  # distance_metric
                 face_to_return.append(0.0)  # duration_recognized
