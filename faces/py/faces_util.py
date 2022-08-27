@@ -332,12 +332,8 @@ class Util:
                     return True
                 for face_b in faces_b.itertuples():
                     position_b = face_b.position
-                    # position_b = []
-                    # for el in face_b.position.strip("[] ").replace(" ", "").split(","):
-                    # for el in face_b.position.strip("[] ").split(" "):
-                    # position_b.append(int(el))
                     if self.is_same_face(face_a.iloc[0, 2], position_b):
-                        if face_a.iloc[0, 4] != face_b.name or face_a.iloc[0, 5] != face_b.name_recognized:
+                        if face_a.name.values[0] != face_b.name or face_a.name_recognized.values[0] != face_b.name_recognized:
                             return True
         return False
 
