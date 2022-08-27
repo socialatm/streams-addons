@@ -76,8 +76,10 @@ class Util:
 
     def copy_name_to_same_faces(self, df):
         logging.debug("Start copy names to same faces")
-        start_copy = time.time()
+        start_sort = time.time()
         df = df.sort_values(["file", "face_nr", "time_named"], ascending=[True, True, False])
+        sort_time = str(time.time() - start_sort)
+        start_copy = time.time()
         file_last = ""
         face_nr_last = ""
         name = ""
@@ -98,7 +100,8 @@ class Util:
                 continue
             df.loc[row.Index, ['name', 'time_named']] = [name, time_named]
             # df.loc[row.Index, ['name']] = [name]
-        logging.debug("Finished copy names to same faces after " + str(time.time() - start_copy) + " seconds.")
+        copy_time = str(time.time() - start_copy)
+        logging.debug("Finished copy names to same faces, copy time=" + copy_time + " s, sort time=" + sort_time + "s")
         return df
 
     def filter_by_last_named(self, df):
