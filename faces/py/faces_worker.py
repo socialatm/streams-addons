@@ -548,10 +548,6 @@ class Worker:
         df = self.util.filter_by_last_named(df_reduced)
 
         df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
-        # if most_effective_method is not None:  # for unit testing
-        #     df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
-        # else:
-        #     df = self.util.minimize_results(df, False)
 
         df_names = self.get_face_names()  # this will read new or changed names set by the use via the web browser
 
@@ -818,7 +814,6 @@ class Worker:
             return False
 
     def store_face_names(self, df):
-        # df = self.util.minimize_results(df, False)
         for column in self.columnsToIncludeAll:
             if column not in df.columns:  # for unit testing
                 continue
