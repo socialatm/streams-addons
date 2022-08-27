@@ -42,7 +42,7 @@ class Worker:
                                     "time_created", "distance", "distance_metric", "duration_recognized", "width"]
         self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.csv
         self.columnsSort = ["file", "position", "face_nr", "name", "name_recognized", "time_named", "exif_date",
-                            "detector", "model"]
+                            "detector", "model", "mtime"]
         self.timeLastAliveSignal = 0
         self.timeBackUp = 60 * 5  # second
         self.lockFile = None
@@ -54,7 +54,7 @@ class Worker:
         self.removeModels = ""
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
-        self.sort_column = "exif_date"
+        self.sort_column = "mtime"
         self.sort_direction = True
         self.follow_sym_links = False
         self.faces_statistics = None
@@ -353,6 +353,7 @@ class Worker:
                 continue
             faces = self.recognizer.recognize(df_model)
             if faces:
+                # write result of matches (faces found) into the embeddings file
                 for face in faces:
                     face_id = face['id']
                     df.loc[
@@ -626,7 +627,7 @@ class Worker:
         return df
 
     def store_face_presentations(self, df, dir):
-        df = df.reset_index(drop=True)
+        df.reset_index(drop=True, inplace=True)
         path = os.path.join(dir, self.file_name_face_representations)
         df.to_parquet(path, engine="pyarrow", compression='gzip')
         logging.debug(dir + " - stored face representations in file " + path)
@@ -688,6 +689,7 @@ class Worker:
 
     def store_face_names(self, df, dir):
         # df = self.util.minimize_results(df, False)
+        df.reset_index(drop=True, inplace=True)
         for column in self.columnsToIncludeAll:
             if column not in df.columns:  # for unit testing
                 continue
