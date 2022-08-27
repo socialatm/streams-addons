@@ -26,6 +26,7 @@ class Faces extends Controller {
     private $fileNameFacesStatistic = "face_statistics.csv";
     private $fileNameModelsStatistic = "model_statistics.csv";
     private $fileNameConfig = "config.json";
+    private $files_faces = [];
     private $files_names = [];
     private $files_attributes = [];
 
@@ -242,10 +243,11 @@ class Faces extends Controller {
 
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
-            logger("sending message=ok, names=" . json_encode($this->files_names) . ",  names=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+            logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  names_waiting=" . json_encode($this->files_names) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
             json_return_and_die(array(
                 'status' => true,
-                'names' => $this->files_names,
+                'names' => $this->files_faces,
+                'names_waiting' => $this->files_names,
                 'attributes' => $this->files_attributes,
                 'immediatly' => $immediatly,
                 'message' => "ok"));
@@ -263,6 +265,7 @@ class Faces extends Controller {
             }
             if ($action === 'recognize') {
                 // prevent to show old names if not processed by face recognition
+                $this->files_faces = [];
                 $this->files_names = [];
                 $this->files_attributes = [];
             }
@@ -271,11 +274,12 @@ class Faces extends Controller {
             }
         }
 
-        logger("sending message=ok, names=" . json_encode($this->files_names) . ",  names=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes) . ",  names_waiting=" . json_encode($this->fileNameNames), LOGGER_DEBUG);
 
         json_return_and_die(array(
             'status' => true,
-            'names' => $this->files_names,
+            'names' => $this->files_faces,
+            'names_waiting' => $this->files_names,
             'attributes' => $this->files_attributes,
             'immediatly' => $immediatly,
             'message' => "ok"));
@@ -304,10 +308,17 @@ class Faces extends Controller {
                         $dir->createFile($this->fileNameFaces);
                     } else {
                         $this->touch($dir->getChild($this->fileNameFaces));
-                        $this->files_names[] = $path . "/" . $this->fileNameFaces;
+                        $this->files_faces[] = $path . "/" . $this->fileNameFaces;
                     }
-                    if (!$dir->childExists($this->fileNameNames)) {
-                        $dir->createFile($this->fileNameNames);
+                    if ($dir->childExists($this->fileNameNames)) {
+                        $f = $dir->getChild($this->fileNameNames);
+                        $stream = $f->get();
+                        $contents = stream_get_contents($stream);
+                        if ($contents == "") {
+                            $f->delete();
+                        } else {
+                            $this->files_names[] = $path . "/" . $this->fileNameNames;
+                        }
                     }
                     if (!$dir->childExists($this->fileNameAttributes)) {
                         $dir->createFile($this->fileNameAttributes);
@@ -457,6 +468,9 @@ class Faces extends Controller {
             $file = substr($file, $i);
             $dirname = pathinfo($file, PATHINFO_DIRNAME);
             $imgDir = new Directory($dirname, $this->getAuth());
+            if (!$imgDir->childExists($this->fileNameNames)) {
+                $imgDir->createFile($this->fileNameNames);
+            }
             $names_file = $imgDir->getChild($this->fileNameNames);
             $chan_addr = $this->owner['channel_address'];
             $i = strpos($file, "/", strlen($chan_addr));

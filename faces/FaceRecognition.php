@@ -140,6 +140,7 @@ class FaceRecognition {
             // It might be that the python script hangs or was stopped.
             $msg = 'The script did not finish yet. Please watch this condition. Why? It might be that the python script hangs, run into errors or was stopped externally. The last update by the script was at ' . $updated . '. This is more then 10 minutes ago. This is unusual because the script writes a time stamp every 10 seconds to indicate that it is still running.';
             logger($msg, LOGGER_DEBUG);
+            $this->finished();
             return false;
         }
         logger('The python script is still running. Last update: ' . $updated, LOGGER_DEBUG);

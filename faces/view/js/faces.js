@@ -188,6 +188,7 @@ function readFaces(imgs, csvFile) {
             time_named: imgs.time_named[i],
             exif_date: imgs.exif_date[i],
             csv_file: csvFile,
+            sent: false
         };
         i++;
         appendName({name: face.name});
@@ -375,6 +376,8 @@ function preparePostName(face_id_full, name) {
     }
     var name_old = document.getElementById(face_id_full).innerText;
     var face = getFaceForId(face_id);
+    face.sent = true;
+    face.name = name;
     var file = face['url'];
     var position = face['pos'];
     name = name.replace(",", " ");  // format of csv 
@@ -1042,7 +1045,18 @@ function styleFaceFrame(face) {
     if (!face.name_recognized) {  // This can happen if the user sets the name to "unknown"
         face.name_recognized = "";  // avoid "undefined"
     }
-    if (face.name != "") {
+    existing_name = "";
+    face_existing = getFaceForId(face.id)
+    if(face_existing.sent)  {
+        ((loglevel >= 2) ? console.log(t() + " This face name was set already. Style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
+        existing_name = face_existing.name;
+    }
+    
+    if(existing_name != "") {
+        nameFrame.style.border = "rgba(255,255,255,.5)";
+        name = existing_name;
+        isVerified = "1";
+    } else if (face.name != "") {
         // prio 1 because this face was given a name by user
         if (face.name == "-ignore-") {
             document.getElementById("face-" + face.id).remove();

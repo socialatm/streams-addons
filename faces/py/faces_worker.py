@@ -583,9 +583,10 @@ class Worker:
         return df
 
     def empty_names_for_browser(self):
-        df_browser = self.util.create_frame_names()
         if os.path.exists(self.file_names):
-            df_browser.to_json(self.file_names)
+            f = open(self.file_names, 'w')
+            f.write("")
+            f.close()
         logging.debug(self.folder + " - wrote empty name file for browser " + self.file_names)
 
     def write_results(self, df_recognized, df_names):
@@ -782,8 +783,7 @@ class Worker:
         # double check because the file might be deleted meanwhile
         if os.path.exists(self.file_names):
             if os.stat(self.file_names).st_size == 0:
-                logging.debug(self.folder + " - file holding face names is empty yet " + self.file_names)
-                self.empty_names_for_browser()
+                logging.debug(self.folder + " - file holding face names is empty " + self.file_names)
                 return df
         df = pd.read_json(self.file_names)
         logging.debug(self.folder + " - loaded face names from file " + self.file_names)

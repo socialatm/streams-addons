@@ -28,7 +28,7 @@ class Util:
                         df_result = pd.concat([df_result, matches.iloc[[0]]], ignore_index=True)
                         continue
                     keys = matches.index
-                    # TODO: there must e a better approach
+                    # TODO: there must be a better approach
                     found = False
                     for row in most_effective_method.itertuples():
                         model = row.model
@@ -46,6 +46,9 @@ class Util:
                             logging.error(
                                 "Double face for file='" + file + "',  model='" + model + "', detector='" + detector +
                                 "'. May be the 'cleanup' was interrupted after deleting pictures?")
+                            df_result = pd.concat([df_result, df.loc[[i[0]]]], ignore_index=True)
+                            found = True
+                            break
                     if not found:
                         df_result = pd.concat([df_result, df.loc[[matches.index[0]]]], ignore_index=True)
         return df_result
