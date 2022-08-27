@@ -220,6 +220,16 @@ class Worker:
                     return
                 logging.debug(dir + " - elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
                 time_start_detection = time.time()
+
+        # ---
+        # Find same faces by position in images.
+        # Explanation:
+        # - faces are found by different detectors (and for different models)
+        # - a face is the same if found
+        #   o in same file
+        #   o at same position (x, y, h, w)
+        df = self.util.number_unique_faces(df)
+
         # Why not storing the faces (faces.json) at this point of time?
         # - The face detection and the creation of the face representations are cpu, memory and time-consuming
         # - In praxis
@@ -426,16 +436,6 @@ class Worker:
             df_representations = self.read_new_names(df_representations, dir)
 
             # ---
-            # Find same faces in images and write the name set by the user into every face.
-            # Explanation:
-            # - faces are found by different detectors for different models
-            # - a face is the same if found
-            #   o in same file
-            #   o at same position (x, y, h, w)
-            df_representations = self.util.number_unique_faces(df_representations)
-            df_representations = self.util.copy_name_to_same_faces(df_representations)
-
-            # ---
             # Concatenate all face representations (including known names) of all directories
             if df is None:
                 df = df_representations
@@ -472,29 +472,29 @@ class Worker:
         if self.init_face_names(df_recognized, abs_dir):
             return
 
-        df_names = self.get_face_names(abs_dir)
+        # show results for the activated models to the user (browser) only
+        df_reduced = df_recognized[df_recognized.isin(self.finder.model_names).any(axis=1)]
 
-        # new or changed name might be set from outside (usually by the user in the browser) while the
-        # detection and recognition was running
-        df_recognized = self.read_new_names(df_recognized)
+        # remove all files without af face
+        df_reduced = df_reduced.loc[(df_reduced['width'] != 0)]
 
-        # copy new or changed names.... the user might have changed names while the face recognition was running
-        for face in df_names.itertuples():
-            # copy changed names into the results (in fact all names but changed or new names are the reason)
-            df_recognized.loc[(df_recognized['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
-        # remove ignored names
-        keys = df_names.loc[(df_names['name'] == self.IGNORE)].index
+        # remove faces the user wants to ignore (detected as face but is something else)
+        keys = df_reduced.loc[(df_reduced['name'] == self.IGNORE)].index
         if len(keys) > 0:
-            df_names = df_names.drop((keys))
-            logging.debug(faces_dir + " - removed " + str(len(keys)) + " ignored faces in face names")
-        # apply changed names using the timestamps
-        df_recognized = self.util.copy_name_to_same_faces(df_recognized)
+            df_reduced = df_reduced.drop((keys))
+            logging.debug(faces_dir + " - removed " + str(len(keys)) + " ignored faces in results")
+
         # "reduce" result file
-        df = self.util.filter_by_last_named(df_recognized)
-        if most_effective_method is not None:  # for unit testing
-            df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
-        else:
-            df = self.util.minimize_results(df, False)
+        df = self.util.filter_by_last_named(df_reduced)
+
+        df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
+        # if most_effective_method is not None:  # for unit testing
+        #     df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
+        # else:
+        #     df = self.util.minimize_results(df, False)
+
+        df_names = self.get_face_names()  # this will read new or changed names set by the use via the web browser
+
         # compare the content of the results (face recognition) with the content of the file containing the names
         # (that might have changed while the face recognition was running)
         # has any name or recognized name changed while the face recognition was running?
@@ -519,6 +519,8 @@ class Worker:
             # copy changed names into the results (in fact all names but changed or new names are the reason)
             df.loc[(df['id'] == face.id), ['name', 'time_named']] = [face.name, face.time_named]
         logging.debug("copied " + str(name_count) + " names set from outside")
+
+        df = self.util.copy_name_to_same_faces(df)
 
         self.empty_names_for_browser(dir)
 
@@ -678,17 +680,14 @@ class Worker:
             most_effective_method = self.util.get_most_successful_method(df_representation, False)
             df_names = self.util.filter_by_last_named(df_representation)
             df_names = self.util.number_unique_faces(df_names)
-            if most_effective_method is not None:  # for unit testing
-                df_names = self.util.keep_most_effectiv_method_only(df_names, most_effective_method)
-            else:
-                df_names = self.util.minimize_results(df_names, False)
+            df_names = self.util.keep_most_effectiv_method_only(df_names, most_effective_method)
             self.write_results(df_representation, df_names, dir)
             return True
         else:
             return False
 
     def store_face_names(self, df, dir):
-        df = self.util.minimize_results(df, False)
+        # df = self.util.minimize_results(df, False)
         for column in self.columnsToIncludeAll:
             if column not in df.columns:  # for unit testing
                 continue
