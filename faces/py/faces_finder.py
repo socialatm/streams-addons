@@ -485,11 +485,11 @@ class Finder:
             self.detector_name,
             model_name,
             round(time.time() - start_time, 5),
-            0,
+            0.0,
             datetime.utcnow(),
             [0.0],  # representation
-            0.0,
-            '',
+            0.0,  # distance
+            '',  # distance_metrics
             0.0,  # duration_recognized
             ''  # directory
         ]
