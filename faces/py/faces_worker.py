@@ -532,6 +532,9 @@ class Worker:
         if self.init_face_names(df_recognized):
             return
 
+        # show results for the activated models to the user (browser) only
+        df_activated = df_recognized[df_recognized.isin(self.finder.model_names).any(axis=1)]
+
         df_names = self.get_face_names()  # this will read new or changed names set by the use via the web browser
 
         # new or changed name might be set from outside (usually by the user in the browser) while the
