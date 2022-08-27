@@ -354,6 +354,7 @@ class Finder:
         start_time = time.time()
         faces_to_return = []
         logging.debug("reading image to get face representations  " + path + ", os path on server " + os_path_on_server)
+        mtime = datetime.fromtimestamp(os.path.getmtime(os_path_on_server))
         img = cv2.imread(os_path_on_server)
         tic = time.time()
         try:
@@ -370,7 +371,7 @@ class Finder:
             logging.debug("Found no faces in image " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, mtime))
             return faces_to_return
         image_height, image_width, c = img.shape
         toc = time.time()
@@ -421,7 +422,7 @@ class Finder:
                         custom_face.shape[1:3]) + ") than the FaceDetector (" + str(
                         input_shape) + ") detector=" + self.detector_name + ", model=" + model_name + ", file= " + path)
                     # prevent that the combination of file AND detector AND model is found again as "new"
-                    faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h], 0))
+                    faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h], 0, mtime))
                     continue
                 count_2 = count_2 + 1
 
@@ -435,7 +436,6 @@ class Finder:
                 face_to_return.append('')  # name
                 face_to_return.append('')  # name_recognized
                 face_to_return.append('')  # time_name_set
-                face_to_return.append('')  # exif_date
                 face_to_return.append(self.detector_name)
                 face_to_return.append(model_name)
                 face_to_return.append(duration_detection)
@@ -446,6 +446,8 @@ class Finder:
                 face_to_return.append('')  # distance_metric
                 face_to_return.append(0.0)  # duration_recognized
                 face_to_return.append('')  # directory
+                face_to_return.append('')  # exif_date
+                face_to_return.append(mtime)  # mtime (time the file was last modified)
 
                 faces_to_return.append(face_to_return)
                 logging.debug("creation of face representations took " +
@@ -457,7 +459,7 @@ class Finder:
                 round(time.time() - start_time, 5)) + " seconds for face representations in " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, mtime))
         else:
             logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
                          str(round(time.time() - start_time,
@@ -471,7 +473,7 @@ class Finder:
             s += random.choice(string.ascii_letters)
         return s
 
-    def get_empty_face_detection(self, path, start_time, model_name, pos, width):
+    def get_empty_face_detection(self, path, start_time, model_name, pos, width, mtime):
         empty_face = [
             self.get_random_string(),
             path,
@@ -481,17 +483,18 @@ class Finder:
             '',  # name
             '',  # name_recognized
             '',  # time_named
-            '',  # exif_date
             self.detector_name,
             model_name,
             round(time.time() - start_time, 5),
             0.0,
             datetime.utcnow(),
             [0.0],  # representation
-            0.0,  # distance
+            -1,  # distance
             '',  # distance_metrics
             0.0,  # duration_recognized
-            ''  # directory
+            '',  # directory,
+            '',  # exif_date,
+            mtime  # mtime
         ]
         return empty_face
 

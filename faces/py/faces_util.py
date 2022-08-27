@@ -349,7 +349,6 @@ class Util:
                            'name': pd.Series(dtype='str'),
                            'name_recognized': pd.Series(dtype='str'),
                            'time_named': pd.Series(dtype='str'),
-                           'exif_date': pd.Series(dtype='str'),
                            'detector': pd.Series(dtype='str'),
                            'model': pd.Series(dtype='str'),
                            'duration_detection': pd.Series(dtype='float'),
@@ -359,7 +358,9 @@ class Util:
                            'distance': pd.Series(dtype='float'),
                            'distance_metric': pd.Series(dtype='str'),
                            'duration_recognized': pd.Series(dtype='float'),
-                           'directory': pd.Series(dtype='str')})
+                           'directory': pd.Series(dtype='str'),
+                           'exif_date': pd.Series(dtype='str'),
+                           'mtime': pd.Series(dtype='str')})
         return df
 
     def add_row_embedding(self, df, values):
@@ -385,7 +386,8 @@ class Util:
              values[15],
              values[16],
              values[17],
-             values[18]], index=df.columns)
+             values[18],
+             values[19]], index=df.columns)
 
         df = df.append(row, ignore_index=True)
         return df

@@ -43,7 +43,7 @@ class Worker:
                                     "time_created", "distance", "distance_metric", "duration_recognized", "width"]
         self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.cs
         self.columnsSort = ["file", "position", "face_nr", "name", "name_recognized", "time_named", "exif_date",
-                            "detector", "model"]
+                            "detector", "model", "mtime"]
         self.timeLastAliveSignal = 0
         self.timeToWait = 10  # second
         self.timeBackUp = 60 * 5  # second
@@ -56,7 +56,7 @@ class Worker:
         self.removeModels = ""
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
-        self.sort_column = "exif_date"
+        self.sort_column = "mtime"
         self.sort_direction = True
         self.follow_sym_links = False
 
@@ -399,6 +399,7 @@ class Worker:
                 continue
             faces = self.recognizer.recognize(df_model)
             if faces:
+                # write result of matches (faces found) into the embeddings file
                 for face in faces:
                     face_id = face['id']
                     df.loc[
