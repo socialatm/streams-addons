@@ -299,9 +299,6 @@ class Worker:
         df['min_size_train'] = df.apply(include_as_training_data, axis=1)
         df['min_size_result'] = df.apply(include_as_result_data, axis=1)
 
-        df.loc[(df['min_size_result']) < 1 & (df['name'] == ""),
-               ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
-
         logging.debug("Get all faces with a name, face representation and min width")
         df_no_name = df.loc[
             (df['name'] == "") &
@@ -315,6 +312,20 @@ class Worker:
         # - optionally stop recognition after a first match (start parameter)
         models = df.model.unique()
         for model in models:
+            if model not in self.finder.model_names:
+                continue
+            # Set back previous results
+            # Why?
+            # - parameters might change (distance metrics, min face width)
+            # - show results for parameters of this run only
+            df.loc[(df['model'] == model) &
+                   (df['name'] == "") &  # keep history of recognized names for statitstics
+                   (df['name'] != self.IGNORE) &  # the user has set this face to "ignore" (this is no face, meant like)
+                   (df['duration_representation'] != 0.0) &
+                   (df['time_named'] == ""),  # the user has set the name to "unknown"
+                   ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
+
+            # Filter faces as training data
             logging.debug("Start recognition using model=" + model + " Gathering faces as training data...")
             df_training_data = df.loc[
                 (df['model'] == model) &
@@ -334,10 +345,15 @@ class Worker:
             if faces:
                 for face in faces:
                     face_id = face['id']
-                    df.loc[df['id'] == face_id, ['name_recognized', 'duration_recognized', 'distance',
-                                                 'distance_metric']] = [face['name_recognized'],
-                                                                        face['duration_recognized'], face['distance'],
-                                                                        face['distance_metric']]
+                    df.loc[
+                        df['id'] == face_id,
+                        ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
+                        [
+                            face['name_recognized'],
+                            face['duration_recognized'],
+                            face['distance'],
+                            face['distance_metric']
+                        ]
                 if self.recognizer.first_result:
                     df_no_name = self.remove_other_than_recognized(faces, df_no_name)
 
