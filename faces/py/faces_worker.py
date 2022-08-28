@@ -343,13 +343,13 @@ class Worker:
             return
 
         def include_as_training_data(row):
-            w = row['width']
+            w = row['pixel']
             if w < self.finder.min_width_train:
                 return 0
             return 1
 
         def include_as_result_data(row):
-            w = row['width']
+            w = row['pixel']
             if w < self.finder.min_width_result:
                 return 0
             return 1
@@ -539,7 +539,7 @@ class Worker:
         df_reduced = df_recognized[df_recognized.isin(self.finder.model_names).any(axis=1)]
 
         # remove all files without af face
-        df_reduced = df_reduced.loc[(df_reduced['width'] != 0)]
+        df_reduced = df_reduced.loc[(df_reduced['pixel'] != 0)]
 
         # remove faces the user wants to ignore (detected as face but is something else)
         keys = df_reduced.loc[(df_reduced['name'] == self.IGNORE)].index

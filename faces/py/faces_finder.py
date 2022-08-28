@@ -243,11 +243,11 @@ class Finder:
 
         counter = 0
         for face, (x, y, w, h) in faces:
-            w_percent = w * 100 / image_width
+            w_percent = int(w * 100 / image_width)
             if (w_percent < self.min_face_width_percent) or (
                     w < self.min_face_width_pixel):  # discard small detected faces
                 logging.debug(
-                    "Ignore face because width=" + str(round(w_percent, 2)) + "% or " + str(w) +
+                    "Ignore face because width=" + str(w_percent) + "% or " + str(w) +
                     "px is is less than minimum " + str(self.min_face_width_percent) + "% or " +
                     str(self.min_face_width_pixel) + "px")
                 continue
@@ -371,7 +371,7 @@ class Finder:
             logging.debug("Found no faces in image " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, mtime))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, 0, mtime))
             return faces_to_return
         image_height, image_width, c = img.shape
         toc = time.time()
@@ -381,11 +381,11 @@ class Finder:
         count_1 = 0  # for logging only
         count_2 = 0  # for logging only
         for face, (x, y, w, h) in faces:
-            w_percent = w * 100 / image_width
+            w_percent = int(w * 100 / image_width)
             if (w_percent < self.min_face_width_percent) or (
                     w < self.min_face_width_pixel):  # discard small detected faces
                 logging.debug(
-                    "Ignore face because width=" + str(round(w_percent, 2)) + "% or " + str(w) +
+                    "Ignore face because width=" + str(w_percent) + "% or " + str(w) +
                     "px is is less than minimum of " + str(self.min_face_width_percent) + "% or " +
                     str(self.min_face_width_pixel) + "px")
                 continue
@@ -422,7 +422,8 @@ class Finder:
                         custom_face.shape[1:3]) + ") than the FaceDetector (" + str(
                         input_shape) + ") detector=" + self.detector_name + ", model=" + model_name + ", file= " + path)
                     # prevent that the combination of file AND detector AND model is found again as "new"
-                    faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h], 0, mtime))
+                    faces_to_return.append(
+                        self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h], 0, 0, mtime))
                     continue
                 count_2 = count_2 + 1
 
@@ -432,6 +433,7 @@ class Finder:
                 face_to_return.append(path)
                 face_to_return.append(self.calculate_css_location(x, y, w, h, image_height, image_width)),
                 face_to_return.append(w)
+                face_to_return.append(w_percent)
                 face_to_return.append(0)  # face_nr
                 face_to_return.append('')  # name
                 face_to_return.append('')  # name_recognized
@@ -459,7 +461,7 @@ class Finder:
                 round(time.time() - start_time, 5)) + " seconds for face representations in " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, mtime))
+                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, 0, mtime))
         else:
             logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
                          str(round(time.time() - start_time,
@@ -473,12 +475,13 @@ class Finder:
             s += random.choice(string.ascii_letters)
         return s
 
-    def get_empty_face_detection(self, path, start_time, model_name, pos, width, mtime):
+    def get_empty_face_detection(self, path, start_time, model_name, pos, width, percent, mtime):
         empty_face = [
             self.get_random_string(),
             path,
             pos,
             width,
+            percent,
             0,
             '',  # name
             '',  # name_recognized
