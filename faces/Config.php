@@ -222,6 +222,22 @@ class FaceConfiguration {
             }
         }
         $config["zoom"][0][1] = $number;
+        
+        $min = 10;
+        $max = 95;
+        $default = 80;
+        $number = $config["ram"][0][1];
+        if (!is_numeric($number)) {
+            $number = $default;
+        } else {
+            $number = round($number);
+            if ($number > $max) {
+                $number = $max;
+            } elseif ($number < $min) {
+                $number = $min;
+            }
+        }
+        $config["ram"][0][1] = $number;
 
         return $config;
     }
@@ -259,6 +275,7 @@ class FaceConfiguration {
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
         $config["zoom"] = [["zoom", 2]];
+        $config["ram"] = [["ram", 80]];
 
         $config = $this->checkConfig($config);
 

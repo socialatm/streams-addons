@@ -7,6 +7,7 @@ import logging
 import sys
 import faces_exiftool
 import faces_util
+import json
 
 deepface_spec = importlib.util.find_spec("deepface")
 if deepface_spec is not None:
@@ -23,6 +24,7 @@ class Worker:
         self.finder = None
         self.recognizer = None
         self.dirImages = None
+        self.file_name_config = "config.json"
         self.file_name_face_representations = "faces.gzip"
         self.file_name_facial_attributes = "demography.json"
         self.file_name_faces = "faces.json"
@@ -53,7 +55,7 @@ class Worker:
         self.pid = ""
         self.exiftool = None
         self.removeDetectors = ""
-        self.removeModels = ""
+        self.remove_models = ""
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
         self.sort_column = "mtime"
@@ -65,12 +67,13 @@ class Worker:
         self.file_faces = None
         self.file_names = None  # set by user via web browser (from outside)
         self.file_demography = None
+        self.file_config = None
         self.file_face_statistics = None
         self.file_model_statistics = None
         self.channel = None
         self.util = faces_util.Util()
 
-        self.ram_allowed = 90  # %
+        self.ram_allowed = 80  # %
 
     def set_finder(self, csv):
         deepface_specs = importlib.util.find_spec("deepface")
@@ -92,65 +95,14 @@ class Worker:
         self.db = db
         logging.debug("database was set")
 
-    def configure(self, csv):
-        # example csv
-        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics=True
-        for element in csv.split(";"):
-            conf = element.split("=")
-            if len(conf) < 2:
-                continue
-            key = conf[0].strip().lower()
-            value = conf[1].strip().lower()
-            if key == 'optional-face-data':
-                self.columnsToInclude = []
-                s = conf[1].split(",")
-                for column in s:
-                    column = column.strip().lower()
-                    if column in self.columnsToIncludeAll:
-                        self.columnsToInclude.append(column)
-                    else:
-                        logging.warning(column + " is not a valid column in faces.gzip")
-                        logging.warning("Valid columns are: " + str(self.columnsToIncludeAll))
-            elif key == 'log_data':
-                if value == "on":
-                    self.log_data = True
-                if value == "off":
-                    self.log_data = False
-            elif key == 'statistics':
-                if value == "on" or value == 'true':
-                    self.statistics = True
-            elif key == 'history':
-                if value == "on" or value == "true":
-                    self.keep_history = True
-            elif key == 'sort_column':
-                column = value
-                if column in self.columnsSort:
-                    self.sort_column = column
-            elif key == 'sort_direction':
-                if value == "1":
-                    self.sort_direction = False
-                else:
-                    self.sort_direction = True
-            elif key == 'follow_sym_links':
-                if value == "on":
-                    self.follow_sym_links = True
-            elif key == 'rm_detectors':
-                self.removeDetectors = conf[1].strip()
-                logging.debug("Configuration rm_detectors=" + self.removeDetectors)
-            elif key == 'rm_models':
-                self.removeModels = conf[1].strip()
-                logging.debug("Configuration rm_models=" + self.removeModels)
-            elif key == 'rm_names':
-                if value == "on" or value == "true":
-                    self.is_remove_names = True
+    def configure(self, json):
 
-            elif conf[0].strip().lower() == 'ram':
-                ram = conf[1]
-                if ram.isdigit():
-                    self.ram_allowed = int(ram)
-                    logging.debug("set the max allowed ram to " + str(self.ram_allowed) + " %")
-                else:
-                    logging.warning(str(ram) + " is not a number. Set to default " + str(self.ram_allowed) + " %")
+        ram = 80
+        if ram.isdigit():
+            self.ram_allowed = int(ram)
+            logging.debug("set the max allowed ram to " + str(self.ram_allowed) + " %")
+        else:
+            logging.warning(str(ram) + " is not a number. Set to default " + str(self.ram_allowed) + " %")
 
         logging.debug("Configuration log_data=" + str(self.log_data))
         logging.debug("Configuration statistics=" + str(self.statistics))
@@ -161,8 +113,8 @@ class Worker:
         logging.debug("Configuration ram=" + str(self.ram_allowed))
         logging.debug("Configuration rm_names=" + str(self.is_remove_names))
 
-        self.set_finder(csv)
-        self.set_recognizer(csv)
+        self.set_finder(json)
+        self.set_recognizer(json)
 
         self.exiftool = faces_exiftool.ExifTool()
         if not self.exiftool.getVersion():
@@ -172,9 +124,8 @@ class Worker:
 
         self.util.is_css_position = self.finder.css_position
 
-    def run(self, dir_images, proc_id, channel_id, do_recognize):
-        logging.info("start with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
-                     proc_id + ", channel_id=" + str(channel_id))
+    def run(self, dir_images, proc_id, channel_id, all_channels):
+        logging.info("start in dir=" + dir_images + ", proc_id=" + proc_id + ", channel_id=" + str(channel_id))
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read directory " + self.dirImages)
@@ -188,6 +139,7 @@ class Worker:
         # loop through every user who has the faces addon switched on
         for app_channel in app_channels:
             self.channel = app_channel[0]
+            self.read_config_file()
             query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s"
             data = (self.channel, self.file_name_faces)
             folders = self.db.select(query, data)
@@ -197,8 +149,9 @@ class Worker:
             for f in folders:
                 self.folder = f[0]
                 self.process_dir()
+            do_recognize = False
             if do_recognize:
-                if channel_id == 0 or channel_id == self.channel:
+                if all_channels or channel_id == self.channel:
                     self.recognize(folders)
                 else:
                     logging.debug("no recognition is run for channel id = " + str(self.channel))
@@ -206,6 +159,19 @@ class Worker:
             self.write_alive_signal(self.FINISHED)
         logging.debug("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
                       proc_id + ", channel_id=" + str(channel_id))
+
+    def read_config_file(self):
+        logging.debug("channel " + str(self.channel) + " - read config file")
+        if self.check_file_by_channel(self.file_name_config) is False:
+            logging.debug("channel " + str(self.channel) + " - could not read config file " + self.file_config)
+            return
+        if os.path.exists(self.file_config):
+            if os.stat(self.file_config).st_size == 0:
+                logging.debug("channel " + str(self.channel) + " - config file is empty " + self.file_config)
+                return
+        with open(self.file_config, "r") as f:
+            conf = json.load(f)
+            self.configure(conf)
 
     def process_dir(self):
         logging.debug(self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
@@ -688,6 +654,8 @@ class Worker:
             self.file_face_statistics = None
         elif file_name == self.file_name_models_statistic:
             self.file_model_statistics = None
+        elif file_name == self.file_name_config:
+            self.file_config = None
 
         display_path = os.path.join(self.dir_addon, file_name)
         query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
@@ -704,6 +672,9 @@ class Worker:
                 return True
             elif file_name == self.file_name_models_statistic:
                 self.file_model_statistics = path
+                return True
+            elif file_name == self.file_name_config:
+                self.file_config = path
                 return True
         logging.debug("skipping... no file or write permission, file " + display_path)
         return False
@@ -794,10 +765,10 @@ class Worker:
     def get_face_names(self):
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
-        if os.stat(self.file_faces).st_size == 0:
-            logging.debug(self.folder + " - file holding face names is empty yet " + self.file_faces)
-            return df
         if os.path.exists(self.file_faces):
+            if os.stat(self.file_faces).st_size == 0:
+                logging.debug(self.folder + " - file holding face names is empty yet " + self.file_faces)
+                return df
             df = pd.read_json(self.file_faces)
             logging.debug(self.folder + " - loaded face names from file " + self.file_faces)
         return df
@@ -838,7 +809,7 @@ class Worker:
             images.append(i[0])
         df = self.get_face_representations()
         if df is not None:
-            keys = self.util.remove_detector_model(df, self.removeModels, self.removeDetectors, self.folder)
+            keys = self.util.remove_detector_model(df, self.remove_models, self.removeDetectors, self.folder)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:
@@ -849,7 +820,7 @@ class Worker:
 
         df = self.get_face_names()
         if df is not None:
-            keys = self.util.remove_detector_model(df, self.removeModels, self.removeDetectors, self.folder)
+            keys = self.util.remove_detector_model(df, self.remove_models, self.removeDetectors, self.folder)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:

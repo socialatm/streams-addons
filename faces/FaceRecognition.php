@@ -4,7 +4,7 @@ namespace Code\Module;
 
 class FaceRecognition {
 
-    function start($storeDirectory, $channel_id, $config, $rm_params) {
+    function start($storeDirectory, $channel_id, $recognize, $rm_params) {
         if (!$rm_params) {
             $isRunning = $this->isScriptRunning();
             if ($isRunning) {
@@ -32,31 +32,21 @@ class FaceRecognition {
         }
         $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
         $max_ram = (get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80);
-
-        $detectorsConfig = $this->getParamString($config, "detectors");
-        $modelsConfig = $this->getParamString($config, "models");
-        $distanceMetricsConfig = $this->getParamString($config, "distance_metrics");
-        $demographyConfig = $this->getParamString($config, "demography");
-        $first_resultConfig = $this->getParamStringDirectly($config, "first_result", "enforce");
-        $statisticsConfig = $this->getParamStringDirectly($config, "statistics", "statistics");
-        $history_modeConfig = $this->getParamStringDirectly($config, "history", "history");
-        $minFaceWidthDetectionConfig = $this->getParamStringTextField($config, "min_face_width_detection");
-        $minFaceWidthRecognitionConfig = $this->getParamStringTextField($config, "min_face_width_recognition");
+        
+        $param_recognize = "";
+        if($recognize) {
+            $param_recognize = " --recognize=on";
+        }
 
         @include('.htconfig.php');
         $cmd = escapeshellcmd("python3 " . getcwd() . "/addon/faces/py/faces.py"
                 . " --host " . $db_host . " --user " . $db_user . " --pass " . $db_pass . " --db " . $db_data
                 . " --imagespath " . $storeDirectory . " --channelid " . $channel_id
                 . " --procid " . $procid
-                . $first_resultConfig
-                . $minFaceWidthDetectionConfig
-                . $minFaceWidthRecognitionConfig
-                . $statisticsConfig
-                . $history_modeConfig
+                . $param_recognize
                 . $rm_params
                 . " --ram " . $max_ram
-                . " --loglevel " . $loglevel . $logfileparam
-                . $detectorsConfig . $modelsConfig . $distanceMetricsConfig . $demographyConfig);
+                . " --loglevel " . $loglevel . $logfileparam);
 
         logger('The pyhton script will be executed using the following command ...', LOGGER_DEBUG);
         // overwrite password
@@ -66,7 +56,7 @@ class FaceRecognition {
         logger(implode(" ", $a), LOGGER_DEBUG);
 
         // python3 /var/www/mywebsite/addon/faces/py/faces.py --host 127.0.0.1 --user mywebsite --pass xxx --db mywebsite --imagespath /var/www/mywebsite/store/oj --channelid 0 --procid aeeed6d862 --first_result on --percent 2 --pixel 50 --training 224 --result 50 --statistics on --history on --loglevel 2 --logfile /var/www/log/faces.log --detectors retinaface,mtcnn,ssd,opencv,mediapipe --models Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace --distance_metrics euclidean,cosine,euclidean_l2 --demography Emotion,Age,Gender,Race
-        exec($cmd . ' > /dev/null 2>/dev/null &');
+        //exec($cmd . ' > /dev/null 2>/dev/null &');
     }
 
     private function getParamString($config, $name) {

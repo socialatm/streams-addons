@@ -255,11 +255,12 @@ class Faces extends Controller {
         if (!$block) {
             if ($action === 'start' || $action === 'recognize') {
                 $storeDirectory = getcwd() . "/store/" . $this->owner['channel_address'];
-                $channel_id = 0; // run the face recognition for every channel
+                $recognize = false;
                 if ($action === 'recognize') {
-                    $channel_id = $this->owner['channel_id']; // run the face recognition for owner channel only
+                    $recognize = true;  // run the face recognition for owner channel only
                 }
-                $fr->start($storeDirectory, $channel_id, $config, $rm_params);
+                $channel_id = $this->owner['channel_id'];
+                $fr->start($storeDirectory, $channel_id, $recognize, $rm_params);
             }
             if ($action === 'recognize') {
                 // prevent to show old names if not processed by face recognition
@@ -535,7 +536,6 @@ class Faces extends Controller {
         $configFile = $this->getConfigFile();
         require_once('Config.php');
         $fc = new FaceConfiguration();
-        $config = $fc->checkConfig($config);
         $fc->write($configFile, $config);
 
         $fr->finished();

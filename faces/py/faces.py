@@ -14,24 +14,11 @@ parser.add_argument("--imagespath", help="absolute path to image dir")
 parser.add_argument("--channelid", help="channel id, default is 0")
 parser.add_argument("--loglevel")
 parser.add_argument("--logfile")
-parser.add_argument("--detectors")
-parser.add_argument("--models")
-parser.add_argument("--demography")
 parser.add_argument("--procid")
-parser.add_argument("--distance_metrics")
-parser.add_argument("--percent")
-parser.add_argument("--pixel")
-parser.add_argument("--training")
-parser.add_argument("--result")
-parser.add_argument("--css_position")
-parser.add_argument("--first_result")
-parser.add_argument("--enforce")
-parser.add_argument("--statistics")
-parser.add_argument("--history")
+parser.add_argument("--recognize")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
 parser.add_argument("--rm_names")
-parser.add_argument("--ram")
 
 args = vars(parser.parse_args())
 
@@ -103,122 +90,31 @@ logging.debug("procid = " + args["procid"])
 channel_id = 0
 if args["channelid"]:
     channel_id = int(args["channelid"])
+logging.debug("channel id = " + str(channel_id))
 
-# +++++++++++++++++++
-# create config
-# +++++++++++++++++++
+all_channels = False
+if args["recognize"]:
+    all_channels = True
+logging.debug("recognize in all channels = " + str(all_channels))
 
-config = ""
-
-if args["distance_metrics"]:
-    config = "distance_metrics=" + args["distance_metrics"]
-else:
-    config = "distance_metrics=" + "euclidean_l2,cosine,euclidean"
-
-if args["demography"]:
-    config += ";demography=" + args["demography"]
-else:
-    # config += ";analyse=" + "emotion,age,gender,race"
-    config += ";demography=" + "off"
-
-if args["models"]:
-    config += ";model=" + args["models"]
-else:
-    # config += ";models=" + "Facenet512,ArcFace,VGG-Face,Facenet,OpenFace,DeepFace,SFace"
-    config += ";model=" + "Facenet512"
-
-# stop after first match of a face (if more than model is used)
-if args["first_result"]:
-    config += ";first_result=" + args["first_result"]
-elif args["enforce"]:
-    config += ";enforce=" + args["enforce"]
-
-# write statistics into csv files to compare detectors and models
-if args["statistics"]:
-    config += ";statistics=" + args["statistics"]
-else:
-    config += ";statistics=" + "off"
-
-# write a history of recognition
-if args["history"]:
-    config += ";history=" + args["history"]
-else:
-    config += ";history=" + "off"
-
-# in percent of image
-if args["percent"]:
-    config += ";percent=" + args["percent"]
-else:
-    config += ";percent=" + "5"
-
-# in pixel
-if args["pixel"]:
-    config += ";pixel=" + args["pixel"]
-else:
-    config += ";pixel=" + "50"
-
-# in training
-if args["training"]:
-    config += ";training=" + args["training"]
-else:
-    config += ";training=" + "224"
-
-# in pixel
-if args["result"]:
-    config += ";result=" + args["result"]
-else:
-    config += ";result=" + "50"
-
-# position of face in image
-# on... in percent as used by css in browsers
-# off... in pixel as calculated by face detection
-if args["css_position"]:
-    config += ";css_position=" + args["css_position"]
-else:
-    config += ";css_position=" + "on"
+worker = faces_worker.Worker()
 
 if logData:
-    config += ";log_data=on"
-
-# list of detectors to remove
-if args["rm_detectors"]:
-    config += ";rm_detectors=" + args["rm_detectors"]
-
-# list of models to remove
+    worker.log_data = True
 if args["rm_models"]:
-    config += ";rm_models=" + args["rm_models"]
-
-# remove all names set or recognized
+    worker.remove_models = args["rm_models"]
+if args["rm_detectors"]:
+    worker.remove_models = args["rm_detectors"]
 if args["rm_names"]:
-    config += ";rm_names=" + args["rm_names"]
+    worker.is_remove_names = True
 
-if args["ram"]:
-    config += ";ram=" + args["ram"]
-else:
-    config += ";ram=" + "90"
+logging.debug("set db in worker")
+worker.set_db(db)
 
-# d = "	retinaface,mtcnn,ssd,opencv,mediapipe"
-d = "retinaface"
-if args["detectors"]:
-    d = args["detectors"]
-logging.debug("detectors = " + d)
-detectors = d.split(",")
-
-do_recognize = False
-counter = 1
-for detector in detectors:
-    worker = faces_worker.Worker()
-    logging.debug("set db in worker")
-    worker.set_db(db)
-    worker.configure(config + ";detector_backend=" + detector)
-    # +++++++++++++++++++
-    # run
-    # +++++++++++++++++++
-    logging.debug("About to run worker using detector " + detector)
-    if counter == len(detectors):
-        do_recognize = True
-    worker.run(args["imagespath"], args["procid"], channel_id, do_recognize)
-    counter = counter + 1
+# +++++++++++++++++++
+# run
+# +++++++++++++++++++
+worker.run(args["imagespath"], args["procid"], channel_id, all_channels)
 
 db.close()
 logging.info("OK, good by...")
