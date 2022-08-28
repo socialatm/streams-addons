@@ -57,7 +57,7 @@ class Worker:
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
         self.sort_column = "mtime"
-        self.sort_direction = True
+        self.sort_direction = False
         self.follow_sym_links = False
 
         self.folder = None
@@ -129,6 +129,8 @@ class Worker:
             elif key == 'sort_direction':
                 if value == "1":
                     self.sort_direction = False
+                else:
+                    self.sort_direction = True
             elif key == 'follow_sym_links':
                 if value == "on":
                     self.follow_sym_links = True
@@ -154,7 +156,7 @@ class Worker:
         logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
-        logging.debug("Configuration sort_direction=" + str(self.sort_direction))
+        logging.debug("Configuration sort_direction (ascending)=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
         logging.debug("Configuration ram=" + str(self.ram_allowed))
         logging.debug("Configuration rm_names=" + str(self.is_remove_names))
@@ -753,10 +755,9 @@ class Worker:
         if os.path.exists(self.file_embeddings) is False:
             logging.debug(self.folder + " - face representations does not exist " + self.file_embeddings)
             return False
-        df = df.reset_index(drop=True)
+        df.reset_index(drop=True, inplace=True)
         df.to_parquet(self.file_embeddings, engine="pyarrow", compression='gzip')
         logging.debug(self.folder + " - stored face representations in file " + self.file_embeddings)
-
         return True
 
     def get_facial_attributes(self):
@@ -822,10 +823,12 @@ class Worker:
                 df = df.drop(column, axis=1)
         if 'representation' in df.columns:  # for unit testing
             df = df.drop('representation', axis=1)
-        df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+
         if os.path.exists(self.file_faces):
+            df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+            df.reset_index(drop=True, inplace=True)
             df.to_json(self.file_faces)
-        logging.debug(self.folder + " - stored face names in file " + self.file_faces)
+            logging.debug(self.folder + " - stored face names in file " + self.file_faces)
 
     def cleanup(self):
         logging.debug(self.folder + " - 1. Step: cleaning up ---")

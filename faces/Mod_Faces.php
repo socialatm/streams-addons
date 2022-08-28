@@ -109,11 +109,6 @@ class Faces extends Controller {
         $version = $this->getAppVersion();
         logger("App version is " . $version);
 
-        $zoom = get_config('faces', 'zoom');
-        if (!$zoom) {
-            $zoom = 3;
-        }
-
         Head::add_css('/addon/faces/view/css/faces.css');
         $o = replace_macros(Theme::get_template('faces.tpl', 'addon/faces'), array(
             '$version' => $version,
@@ -122,7 +117,6 @@ class Faces extends Controller {
             '$can_write' => $this->can_write ? 'true' : 'false',
             '$is_owner' => $this->is_owner ? 'true' : 'false',
             '$log_level' => $loglevel,
-            '$faces_zoom' => $zoom,
             '$submit' => t('Submit'),
         ));
 
@@ -240,6 +234,8 @@ class Faces extends Controller {
         $this->prepareFiles();
         $config = $this->getConfig();
         $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
+        $sort_exif = $config["exif"][0][1] ? $config["exif"][0][1] : false;
+        $zoom = $config["zoom"][0][1] ? $config["zoom"][0][1] : 2;
 
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
@@ -250,6 +246,8 @@ class Faces extends Controller {
                 'names_waiting' => $this->files_names,
                 'attributes' => $this->files_attributes,
                 'immediatly' => $immediatly,
+                'sort_exif' => $sort_exif,
+                'zoom' => $zoom,
                 'message' => "ok"));
         }
 
@@ -282,6 +280,8 @@ class Faces extends Controller {
             'names_waiting' => $this->files_names,
             'attributes' => $this->files_attributes,
             'immediatly' => $immediatly,
+            'sort_exif' => $sort_exif,
+            'zoom' => $zoom,
             'message' => "ok"));
     }
 
@@ -511,7 +511,7 @@ class Faces extends Controller {
         $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
-        $isText = ["percent", "pixel", "training", "result"];
+        $isText = ["percent", "pixel", "training", "result", "zoom"];
         foreach ($config as $name => $values) {
             for ($i = 0; $i < sizeof($values); $i++) {
                 $elName = $values[$i][0];
@@ -535,6 +535,7 @@ class Faces extends Controller {
         $configFile = $this->getConfigFile();
         require_once('Config.php');
         $fc = new FaceConfiguration();
+        $config = $fc->checkConfig($config);
         $fc->write($configFile, $config);
 
         $fr->finished();

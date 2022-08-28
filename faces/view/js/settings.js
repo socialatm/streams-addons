@@ -50,7 +50,9 @@ function createTextField(list, after) {
     $(html).insertAfter(after);
     $("#id_" + name).val(value);
     $("#label_" + name).html(name);
-    $("#id_" + name).addClass("belongsToExperimental"); // for presets
+    if (name !== "zoom") {
+        $("#id_" + name).addClass("belongsToExperimental"); // for presets
+    }
 }
 
 function fillGUI(config) {
@@ -65,8 +67,10 @@ function fillGUI(config) {
     createCheckboxes(config.immediatly, "#face_performance", true);
     createCheckboxes(config.faces_defaults, "#face_detaults");
     createCheckboxes(config.faces_experimental, "#face_experimental");
+    createCheckboxes(config.exif, "#face_sortation", false);
     createTextFields(config.min_face_width_detection, "#face_size_detection");
     createTextFields(config.min_face_width_recognition, "#face_size_recognition");
+    createTextFields(config.zoom, "#face_zoom");
 
     document.getElementById("id_reset").addEventListener("click", presetDefault);
     document.getElementById("id_experimental").addEventListener("click", presetExperimental);

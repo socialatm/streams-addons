@@ -55,7 +55,7 @@ class Worker:
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
         self.sort_column = "mtime"
-        self.sort_direction = True
+        self.sort_direction = False
         self.follow_sym_links = False
         self.faces_statistics = None
         self.models_statistics = None
@@ -116,6 +116,8 @@ class Worker:
             elif key == 'sort_direction':
                 if value == "1":
                     self.sort_direction = False
+                else:
+                    self.sort_direction = True
             elif key == 'follow_sym_links':
                 if value == "on":
                     self.follow_sym_links = True
@@ -141,7 +143,7 @@ class Worker:
         logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
-        logging.debug("Configuration sort_direction=" + str(self.sort_direction))
+        logging.debug("Configuration sort_direction (ascending)=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
         logging.debug("Configuration ram=" + str(self.ram_allowed))
         logging.debug("Configuration rm_names=" + str(self.is_remove_names))
@@ -689,7 +691,6 @@ class Worker:
 
     def store_face_names(self, df, dir):
         # df = self.util.minimize_results(df, False)
-        df.reset_index(drop=True, inplace=True)
         for column in self.columnsToIncludeAll:
             if column not in df.columns:  # for unit testing
                 continue
@@ -697,7 +698,9 @@ class Worker:
                 df = df.drop(column, axis=1)
         if 'representation' in df.columns:  # for unit testing
             df = df.drop('representation', axis=1)
+
         df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+        df.reset_index(drop=True, inplace=True)
 
         path = os.path.join(self.dirImages, dir, self.file_name_faces)
         df.to_json(path)

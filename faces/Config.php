@@ -204,6 +204,24 @@ class FaceConfiguration {
 
             $config["min_face_width_recognition"][$i][1] = $number;
         }
+           
+        $config["exif"][0][2] = false;
+        
+        $min = 1;
+        $max = 6;
+        $default = 2;
+        $number = $config["zoom"][0][1];
+        if (!is_numeric($number)) {
+            $number = $default;
+        } else {
+            $number = round($number);
+            if ($number > $max) {
+                $number = $max;
+            } elseif ($number < $min) {
+                $number = $min;
+            }
+        }
+        $config["zoom"][0][1] = $number;
 
         return $config;
     }
@@ -237,9 +255,10 @@ class FaceConfiguration {
         $config = $this->addConfigElement("faces_defaults", "reset", $config, false);
         $config = $this->addConfigElement("faces_experimental", "experimental", $config, false);
         $config = $this->addConfigElement("immediatly", "immediatly", $config, false);
+        $config = $this->addConfigElement("exif", "exif", $config, false);
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
-
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
+        $config["zoom"] = [["zoom", 2]];
 
         $config = $this->checkConfig($config);
 

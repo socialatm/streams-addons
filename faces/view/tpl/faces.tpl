@@ -19,7 +19,6 @@
     <p id="faces_can_write">{{$can_write}}</p>
     <p id="faces_is_owner">{{$is_owner}}</p>
     <p id="faces_log_level">{{$log_level}}</p>
-    <p id="faces_zoom">{{$faces_zoom}}</p>
     <p id="faces_can_write">{{$can_write}}</p>
 </div>
 

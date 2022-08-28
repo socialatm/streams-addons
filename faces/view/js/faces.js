@@ -1,4 +1,4 @@
-var zoom = 3;
+var zoom = 2;
 var minZoomLoaded = 1;
 var imageCounter = 0;
 var loadedCountMaxMultiplier = 3;
@@ -26,6 +26,7 @@ var server_procid = "";
 var server_time = "";
 
 var immediateSearch = false;
+var sort_exif = false;
 
 function t() {
     var now = new Date();
@@ -85,7 +86,7 @@ function postStart(isStart) {
         if (data['names']) {
             loadFaceData(data['names']); // creates list of images
         }
-        setImmediateSearch(data);
+        setConfig(data);
         waitForFinishedFaceDetection();
     },
             'json');
@@ -106,14 +107,20 @@ function postUpdate() {
         if (data['names']) {
             loadFaceData(data['names']); // creates list of images
         }
-        setImmediateSearch(data);
+        setConfig(data);
     },
             'json');
 }
 
-function setImmediateSearch(data) {
+function setConfig(data) {
     if (data['immediatly']) {
         immediateSearch = data['immediatly'];
+    }
+    if (data['sort_exif']) {
+        sort_exif = data['sort_exif'];
+    }
+    if (data['zoom']) {
+        zoom = data['zoom'];
     }
 }
 
@@ -142,39 +149,6 @@ function loadFaceData(files) {
     }
 }
 
-function loadFaceData_old(files) {
-    var i;
-    for (i = 0; i < files.length; i++) {
-        var f = files[i];
-        var url = window.location.origin + "/cloud/" + f;
-        ((loglevel >= 2) ? console.log(t() + " Requesting file " + url) : null);
-        var jqxhr = $.ajax({
-            type: "POST",
-            url: url,
-            data: "",
-            dataType: "json",
-            async: true
-        });
-        jqxhr.done(function (data) {
-            ((loglevel >= 2) ? console.log(t() + " success loading url " + url) : null);
-            ((loglevel >= 2) ? console.log(t() + " loaded " + data) : null);
-            readFaces(data, f);
-            if (++counter_files_name === files.length) {
-                ((loglevel >= 3) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
-                if (stopLoadingImages) {
-                    return;
-                }
-                filterAndSort();
-                appendPictures();
-            }
-        });
-        jqxhr.fail(function (data) {
-            ((loglevel >= 1) ? console.log(t() + " failed to load url " + url) : null);
-            ((loglevel >= 1) ? console.log(t() + " failed - loaded " + data) : null);
-        });
-    }
-}
-
 function readFaces(imgs, csvFile) {
     let i = 0;
     while (imgs.file[i]) {
@@ -186,7 +160,7 @@ function readFaces(imgs, csvFile) {
             name: imgs.name[i],
             name_recognized: imgs.name_recognized[i],
             time_named: imgs.time_named[i],
-            exif_date: imgs.exif_date[i],
+            time: sort_exif ? imgs.exif_date[i]:imgs.mtime[i],
             csv_file: csvFile,
             sent: false
         };
@@ -225,7 +199,7 @@ function appendFaceToImages(face) {
     }
     var faces = [];
     faces.push(face);
-    var image = {id: imageCounter++, url: face['url'], faces: faces, pass: true, exif_date: face['exif_date']};
+    var image = {id: imageCounter++, url: face['url'], faces: faces, pass: true, time: face['time']};
     images.push(image);
     ((loglevel >= 2) ? console.log(t() + " created new image = " + face['url']) : null);
 }
@@ -573,7 +547,7 @@ function filterImages() {
         var passedTime = false;
         var passedName = false;
 
-        var date = images[i].exif_date;
+        var date = images[i].time;
         if (!date || date == "") {
             continue;
         }
@@ -620,14 +594,14 @@ function filterImages() {
 }
 
 function compareExifDates(a, b) {
-    if (a.exif_date < b.exif_date) {
+    if (a.time < b.time) {
         if (sortDirectionReverse) {
             return -1;
         } else {
             return 1;
         }
     }
-    if (a.exif_date > b.exif_date) {
+    if (a.time > b.time) {
         if (sortDirectionReverse) {
             return 1;
         } else {
@@ -1326,8 +1300,6 @@ $(document).ready(function () {
     endPanel = $("#face-scroll-end").html();
     $("#face-scroll-end").remove();
     initDate("", "");
-    zoom = parseInt($("#faces_zoom").text());
-    ((loglevel >= 1) ? console.log(t() + " zoom = " + zoom) : null);
     channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
     //--------------------------------------------------------------------------
     postStart(true);

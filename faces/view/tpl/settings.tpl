@@ -44,7 +44,7 @@
         <div>This keeps a record of how correct the recognition works over time
             This will allow you to activate the statistics at any time later (see below).</div>
         <div>If the "immediate search" is switched on (see below) it might be more
-        save to switch the "history" on as well.</div>
+            save to switch the "history" on as well.</div>
     </div>
     <div id="face_statistics">
         <h3>Write Statistics into a CSV File</h3>
@@ -65,9 +65,24 @@
     <div id="face_performance">
         <h3>Immediate Search</h3>
         <div>Start the face recognition always immediatly after a users has set
-         or changed a name. Advantage: The names will be updated in the
-        browser as soon as the face recognition finds a person. Disadvantage:
-        Increased server load.</div>
+            or changed a name. Advantage: The names will be updated in the
+            browser as soon as the face recognition finds a person. Disadvantage:
+            Increased server load.</div>
+    </div>
+    <hr/>
+    <h1>Browser Appearance</h1>
+    <h2>Sortation</h2>
+    <div id="face_sortation">
+        <h3>Date and Time</h3>
+        <div>Sort the images by the time an images was taken (exif) or the
+        time it was uploaded. Some images do not carry the information when
+        they where taken.</div>
+        <div>Recommended: Switch off</div>
+    </div>
+    <h2>Zoom</h2>
+    <div id="face_zoom">
+        <h3>Images per Row</h3>
+        <div>Start value for zoom. Possible values: 1 to 6.</div>
     </div>
 
     <hr/>

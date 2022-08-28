@@ -354,7 +354,7 @@ class Finder:
         start_time = time.time()
         faces_to_return = []
         logging.debug("reading image to get face representations  " + path + ", os path on server " + os_path_on_server)
-        mtime = datetime.fromtimestamp(os.path.getmtime(os_path_on_server))
+        mtime = str(datetime.fromtimestamp(os.path.getmtime(os_path_on_server)))
         img = cv2.imread(os_path_on_server)
         tic = time.time()
         try:
