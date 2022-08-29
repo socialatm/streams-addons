@@ -273,7 +273,7 @@ class FaceConfiguration {
         $config["worker"]["interval_backup_detection"] = 60*2;
         $config["worker"]["sort_column"] = "mtime";
         $config["worker"]["sort_ascending"] = false;
-        $config["worker"]["valid_detectors"] = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"];
+        $config["finder"]["valid_detectors"] = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"];
         $config["finder"]["valid_models"] = ['VGG-Face', 'Facenet', 'Facenet512', 'ArcFace', 'OpenFace', 'DeepFace', 'SFace'];
         $config["finder"]["valid_attributes"] = ["Gender", "Age", "Race", "Emotion"];
         $config["finder"]["use_css_position"] = true;

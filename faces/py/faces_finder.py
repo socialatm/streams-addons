@@ -15,18 +15,23 @@ import logging
 class Finder:
 
     def __init__(self):
+
         self.model_names = []
         self.model_name_default = "Facenet512"  # default
         self.conf_models = ""
-        self.models = None
+        self.models = {}
         # 'DeepID' gives invalid results
         self.models_valid = ['VGG-Face', 'Facenet', 'Facenet512', 'ArcFace', 'OpenFace', 'DeepFace', 'SFace']
+
+        self.detector_names = []
+        self.detector_name_default = "retinaface"  # default
+        self.detectors = {}
+        self.detectors_valid = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
         self.detector_name = "retinaface"  # default, can be set by caller
-        self.detector = None
-        self.detectors = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
+
         self.attributes_valid = ["Gender", "Age", "Race", "Emotion"]
         self.attributes_names = []
-        self.attributes_models = None
+        self.attributes_models = {}
 
         self.age_model = None
         self.emotion_model = None
@@ -80,26 +85,48 @@ class Finder:
         # --------------------------------------------------------------------------------------------------------------
         # not set by user in frontend
 
-        if "valid_models" in json["finder"]:
-            self.models_valid = json["finder"]["valid_models"]
+        if "finder" in json:
+            if "valid_detectors" in json["finder"]:
+                self.detectors_valid = json["finder"]["valid_detectors"]
+
+            if "valid_models" in json["finder"]:
+                self.models_valid = json["finder"]["valid_models"]
+
+            if "valid_attributes" in json["finder"]:
+                self.attributes_valid = json["finder"]["valid_attributes"]
+
+            if "use_css_position" in json["finder"]:
+                self.css_position = json["finder"]["use_css_position"]
+
+        logging.debug("config: detectors_valid=" + str(self.detectors_valid))
         logging.debug("config: valid_models=" + str(self.models_valid))
-
-        if "valid_attributes" in json["finder"]:
-            self.attributes_valid = json["finder"]["valid_attributes"]
         logging.debug("config: valid_attributes=" + str(self.attributes_valid))
-
-        if "use_css_position" in json["finder"]:
-            self.css_position = json["finder"]["use_css_position"]
         logging.debug("config: use_css_position=" + str(self.css_position))
 
         # --------------------------------------------------------------------------------------------------------------
         # set by user in frontend
+
+        if "detectors" in json:
+            for el in json["detectors"]:
+                if el[1]:
+                    if el[0] in self.detectors_valid and not el[0] in self.detector_names:
+                        self.detector_names.append(el[0])
+                        self.detectors[el[0]] = None
+                    else:
+                        logging.warning(str(el[0]) +
+                                        " is not a valid detector (or already set). Hint: The detector name is case " +
+                                        "sensitive.  Loading default model if no more valid model name is given...")
+                        logging.warning("Valid detectors are: " + str(self.detectors_valid))
+        if len(self.detector_names) == 0:
+            self.detector_names.append(self.detector_name_default)  # default
+        logging.debug("config: detectors=" + str(self.detector_names))
 
         if "models" in json:
             for el in json["models"]:
                 if el[1]:
                     if el[0] in self.models_valid and el[0] not in self.model_names:
                         self.model_names.append(el[0])
+                        self.models[el[0]] = None
                     else:
                         logging.warning(str(el) + " is not a valid model (or already set). Hint: The model name is case " +
                                         "sensitive.  Loading default model if no more valid model name is given...")
@@ -111,6 +138,7 @@ class Finder:
                 if el[1]:
                     if el[0] in self.attributes_valid and el[0] not in self.attributes_names:
                         self.attributes_names.append(el[0])
+                        self.attributes_models[el[0]] = None
                     else:
                         logging.warning(
                             str(el) + " is not a valid demography model (or already set). Hint: The model name is case " +

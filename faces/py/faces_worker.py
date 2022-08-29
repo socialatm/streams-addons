@@ -73,10 +73,8 @@ class Worker:
         self.util = faces_util.Util()
 
         self.ram_allowed = 80  # %
-        self.detectors = []
-        self.detectors_valid = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
-        self.detector_names = []
-        self.detector_name_default = "retinaface"  # default
+
+        self.config = None
 
     def set_finder(self, json):
         deepface_specs = importlib.util.find_spec("deepface")
@@ -122,32 +120,14 @@ class Worker:
             if "interval_backup_detection" in json["worker"]:
                 self.timeBackUp = int(json["worker"]["interval_backup_detection"])
 
-            if "valid_detectors" in json["worker"]:
-                self.detectors_valid = json["worker"]["valid_detectors"]
-
         logging.debug("config: ram=" + str(self.ram_allowed))
         logging.debug("config: sort_column=" + str(self.sort_column))
         logging.debug("config: sort_ascending=" + str(self.sort_ascending))
         logging.debug("config: interval_alive_signal=" + str(self.timeToWait))
         logging.debug("config: interval_backup_detection=" + str(self.timeBackUp))
-        logging.debug("config: detectors_valid=" + str(self.detectors_valid))
 
         # --------------------------------------------------------------------------------------------------------------
         # set by user in frontend
-
-        if "detectors" in json:
-            for detector in json["detectors"]:
-                if detector[1]:
-                    if detector[0] in self.detectors_valid and not detector[0] in self.detector_names:
-                        self.detector_names.append(detector[0])
-                    else:
-                        logging.warning(detector[0] +
-                                        " is not a valid detector (or already set). Hint: The detector name is case " +
-                                        "sensitive.  Loading default model if no more valid model name is given...")
-                        logging.warning("Valid detectors are: " + str(self.detectors_valid))
-        if len(self.detector_names) == 0:
-            self.detector_names.append(self.detector_name_default)  # default
-        logging.debug("config: detectors=" + str(self.detector_names))
 
         if "statistics" in json:
             self.statistics = json["statistics"][0][1]
@@ -177,41 +157,61 @@ class Worker:
 
         self.util.is_css_position = self.finder.css_position
 
-    def run(self, dir_images, proc_id, own_channel_id, all_channels):
-        logging.info("start in dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
+    def run(self, dir_images, proc_id, own_channel_id, is_recognize):
+        logging.info("start dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
+
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read directory " + self.dirImages)
             self.stop()
+
         self.proc_id = proc_id
         self.write_alive_signal(self.RUNNING)
+
         # get all channel_id's (users) that have the app faces installed
         query = "select app_channel from app where app_plugin = 'faces' AND app_channel != 0"
         data = {}
         app_channels = self.db.select(query, data)
+
         # loop through every user who has the faces addon switched on
         for app_channel in app_channels:
+
+            # --------------------------------------------
+            # next user (channel that activated the addon)
+            # --------------------------------------------
+
+            # get all folders containing images for a user
             self.channel = app_channel[0]
-            self.read_config_file()
             query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s"
             data = (self.channel, self.file_name_faces)
             folders = self.db.select(query, data)
             if len(folders) == 0:
                 logging.info("no files " + self.file_name_faces + " for channel " + str(self.channel))
                 continue
-            for f in folders:
-                self.folder = f[0]
-                self.process_dir(own_channel_id)
-            do_recognize = False
-            if do_recognize:
-                if all_channels or own_channel_id == self.channel:
+
+            if is_recognize:
+                # --------------------------------------------
+                # Recognition
+                # --------------------------------------------
+                # recognize only
+                # - if set as parameter from caller
+                # - for the user who called the script
+                if own_channel_id == self.channel:
                     self.recognize(folders)
                 else:
                     logging.debug("no recognition is run for channel id = " + str(self.channel))
                     continue
-            self.write_alive_signal(self.FINISHED)
-        logging.debug("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
-                      proc_id + ", own_channel_id=" + str(own_channel_id))
+            else:
+                # --------------------------------------------
+                # Detection
+                # --------------------------------------------
+                # detect faces in all folders containing images for a user
+                for f in folders:
+                    self.folder = f[0]
+                    self.process_dir(own_channel_id, is_recognize)
+
+        self.write_alive_signal(self.FINISHED)
+        logging.info("finished dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
 
     def read_config_file(self):
         logging.debug("channel " + str(self.channel) + " - read config file")
@@ -224,12 +224,18 @@ class Worker:
                 return
         with open(self.file_config, "r") as f:
             conf = json.load(f)
-            logging.debug("channel " + str(self.channel) + " - conf=" + str(conf))
+            # logging.debug("channel " + str(self.channel) + " - conf=" + str(conf))
             self.configure(conf)
 
     def process_dir(self, own_channel_id):
         logging.debug(self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
 
+        # -------------------------------------------------------------
+        # Prepare files
+        #
+        # read absolute paths of some files from the database and check
+        # - access rights to file system and
+        # - file content
         if self.check_file_by_name(self.file_name_faces) is False:
             return
         if self.check_file_by_name(self.file_name_face_representations) is False:
@@ -237,52 +243,75 @@ class Worker:
         self.check_file_by_name(self.file_name_facial_attributes)  # for cleanup
         self.check_file_by_name(self.file_name_names)  # for cleanup
 
+        # -------------------------------------------------------------
+        # Read the configuration set by admin/user
+        #
+        if self.config is None:
+            self.read_config_file()
+
+        # -------------------------------------------------------------
+        # Cleanup
+        #
+        # - Remove faces of images that do not exist anymore in a subdirectory
+        # - Remove faces for certain detectors and/or models (if set as parameter by the caller)
         if self.channel == own_channel_id:
             self.cleanup()
             self.remove_names()
+
+        # -------------------------------------------------------------
+        # Detect
+        #
+        # process all images
         self.detect()
-        self.analyse()
 
     # Find and store all face representations for face recognition.
     # The face representations are stored in binary pickle file.
     def detect(self):
-        logging.debug(self.folder + " - 2. Step: detecting new images ---")
+        logging.debug(self.folder + " - START DETECTION, CREATION of EMBEDDINGS and FACIAL ATTRIBUTES ---")
 
+        # get all embeddings and attributes for the images in directory
         df = self.get_face_representations()  # pandas.DataFrame holding all face representation
 
-        images = self.add_new_images(df, self.file_name_face_representations)
+        images = self.get_images()
         if len(images) == 0:
-            logging.debug(self.folder + " - No new images for face detection in directory")
+            logging.debug(self.folder + " - No new images in directory")
             return
 
         logging.debug(self.folder + " - searching for faces in " + str(len(images)) + " images")
 
-        if not self.finder.is_loaded():
-            self.finder.load()
-            self.write_alive_signal(self.RUNNING)
-
-        time_start_detection = time.time()
-        logging.debug(self.folder + " - start to detect faces for " + str(len(images)) + " images")
+        # --------------------------------------------------------------------------------------------------------------
+        # iterate all images in a directory
         for image in images:
-            # The list of models per detector can change. Do not find existing representations again.
+
             path = image[0]
             os_path_on_server = os.path.join(self.dirImages, image[1])
-            existing_models = []
-            if df is not None:
-                existing_models = df.loc[
-                    (df["file"] == path) & (df["detector"] == self.finder.detector_name), "model"].values
-            faces = self.finder.detect(path, os_path_on_server, existing_models)
-            if faces:
-                for face in faces:
-                    df = self.util.add_row_embedding(df, face)
 
-            elapsed_time = time.time() - time_start_detection
-            if elapsed_time > self.timeBackUp:
-                if self.store_face_presentations(df) is False:
-                    return
-                logging.info(self.folder + " - elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
-                time_start_detection = time.time()
-            self.write_alive_signal(self.RUNNING)
+            time_start_detection = time.time()
+            logging.debug(self.folder + " - start " + str(path))
+
+            # ----------------------------------------------------------------------------------------------------------
+            # iterate all activated detectors to
+            # - find new combinations for each image of detector and
+            #   a. model (face recognition) and
+            #   b. attributes (emotion, gender, age, race)
+            # - create and store embeddings for each face
+            # - analyse the attributes of each face
+            for key in self.finder.detectors:
+                logging.debug(path + " - start with " + key)
+
+                if df is None:
+                    faces = self.finder.detect(path, os_path_on_server, None)
+                if faces:
+                    for face in faces:
+                        df = self.util.add_row_embedding(df, face)
+
+                elapsed_time = time.time() - time_start_detection
+                if elapsed_time > self.timeBackUp:
+                    if self.store_face_presentations(df) is False:
+                        return
+                    logging.info(self.folder + " - elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
+                    time_start_detection = time.time()
+                self.write_alive_signal(self.RUNNING)
 
         # ---
         # Find same faces by position in images.
@@ -620,6 +649,23 @@ class Worker:
         self.store_face_names(df_names)
         if self.keep_history:
             self.store_face_presentations(df_recognized)
+
+    def get_images_to_process(self, df, storage):
+        images = self.get_images()
+        new_images = []
+        for image in images:
+            path = image[0]
+            # Look for new images
+            if df is None:
+                new_images.append(image)
+            else:
+                for model_name in self.finder.model_names:
+                    if not ((df['file'] == path) & (df['model'] == model_name) & (
+                            df['detector'] == self.finder.detector_name)).any():
+                        new_images.append(image)
+                        break
+
+        return new_images
 
     # Add new images to a pandas.DataFrame for
     # - faces representations, faces.gzip, or

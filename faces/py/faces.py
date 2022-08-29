@@ -92,10 +92,10 @@ if args["channelid"]:
     channel_id = int(args["channelid"])
 logging.debug("channel id = " + str(channel_id))
 
-all_channels = False
+is_recognize = False
 if args["recognize"]:
-    all_channels = True
-logging.debug("recognize in all channels = " + str(all_channels))
+    is_recognize = True
+logging.debug("recognize in all channels = " + str(is_recognize))
 
 worker = faces_worker.Worker()
 
@@ -114,7 +114,7 @@ worker.set_db(db)
 # +++++++++++++++++++
 # run
 # +++++++++++++++++++
-worker.run(args["imagespath"], args["procid"], channel_id, all_channels)
+worker.run(args["imagespath"], args["procid"], channel_id, is_recognize)
 
 db.close()
 logging.info("OK, good by...")
