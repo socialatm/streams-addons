@@ -177,8 +177,8 @@ class Worker:
 
         self.util.is_css_position = self.finder.css_position
 
-    def run(self, dir_images, proc_id, channel_id, all_channels):
-        logging.info("start in dir=" + dir_images + ", proc_id=" + proc_id + ", channel_id=" + str(channel_id))
+    def run(self, dir_images, proc_id, own_channel_id, all_channels):
+        logging.info("start in dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read directory " + self.dirImages)
@@ -197,21 +197,21 @@ class Worker:
             data = (self.channel, self.file_name_faces)
             folders = self.db.select(query, data)
             if len(folders) == 0:
-                logging.info("no files " + self.file_name_faces + " for channel_id " + str(self.channel))
+                logging.info("no files " + self.file_name_faces + " for channel " + str(self.channel))
                 continue
             for f in folders:
                 self.folder = f[0]
-                self.process_dir()
+                self.process_dir(own_channel_id)
             do_recognize = False
             if do_recognize:
-                if all_channels or channel_id == self.channel:
+                if all_channels or own_channel_id == self.channel:
                     self.recognize(folders)
                 else:
                     logging.debug("no recognition is run for channel id = " + str(self.channel))
                     continue
             self.write_alive_signal(self.FINISHED)
         logging.debug("Finished with " + self.finder.detector_name + " in dir=" + dir_images + ", proc_id=" +
-                      proc_id + ", channel_id=" + str(channel_id))
+                      proc_id + ", own_channel_id=" + str(own_channel_id))
 
     def read_config_file(self):
         logging.debug("channel " + str(self.channel) + " - read config file")
@@ -227,7 +227,7 @@ class Worker:
             logging.debug("channel " + str(self.channel) + " - conf=" + str(conf))
             self.configure(conf)
 
-    def process_dir(self):
+    def process_dir(self, own_channel_id):
         logging.debug(self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
 
         if self.check_file_by_name(self.file_name_faces) is False:
@@ -237,8 +237,9 @@ class Worker:
         self.check_file_by_name(self.file_name_facial_attributes)  # for cleanup
         self.check_file_by_name(self.file_name_names)  # for cleanup
 
-        self.cleanup()
-        self.remove_names()
+        if self.channel == own_channel_id:
+            self.cleanup()
+            self.remove_names()
         self.detect()
         self.analyse()
 
