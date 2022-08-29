@@ -54,13 +54,12 @@ class Worker:
         self.FINISHED = "finished"
         self.pid = ""
         self.exiftool = None
-        self.removeDetectors = ""
+        self.remove_detectors = ""
         self.remove_models = ""
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
         self.sort_column = "mtime"
-        self.sort_direction = False
-        self.follow_sym_links = False
+        self.sort_ascending = False
 
         self.folder = None
         self.file_embeddings = None
@@ -74,20 +73,24 @@ class Worker:
         self.util = faces_util.Util()
 
         self.ram_allowed = 80  # %
+        self.detectors = []
+        self.detectors_valid = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
+        self.detector_names = []
+        self.detector_name_default = "retinaface"  # default
 
-    def set_finder(self, csv):
+    def set_finder(self, json):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.finder = faces_finder.Finder()
-            self.finder.configure(csv)
+            self.finder.configure(json)
         else:
             logging.error("FAILED to set finder. Reason: module deepface not found")
 
-    def set_recognizer(self, csv):
+    def set_recognizer(self, json):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.recognizer = faces_recognizer.Recognizer()
-            self.recognizer.configure(csv)
+            self.recognizer.configure(json)
         else:
             logging.critical("FAILED to set finder. Reason: module deepface not found")
 
@@ -97,21 +100,71 @@ class Worker:
 
     def configure(self, json):
 
-        ram = 80
-        if ram.isdigit():
-            self.ram_allowed = int(ram)
-            logging.debug("set the max allowed ram to " + str(self.ram_allowed) + " %")
-        else:
-            logging.warning(str(ram) + " is not a number. Set to default " + str(self.ram_allowed) + " %")
+        if "worker" in json:
 
-        logging.debug("Configuration log_data=" + str(self.log_data))
-        logging.debug("Configuration statistics=" + str(self.statistics))
-        logging.debug("Configuration history=" + str(self.keep_history))
-        logging.debug("Configuration sort_column=" + self.sort_column)
-        logging.debug("Configuration sort_direction (ascending)=" + str(self.sort_direction))
-        logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
-        logging.debug("Configuration ram=" + str(self.ram_allowed))
-        logging.debug("Configuration rm_names=" + str(self.is_remove_names))
+            # --------------------------------------------------------------------------------------------------------------
+            # set by admin in frontend
+
+            if "ram" in json["worker"]:
+                self.ram_allowed = json["worker"]["ram"]
+
+            # --------------------------------------------------------------------------------------------------------------
+            # not set by user in frontend
+            if "sort_column" in json["worker"]:
+                self.sort_column = json["worker"]["sort_column"]
+
+            if "sort_ascending" in json["worker"]:
+                self.sort_ascending = json["worker"]["sort_ascending"]
+
+            if "interval_alive_signal" in json["worker"]:
+                self.timeToWait = int(json["worker"]["interval_alive_signal"])
+
+            if "interval_backup_detection" in json["worker"]:
+                self.timeBackUp = int(json["worker"]["interval_backup_detection"])
+
+            if "valid_detectors" in json["worker"]:
+                self.detectors_valid = json["worker"]["valid_detectors"]
+
+        logging.debug("config: ram=" + str(self.ram_allowed))
+        logging.debug("config: sort_column=" + str(self.sort_column))
+        logging.debug("config: sort_ascending=" + str(self.sort_ascending))
+        logging.debug("config: interval_alive_signal=" + str(self.timeToWait))
+        logging.debug("config: interval_backup_detection=" + str(self.timeBackUp))
+        logging.debug("config: detectors_valid=" + str(self.detectors_valid))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # set by user in frontend
+
+        if "detectors" in json:
+            for detector in json["detectors"]:
+                if detector[1]:
+                    if detector[0] in self.detectors_valid and not detector[0] in self.detector_names:
+                        self.detector_names.append(detector[0])
+                    else:
+                        logging.warning(detector[0] +
+                                        " is not a valid detector (or already set). Hint: The detector name is case " +
+                                        "sensitive.  Loading default model if no more valid model name is given...")
+                        logging.warning("Valid detectors are: " + str(self.detectors_valid))
+        if len(self.detector_names) == 0:
+            self.detector_names.append(self.detector_name_default)  # default
+        logging.debug("config: detectors=" + str(self.detector_names))
+
+        if "statistics" in json:
+            self.statistics = json["statistics"][0][1]
+        logging.debug("config: statistics=" + str(self.statistics))
+
+        if "history" in json:
+            self.keep_history = json["history"][0][1]
+        logging.debug("config: keep_history=" + str(self.keep_history))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # set directly by calling script
+
+        logging.debug("config log_data=" + str(self.log_data))
+        logging.debug("config rm_names=" + str(self.is_remove_names))
+        logging.debug("config rm_models=" + str(self.remove_models))
+        logging.debug("config rm_detectors=" + str(self.remove_detectors))
+        # --------------------------------------------------------------------------------------------------------------
 
         self.set_finder(json)
         self.set_recognizer(json)
@@ -171,6 +224,7 @@ class Worker:
                 return
         with open(self.file_config, "r") as f:
             conf = json.load(f)
+            logging.debug("channel " + str(self.channel) + " - conf=" + str(conf))
             self.configure(conf)
 
     def process_dir(self):
@@ -796,7 +850,7 @@ class Worker:
             df = df.drop('representation', axis=1)
 
         if os.path.exists(self.file_faces):
-            df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+            df = df.sort_values(by=[self.sort_column], ascending=[self.sort_ascending])
             df.reset_index(drop=True, inplace=True)
             df.to_json(self.file_faces)
             logging.debug(self.folder + " - stored face names in file " + self.file_faces)
@@ -809,7 +863,7 @@ class Worker:
             images.append(i[0])
         df = self.get_face_representations()
         if df is not None:
-            keys = self.util.remove_detector_model(df, self.remove_models, self.removeDetectors, self.folder)
+            keys = self.util.remove_detector_model(df, self.remove_models, self.remove_detectors, self.folder)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:
@@ -820,7 +874,7 @@ class Worker:
 
         df = self.get_face_names()
         if df is not None:
-            keys = self.util.remove_detector_model(df, self.remove_models, self.removeDetectors, self.folder)
+            keys = self.util.remove_detector_model(df, self.remove_models, self.remove_detectors, self.folder)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:
@@ -831,7 +885,7 @@ class Worker:
 
         df = self.get_facial_attributes()
         if df is not None:
-            keys = self.util.remove_detector_model(df, "", self.removeDetectors, self.folder)
+            keys = self.util.remove_detector_model(df, "", self.remove_detectors, self.folder)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:

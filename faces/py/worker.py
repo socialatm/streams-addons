@@ -113,7 +113,7 @@ class Worker:
                 column = value
                 if column in self.columnsSort:
                     self.sort_column = column
-            elif key == 'sort_direction':
+            elif key == 'sort_ascending':
                 if value == "1":
                     self.sort_direction = False
                 else:
@@ -143,7 +143,7 @@ class Worker:
         logging.debug("Configuration statistics=" + str(self.statistics))
         logging.debug("Configuration history=" + str(self.keep_history))
         logging.debug("Configuration sort_column=" + self.sort_column)
-        logging.debug("Configuration sort_direction (ascending)=" + str(self.sort_direction))
+        logging.debug("Configuration sort_ascending (ascending)=" + str(self.sort_direction))
         logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
         logging.debug("Configuration ram=" + str(self.ram_allowed))
         logging.debug("Configuration rm_names=" + str(self.is_remove_names))

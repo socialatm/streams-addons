@@ -16,34 +16,41 @@ class Recognizer:
     # csv
     # example
     #   distance_metric=cosine;first_result=on
-    def configure(self, csv):
-        logging.debug("configuration csv=" + csv)
-        for element in csv.split(";"):
-            conf = element.split("=")
-            if len(conf) < 2:
-                continue
-            if conf[0].strip().lower() == 'distance_metrics':
-                for el in conf[1].split(","):
-                    if el.strip().lower() in self.distance_metrics_valid:
-                        self.distance_metrics.append(el.strip().lower())
+    def configure(self, json):
+
+        # --------------------------------------------------------------------------------------------------------------
+        # not set by user in frontend
+
+        if "valid_distance_metrics" in json["recognizer"]:
+            self.distance_metrics_valid = json["recognizer"]["valid_distance_metrics"]
+        logging.debug("config: valid_distance_metrics=" + str(self.distance_metrics_valid))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # set by user in frontend
+
+        if "distance_metrics" in json:
+            for el in json["distance_metrics"]:
+                if el[1]:
+                    if el[0] in self.distance_metrics_valid and el[0] not in self.distance_metrics:
+                        self.distance_metrics.append(el[0])
                     else:
-                        logging.warning(conf[1] + " is not a valid distance_metric.")
-                        logging.warning("Valid distance metrics are: " + str(self.distance_metrics_valid))
-            if conf[0].strip().lower() == 'first_result':
-                if conf[1].strip().lower() == "on":
-                    self.first_result = True
-                else:
-                    self.first_result = False
-            if conf[0].strip().lower() == 'enforce':
-                if conf[1].strip().lower() == "on" or conf[1].strip().lower() == "true":
-                    self.first_result = False
-                else:
-                    self.first_result = True
+                        logging.warning(str(el) +
+                                        " is not a valid distance metrics (or already set). Hint: The distance" +
+                                        " metrics is case sensitive.  Loading default model if no more valid" +
+                                        " model name is given...")
+                        logging.warning("Valid models are: " + str(self.distance_metrics_valid))
+        logging.debug("config: distance_metrics=" + str(self.distance_metrics))
+
+        if "enforce" in json:
+            if json["enforce"][0][1]:
+                self.first_result = False
+            else:
+                self.first_result = True
+        logging.debug("config: first_result=" + str(self.first_result))
+
         if len(self.distance_metrics) == 0:
             self.distance_metrics.append(self.distance_metric_default)
             logging.warning("Using distance_metric_default=" + self.distance_metric_default)
-        logging.debug("Configuration distance_metrics=" + str(self.distance_metrics))
-        logging.debug("Configuration first_result=" + str(self.first_result))
 
     def train(self, names, model_name):
         self.names = names

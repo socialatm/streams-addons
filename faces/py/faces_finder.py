@@ -24,6 +24,10 @@ class Finder:
         self.detector_name = "retinaface"  # default, can be set by caller
         self.detector = None
         self.detectors = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
+        self.attributes_valid = ["Gender", "Age", "Race", "Emotion"]
+        self.attributes_names = []
+        self.attributes_models = None
+
         self.age_model = None
         self.emotion_model = None
         self.gender_model = None
@@ -34,6 +38,7 @@ class Finder:
         self.is_analyse_age = False  # default, can be set by caller
         self.is_analyse_gender = False  # default, can be set by caller
         self.is_analyse_race = False  # default, can be
+
         self.min_face_width_percent = 5  # in %, can be set by caller
         self.min_face_width_pixel = 50  # in px, can be set by caller
         self.css_position = True
@@ -70,101 +75,66 @@ class Finder:
     #   - css_position=on  margins left, right, top, bottom in percent
     #   - css_position=off x, y, w, h in pixel starting at top left corner
     #  
-    def configure(self, csv):
-        logging.debug("configuration csv=" + csv)
-        for element in csv.split(";"):
-            conf = element.split("=")
-            if len(conf) < 2:
-                continue
+    def configure(self, json):
 
-            key = conf[0].strip().lower()
-            value = conf[1].strip().lower()
+        # --------------------------------------------------------------------------------------------------------------
+        # not set by user in frontend
 
-            if key == 'model' or key == 'models':
-                for m in conf[1].split(","):
-                    if m in self.models_valid and m not in self.model_names:
-                        self.model_names.append(m)
+        if "valid_models" in json["finder"]:
+            self.models_valid = json["finder"]["valid_models"]
+        logging.debug("config: valid_models=" + str(self.models_valid))
+
+        if "valid_attributes" in json["finder"]:
+            self.attributes_valid = json["finder"]["valid_attributes"]
+        logging.debug("config: valid_attributes=" + str(self.attributes_valid))
+
+        if "use_css_position" in json["finder"]:
+            self.css_position = json["finder"]["use_css_position"]
+        logging.debug("config: use_css_position=" + str(self.css_position))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # set by user in frontend
+
+        if "models" in json:
+            for el in json["models"]:
+                if el[1]:
+                    if el[0] in self.models_valid and el[0] not in self.model_names:
+                        self.model_names.append(el[0])
                     else:
-                        logging.warning(m + " is not a valid model (or already set). Hint: The model name is case " +
+                        logging.warning(str(el) + " is not a valid model (or already set). Hint: The model name is case " +
                                         "sensitive.  Loading default model if no more valid model name is given...")
                         logging.warning("Valid models are: " + str(self.models_valid))
-            elif key == 'detector_backend' or key == 'detectors':
-                if conf[1] in self.detectors:
-                    self.detector_name = conf[1]
-                else:
-                    logging.warning(conf[1] + " is not a valid face detector. Hint: The detector name is case " +
-                                    "sensitive. Loading default detector...")
-                    logging.warning("Valid detectors are: " + str(self.detectors))
+        logging.debug("config: models=" + str(self.model_names))
 
-            elif key == 'analyse' or key == 'demography':
-                self.conf_demography = conf[1]
-                for demography in conf[1].split(","):
-                    if demography.strip().lower() == "off":
-                        self.is_analyse_emotion = False
-                        self.is_analyse_age = False
-                        self.is_analyse_gender = False
-                        self.is_analyse_race = False
-                    elif demography.strip().lower() == "on":
-                        self.is_analyse_emotion = True
-                        self.is_analyse_age = True
-                        self.is_analyse_gender = True
-                        self.is_analyse_race = True
-                    elif demography.strip().lower() == 'emotion':
-                        self.is_analyse_emotion = True
-                    elif demography.strip().lower() == 'age':
-                        self.is_analyse_age = True
-                    elif demography.strip().lower() == 'gender':
-                        self.is_analyse_gender = True
-                    elif demography.strip().lower() == 'race':
-                        self.is_analyse_race = True
+        if "demography" in json:
+            for el in json["demography"]:
+                if el[1]:
+                    if el[0] in self.attributes_valid and el[0] not in self.attributes_names:
+                        self.attributes_names.append(el[0])
+                    else:
+                        logging.warning(
+                            str(el) + " is not a valid demography model (or already set). Hint: The model name is case " +
+                            "sensitive.  Loading default model if no more valid model name is given...")
+                        logging.warning("Valid models are: " + str(self.attributes_valid))
+        logging.debug("config: demography models=" + str(self.attributes_names))
 
-            elif key == 'css_position':
-                if value == "on":
-                    self.css_position = True
-                if value == "off":
-                    self.css_position = False
+        if "min_face_width_detection" in json:
+            for element in json["min_face_width_detection"]:
+                if element[0] == "pixel":
+                    self.min_face_width_pixel = element[1]
+                elif element[0] == "percent":
+                    self.min_face_width_percent = element[1]
+        logging.debug("config: min_face_width_pixel=" + str(self.min_face_width_pixel))
+        logging.debug("config: min_face_width_percent=" + str(self.min_face_width_percent))
 
-            elif key == 'min_face_width_percent' or key == 'percent':
-                percent = conf[1]
-                if percent.isdigit():
-                    self.min_face_width_percent = int(percent)
-                    logging.debug("set the minimal faces width to " + str(self.min_face_width_percent) + " percent")
-                else:
-                    logging.warning(
-                        str(percent) + " is not a valid number for the minimal faces width. Take the default:  " + str(
-                            self.min_face_width_percent) + " percent")
-
-            elif key == 'min_face_width_pixel' or key == 'pixel':
-                pixel = conf[1]
-                if pixel.isdigit():
-                    self.min_face_width_pixel = int(pixel)
-                    logging.debug("set the minimal faces width to " + str(self.min_face_width_pixel) + " pixel")
-                else:
-                    logging.warning(
-                        str(pixel) + " is not a valid number for the minimal faces width. Take the default:  " + str(
-                            self.min_face_width_pixel) + " pixel")
-
-            elif key == 'training':
-                pixel = conf[1]
-                if pixel.isdigit():
-                    self.min_width_train = int(pixel)
-                    logging.debug("set the minimal faces width of training data to " +
-                                  str(self.min_width_train) + " pixel")
-                else:
-                    logging.warning(
-                        str(pixel) + " is not a valid number for the minimal faces width for training data. " +
-                        "Take the default:  " + str(self.min_width_train) + " pixel")
-
-            elif key == 'result':
-                pixel = conf[1]
-                if pixel.isdigit():
-                    self.min_width_result = int(pixel)
-                    logging.debug("set the minimal faces width of result data to " +
-                                  str(self.min_width_result) + " pixel")
-                else:
-                    logging.warning(
-                        str(pixel) + " is not a valid number for the minimal faces width for result data. " +
-                        "Take the default:  " + str(self.min_width_result) + " pixel")
+        if "min_face_width_recognition" in json:
+            for element in json["min_face_width_recognition"]:
+                if element[0] == "training":
+                    self.min_width_train = element[1]
+                elif element[0] == "result":
+                    self.min_width_result = element[1]
+        logging.debug("config: min_width_train=" + str(self.min_width_train))
+        logging.debug("config: min_width_result=" + str(self.min_width_result))
 
         if len(self.model_names) == 0:
             self.model_names.append(self.model_name_default)  # default
@@ -540,5 +510,5 @@ class Finder:
         return location_css
 
     def log_ram(self):
-        total_memory, used_memory, free_memory = map(int, os.popen('free -t -m').readlines()[-1].split()[1:])
+        total_memory, used_memory, free_memory = map(int, os.popen('free -t -el').readlines()[-1].split()[1:])
         logging.debug("RAM memory used: " + str(round((used_memory / total_memory) * 100, 2)) + " %")

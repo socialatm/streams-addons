@@ -222,22 +222,6 @@ class FaceConfiguration {
             }
         }
         $config["zoom"][0][1] = $number;
-        
-        $min = 10;
-        $max = 95;
-        $default = 80;
-        $number = $config["ram"][0][1];
-        if (!is_numeric($number)) {
-            $number = $default;
-        } else {
-            $number = round($number);
-            if ($number > $max) {
-                $number = $max;
-            } elseif ($number < $min) {
-                $number = $min;
-            }
-        }
-        $config["ram"][0][1] = $number;
 
         return $config;
     }
@@ -260,6 +244,9 @@ class FaceConfiguration {
 
     function getDefaultConfig() {
         $config = [];
+        
+        //----------------------------------------------------------------------
+        // set in frontend by user (some limited by admin)
         $config = $this->addConfigElement("detectors", $this->available_detectors, $config, true);
         $config = $this->addConfigElement("models", $this->available_models, $config, true);
         $config = $this->addConfigElement("distance_metrics", $this->available_metrics, $config, true);
@@ -275,7 +262,23 @@ class FaceConfiguration {
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
         $config["zoom"] = [["zoom", 2]];
-        $config["ram"] = [["ram", 80]];
+        
+        //----------------------------------------------------------------------
+        // set by admin in admin page of addon
+        $config["worker"]["ram"] = get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80;
+        
+        //----------------------------------------------------------------------
+        // not set in frontend
+        $config["worker"]["interval_alive_signal"] = 10;
+        $config["worker"]["interval_backup_detection"] = 60*2;
+        $config["worker"]["sort_column"] = "mtime";
+        $config["worker"]["sort_ascending"] = false;
+        $config["worker"]["valid_detectors"] = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"];
+        $config["finder"]["valid_models"] = ['VGG-Face', 'Facenet', 'Facenet512', 'ArcFace', 'OpenFace', 'DeepFace', 'SFace'];
+        $config["finder"]["valid_attributes"] = ["Gender", "Age", "Race", "Emotion"];
+        $config["finder"]["use_css_position"] = true;
+        $config["recognizer"]["valid_distance_metrics"] = ["cosine", "euclidean", "euclidean_l2"];
+        //----------------------------------------------------------------------
 
         $config = $this->checkConfig($config);
 

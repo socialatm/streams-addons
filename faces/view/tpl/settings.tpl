@@ -34,8 +34,8 @@
     </div>
     <div id="face_size_recognition">
         <h3>Minimum Face Size - Recognition</h3>
-        <div>"training"... faces used to find the same person in other pictures.</div>
-        <div>"result"... faces still unkown (not explicitly given a name by the user).</div>
+        <div>"training"... faces given a name by the user and now used to find the same person in other pictures.</div>
+        <div>"result"... faces not given a name by the user yet or marked as unknown.</div>
         <div>Sizes are in pixel. </div>
     </div>
     <h2>Statistics</h2>
