@@ -18,8 +18,8 @@ make sure you installed python and some python packages.
 
 This addon does not need python on the server if
 
-- the face recognition (python) runs on your computer (connected via webDAV), and
-- you use this addon just to show the results of the face recognition
+- the face recognition runs on another computer connected via webDAV, and
+- you use this addon just to...
 
   + view faces in images (this is a face)
   + name faces (this face is John)
