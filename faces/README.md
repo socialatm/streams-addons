@@ -21,7 +21,7 @@ This addon does not need python on the server if
 - the face recognition runs on another computer connected via webDAV, and
 - you use this addon just to...
 
-  + view faces in images (this is a face)
+  + view faces in images (there is a face in a picture)
   + name faces (this face is John)
   + show a person in other images (John is found in other images too)
 
