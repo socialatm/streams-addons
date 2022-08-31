@@ -10,6 +10,7 @@ from datetime import datetime
 import random
 import string
 import logging
+import pandas as pd
 
 
 class Finder:
@@ -27,7 +28,6 @@ class Finder:
         self.detector_name_default = "retinaface"  # default
         self.detectors = {}
         self.detectors_valid = ["opencv", "ssd", "mtcnn", "retinaface", "mediapipe"]
-        self.detector_name = "retinaface"  # default, can be set by caller
 
         self.attributes_valid = ["Gender", "Age", "Race", "Emotion"]
         self.attributes_names = []
@@ -49,6 +49,9 @@ class Finder:
         self.css_position = True
         self.min_width_train = 224
         self.min_width_result = 50
+
+        self.util = None
+        self.ram_allowed = 80
 
     # parameter csv
     #   example:
@@ -128,8 +131,9 @@ class Finder:
                         self.model_names.append(el[0])
                         self.models[el[0]] = None
                     else:
-                        logging.warning(str(el) + " is not a valid model (or already set). Hint: The model name is case " +
-                                        "sensitive.  Loading default model if no more valid model name is given...")
+                        logging.warning(
+                            str(el) + " is not a valid model (or already set). Hint: The model name is case " +
+                            "sensitive.  Loading default model if no more valid model name is given...")
                         logging.warning("Valid models are: " + str(self.models_valid))
         logging.debug("config: models=" + str(self.model_names))
 
@@ -167,112 +171,45 @@ class Finder:
         if len(self.model_names) == 0:
             self.model_names.append(self.model_name_default)  # default
 
-    # load the detector and all models
-    def load(self):
-        if len(self.model_names) == 0:
-            self.model_names.append(self.model_name_default)  # default
-        for model_name in self.model_names:
-            if self.models is None:
-                self.models = {}
-            self.models[model_name] = DeepFace.build_model(model_name)
-            logging.debug("loaded face recognition model " + model_name)
-            self.log_ram()
-        self.conf_models = (','.join(self.model_names))
-        self.detector = FaceDetector.build_model(self.detector_name)
-        logging.debug("loaded detector backend " + self.detector_name)
+    def preprocess_face_224(self, face, detector_name):
+        face_224 = functions.preprocess_face(
+            img=face,
+            target_size=(224, 224),
+            grayscale=False,
+            enforce_detection=False,
+            detector_backend=detector_name,
+            align=True)
+        return face_224
 
-        if self.is_analyse_emotion:
-            self.emotion_model = DeepFace.build_model('Emotion')
-            logging.debug("Emotion model was loaded")
-            self.log_ram()
-        if self.is_analyse_age:
-            self.age_model = DeepFace.build_model('Age')
-            logging.debug("Age model was loaded")
-            self.log_ram()
-        if self.is_analyse_gender:
-            self.gender_model = DeepFace.build_model('Gender')
-            logging.debug("Gender model was loaded")
-            self.log_ram()
-        if self.is_analyse_race:
-            self.race_model = DeepFace.build_model('Race')
-            logging.debug("Race model was loaded")
-            self.log_ram()
+    def analyse(self, face, detector_name, existing_face):
+        tic = time.time()
 
-    def is_loaded(self):
-        if self.models is None:
-            return False
-        else:
-            return True
+        # -----------------------------------
+        # facial attributes emotion, age, gender, race
 
-    def is_analyse_on(self):
-        if self.is_analyse_emotion:
-            return True
-        if self.is_analyse_age:
-            return True
-        if self.is_analyse_gender:
-            return True
-        if self.is_analyse_race:
-            return True
-        return False
+        attributes = {}
 
-    def analyse(self, path, os_path_on_server):
-        start_time = time.time()
-        faces_to_return = []
-        logging.debug("read facial attributes in image " + path + ", os path = " + os_path_on_server)
-        img = cv2.imread(os_path_on_server)
-        try:
-            # The same face detection is done in function "detect".
-            # Think about how to do the face detection once for
-            # - face analysis > function analyse
-            # - face representation (used for face recognition) > function detect
-            #
-            # Faces store list of detected_face and region pair
-            faces = FaceDetector.detect_faces(self.detector, self.detector_name, img, align=True)
-        except:
-            # Return an empty face to signal that no face is found in this file.
-            # This prevents the detection to try to find faces again and again (but never finds one)
-            logging.debug("Found no faces in image " + path)
-            empty_face = self.get_empty_face_analyse(path, start_time)
-            faces_to_return.append(empty_face)
-            return faces_to_return
-        logging.debug("Found " + str(len(faces)) + " faces ")
-
-        image_height, image_width, c = img.shape
-
-        counter = 0
-        for face, (x, y, w, h) in faces:
-            w_percent = int(w * 100 / image_width)
-            if (w_percent < self.min_face_width_percent) or (
-                    w < self.min_face_width_pixel):  # discard small detected faces
-                logging.debug(
-                    "Ignore face because width=" + str(w_percent) + "% or " + str(w) +
-                    "px is is less than minimum " + str(self.min_face_width_percent) + "% or " +
-                    str(self.min_face_width_pixel) + "px")
-                continue
-            counter += 1
-            tic = time.time()
-            region = [x, y, w, h]
-            custom_face = img[y:y + h, x:x + w]
-            face_to_return = []
-            face_to_return.append(path)
-            face_to_return.append(self.calculate_css_location(x, y, w, h, image_height, image_width))
-            face_to_return.append(self.detector_name)
-
-            # -----------------------------------
-            # facial attributes emotion, age, gender, race
-
-            emotions = []
-            dominant_emotion = ""
-            if self.emotion_model is not None:
+        attributes['emotions'] = ""
+        attributes['dominant_emotion'] = ""
+        if "Emotion" in self.attributes_names:
+            if existing_face is not None and existing_face.dominant_emotion != "":
+                attributes['emotions'] = existing_face.emotions
+                attributes['dominant_emotion'] = existing_face.dominant_emotion
+            else:
+                attributes['emotions'] = []
+                if self.attributes_models["Emotion"] is None:
+                    logging.debug("loading model Emotion")
+                    self.attributes_models["Emotion"] = DeepFace.build_model('Emotion');
+                emotion_model = self.attributes_models["Emotion"]
                 gray_img = functions.preprocess_face(
-                    img=custom_face,
+                    img=face,
                     target_size=(48, 48),
                     grayscale=True,
                     enforce_detection=False,
-                    detector_backend=self.detector_name,
+                    detector_backend=detector_name,
                     align=True)
                 emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
-                emotion_predictions = self.emotion_model.predict(gray_img)[0, :]
+                emotion_predictions = emotion_model.predict(gray_img)[0, :]
                 sum_of_predictions = emotion_predictions.sum()
                 for i in range(0, len(emotion_labels)):
                     emotion = []
@@ -280,78 +217,91 @@ class Finder:
                     emotion_prediction = 100 * emotion_predictions[i] / sum_of_predictions
                     emotion.append(emotion_label)
                     emotion.append(emotion_prediction)
-                    emotions.append(emotion)
+                    attributes['emotions'].append(emotion)
                 dominant_emotion = emotion_labels[np.argmax(emotion_predictions)]
                 logging.debug("dominant emotion: " + dominant_emotion)
+                attributes['dominant_emotion'] = dominant_emotion
 
-            face_224 = None
-            face_224 = functions.preprocess_face(
-                img=custom_face,
-                target_size=(224, 224),
-                grayscale=False,
-                enforce_detection=False,
-                detector_backend=self.detector_name,
-                align=True)
+        face_224 = None
 
-            apparent_age = -1
-            if self.age_model is not None:
-                age_predictions = self.age_model.predict(face_224)[0, :]
+        attributes['age'] = -1
+        if "Age" in self.attributes_names:
+            if existing_face is not None and existing_face.age != -1:
+                attributes['age'] = existing_face.age
+            else:
+                if face_224 is None:
+                    self.preprocess_face_224(face, detector_name)
+                if self.attributes_models["Age"] is None:
+                    logging.debug("loading model Age")
+                    self.attributes_models["Age"] = DeepFace.build_model('Age');
+                age_model = self.attributes_models["Age"]
+                age_predictions = age_model.predict(face_224)[0, :]
                 apparent_age = Age.findApparentAge(age_predictions)
                 logging.debug("age: " + str(int(apparent_age)))
+                attributes['apparent_age'] = apparent_age
 
-            gender = ""
-            if self.gender_model is not None:
-                gender_prediction = self.gender_model.predict(face_224)[0, :]
-                if np.argmax(gender_prediction) == 0:
-                    gender = "W"
-                elif np.argmax(gender_prediction) == 1:
-                    gender = "M"
-                logging.debug("gender: " + gender)
+        gender = ""
+        if "gender" in self.attributes_names:
+            if face_224 is None:
+                self.preprocess_face_224(face, detector_name)
+            if self.attributes_models["Gender"] is None:
+                logging.debug("loading model Gender")
+                self.attributes_models["Gender"] = DeepFace.build_model('Gender');
+            gender_model = self.attributes_models["Gender"]
+            gender_prediction = gender_model.predict(face_224)[0, :]
+            if np.argmax(gender_prediction) == 0:
+                gender = "W"
+            elif np.argmax(gender_prediction) == 1:
+                gender = "M"
+            logging.debug("gender: " + gender)
+        attributes['gender'] = gender
 
-            races = []
-            dominant_race = ""
-            if self.race_model is not None:
-                race_predictions = self.race_model.predict(face_224)[0, :]
-                race_labels = ['asian', 'indian', 'black', 'white', 'middle eastern', 'latino hispanic']
-                sum_of_predictions = race_predictions.sum()
-                for i in range(0, len(race_labels)):
-                    race = []
-                    race_label = race_labels[i]
-                    race_prediction = 100 * race_predictions[i] / sum_of_predictions
-                    race.append(race_label)
-                    race.append(race_prediction)
-                    races.append(race)
+        attributes['races'] = ""
+        attributes['dominant_race'] = ""
+        if "race" in self.attributes_names:
+            attributes['races'] = []
+            if face_224 is None:
+                self.preprocess_face_224(face, detector_name)
+            if self.attributes_models["Race"] is None:
+                logging.debug("loading model Race")
+                self.attributes_models["Race"] = DeepFace.build_model('Race');
+            race_model = self.attributes_models["Race"]
+            race_predictions = race_model.predict(face_224)[0, :]
+            race_labels = ['asian', 'indian', 'black', 'white', 'middle eastern', 'latino hispanic']
+            sum_of_predictions = race_predictions.sum()
+            for i in range(0, len(race_labels)):
+                race = []
+                race_label = race_labels[i]
+                race_prediction = 100 * race_predictions[i] / sum_of_predictions
+                race.append(race_label)
+                race.append(race_prediction)
+                attributes['races'].append(race)
                 dominant_race = race_labels[np.argmax(race_predictions)]
-                logging.debug("dominant race: " + dominant_race)
+            attributes['dominant_race'] = dominant_race
+            logging.debug("dominant race: " + dominant_race)
 
-            toc = time.time()
+        toc = time.time()
+        logging.debug("face processing took " + str(round(toc - tic, 3)) + " seconds")
+        return attributes
 
-            face_to_return.append(emotions)
-            face_to_return.append(dominant_emotion)
-            face_to_return.append(int(apparent_age))
-            face_to_return.append(gender)
-            face_to_return.append(races)
-            face_to_return.append(dominant_race)
-            face_to_return.append(datetime.utcnow())
-            face_to_return.append(round(toc - tic, 5))
+    def detect(self, path, os_path_on_server, detector_name, df):
 
-            faces_to_return.append(face_to_return)
-            logging.debug("face processing took " + str(round(toc - tic, 3)) + " seconds")
+        faces_detector = df.loc[
+            (df['file'] == path) &
+            (df['detector'] == detector_name)]
 
-        if len(faces_to_return) == 0:
-            logging.debug("No face found in " + str(
-                round(time.time() - start_time, 5)) + " seconds for facial attributes in " + path)
-            faces_to_return.append(self.get_empty_face_analyse(path, start_time))
-        else:
-            logging.info(str(counter) + "(" + str(len(faces)) + ") faces in " + str(
-                round(time.time() - start_time,
-                      5)) + "s " + self.detector_name + " models=" + self.conf_demography + " " + path)
-        return faces_to_return
+        if not self.go_on(faces_detector):
+            return df
 
-    def detect(self, path, os_path_on_server, existing_models):
+        if self.detectors[detector_name] is None:
+            logging.debug("loading detector " + detector_name)
+            self.detectors[detector_name] = FaceDetector.build_model(detector_name)
+            if not self.util.check_ram(self.ram_allowed):
+                return df  # the caller will do a ram check as well and exit
+
+        detector = self.detectors[detector_name]
         start_time = time.time()
-        faces_to_return = []
-        logging.debug("reading image to get face representations  " + path + ", os path on server " + os_path_on_server)
+        logging.debug(path + " detecting faces....")
         mtime = str(datetime.fromtimestamp(os.path.getmtime(os_path_on_server)))
         img = cv2.imread(os_path_on_server)
         tic = time.time()
@@ -362,20 +312,22 @@ class Finder:
             # - face representation (used for face recognition) > function detect
             #
             # Faces store list of detected_face and region pair
-            faces = FaceDetector.detect_faces(self.detector, self.detector_name, img, align=True)
+            faces = FaceDetector.detect_faces(detector, detector_name, img, align=True)
         except:
             # Return an empty face to signal that no face is found in this file.
             # This prevents the detection to try to find faces again and again (but never finds one)
             logging.debug("Found no faces in image " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, 0, mtime))
-            return faces_to_return
+                faces_df = self.add_empty_face_detection(
+                    path, round(time.time() - tic, 5), model_name, [0], 0, 0, mtime, faces_df, detector_name)
+            return df
         image_height, image_width, c = img.shape
         toc = time.time()
         duration_detection = round(toc - tic, 5)
-        logging.debug("Found " + str(len(faces)) + " faces in " + str(duration_detection) + " s, file= " + path)
+        logging.debug(str(len(faces)) + " faces " + str(duration_detection) + " s  " + path)
 
+        success = {}
         count_1 = 0  # for logging only
         count_2 = 0  # for logging only
         for face, (x, y, w, h) in faces:
@@ -388,84 +340,142 @@ class Finder:
                     str(self.min_face_width_pixel) + "px")
                 continue
             count_1 = count_1 + 1
+
+            # ----------------------------------------------------------------------------------------------------------
+            # face attributes
+
+            position = self.calculate_css_location(x, y, w, h, image_height, image_width),
+            same_face = self.get_same_face(faces_detector, position)
+            attributes = self.analyse(face, detector_name, same_face)
+
+            # ----------------------------------------------------------------------------------------------------------
+            # face recognition - create face embeddings
+            #
+            # iterate activated models
+            #
             for model_name in self.model_names:
-                if model_name in existing_models:
-                    logging.debug("Ignoring model " + model_name + " in file because it exists, file= " + path)
-                    continue
-                tic = time.time()
-                region = [x, y, w, h]
-                custom_face = img[y:y + h, x:x + w]
+                if model_name not in success:
+                    success[model_name] = False
 
-                # -----------------------------------
-                # representations for (later) face recognition
+                existing_face = df.loc[(df['model'] == model_name)]
+                if len(existing_face) != 0:
+                    # -------------------------------------------------------------------------------------------------
+                    # embedding for this model does exist
 
-                model = self.models.get(model_name)
-
-                input_shape = functions.find_input_shape(model)
-                input_shape_x = input_shape[0]
-                input_shape_y = input_shape[1]
-
-                custom_face = functions.preprocess_face(
-                    img=custom_face,
-                    target_size=(input_shape_y, input_shape_x),
-                    enforce_detection=False,
-                    detector_backend=self.detector_name,
-                    align=True)
-                # check preprocess_face function handled
-                representation = []
-                if custom_face.shape[1:3] == input_shape:
-                    representation = model.predict(custom_face)[0, :]
+                    success[model_name] = True  # do not add empty face later on
+                    # copy facial attributes
+                    df.loc[(df['id'] == existing_face.id),
+                           ['emotions', 'dominant_emotion', 'age', 'gender', 'races', 'dominant_race']] = [
+                        existing_face.emotions,
+                        existing_face.dominant_emotion,
+                        existing_face.age,
+                        existing_face.gender,
+                        existing_face.races,
+                        existing_face.dominant_race]
                 else:
-                    logging.debug("Ignoring face because the preprocessing found a different input shape (" + str(
-                        custom_face.shape[1:3]) + ") than the FaceDetector (" + str(
-                        input_shape) + ") detector=" + self.detector_name + ", model=" + model_name + ", file= " + path)
-                    # prevent that the combination of file AND detector AND model is found again as "new"
-                    faces_to_return.append(
-                        self.get_empty_face_detection(path, start_time, model_name, [x, y, w, h], 0, 0, mtime))
-                    continue
-                count_2 = count_2 + 1
+                    # -------------------------------------------------------------------------------------------------
+                    # create an embedding for this model of the face
 
-                toc = time.time()
-                face_to_return = []
-                face_to_return.append(self.get_random_string())
-                face_to_return.append(path)
-                face_to_return.append(self.calculate_css_location(x, y, w, h, image_height, image_width)),
-                face_to_return.append(w)
-                face_to_return.append(w_percent)
-                face_to_return.append(0)  # face_nr
-                face_to_return.append('')  # name
-                face_to_return.append('')  # name_recognized
-                face_to_return.append('')  # time_name_set
-                face_to_return.append(self.detector_name)
-                face_to_return.append(model_name)
-                face_to_return.append(duration_detection)
-                face_to_return.append(round(toc - tic, 5))
-                face_to_return.append(datetime.utcnow())
-                face_to_return.append(np.float64(representation))  # most models use float32 (Facenet512 uses float64)
-                face_to_return.append(-1)  # distance
-                face_to_return.append('')  # distance_metric
-                face_to_return.append(0.0)  # duration_recognized
-                face_to_return.append('')  # directory
-                face_to_return.append('')  # exif_date
-                face_to_return.append(mtime)  # mtime (time the file was last modified)
+                    if self.models[model_name] is None:
+                        logging.debug("loading model " + model_name)
+                        self.models[model_name] = DeepFace.build_model(model_name)
+                        if not self.util.check_ram(self.ram_allowed):
+                            return df  # the caller will do a ram check as well and exit
 
-                faces_to_return.append(face_to_return)
-                logging.debug("creation of face representations took " +
-                              str(round(toc - tic, 5)) + " seconds using detector=" +
-                              self.detector_name + " for recognition model=" + model_name)
+                    logging.debug(str(count_1) + " " + detector_name + " " + model_name + " " + path)
+                    model = self.models[model_name]
+                    # if model_name in existing_models:
+                    #     logging.debug("Ignoring model " + model_name + " in file because it exists, file= " + path)
+                    #     continue
+                    tic = time.time()
+                    region = [x, y, w, h]
+                    custom_face = img[y:y + h, x:x + w]
 
-        if len(faces_to_return) == 0:
+                    # -----------------------------------
+                    # representations for (later) face recognition
+
+                    input_shape = functions.find_input_shape(model)
+                    input_shape_x = input_shape[0]
+                    input_shape_y = input_shape[1]
+
+                    custom_face = functions.preprocess_face(
+                        img=custom_face,
+                        target_size=(input_shape_y, input_shape_x),
+                        enforce_detection=False,
+                        detector_backend=detector_name,
+                        align=True)
+                    # check preprocess_face function handled
+                    representation = []
+                    if custom_face.shape[1:3] == input_shape:
+                        representation = model.predict(custom_face)[0, :]
+                    else:
+                        logging.debug("Ignoring face because the preprocessing found a different input shape (" + str(
+                            custom_face.shape[1:3]) + ") than the FaceDetector (" + str(
+                            input_shape) + ") detector=" + detector_name + ", model=" + model_name + ", file= " + path)
+                        # prevent that the combination of file AND detector AND model is found again as "new"
+                        faces_df = self.add_empty_face_detection(path, duration_detection, model_name,
+                                                                 [x, y, w, h], 0, 0, mtime, faces_df, detector_name)
+                        continue
+                    count_2 = count_2 + 1
+                    toc = time.time()
+
+                    row = pd.Series(
+                        [self.get_random_string(),
+                         path,
+                         self.calculate_css_location(x, y, w, h, image_height, image_width),
+                         w,
+                         w_percent,
+                         0,  # face_nr
+                         '',  # name
+                         '',  # name_recognized
+                         '',  # time_name_set
+                         detector_name,
+                         model_name,
+                         duration_detection,
+                         round(toc - tic, 5),
+                         datetime.utcnow(),
+                         np.float64(representation),  # most models use float32 (Facenet512 uses float64)
+                         -1,  # distance
+                         '',  # distance_metric
+                         0.0,  # duration_recognized
+                         '',  # directory
+                         '',  # exif_date
+                         mtime,
+                         attributes['emotions'],
+                         attributes['dominant_emotion'],
+                         attributes['age'],
+                         attributes['gender'],
+                         attributes['races'],
+                         attributes['dominant_race']], index=df.columns)
+
+                    faces_df = faces_df.append(row, ignore_index=True)
+
+                    logging.debug("creation of face representations took " +
+                                  str(round(toc - tic, 5)) + " seconds using detector=" +
+                                  detector_name + " for recognition model=" + model_name)
+                    success[model_name] = True
+
+        if len(count_1) == 0:
             logging.debug("No face found in " + str(
                 round(time.time() - start_time, 5)) + " seconds for face representations in " + path)
-            for model_name in self.model_names:
+        for model_name in self.model_names:
+            if not success[model_name]:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_to_return.append(self.get_empty_face_detection(path, start_time, model_name, [0], 0, 0, mtime))
+                faces_df = self.add_empty_face_detection(path, duration_detection, model_name, [0], 0, 0, mtime,
+                                                         faces_df, detector_name)
         else:
             logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
                          str(round(time.time() - start_time,
-                                   5)) + "s " + self.detector_name + " models=" + self.conf_models +
+                                   5)) + "s " + detector_name + " models=" + self.model_names +
                          " " + path)
-        return faces_to_return
+        return df
+
+    def get_same_face(self, df, position):
+        for face in df.itertuples():
+            pos = face.position
+            if self.util.is_same_face(pos, position):
+                return face
+        return None
 
     def get_random_string(self):
         s = ""
@@ -473,47 +483,66 @@ class Finder:
             s += random.choice(string.ascii_letters)
         return s
 
-    def get_empty_face_detection(self, path, start_time, model_name, pos, width, percent, mtime):
-        empty_face = [
-            self.get_random_string(),
-            path,
-            pos,
-            width,
-            percent,
-            0,
-            '',  # name
-            '',  # name_recognized
-            '',  # time_named
-            self.detector_name,
-            model_name,
-            round(time.time() - start_time, 5),
-            0.0,
-            datetime.utcnow(),
-            [0.0],  # representation
-            -1,  # distance
-            '',  # distance_metrics
-            0.0,  # duration_recognized
-            '',  # directory,
-            '',  # exif_date,
-            mtime  # mtime
-        ]
-        return empty_face
+    def go_on(self, df):
+        # check if this image need to be processed
+        if len(df) == 0:
+            return True
+        if not df[df.isin(self.model_names).any(axis=1)]:
+            return True
+        for attr in self.attributes_names:
+            if attr in ["Emotion", "Gender", "Race"]:
+                if '' in df[attr].values:
+                    return True
+            else:
+                if -1 in df['age'].values:
+                    return True
+        return False
 
-    def get_empty_face_analyse(self, path, start_time):
-        empty_face = [
-            path,
-            [0],
-            self.detector_name,
-            '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            datetime.utcnow(),
-            round(time.time() - start_time, 5)
-        ]
-        return empty_face
+    def go_on_with_facial_attributes(self, df):
+        # check if this image need to be processed
+        for attr in self.attributes_names:
+            if attr in ["Emotion", "Gender", "Race"]:
+                if '' in df[attr].values:
+                    return True
+            else:
+                if -1 in df['age'].values:
+                    return True
+        return False
+
+    def add_empty_face_detection(self, path, duration_detection, model_name, pos, width, percent, mtime, faces_df,
+                                 detector_name):
+        row = pd.Series(
+            [self.get_random_string(),
+             path,
+             pos,
+             width,
+             percent,
+             0,
+             '',  # name
+             '',  # name_recognized
+             '',  # time_named
+             detector_name,
+             model_name,
+             duration_detection,
+             0.0,
+             datetime.utcnow(),
+             [0.0],  # representation
+             -1,  # distance
+             '',  # distance_metrics
+             0.0,  # duration_recognized
+             '',  # directory,
+             '',  # exif_date,
+             mtime,  # mtime
+             "",  # emotions
+             "",  # dominant_emotion
+             -1,  # age
+             "",  # gender
+             "",  # races
+             ""  # dominant_race
+             ], index=faces_df.columns)
+
+        faces_df = faces_df.append(row, ignore_index=True)
+        return faces_df
 
     def calculate_css_location(self, x, y, w, h, h_img, w_img):
         if not self.css_position:

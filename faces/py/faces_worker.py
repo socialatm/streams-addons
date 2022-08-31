@@ -81,6 +81,8 @@ class Worker:
         if deepface_specs is not None:
             self.finder = faces_finder.Finder()
             self.finder.configure(json)
+            self.finder.ram_allowed = self.ram_allowed
+            self.finder.util = self.util
         else:
             logging.error("FAILED to set finder. Reason: module deepface not found")
 
@@ -104,7 +106,10 @@ class Worker:
             # set by admin in frontend
 
             if "ram" in json["worker"]:
-                self.ram_allowed = json["worker"]["ram"]
+                if isinstance(json["worker"]["ram"], str) and json["worker"]["ram"].isdigit():
+                    self.ram_allowed = int(json["worker"]["ram"])
+                else:
+                    self.ram_allowed = json["worker"]["ram"]
 
             # --------------------------------------------------------------------------------------------------------------
             # not set by user in frontend
@@ -115,10 +120,18 @@ class Worker:
                 self.sort_ascending = json["worker"]["sort_ascending"]
 
             if "interval_alive_signal" in json["worker"]:
-                self.timeToWait = int(json["worker"]["interval_alive_signal"])
+                if isinstance(json["worker"]["interval_alive_signal"], str) \
+                        and json["worker"]["interval_alive_signal"].isdigit():
+                    self.timeToWait = int(json["worker"]["interval_alive_signal"])
+                else:
+                    self.timeToWait = json["worker"]["interval_alive_signal"]
 
             if "interval_backup_detection" in json["worker"]:
-                self.timeBackUp = int(json["worker"]["interval_backup_detection"])
+                if isinstance(json["worker"]["interval_backup_detection"], str) \
+                        and json["worker"]["interval_backup_detection"].isdigit():
+                    self.timeBackUp = int(json["worker"]["interval_backup_detection"])
+                else:
+                    self.timeBackUp = json["worker"]["interval_backup_detection"]
 
         logging.debug("config: ram=" + str(self.ram_allowed))
         logging.debug("config: sort_column=" + str(self.sort_column))
@@ -140,10 +153,10 @@ class Worker:
         # --------------------------------------------------------------------------------------------------------------
         # set directly by calling script
 
-        logging.debug("config log_data=" + str(self.log_data))
-        logging.debug("config rm_names=" + str(self.is_remove_names))
-        logging.debug("config rm_models=" + str(self.remove_models))
-        logging.debug("config rm_detectors=" + str(self.remove_detectors))
+        logging.debug("config: log_data=" + str(self.log_data))
+        logging.debug("config: rm_names=" + str(self.is_remove_names))
+        logging.debug("config: rm_models=" + str(self.remove_models))
+        logging.debug("config: rm_detectors=" + str(self.remove_detectors))
         # --------------------------------------------------------------------------------------------------------------
 
         self.set_finder(json)
@@ -189,26 +202,26 @@ class Worker:
                 logging.info("no files " + self.file_name_faces + " for channel " + str(self.channel))
                 continue
 
-            if is_recognize:
-                # --------------------------------------------
-                # Recognition
-                # --------------------------------------------
-                # recognize only
-                # - if set as parameter from caller
-                # - for the user who called the script
-                if own_channel_id == self.channel:
-                    self.recognize(folders)
-                else:
-                    logging.debug("no recognition is run for channel id = " + str(self.channel))
-                    continue
-            else:
+            if not is_recognize:
                 # --------------------------------------------
                 # Detection
                 # --------------------------------------------
                 # detect faces in all folders containing images for a user
                 for f in folders:
                     self.folder = f[0]
-                    self.process_dir(own_channel_id, is_recognize)
+                    self.process_dir(own_channel_id)
+
+            if own_channel_id == self.channel:
+                # --------------------------------------------
+                # Recognition
+                # --------------------------------------------
+                # recognize only
+                # - if set as parameter from caller
+                # - for the user who called the script
+                self.recognize(folders)
+            else:
+                logging.debug("no recognition, user channel  " + str(self.own_channel_id) + " != " + str(self.channel))
+                continue
 
         self.write_alive_signal(self.FINISHED)
         logging.info("finished dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
@@ -267,17 +280,20 @@ class Worker:
     # Find and store all face representations for face recognition.
     # The face representations are stored in binary pickle file.
     def detect(self):
-        logging.debug(self.folder + " - START DETECTION, CREATION of EMBEDDINGS and FACIAL ATTRIBUTES ---")
+        logging.debug("START DETECTION, CREATION of EMBEDDINGS and FACIAL ATTRIBUTES ---")
 
         # get all embeddings and attributes for the images in directory
         df = self.get_face_representations()  # pandas.DataFrame holding all face representation
 
+        if df is None:
+            df = self.util.create_frame_embeddings()
+
         images = self.get_images()
         if len(images) == 0:
-            logging.debug(self.folder + " - No new images in directory")
+            logging.debug("No new images in directory")
             return
 
-        logging.debug(self.folder + " - searching for faces in " + str(len(images)) + " images")
+        logging.debug("searching for faces in " + str(len(images)) + " images")
 
         # --------------------------------------------------------------------------------------------------------------
         # iterate all images in a directory
@@ -287,7 +303,7 @@ class Worker:
             os_path_on_server = os.path.join(self.dirImages, image[1])
 
             time_start_detection = time.time()
-            logging.debug(self.folder + " - start " + str(path))
+            logging.debug(path)
 
             # ----------------------------------------------------------------------------------------------------------
             # iterate all activated detectors to
@@ -297,10 +313,15 @@ class Worker:
             # - create and store embeddings for each face
             # - analyse the attributes of each face
             for key in self.finder.detectors:
-                logging.debug(path + " - start with " + key)
+                logging.debug(path + " " + key)
 
-                if df is None:
-                    faces = self.finder.detect(path, os_path_on_server, None)
+                faces = self.finder.detect(path, os_path_on_server, key, df)
+                self.write_alive_signal()  # this includes ram check
+
+                for face in faces.itertuples():
+                    df.loc[(df['id'] == face.id),
+                           ['name', 'time_named']] = [face.name, face.time_named]
+
                 if faces:
                     for face in faces:
                         df = self.util.add_row_embedding(df, face)
@@ -730,7 +751,7 @@ class Worker:
         data = (self.channel, self.folder, file_name)
         r = self.db.select(query, data)
         if len(r) == 0:
-            logging.debug(self.folder + " - skipping... no file " + file_name)
+            logging.debug("no file " + file_name)
             return False
 
         path = os.path.join(self.dirImages, r[0][0])
@@ -747,7 +768,7 @@ class Worker:
             elif file_name == self.file_name_names:
                 self.file_names = path
                 return True
-        logging.debug(self.folder + " - skipping... no file or write permission, file " + path)
+        logging.debug("no file or write permission, file " + path)
         return False
 
     def check_file_by_channel(self, file_name):
@@ -777,7 +798,7 @@ class Worker:
             elif file_name == self.file_name_config:
                 self.file_config = path
                 return True
-        logging.debug("skipping... no file or write permission, file " + display_path)
+        logging.debug("no file or write permission, file " + display_path)
         return False
 
     def check_file_by_display_path(self, file_name, display_dir):
@@ -793,7 +814,7 @@ class Worker:
         data = (self.channel, display_path)
         r = self.db.select(query, data)
         if len(r) == 0:
-            logging.debug("skipping... no file " + display_path)
+            logging.debug(" no file " + display_path)
             return False
 
         path = os.path.join(self.dirImages, r[0][0])
@@ -807,7 +828,7 @@ class Worker:
             elif file_name == self.file_name_names:
                 self.file_names = path
                 return True
-        logging.debug("skipping... no file or write permission, file " + display_path)
+        logging.debug("no file or write permission, file " + display_path)
         return False
 
     def get_face_representations(self):
@@ -815,21 +836,21 @@ class Worker:
         df = None  # pandas.DataFrame that holds all face representations
         if os.path.exists(self.file_embeddings):
             if os.stat(self.file_embeddings).st_size == 0:
-                logging.debug(self.folder + " - file face representations is empty yet " + self.file_embeddings)
+                logging.debug("file face representations is empty yet " + self.file_embeddings)
                 return df
             df = pd.read_parquet(self.file_embeddings, engine="pyarrow")
-            logging.debug(self.folder + " - loaded face representations from file " + self.file_embeddings)
+            logging.debug("loaded face representations from file " + self.file_embeddings)
         if df is not None and len(df) == 0:
             return None
         return df
 
     def store_face_presentations(self, df):
         if os.path.exists(self.file_embeddings) is False:
-            logging.debug(self.folder + " - face representations does not exist " + self.file_embeddings)
+            logging.debug("face representations does not exist " + self.file_embeddings)
             return False
         df.reset_index(drop=True, inplace=True)
         df.to_parquet(self.file_embeddings, engine="pyarrow", compression='gzip')
-        logging.debug(self.folder + " - stored face representations in file " + self.file_embeddings)
+        logging.debug("stored face representations in file " + self.file_embeddings)
         return True
 
     def get_facial_attributes(self):
@@ -857,10 +878,10 @@ class Worker:
         # double check because the file might be deleted meanwhile
         if os.path.exists(self.file_names):
             if os.stat(self.file_names).st_size == 0:
-                logging.debug(self.folder + " - file holding face names is empty " + self.file_names)
+                logging.debug("file holding face names is empty " + self.file_names)
                 return df
         df = pd.read_json(self.file_names)
-        logging.debug(self.folder + " - loaded face names from file " + self.file_names)
+        logging.debug("loaded face names from file " + self.file_names)
         return df
 
     def get_face_names(self):
@@ -868,10 +889,10 @@ class Worker:
         df = None  # pandas.DataFrame that holds all face names
         if os.path.exists(self.file_faces):
             if os.stat(self.file_faces).st_size == 0:
-                logging.debug(self.folder + " - file holding face names is empty yet " + self.file_faces)
+                logging.debug("file holding face names is empty yet " + self.file_faces)
                 return df
             df = pd.read_json(self.file_faces)
-            logging.debug(self.folder + " - loaded face names from file " + self.file_faces)
+            logging.debug("loaded face names from file " + self.file_faces)
         return df
 
     def init_face_names(self, df_representation):
@@ -900,10 +921,10 @@ class Worker:
             df = df.sort_values(by=[self.sort_column], ascending=[self.sort_ascending])
             df.reset_index(drop=True, inplace=True)
             df.to_json(self.file_faces)
-            logging.debug(self.folder + " - stored face names in file " + self.file_faces)
+            logging.debug("stored face names in file " + self.file_faces)
 
     def cleanup(self):
-        logging.debug(self.folder + " - 1. Step: cleaning up ---")
+        logging.debug("Cleaning up channel " + str(self.channel) + "...")
         imgs = self.get_images()
         images = []
         for i in imgs:
@@ -948,14 +969,14 @@ class Worker:
                 df = df.assign(name="")
                 df = df.assign(name_recognized="")
                 df = df.assign(time_named="")
-                logging.info(self.folder + " -  removed all names from embeddings file")
+                logging.info("removed all names from embeddings file")
                 self.store_face_presentations(df)
             df = self.get_face_names()
             if df is not None:
                 df = df.assign(name="")
                 df = df.assign(name_recognized="")
                 df = df.assign(time_named="")
-                logging.info(self.folder + " -  removed all names from faces file")
+                logging.info("removed all names from faces file")
                 self.store_face_names(df)
 
     def write_statistics(self, df, most_effective_method):
@@ -1053,11 +1074,11 @@ class Worker:
                 data = (self.channel, self.folder, file)
                 os_path = self.db.select(query, data)
                 if len(os_path) == 0:
-                    logging.debug(self.folder + " - skipping... no " + file)
+                    logging.debug("skipping... no file " + file)
                     continue
                 path = os.path.join(self.dirImages, os_path[0][0])
                 exif_date = self.exiftool.getDate(path)
-                logging.debug(self.folder + " - exif date = '" + str(exif_date) + "' for image=" + file)
+                logging.debug("exif date = '" + str(exif_date) + "' for image=" + file)
             if exif_date != "":
                 df.loc[(df['file'] == file) & (df['exif_date'] == ""), "exif_date"] = exif_date
             continue

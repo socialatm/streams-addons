@@ -336,7 +336,8 @@ class Util:
                 for face_b in faces_b.itertuples():
                     position_b = face_b.position
                     if self.is_same_face(face_a.iloc[0, 2], position_b):
-                        if face_a.name.values[0] != face_b.name or face_a.name_recognized.values[0] != face_b.name_recognized:
+                        if face_a.name.values[0] != face_b.name or face_a.name_recognized.values[
+                            0] != face_b.name_recognized:
                             return True
         return False
 
@@ -361,7 +362,13 @@ class Util:
                            'duration_recognized': pd.Series(dtype='float'),
                            'directory': pd.Series(dtype='str'),
                            'exif_date': pd.Series(dtype='str'),
-                           'mtime': pd.Series(dtype='str')})
+                           'mtime': pd.Series(dtype='str'),
+                           'emotions': pd.Series(dtype='str'),
+                           'dominant_emotion': pd.Series(dtype='str'),
+                           'age': pd.Series(dtype='int'),
+                           'gender': pd.Series(dtype='str'),
+                           'races': pd.Series(dtype='str'),
+                           'dominant_race': pd.Series(dtype='str')})
         return df
 
     def add_row_embedding(self, df, values):

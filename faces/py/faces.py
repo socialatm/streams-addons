@@ -95,7 +95,7 @@ logging.debug("channel id = " + str(channel_id))
 is_recognize = False
 if args["recognize"]:
     is_recognize = True
-logging.debug("recognize in all channels = " + str(is_recognize))
+logging.debug("recognize  = " + str(is_recognize))
 
 worker = faces_worker.Worker()
 
