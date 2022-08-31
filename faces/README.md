@@ -13,7 +13,18 @@ The python scripts use other open source libraries:
 
 # How to install
 
-Before you install and use this addon make sure you installed python and some python packages.
+Before you try to run the face recognition on your server
+make sure you installed python and some python packages.
+
+This addon does not need python on the server if
+
+- the face recognition (python) runs on your computer (connected via webDAV), and
+- you use this addon just to show the results of the face recognition
+
+  + view faces in images (this is a face)
+  + name faces (this face is John)
+  + show a person in other images (John is found in other images too)
+
 
 ## Python Package Manager
 
