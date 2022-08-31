@@ -165,9 +165,9 @@ Provided you uploaded some images to your channel...
 
 ## Permissions
 
-View faces: Everybody how has the permission to view your cloud files.
+View faces: Everybody who has the permission to view your cloud files.
 
-Write faces: Everybody how has the permission to write your cloud files.
+Write faces: Everybody who has the permission to write your cloud files.
 
 ## Deletion
 
@@ -176,17 +176,17 @@ Write faces: Everybody how has the permission to write your cloud files.
 The admin can delete the encodings and names for all users unter [admin/addons/faces/](/admin/addons/faces/).
 This will delete all files containing data the addon created.
 
-- faces.csv in every directory (face locations and names)
-- faces.pkl in every directory (faces encodings)
-- faces_statistics.csv if present
-- models_statistics.csv if present
+- faces.json in every directory (face locations and names)
+- faces.gzip in every directory (faces encodings)
+- faces_statistics.json if present
+- models_statistics.json if present
 
 ### User
 
 Method 1
 
 A user can delete his face encodings and names by appending "/remove" at
-the end of the URL and presses ENTER. Example:
+the end of the URL and follow the instruction there. Example:
 
     https://my-domain.org/faces/my-nick-name/remove
 
@@ -196,10 +196,10 @@ Manually delete in files
 
     https://my-domain.org/cloud/my-nick-name/
 
-- faces.csv in every directory (face locations and names)
-- faces.pkl in every directory (faces encodings)
-- faces_statistics.csv if present
-- models_statistics.csv if present
+- faces.json in every directory (face locations and names)
+- faces.gzip in every directory (faces encodings)
+- faces_statistics.json if present
+- models_statistics.json if present
 
 # FAQs
 
@@ -219,8 +219,8 @@ Three steps are involved
 
 It is started every time you
 
-- load the addon page,
-- set a name for a face.
+- load the addon page: This starts the whole process.
+- set a name for a face: This starts seaching faces in other images only
 
 Parallel running processes on the server are prevented.
 
