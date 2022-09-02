@@ -26,7 +26,6 @@ class Worker:
         self.dirImages = None
         self.file_name_config = "config.json"
         self.file_name_face_representations = "faces.gzip"
-        self.file_name_facial_attributes = "demography.json"
         self.file_name_faces = "faces.json"
         self.file_name_names = "names.json"
         self.file_name_faces_statistic = "face_statistics.csv"
@@ -253,7 +252,6 @@ class Worker:
             return
         if self.check_file_by_name(self.file_name_face_representations) is False:
             return
-        self.check_file_by_name(self.file_name_facial_attributes)  # for cleanup
         self.check_file_by_name(self.file_name_names)  # for cleanup
 
         # -------------------------------------------------------------
@@ -297,12 +295,13 @@ class Worker:
 
         # --------------------------------------------------------------------------------------------------------------
         # iterate all images in a directory
+        time_start = time.time()
+        embeddings_file_has_changed = False
         for image in images:
 
             path = image[0]
             os_path_on_server = os.path.join(self.dirImages, image[1])
 
-            time_start_detection = time.time()
             logging.debug(path)
 
             # ----------------------------------------------------------------------------------------------------------
@@ -315,25 +314,22 @@ class Worker:
             for key in self.finder.detectors:
                 logging.debug(path + " " + key)
 
-                faces = self.finder.detect(path, os_path_on_server, key, df)
-                self.write_alive_signal()  # this includes ram check
+                result = self.finder.detect(path, os_path_on_server, key, df)
+                self.write_alive_signal(self.RUNNING)  # this includes ram check
+                df = result[0]
+                if result[1]:
+                    embeddings_file_has_changed = True
 
-                for face in faces.itertuples():
-                    df.loc[(df['id'] == face.id),
-                           ['name', 'time_named']] = [face.name, face.time_named]
-
-                if faces:
-                    for face in faces:
-                        df = self.util.add_row_embedding(df, face)
-
-                elapsed_time = time.time() - time_start_detection
+                elapsed_time = time.time() - time_start
                 if elapsed_time > self.timeBackUp:
                     if self.store_face_presentations(df) is False:
                         return
-                    logging.info(self.folder + " - elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
-                    time_start_detection = time.time()
-                self.write_alive_signal(self.RUNNING)
+                    logging.info("elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
+                    time_start = time.time()
 
+        if not embeddings_file_has_changed:
+            logging.debug("nothing changed in this directory")
+            return
         # ---
         # Find same faces by position in images.
         # Explanation:
@@ -342,6 +338,9 @@ class Worker:
         #   o in same file
         #   o at same position (x, y, h, w)
         df = self.util.number_unique_faces(df)
+
+        # Copy names to faces that where found by new detectors or models
+        df = self.util.copy_name_to_same_faces(df)
 
         # Why not storing the faces (faces.json) at this point of time?
         # - The face detection and the creation of the face representations are cpu, memory and time-consuming
@@ -352,48 +351,12 @@ class Worker:
         #     are written into to faces.json
         # - After some time the face detection has ended and will write faces.json.
         #   This overwrites the face names the user has set in the meantime.
-        logging.info(self.folder + " - finished detection of faces in " + str(len(images)) + " images")
+        logging.info("finished detection of faces in " + str(len(images)) + " images")
         df = self.write_exif_dates(df)
 
         if self.store_face_presentations(df) is False:
             return
         self.init_face_names(df)
-
-    # Find and store all facial attributes, emotion, age, gender, race
-    # What facial attributes to find is configurable, see method setFinder().
-    def analyse(self):
-        if not self.finder.is_analyse_on():
-            return
-
-        if self.check_file_by_name(self.file_name_facial_attributes) is False:
-            return
-
-        logging.debug(self.folder + " - 3. Step: analysing facial attributes ---")
-        df = self.get_facial_attributes()  # pandas.DataFrame holding all facial attributes
-
-        images = self.add_new_images(df, self.file_name_facial_attributes)
-        if len(images) == 0:
-            logging.debug(self.folder + " - No new images for analysis of facial attributes")
-            return
-
-        logging.info(self.folder + " - analyzing facial attributes in " + str(len(images)) + " new images")
-
-        if not self.finder.is_loaded():
-            self.finder.load()
-            self.write_alive_signal(self.RUNNING)
-
-        logging.debug(self.folder + " - start to analyse faces in " + str(len(images)) + " images")
-        for image in images:
-            path = image[0]
-            os_path_on_server = os.path.join(self.dirImages, image[1])
-            faces = self.finder.analyse(path, os_path_on_server)
-            self.write_alive_signal(self.RUNNING)
-            if faces:
-                for face in faces:
-                    df = self.util.add_row_attributes(df, face)
-
-        logging.debug(self.folder + " - finished analyse of faces in " + str(len(images)) + " images")
-        self.store_facial_attributes(df)
 
     # -------------------------------------------------------------
     # Basic steps:
@@ -671,59 +634,6 @@ class Worker:
         if self.keep_history:
             self.store_face_presentations(df_recognized)
 
-    def get_images_to_process(self, df, storage):
-        images = self.get_images()
-        new_images = []
-        for image in images:
-            path = image[0]
-            # Look for new images
-            if df is None:
-                new_images.append(image)
-            else:
-                for model_name in self.finder.model_names:
-                    if not ((df['file'] == path) & (df['model'] == model_name) & (
-                            df['detector'] == self.finder.detector_name)).any():
-                        new_images.append(image)
-                        break
-
-        return new_images
-
-    # Add new images to a pandas.DataFrame for
-    # - faces representations, faces.gzip, or
-    # - facial attributes, faces_attributes.json
-    # - names of faces, faces.json
-    #
-    # df...  pandas.DataFrame
-    # dir... String, directory
-    def add_new_images(self, df, storage):
-        images = self.get_images()
-        new_images = []
-        for image in images:
-            path = image[0]
-            # Look for new images
-            if df is None:
-                new_images.append(image)
-            else:
-                if storage is self.file_name_face_representations:
-                    for model_name in self.finder.model_names:
-                        if not ((df['file'] == path) & (df['model'] == model_name) & (
-                                df['detector'] == self.finder.detector_name)).any():
-                            # path AND detector AND model do not exist in one row in stored DataFrame
-                            logging.debug(
-                                self.folder + " - adding image because new combination of image=" + path +
-                                " AND model=" + model_name + " AND detector=" + self.finder.detector_name)
-                            new_images.append(image)
-                            break
-                if storage is self.file_name_facial_attributes:
-                    if not ((df['file'] == path) & (df['detector'] == self.finder.detector_name)).any():
-                        # path AND detector do not exist in one row in stored DataFrame
-                        logging.debug(
-                            self.folder + " - adding image because new combination of image=" + path +
-                            " AND detector=" + self.finder.detector_name)
-                        new_images.append(image)
-
-        return new_images
-
     def get_images(self):
         query = ("SELECT display_path, os_path "
                  "FROM `attach` "
@@ -742,8 +652,6 @@ class Worker:
             self.file_embeddings = None
         elif file_name == self.file_name_faces:
             self.file_faces = None
-        elif file_name == self.file_name_facial_attributes:
-            self.file_demography = None
         elif file_name == self.file_name_names:
             self.file_names = None
 
@@ -761,9 +669,6 @@ class Worker:
                 return True
             elif file_name == self.file_name_faces:
                 self.file_faces = path
-                return True
-            elif file_name == self.file_name_facial_attributes:
-                self.file_demography = path
                 return True
             elif file_name == self.file_name_names:
                 self.file_names = path
@@ -853,23 +758,6 @@ class Worker:
         logging.debug("stored face representations in file " + self.file_embeddings)
         return True
 
-    def get_facial_attributes(self):
-        # Load stored facial attributes
-        df = None  # pandas.DataFrame that holds all facial attributes
-        if self.file_demography is None:
-            return df  # might happen if the feature was switched off
-        if os.stat(self.file_demography).st_size == 0:
-            logging.debug(self.folder + " - file facial attributes is empty yet " + self.file_demography)
-            return df
-        if os.path.exists(self.file_demography):
-            df = pd.read_json(self.file_demography)
-            logging.debug(self.folder + " - loaded facial attributes from file " + self.file_demography)
-        return df
-
-    def store_facial_attributes(self, df):
-        df.to_json(self.file_demography)
-        logging.debug(self.folder + " - stored facial attributes in file " + self.file_demography)
-
     def get_face_names_set_by_browser(self):
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
@@ -950,17 +838,6 @@ class Worker:
                 self.store_face_names(df)
                 if len(i) > 0:
                     logging.info(self.folder + " " + str(len(images)) + " faces removed from face name")
-
-        df = self.get_facial_attributes()
-        if df is not None:
-            keys = self.util.remove_detector_model(df, "", self.remove_detectors, self.folder)
-            i = df[~df.file.isin(images)].index
-            keys.extend(i.to_list())
-            if len(keys) > 0:
-                df = df.drop(keys)
-                self.store_facial_attributes(df)
-                if len(i) > 0:
-                    logging.info(self.folder + " " + str(len(images)) + " faces removed from facial attributes")
 
     def remove_names(self):
         if self.is_remove_names:
@@ -1063,7 +940,7 @@ class Worker:
             exif_dates = df.loc[(df['file'] == file) & (df['exif_date'] != ""), "exif_date"]
             if len(exif_dates) > 0:
                 exif_date = exif_dates.values[0]
-                logging.debug(self.folder + " - exif date exists '" + exif_date + "' for image=" + file)
+                logging.debug("exif date exists '" + exif_date + "' for image=" + file)
             else:
                 query = ("SELECT os_path "
                          "FROM `attach` "

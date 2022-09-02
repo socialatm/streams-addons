@@ -11,6 +11,7 @@ import random
 import string
 import logging
 import pandas as pd
+import itertools
 
 
 class Finder:
@@ -190,11 +191,11 @@ class Finder:
         attributes = {}
 
         attributes['emotions'] = ""
-        attributes['dominant_emotion'] = ""
+        attributes['emotion'] = ""
         if "Emotion" in self.attributes_names:
-            if existing_face is not None and existing_face.dominant_emotion != "":
+            if existing_face is not None and existing_face.emotion != "":
                 attributes['emotions'] = existing_face.emotions
-                attributes['dominant_emotion'] = existing_face.dominant_emotion
+                attributes['emotion'] = existing_face.emotion
             else:
                 attributes['emotions'] = []
                 if self.attributes_models["Emotion"] is None:
@@ -217,10 +218,10 @@ class Finder:
                     emotion_prediction = 100 * emotion_predictions[i] / sum_of_predictions
                     emotion.append(emotion_label)
                     emotion.append(emotion_prediction)
-                    attributes['emotions'].append(emotion)
+                    attributes['emotions'].append(str(emotion))
                 dominant_emotion = emotion_labels[np.argmax(emotion_predictions)]
                 logging.debug("dominant emotion: " + dominant_emotion)
-                attributes['dominant_emotion'] = dominant_emotion
+                attributes['emotion'] = dominant_emotion
 
         face_224 = None
 
@@ -291,13 +292,13 @@ class Finder:
             (df['detector'] == detector_name)]
 
         if not self.go_on(faces_detector):
-            return df
+            return [df, False]
 
         if self.detectors[detector_name] is None:
             logging.debug("loading detector " + detector_name)
             self.detectors[detector_name] = FaceDetector.build_model(detector_name)
             if not self.util.check_ram(self.ram_allowed):
-                return df  # the caller will do a ram check as well and exit
+                return [df, False]  # the caller will do a ram check as well and exit
 
         detector = self.detectors[detector_name]
         start_time = time.time()
@@ -319,9 +320,9 @@ class Finder:
             logging.debug("Found no faces in image " + path)
             for model_name in self.model_names:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_df = self.add_empty_face_detection(
-                    path, round(time.time() - tic, 5), model_name, [0], 0, 0, mtime, faces_df, detector_name)
-            return df
+                df = self.add_empty_face_detection(
+                    path, round(time.time() - tic, 5), model_name, [0], 0, 0, mtime, df, detector_name)
+            return [df, True]
         image_height, image_width, c = img.shape
         toc = time.time()
         duration_detection = round(toc - tic, 5)
@@ -330,6 +331,9 @@ class Finder:
         success = {}
         count_1 = 0  # for logging only
         count_2 = 0  # for logging only
+
+        # ---------------------------------
+        # iterate every face in this image
         for face, (x, y, w, h) in faces:
             w_percent = int(w * 100 / image_width)
             if (w_percent < self.min_face_width_percent) or (
@@ -344,35 +348,38 @@ class Finder:
             # ----------------------------------------------------------------------------------------------------------
             # face attributes
 
+            # Does a face for this detector exist already?
             position = self.calculate_css_location(x, y, w, h, image_height, image_width),
-            same_face = self.get_same_face(faces_detector, position)
+            same_face = self.get_same_face(faces_detector, position)  # face holding attributes or empty face
+            # 1. find, or 2. complete, or 3. just copy existing facial attributes
             attributes = self.analyse(face, detector_name, same_face)
 
             # ----------------------------------------------------------------------------------------------------------
             # face recognition - create face embeddings
             #
             # iterate activated models
-            #
             for model_name in self.model_names:
                 if model_name not in success:
                     success[model_name] = False
 
                 existing_face = df.loc[(df['model'] == model_name)]
                 if len(existing_face) != 0:
+
                     # -------------------------------------------------------------------------------------------------
                     # embedding for this model does exist
 
                     success[model_name] = True  # do not add empty face later on
                     # copy facial attributes
                     df.loc[(df['id'] == existing_face.id),
-                           ['emotions', 'dominant_emotion', 'age', 'gender', 'races', 'dominant_race']] = [
+                           ['emotions', 'emotion', 'age', 'gender', 'races', 'dominant_race']] = [
                         existing_face.emotions,
-                        existing_face.dominant_emotion,
+                        existing_face.emotion,
                         existing_face.age,
                         existing_face.gender,
                         existing_face.races,
                         existing_face.dominant_race]
                 else:
+
                     # -------------------------------------------------------------------------------------------------
                     # create an embedding for this model of the face
 
@@ -380,7 +387,7 @@ class Finder:
                         logging.debug("loading model " + model_name)
                         self.models[model_name] = DeepFace.build_model(model_name)
                         if not self.util.check_ram(self.ram_allowed):
-                            return df  # the caller will do a ram check as well and exit
+                            return [df, True]  # the caller will do a ram check as well and exit
 
                     logging.debug(str(count_1) + " " + detector_name + " " + model_name + " " + path)
                     model = self.models[model_name]
@@ -413,8 +420,8 @@ class Finder:
                             custom_face.shape[1:3]) + ") than the FaceDetector (" + str(
                             input_shape) + ") detector=" + detector_name + ", model=" + model_name + ", file= " + path)
                         # prevent that the combination of file AND detector AND model is found again as "new"
-                        faces_df = self.add_empty_face_detection(path, duration_detection, model_name,
-                                                                 [x, y, w, h], 0, 0, mtime, faces_df, detector_name)
+                        df = self.add_empty_face_detection(path, duration_detection, model_name,
+                                                           [x, y, w, h], 0, 0, mtime, faces_df, detector_name)
                         continue
                     count_2 = count_2 + 1
                     toc = time.time()
@@ -442,35 +449,37 @@ class Finder:
                          '',  # exif_date
                          mtime,
                          attributes['emotions'],
-                         attributes['dominant_emotion'],
+                         attributes['emotion'],
                          attributes['age'],
                          attributes['gender'],
                          attributes['races'],
                          attributes['dominant_race']], index=df.columns)
 
-                    faces_df = faces_df.append(row, ignore_index=True)
+                    df = df.append(row, ignore_index=True)
 
                     logging.debug("creation of face representations took " +
                                   str(round(toc - tic, 5)) + " seconds using detector=" +
                                   detector_name + " for recognition model=" + model_name)
                     success[model_name] = True
 
-        if len(count_1) == 0:
+        if count_1 == 0:
             logging.debug("No face found in " + str(
                 round(time.time() - start_time, 5)) + " seconds for face representations in " + path)
         for model_name in self.model_names:
             if not success[model_name]:
                 # prevent that the combination of file AND detector AND model is found again as "new"
-                faces_df = self.add_empty_face_detection(path, duration_detection, model_name, [0], 0, 0, mtime,
-                                                         faces_df, detector_name)
+                df = self.add_empty_face_detection(path, duration_detection, model_name, [0], 0, 0, mtime,
+                                                   df, detector_name)
         else:
             logging.info(str(count_1) + " (" + str(len(faces)) + ") faces, " + str(count_2) + " embeddings " +
                          str(round(time.time() - start_time,
-                                   5)) + "s " + detector_name + " models=" + self.model_names +
+                                   5)) + "s " + detector_name + " models=" + str(self.model_names) +
                          " " + path)
-        return df
+        return [df, True]
 
     def get_same_face(self, df, position):
+        if len(position) < 2:
+            position = list(sum(position, []))  # sometimes the position comes as tuple
         for face in df.itertuples():
             pos = face.position
             if self.util.is_same_face(pos, position):
@@ -487,22 +496,11 @@ class Finder:
         # check if this image need to be processed
         if len(df) == 0:
             return True
-        if not df[df.isin(self.model_names).any(axis=1)]:
+        if df[df.isin(self.model_names).any(axis=1)].empty:
             return True
         for attr in self.attributes_names:
-            if attr in ["Emotion", "Gender", "Race"]:
-                if '' in df[attr].values:
-                    return True
-            else:
-                if -1 in df['age'].values:
-                    return True
-        return False
-
-    def go_on_with_facial_attributes(self, df):
-        # check if this image need to be processed
-        for attr in self.attributes_names:
-            if attr in ["Emotion", "Gender", "Race"]:
-                if '' in df[attr].values:
+            if attr.lower() in ["emotion", "gender", "race"]:
+                if '' in df[attr.lower()].values:
                     return True
             else:
                 if -1 in df['age'].values:
@@ -534,7 +532,7 @@ class Finder:
              '',  # exif_date,
              mtime,  # mtime
              "",  # emotions
-             "",  # dominant_emotion
+             "",  # emotion
              -1,  # age
              "",  # gender
              "",  # races
@@ -559,11 +557,10 @@ class Finder:
         margin_bottom_percent = (h_img - y - h) * 100 / h_img
         if margin_bottom_percent < 0:
             margin_bottom_percent = 0  # happened for mtcnn
-        location_css = [
-            int(round(margin_left_percent)),
-            int(round(margin_right_percent)),
-            int(round(margin_top_percent)),
-            int(round(margin_bottom_percent))]
+        location_css = [int(round(margin_left_percent)),
+                        int(round(margin_right_percent)),
+                        int(round(margin_top_percent)),
+                        int(round(margin_bottom_percent))]
         return location_css
 
     def log_ram(self):

@@ -364,7 +364,7 @@ class Util:
                            'exif_date': pd.Series(dtype='str'),
                            'mtime': pd.Series(dtype='str'),
                            'emotions': pd.Series(dtype='str'),
-                           'dominant_emotion': pd.Series(dtype='str'),
+                           'emotion': pd.Series(dtype='str'),
                            'age': pd.Series(dtype='int'),
                            'gender': pd.Series(dtype='str'),
                            'races': pd.Series(dtype='str'),
@@ -397,40 +397,6 @@ class Util:
              values[18],
              values[19],
              values[20]], index=df.columns)
-
-        df = df.append(row, ignore_index=True)
-        return df
-
-    def create_frame_attributes(self):
-        df = pd.DataFrame({'file': pd.Series(dtype='str'),
-                           'position': pd.Series(dtype='int'),
-                           'detector': pd.Series(dtype='str'),
-                           'emotions': pd.Series(dtype='str'),
-                           'dominant_emotion': pd.Series(dtype='str'),
-                           'age': pd.Series(dtype='int'),
-                           'gender': pd.Series(dtype='str'),
-                           'races': pd.Series(dtype='str'),
-                           'dominant_race': pd.Series(dtype='str'),
-                           'created': pd.Series(dtype='str'),
-                           'duration': pd.Series(dtype='float')})
-        return df
-
-    def add_row_attributes(self, df, values):
-        if df is None:
-            df = self.create_frame_attributes()
-
-        row = pd.Series(
-            [values[0],
-             values[1],
-             values[2],
-             values[3],
-             values[4],
-             values[5],
-             values[6],
-             values[7],
-             values[8],
-             values[9],
-             values[10]], index=df.columns)
 
         df = df.append(row, ignore_index=True)
         return df
