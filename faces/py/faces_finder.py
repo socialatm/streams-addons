@@ -190,61 +190,68 @@ class Finder:
 
         attributes = {}
 
-        attributes['emotions'] = ""
-        attributes['emotion'] = ""
-        if "Emotion" in self.attributes_names:
-            if existing_face is not None and existing_face.emotion != "":
-                attributes['emotions'] = existing_face.emotions
-                attributes['emotion'] = existing_face.emotion
-            else:
-                attributes['emotions'] = []
-                if self.attributes_models["Emotion"] is None:
-                    logging.debug("loading model Emotion")
-                    self.attributes_models["Emotion"] = DeepFace.build_model('Emotion');
-                emotion_model = self.attributes_models["Emotion"]
-                gray_img = functions.preprocess_face(
-                    img=face,
-                    target_size=(48, 48),
-                    grayscale=True,
-                    enforce_detection=False,
-                    detector_backend=detector_name,
-                    align=True)
-                emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
-                emotion_predictions = emotion_model.predict(gray_img)[0, :]
-                sum_of_predictions = emotion_predictions.sum()
-                for i in range(0, len(emotion_labels)):
-                    emotion = []
-                    emotion_label = emotion_labels[i]
-                    emotion_prediction = 100 * emotion_predictions[i] / sum_of_predictions
-                    emotion.append(emotion_label)
-                    emotion.append(emotion_prediction)
-                    attributes['emotions'].append(str(emotion))
-                dominant_emotion = emotion_labels[np.argmax(emotion_predictions)]
-                logging.debug("dominant emotion: " + dominant_emotion)
-                attributes['emotion'] = dominant_emotion
+        if existing_face is not None and existing_face.emotion != "":
+            # copy existing attribute
+            attributes['emotions'] = existing_face.emotions
+            attributes['emotion'] = existing_face.emotion
+        elif "Emotion" in self.attributes_names:
+            # extract attribute
+            attributes['emotions'] = []
+            if self.attributes_models["Emotion"] is None:
+                logging.debug("loading model Emotion")
+                self.attributes_models["Emotion"] = DeepFace.build_model('Emotion');
+            emotion_model = self.attributes_models["Emotion"]
+            gray_img = functions.preprocess_face(
+                img=face,
+                target_size=(48, 48),
+                grayscale=True,
+                enforce_detection=False,
+                detector_backend=detector_name,
+                align=True)
+            emotion_labels = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+            emotion_predictions = emotion_model.predict(gray_img)[0, :]
+            sum_of_predictions = emotion_predictions.sum()
+            emotions = []
+            for i in range(0, len(emotion_labels)):
+                emotion = []
+                emotion_label = emotion_labels[i]
+                emotion_prediction = 100 * emotion_predictions[i] / sum_of_predictions
+                emotion.append(emotion_label)
+                emotion.append(emotion_prediction)
+                emotions.append(emotion)
+            attributes['emotions'] = str(emotions)
+            emotion = emotion_labels[np.argmax(emotion_predictions)]
+            logging.debug("emotion: " + emotion)
+            attributes['emotion'] = emotion
+        else:
+            # default value
+            attributes['emotions'] = ""
+            attributes['emotion'] = ""
 
         face_224 = None
 
-        attributes['age'] = -1
-        if "Age" in self.attributes_names:
-            if existing_face is not None and existing_face.age != -1:
-                attributes['age'] = existing_face.age
-            else:
-                if face_224 is None:
-                    self.preprocess_face_224(face, detector_name)
-                if self.attributes_models["Age"] is None:
-                    logging.debug("loading model Age")
-                    self.attributes_models["Age"] = DeepFace.build_model('Age');
-                age_model = self.attributes_models["Age"]
-                age_predictions = age_model.predict(face_224)[0, :]
-                apparent_age = Age.findApparentAge(age_predictions)
-                logging.debug("age: " + str(int(apparent_age)))
-                attributes['apparent_age'] = apparent_age
-
-        gender = ""
-        if "gender" in self.attributes_names:
+        if existing_face is not None and existing_face.age != -1:
+            attributes['age'] = existing_face.age
+        elif "Age" in self.attributes_names:
             if face_224 is None:
-                self.preprocess_face_224(face, detector_name)
+                face_224 = self.preprocess_face_224(face, detector_name)
+            if self.attributes_models["Age"] is None:
+                logging.debug("loading model Age")
+                self.attributes_models["Age"] = DeepFace.build_model('Age');
+            age_model = self.attributes_models["Age"]
+            age_predictions = age_model.predict(face_224)[0, :]
+            apparent_age = Age.findApparentAge(age_predictions)
+            logging.debug("age: " + str(int(apparent_age)))
+            attributes['age'] = apparent_age
+        else:
+            attributes['age'] = -1
+
+        if existing_face is not None and existing_face.gender != "":
+            attributes['gender'] = existing_face.gender
+            attributes['gender_prediction'] = existing_face.gender_prediction
+        elif "Gender" in self.attributes_names:
+            if face_224 is None:
+                face_224 = self.preprocess_face_224(face, detector_name)
             if self.attributes_models["Gender"] is None:
                 logging.debug("loading model Gender")
                 self.attributes_models["Gender"] = DeepFace.build_model('Gender');
@@ -254,15 +261,21 @@ class Finder:
                 gender = "W"
             elif np.argmax(gender_prediction) == 1:
                 gender = "M"
+            logging.debug("gender_prediction: " + str(gender_prediction))
             logging.debug("gender: " + gender)
-        attributes['gender'] = gender
+            attributes['gender'] = gender
+            attributes['gender_prediction'] = gender_prediction[0]
+        else:
+            attributes['gender'] = ""
+            attributes['gender_prediction'] = ""
 
-        attributes['races'] = ""
-        attributes['dominant_race'] = ""
-        if "race" in self.attributes_names:
-            attributes['races'] = []
+        if existing_face is not None and existing_face.race != "":
+            attributes['races'] = existing_face.races
+            attributes['race'] = existing_face.race
+        elif "Race" in self.attributes_names:
+            races = []
             if face_224 is None:
-                self.preprocess_face_224(face, detector_name)
+                face_224 = self.preprocess_face_224(face, detector_name)
             if self.attributes_models["Race"] is None:
                 logging.debug("loading model Race")
                 self.attributes_models["Race"] = DeepFace.build_model('Race');
@@ -276,10 +289,15 @@ class Finder:
                 race_prediction = 100 * race_predictions[i] / sum_of_predictions
                 race.append(race_label)
                 race.append(race_prediction)
-                attributes['races'].append(race)
-                dominant_race = race_labels[np.argmax(race_predictions)]
-            attributes['dominant_race'] = dominant_race
+                races.append(race)
+            attributes['races'] = str(races)
+            # logging.debug("races: " + str(races))
+            dominant_race = race_labels[np.argmax(race_predictions)]
+            attributes['race'] = dominant_race
             logging.debug("dominant race: " + dominant_race)
+        else:
+            attributes['races'] = ""
+            attributes['race'] = ""
 
         toc = time.time()
         logging.debug("face processing took " + str(round(toc - tic, 3)) + " seconds")
@@ -287,11 +305,11 @@ class Finder:
 
     def detect(self, path, os_path_on_server, detector_name, df):
 
-        faces_detector = df.loc[
+        df_detector = df.loc[
             (df['file'] == path) &
             (df['detector'] == detector_name)]
 
-        if not self.go_on(faces_detector):
+        if not self.go_on(df_detector):
             return [df, False]
 
         if self.detectors[detector_name] is None:
@@ -350,9 +368,9 @@ class Finder:
 
             # Does a face for this detector exist already?
             position = self.calculate_css_location(x, y, w, h, image_height, image_width),
-            same_face = self.get_same_face(faces_detector, position)  # face holding attributes or empty face
+            same_face_for_detector = self.get_same_face(df_detector, position)  # face holding attributes or empty face
             # 1. find, or 2. complete, or 3. just copy existing facial attributes
-            attributes = self.analyse(face, detector_name, same_face)
+            attributes = self.analyse(face, detector_name, same_face_for_detector)
 
             # ----------------------------------------------------------------------------------------------------------
             # face recognition - create face embeddings
@@ -362,22 +380,23 @@ class Finder:
                 if model_name not in success:
                     success[model_name] = False
 
-                existing_face = df.loc[(df['model'] == model_name)]
-                if len(existing_face) != 0:
+                existing_face_for_model = df_detector.loc[(df_detector['model'] == model_name)]
+                if len(existing_face_for_model) != 0:
 
                     # -------------------------------------------------------------------------------------------------
                     # embedding for this model does exist
 
                     success[model_name] = True  # do not add empty face later on
                     # copy facial attributes
-                    df.loc[(df['id'] == existing_face.id),
-                           ['emotions', 'emotion', 'age', 'gender', 'races', 'dominant_race']] = [
-                        existing_face.emotions,
-                        existing_face.emotion,
-                        existing_face.age,
-                        existing_face.gender,
-                        existing_face.races,
-                        existing_face.dominant_race]
+                    df.loc[(df['id'] == existing_face_for_model.id),
+                           ['emotions', 'emotion', 'age', 'gender', 'gender_prediction', 'races', 'race']] = [
+                        str(existing_face_for_model.emotions[0]),
+                        existing_face_for_model.emotion[0],
+                        existing_face_for_model.age[0],
+                        existing_face_for_model.gender[0],
+                        existing_face_for_model.gender_prediction[0],
+                        existing_face_for_model.races[0],
+                        existing_face_for_model.race[0]]
                 else:
 
                     # -------------------------------------------------------------------------------------------------
@@ -421,7 +440,8 @@ class Finder:
                             input_shape) + ") detector=" + detector_name + ", model=" + model_name + ", file= " + path)
                         # prevent that the combination of file AND detector AND model is found again as "new"
                         df = self.add_empty_face_detection(path, duration_detection, model_name,
-                                                           [x, y, w, h], 0, 0, mtime, faces_df, detector_name)
+                                                           [x, y, w, h], 0, 0, mtime, df, detector_name)
+                        success[model_name] = True
                         continue
                     count_2 = count_2 + 1
                     toc = time.time()
@@ -452,8 +472,9 @@ class Finder:
                          attributes['emotion'],
                          attributes['age'],
                          attributes['gender'],
+                         attributes['gender_prediction'],
                          attributes['races'],
-                         attributes['dominant_race']], index=df.columns)
+                         attributes['race']], index=df.columns)
 
                     df = df.append(row, ignore_index=True)
 
@@ -536,7 +557,7 @@ class Finder:
              -1,  # age
              "",  # gender
              "",  # races
-             ""  # dominant_race
+             ""  # race
              ], index=faces_df.columns)
 
         faces_df = faces_df.append(row, ignore_index=True)

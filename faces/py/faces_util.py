@@ -367,8 +367,9 @@ class Util:
                            'emotion': pd.Series(dtype='str'),
                            'age': pd.Series(dtype='int'),
                            'gender': pd.Series(dtype='str'),
+                           'gender_prediction': pd.Series(dtype='float'),
                            'races': pd.Series(dtype='str'),
-                           'dominant_race': pd.Series(dtype='str')})
+                           'race': pd.Series(dtype='str')})
         return df
 
     def add_row_embedding(self, df, values):
@@ -396,7 +397,8 @@ class Util:
              values[17],
              values[18],
              values[19],
-             values[20]], index=df.columns)
+             values[20],
+             values[21]], index=df.columns)
 
         df = df.append(row, ignore_index=True)
         return df
