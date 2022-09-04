@@ -11,6 +11,7 @@ use Code\Render\Theme;
 use Code\Storage\BasicAuth;
 use Code\Storage\Directory;
 use Code\Storage\File;
+use Code\Lib\Libsync;
 
 class Faces extends Controller {
 
@@ -253,7 +254,7 @@ class Faces extends Controller {
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if (!$block) {
             if ($action === 'start' || $action === 'recognize') {
-                $storeDirectory = getcwd() . "/store/" . $this->owner['channel_address'];
+                $storeDirectory = $this->getStoreDir();
                 $recognize = false;
                 if ($action === 'recognize') {
                     $recognize = true;  // run the face recognition for owner channel only
@@ -285,9 +286,14 @@ class Faces extends Controller {
             'message' => "ok"));
     }
 
+    private function getStoreDir() {
+        $storeDirectory = getcwd() . "/store/" . $this->owner['channel_address'];
+        return $storeDirectory;
+    }
+
     private function prepareFiles() {
         $userDir = $this->getUserDir();
-        $this->getAddonDir();
+        $this->getAddonDir(true);
         $this->checkDataFiles($userDir, $userDir->getName());
     }
 
@@ -302,12 +308,12 @@ class Faces extends Controller {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
                         $dir->createFile($this->fileNameEmbeddings);
                     } else {
-                        $this->touch($dir->getChild($this->fileNameEmbeddings));
+                        $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
                     }
                     if (!$dir->childExists($this->fileNameFaces)) {
                         $dir->createFile($this->fileNameFaces);
                     } else {
-                        $this->touch($dir->getChild($this->fileNameFaces));
+                        $this->touch($dir->getChild($this->fileNameFaces), $path);
                         $this->files_faces[] = $path . "/" . $this->fileNameFaces;
                     }
                     if ($dir->childExists($this->fileNameNames)) {
@@ -329,8 +335,54 @@ class Faces extends Controller {
         }
     }
 
-    private function touch($file) {
-        
+    private function touch(File $file, $path) {
+        $fName = $file->getName();
+        $pos = strpos($path, "/");
+        if ($pos) {
+            $path = substr($path, $pos + 1);
+        }
+        $displaypath = $path . "/" . $fName;
+        $r = q("SELECT id, hash, os_path FROM attach WHERE display_path = '%s' AND uid = %d LIMIT 1",
+                dbesc($displaypath),
+                intval($this->owner['channel_id'])
+        );
+        $f = $r[0];
+        if (!$f) {
+            return;
+        }
+        $storeDir = $this->getStoreDir();
+        $path_fs = $storeDir . DIRECTORY_SEPARATOR . $f["os_path"];
+        date_default_timezone_set("UTC");
+        $modified_fs = filemtime($path_fs);
+        $modified_db = $file->getLastModified();
+        // inside Code\Storage\File put(...) the edited time in the db is set
+        // after the file is written to the file system. So it should be save
+        // to compare the times here.
+        if ($modified_fs <= $modified_db) {
+            return;
+        }
+        // assume the file was written by the python scripts. Otherwise
+        // the last modified time in the file system should not be greater
+        // than the time in the database
+        logger($displaypath . " was written by python. Set file size and last modified in database and synchronize to clones...", LOGGER_DEBUG);
+
+        $edited = date("Y-m-d H:i:s", $modified_fs);
+        $size = filesize($path_fs);
+
+        $d = q("UPDATE attach SET filesize = '%s', edited = '%s' WHERE hash = '%s' AND uid = %d",
+                dbesc($size),
+                dbesc($edited),
+                dbesc($f['hash']),
+                intval($this->owner['channel_id'])
+        );
+
+        $channel = \App::get_channel();
+
+        $sync = attach_export_data($channel, $f['hash']);
+
+        if ($sync) {
+            Libsync::build_sync_packet($channel['channel_id'], array('file' => array($sync)));
+        }
     }
 
     private function getUserDir() {
@@ -348,17 +400,27 @@ class Faces extends Controller {
         return $userDir;
     }
 
-    private function getAddonDir() {
+    private function getAddonDir($touch) {
 
         $channelAddress = $this->owner['channel_address'];
         $addonDir = new Directory('/' . $channelAddress . '/' . $this->addonDirName, $this->getAuth());
 
+        $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName;
+
         if (!$addonDir->childExists($this->fileNameFacesStatistic)) {
             $addonDir->createFile($this->fileNameFacesStatistic);
+        } else {
+            if ($touch) {
+                $this->touch($addonDir->getChild($this->fileNameFacesStatistic), $path);
+            }
         }
 
         if (!$addonDir->childExists($this->fileNameModelsStatistic)) {
             $addonDir->createFile($this->fileNameModelsStatistic);
+        } else {
+            if ($touch) {
+                $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
+            }
         }
 
         if (!$addonDir->childExists($this->fileNameConfig)) {
@@ -369,7 +431,7 @@ class Faces extends Controller {
     }
 
     private function getConfigFile() {
-        $addonDir = $this->getAddonDir();
+        $addonDir = $this->getAddonDir(false);
         $confFile = null;
         if ($addonDir) {
             $confFile = $addonDir->getChild($this->fileNameConfig);
