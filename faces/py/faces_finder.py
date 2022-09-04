@@ -199,7 +199,7 @@ class Finder:
             attributes['emotions'] = []
             if self.attributes_models["Emotion"] is None:
                 logging.debug("loading model Emotion")
-                self.attributes_models["Emotion"] = DeepFace.build_model('Emotion');
+                self.attributes_models["Emotion"] = DeepFace.build_model('Emotion')
             emotion_model = self.attributes_models["Emotion"]
             gray_img = functions.preprocess_face(
                 img=face,
@@ -388,15 +388,16 @@ class Finder:
 
                     success[model_name] = True  # do not add empty face later on
                     # copy facial attributes
-                    df.loc[(df['id'] == existing_face_for_model.id),
-                           ['emotions', 'emotion', 'age', 'gender', 'gender_prediction', 'races', 'race']] = [
-                        str(existing_face_for_model.emotions[0]),
-                        existing_face_for_model.emotion[0],
-                        existing_face_for_model.age[0],
-                        existing_face_for_model.gender[0],
-                        existing_face_for_model.gender_prediction[0],
-                        existing_face_for_model.races[0],
-                        existing_face_for_model.race[0]]
+                    for existing_face in existing_face_for_model.itertuples():
+                        df.loc[(df['id'] == existing_face.id),
+                               ['emotions', 'emotion', 'age', 'gender', 'gender_prediction', 'races', 'race']] = [
+                            attributes["emotions"],
+                            attributes["emotion"],
+                            attributes["age"],
+                            attributes["gender"],
+                            attributes["gender_prediction"],
+                            attributes["races"],
+                            attributes["race"]]
                 else:
 
                     # -------------------------------------------------------------------------------------------------
@@ -517,8 +518,10 @@ class Finder:
         # check if this image need to be processed
         if len(df) == 0:
             return True
-        if df[df.isin(self.model_names).any(axis=1)].empty:
-            return True
+        existing_models = df["model"].values
+        for model_name in self.model_names:
+            if model_name not in existing_models:
+                return True
         for attr in self.attributes_names:
             if attr.lower() in ["emotion", "gender", "race"]:
                 if '' in df[attr.lower()].values:
