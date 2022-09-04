@@ -22,7 +22,6 @@ class Faces extends Controller {
     private $fileNameEmbeddings = "faces.gzip";
     private $fileNameFaces = "faces.json";
     private $fileNameNames = "names.json";
-    private $fileNameAttributes = "demography.json";
     private $fileNameFacesStatistic = "face_statistics.csv";
     private $fileNameModelsStatistic = "model_statistics.csv";
     private $fileNameConfig = "config.json";
@@ -320,12 +319,6 @@ class Faces extends Controller {
                         } else {
                             $this->files_names[] = $path . "/" . $this->fileNameNames;
                         }
-                    }
-                    if (!$dir->childExists($this->fileNameAttributes)) {
-                        $dir->createFile($this->fileNameAttributes);
-                    } else {
-                        $this->touch($dir->getChild($this->fileNameAttributes));
-                        $this->files_attributes[] = $path . "/" . $this->fileNameAttributes;
                     }
                     $check = false;
                 }
