@@ -229,17 +229,17 @@ class Worker:
     def read_config_file(self):
         logging.debug("channel " + str(self.channel) + " - read config file")
         if self.check_file_by_channel(self.file_name_config) is False:
-            logging.debug("channel " + str(self.channel) + " - could not read config file " + self.file_config)
-            return
+            logging.debug("channel " + str(self.channel) + " - could not read config file " + self.file_name_config)
+            return False
         if os.path.exists(self.file_config):
             if os.stat(self.file_config).st_size == 0:
                 logging.debug("channel " + str(self.channel) + " - config file is empty " + self.file_config)
-                return
+                return False
         with open(self.file_config, "r") as f:
             conf = json.load(f)
             self.config = conf
-            # logging.debug("channel " + str(self.channel) + " - conf=" + str(conf))
             self.configure(conf)
+        return True
 
     def process_dir(self, own_channel_id):
         logging.debug("Start with directory " + self.folder + " / channel " + str(self.channel))
@@ -260,7 +260,8 @@ class Worker:
         # Read the configuration set by admin/user
         #
         if self.config is None:
-            self.read_config_file()
+            if not self.read_config_file():
+                return
 
         # -------------------------------------------------------------
         # Cleanup
@@ -373,7 +374,14 @@ class Worker:
     # 7. If history is switched on: write faces.gzip (including now all face embedding AND names)
     #
     def recognize(self, folders):
+
+        # Read the configuration set by admin/user
+        #
+        if self.config is None:
+            if not self.read_config_file():
+                return
         logging.info("START COMPARING FACES. Loading all necessary data...")
+
         df = self.load_face_names(folders)
         if df is None:
             return
@@ -771,7 +779,7 @@ class Worker:
                 logging.debug("file holding face names is empty " + self.file_names)
                 return df
         df = pd.read_json(self.file_names)
-        logging.debug("loaded face names from file " + self.file_names)
+        logging.debug("loaded names set/changed by user from file " + self.file_names + " full: " + self.file_names)
         return df
 
     def get_face_names(self):
@@ -782,7 +790,7 @@ class Worker:
                 logging.debug("file holding face names is empty yet " + self.file_faces)
                 return df
             df = pd.read_json(self.file_faces)
-            logging.debug("loaded face names from file " + self.file_faces)
+            logging.debug("loaded names from file " + self.file_name_faces + " full:" + self.file_faces)
         return df
 
     def init_face_names(self, df_representation):
