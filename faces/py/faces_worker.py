@@ -401,64 +401,70 @@ class Worker:
         df['min_size_train'] = df.apply(include_as_training_data, axis=1)
         df['min_size_result'] = df.apply(include_as_result_data, axis=1)
 
-        logging.debug("Get all faces with a name, face representation and min width")
-        df_no_name = df.loc[
-            (df['name'] == "") &
-            (df['name'] != self.IGNORE) &
-            (df['duration_representation'] != 0.0) &
-            (df['min_size_result'] == 1) &
-            (df['time_named'] == ""), ['id', 'representation', 'model', 'file', 'face_nr']]
+        for key in self.finder.detectors:
+            detector = key
 
-        # Loop through models
-        # - loop through the ordered list models (start parameter)
-        # - optionally stop recognition after a first match (start parameter)
-        models = df.model.unique()
-        for model in models:
-            if model not in self.finder.model_names:
-                continue
-            # Set back previous results
-            # Why?
-            # - parameters might change (distance metrics, min face width)
-            # - show results for parameters of this run only
-            df.loc[(df['model'] == model) &
-                   (df['name'] == "") &  # keep history of recognized names for statitstics
-                   (df['name'] != self.IGNORE) &  # the user has set this face to "ignore" (this is no face, meant like)
-                   (df['duration_representation'] != 0.0) &
-                   (df['time_named'] == ""),  # the user has set the name to "unknown"
-                   ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
-
-            # Filter faces as training data
-            logging.debug("Start recognition using model=" + model + " Gathering faces as training data...")
-            df_training_data = df.loc[
-                (df['model'] == model) &
-                (df['name'] != "") &
+            logging.debug(detector + " = detector: Get all faces with a name, face representation and min width")
+            df_no_name = df.loc[
+                (df['name'] == "") &
+                (df['detector'] == detector) &
                 (df['name'] != self.IGNORE) &
-                (df['min_size_train'] == 1) &
-                (df['representation'] != ""), ['id', 'representation', 'name']]
-            if len(df_training_data) == 0:
-                logging.debug("No training data (names set) for model=" + model)
-                continue
-            self.recognizer.train(df_training_data, model)
-            df_model = df_no_name.loc[df_no_name['model'] == model]
-            if len(df_model) == 0:
-                logging.debug("No faces to search for model=" + model)
-                continue
-            faces = self.recognizer.recognize(df_model)
-            if faces:
-                # write result of matches (faces found) into the embeddings file
-                for face in faces:
-                    face_id = face['id']
-                    df.loc[
-                        df['id'] == face_id,
-                        ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
-                        [
-                            face['name_recognized'],
-                            face['duration_recognized'],
-                            face['distance'],
-                            face['distance_metric']
-                        ]
-                if self.recognizer.first_result:
-                    df_no_name = self.remove_other_than_recognized(faces, df_no_name)
+                (df['duration_representation'] != 0.0) &
+                (df['min_size_result'] == 1) &
+                (df['time_named'] == ""), ['id', 'representation', 'model', 'detector', 'file', 'face_nr']]
+
+            # Loop through models
+            # - loop through the ordered list models (start parameter)
+            # - optionally stop recognition after a first match (start parameter)
+            models = df.model.unique()
+            for model in models:
+                if model not in self.finder.model_names:
+                    continue
+                # Set back previous results
+                # Why?
+                # - parameters might change (distance metrics, min face width)
+                # - show results for parameters of this run only
+                df.loc[(df['model'] == model) &
+                       (df['detector'] == detector) &
+                       (df['name'] == "") &  # keep history of recognized names for statitstics
+                       (df['name'] != self.IGNORE) &  # the user has set this face to "ignore" (this is no face, meant like)
+                       (df['duration_representation'] != 0.0) &
+                       (df['time_named'] == ""),  # the user has set the name to "unknown"
+                       ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
+
+                # Filter faces as training data
+                logging.debug( model + " " + detector + " gathering faces as training data...")
+                df_training_data = df.loc[
+                    (df['model'] == model) &
+                    (df['detector'] == detector) &
+                    (df['name'] != "") &
+                    (df['name'] != self.IGNORE) &
+                    (df['min_size_train'] == 1) &
+                    (df['representation'] != ""), ['id', 'representation', 'name', 'model', 'detector']]
+                if len(df_training_data) == 0:
+                    logging.debug("No training data (names set) for model=" + model)
+                    continue
+                self.recognizer.train(df_training_data, model)
+                df_model = df_no_name.loc[df_no_name['model'] == model]
+                if len(df_model) == 0:
+                    logging.debug("No faces to search for model=" + model)
+                    continue
+                faces = self.recognizer.recognize(df_model)
+                if faces:
+                    # write result of matches (faces found) into the embeddings file
+                    for face in faces:
+                        face_id = face['id']
+                        df.loc[
+                            df['id'] == face_id,
+                            ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
+                            [
+                                face['name_recognized'],
+                                face['duration_recognized'],
+                                face['distance'],
+                                face['distance_metric']
+                            ]
+                    if self.recognizer.first_result:
+                        df_no_name = self.remove_other_than_recognized(faces, df_no_name)
 
         most_effective_method = self.util.get_most_successful_method(df, False)
 
