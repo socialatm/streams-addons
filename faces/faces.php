@@ -59,6 +59,7 @@ function faces_plugin_admin(&$o) {
         } else {
             $exiftoolcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
         }
+        unblockFaceRecognition();
     }
 
     // set default values
@@ -308,7 +309,7 @@ function faces_plugin_admin_post(&$a) {
     $ret = testDeepfaceModules($detectors, $models, $demography);
 
     // unblock execution of python script
-    set_config("faces", "status", "finished " . datetime_convert() . " pid " . $procid);
+    unblockFaceRecognition();
 
     // correct the configuration if nesseccary
     $d = $ret['d'];
@@ -341,9 +342,15 @@ function faces_plugin_admin_post(&$a) {
 }
 
 function stopRunningFaceRecognition() {
-    // stop python script if running
+    // stop python script (if running) by changing the procid
     $procid = random_string(10);
     set_config("faces", "status", "started " . datetime_convert() . " pid " . $procid);
+}
+
+function unblockFaceRecognition() {
+    // stop python script (if running) by changing the procid
+    $procid = random_string(10);
+    set_config("faces", "status", "finished " . datetime_convert() . " pid " . $procid);
 }
 
 function testPythonVersion() {
