@@ -20,42 +20,45 @@ function faces_unload() {
 }
 
 function faces_plugin_admin(&$o) {
-    stopRunningFaceRecognition();
-    
+
     $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
 
-    $pythoncheckmsg = "";
-    $ret = testPythonVersion();
-    if (!$ret['status']) {
-        $pythoncheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-        $block = true;
-    } else {
-        $pythoncheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-    }
+    if (!$block) {
+        stopRunningFaceRecognition();
 
-    $deepfacecheckmsg = "";
-    $ret = testDeepfaceVersion();
-    if (!$ret['status']) {
-        $deepfacecheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-        $block = true;
-    } else {
-        $deepfacecheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-    }
+        $pythoncheckmsg = "";
+        $ret = testPythonVersion();
+        if (!$ret['status']) {
+            $pythoncheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+            $block = true;
+        } else {
+            $pythoncheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+        }
 
-    $mysqlconnectorcheckmsg = "";
-    $ret = testMySQLConnectorVersion();
-    if (!$ret['status']) {
-        $mysqlconnectorcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-        $block = true;
-    } else {
-        $mysqlconnectorcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-    }
+        $deepfacecheckmsg = "";
+        $ret = testDeepfaceVersion();
+        if (!$ret['status']) {
+            $deepfacecheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+            $block = true;
+        } else {
+            $deepfacecheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+        }
 
-    $ret = testExiftool();
-    if (!$ret['status']) {
-        $exiftoolcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-    } else {
-        $exiftoolcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+        $mysqlconnectorcheckmsg = "";
+        $ret = testMySQLConnectorVersion();
+        if (!$ret['status']) {
+            $mysqlconnectorcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+            $block = true;
+        } else {
+            $mysqlconnectorcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+        }
+
+        $ret = testExiftool();
+        if (!$ret['status']) {
+            $exiftoolcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+        } else {
+            $exiftoolcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+        }
     }
 
     // set default values
@@ -87,7 +90,7 @@ function faces_plugin_admin(&$o) {
 
     $experimental_allowed = get_config('faces', 'experimental_allowed') ? get_config('faces', 'experimental_allowed') : false;
     $immediatly = get_config('faces', 'immediatly') ? get_config('faces', 'immediatly') : false;
-    
+
     $max_ram = get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80;
 
     $t = Theme::get_template("admin.tpl", "addon/faces/");
@@ -127,8 +130,6 @@ function faces_plugin_admin(&$o) {
 }
 
 function faces_plugin_admin_post(&$a) {
-
-    stopRunningFaceRecognition();
 
     $block = ((x($_POST, 'block')) ? x($_POST, 'block') : false);
     set_config('faces', 'block_python', $block);
@@ -264,11 +265,44 @@ function faces_plugin_admin_post(&$a) {
     $demographyconfig = implode(",", $demography);
     set_config('faces', 'demography', preg_replace('/\s+/', '', $demographyconfig));
 
+    $zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : 3);
+    if ($zoom > 6) {
+        $zoom = 6;
+    } else if ($zoom < 1) {
+        $zoom = 1;
+    }
+    set_config('faces', 'zoom', $zoom);
+    logger("set zoom to " . $zoom, LOGGER_NORMAL);
+
+    $max_ram = ((x($_POST, 'max_ram')) ? intval(trim($_POST['max_ram'])) : 80);
+    if ($max_ram > 90) {
+        $max_ram = 90;
+    } else if ($max_ram < 10) {
+        $max_ram = 10;
+    }
+    set_config('faces', 'max_ram', $max_ram);
+    logger("set max_ram " . $max_ram, LOGGER_NORMAL);
+
+    $experimental_allowed = ((x($_POST, 'experimental_allowed')) ? true : false);
+    set_config('faces', 'experimental_allowed', $experimental_allowed);
+    logger("set experimental_allowed to " . $experimental_allowed, LOGGER_NORMAL);
+
+    $immediatly = ((x($_POST, 'immediatly')) ? true : false);
+    set_config('faces', 'immediatly', $immediatly);
+    logger("set immediatly to " . $immediatly, LOGGER_NORMAL);
+
     info(t('Settings updated.') . EOL);
+
+    if ($block) {
+        set_config('faces', 'ramcheck', "");
+        return;
+    }
 
     $detectors = get_config('faces', 'detectors');
     $models = get_config('faces', 'models');
     $demography = get_config('faces', 'demography');
+
+    stopRunningFaceRecognition();
 
     // Check the configuration
     $ret = testDeepfaceModules($detectors, $models, $demography);
@@ -301,32 +335,6 @@ function faces_plugin_admin_post(&$a) {
     }
     set_config('faces', 'demography', $demography);
     logger("set demography to " . $demography, LOGGER_NORMAL);
-
-    $zoom = ((x($_POST, 'zoom')) ? intval(trim($_POST['zoom'])) : 3);
-    if ($zoom > 6) {
-        $zoom = 6;
-    } else if ($zoom < 1) {
-        $zoom = 1;
-    }
-    set_config('faces', 'zoom', $zoom);
-    logger("set zoom to " . $zoom, LOGGER_NORMAL);
-
-    $max_ram = ((x($_POST, 'max_ram')) ? intval(trim($_POST['max_ram'])) : 80);
-    if ($max_ram > 90) {
-        $max_ram = 90;
-    } else if ($max_ram < 10) {
-        $max_ram = 10;
-    }
-    set_config('faces', 'max_ram', $max_ram);
-    logger("set max_ram " . $max_ram, LOGGER_NORMAL);
-
-    $experimental_allowed = ((x($_POST, 'experimental_allowed')) ? true : false);
-    set_config('faces', 'experimental_allowed', $experimental_allowed);
-    logger("set experimental_allowed to " . $experimental_allowed, LOGGER_NORMAL);
-
-    $immediatly = ((x($_POST, 'immediatly')) ? true : false);
-    set_config('faces', 'immediatly', $immediatly);
-    logger("set immediatly to " . $immediatly, LOGGER_NORMAL);
 
     $ramcheckmsg = $ret["r"];
     set_config('faces', 'ramcheck', $ramcheckmsg);
