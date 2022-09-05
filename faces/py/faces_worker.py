@@ -237,11 +237,12 @@ class Worker:
                 return
         with open(self.file_config, "r") as f:
             conf = json.load(f)
+            self.config = conf
             # logging.debug("channel " + str(self.channel) + " - conf=" + str(conf))
             self.configure(conf)
 
     def process_dir(self, own_channel_id):
-        logging.debug(self.folder + " / channel " + str(self.channel) + " - start detecting/analyzing")
+        logging.debug("Start with directory " + self.folder + " / channel " + str(self.channel))
 
         # -------------------------------------------------------------
         # Prepare files
