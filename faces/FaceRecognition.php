@@ -5,8 +5,12 @@ namespace Code\Module;
 class FaceRecognition {
 
     function start($storeDirectory, $channel_id, $recognize, $rm_params) {
+        $status_suffix = "";
+        if ($recognize) {
+            $status_suffix = $channel_id;
+        }
         if (!$rm_params) {
-            $isRunning = $this->isScriptRunning();
+            $isRunning = $this->isScriptRunning($status_suffix);
             if ($isRunning) {
                 return;
             }
@@ -14,7 +18,7 @@ class FaceRecognition {
             logger("Start the python script despite another one is still running. Set a new procid. This will stopp a running python script ", LOGGER_DEBUG);
         }
         $procid = random_string(10);
-        set_config("faces", "status", "started " . datetime_convert() . " pid " . $procid);
+        set_config("faces", "status" . $status_suffix, "started " . datetime_convert() . " pid " . $procid);
 
         $logfile = get_config('logrot', 'logrotpath') . '/faces.log';
         $logfileparam = " --logfile " . $logfile;
@@ -31,9 +35,9 @@ class FaceRecognition {
             $logfile = '';
         }
         $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
-        
+
         $param_recognize = "";
-        if($recognize) {
+        if ($recognize) {
             $param_recognize = " --recognize=on";
         }
 
@@ -57,66 +61,23 @@ class FaceRecognition {
         exec($cmd . ' > /dev/null 2>/dev/null &');
     }
 
-    private function getParamString($config, $name) {
-        $param = "";
-        $values = $config[$name];
-        for ($i = 0; $i < sizeof($values); $i++) {
-            $elName = $values[$i][0];
-            $value = $values[$i][1];
-            if ($value) {
-                if (strlen($param) > 0) {
-                    $param .= ",";
-                }
-                $param .= $elName;
-            }
-        }
-        if (strlen($param) > 0) {
-            $param = " --" . $name . " " . $param;
-        }
-        return $param;
-    }
-
-    private function getParamStringDirectly($config, $name, $configName) {
-        $param = "";
-        $values = $config[$configName];
-        $value = $values[0][1];
-        if ($value) {
-            $param = "on";
-        } else {
-            $param = "off";
-        }
-        $param = " --" . $name . " " . $param;
-        return $param;
-    }
-
-    private function getParamStringTextField($config, $name) {
-        $param = "";
-        $values = $config[$name];
-        for ($i = 0; $i < sizeof($values); $i++) {
-            $elName = $values[$i][0];
-            $value = $values[$i][1];
-            $param .= " --" . $elName . " " . $value;
-        }
-        return $param;
-    }
-
-    function isScriptRunning() {
-        $txt = get_config("faces", "status");
+    function isScriptRunning($channel_id = "") {
+        $txt = get_config("faces", "status" . $channel_id);
         if (!$txt) {
             logger('The python script was never started befor', LOGGER_DEBUG);
             return false;
         }
-        logger('status face recognition: ' . $txt, LOGGER_DEBUG);
+        logger('status face detection ' . $channel_id . ': ' . $txt, LOGGER_DEBUG);
         $a = explode(' ', $txt);
         $status = $a[0];
 
         if (sizeof($a) < 5) {
-            logger("Status face recognition: not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_DEBUG);
+            logger("Status face detection " . $channel_id . ": not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_DEBUG);
             return false;
         }
 
         if (strtolower($status) == "finished") {
-            logger("Status face recognition: finished", LOGGER_DEBUG);
+            logger("Status face detection " . $channel_id . ": finished", LOGGER_DEBUG);
             return false;
         }
 
@@ -126,23 +87,23 @@ class FaceRecognition {
             // Th Python script writes a timestamp "updated" every 10 seconds to indicate it is still running.
             // Now we are 10 minutes away from the last "updated" written by the script.
             // It might be that the python script hangs or was stopped.
-            $msg = 'The script did not finish yet. Please watch this condition. Why? It might be that the python script hangs, run into errors or was stopped externally. The last update by the script was at ' . $updated . '. This is more then 10 minutes ago. This is unusual because the script writes a time stamp every 10 seconds to indicate that it is still running.';
+            $msg = 'The script (detection) did not finish yet. Please watch this condition. Why? It might be that the python script hangs, run into errors or was stopped externally. The last update by the script was at ' . $updated . '. This is more then 10 minutes ago. This is unusual because the script writes a time stamp every 10 seconds to indicate that it is still running.';
             logger($msg, LOGGER_DEBUG);
-            $this->finished();
+            $this->finished($channel_id);
             return false;
         }
-        logger('The python script is still running. Last update: ' . $updated, LOGGER_DEBUG);
+        logger('The python script is still running. Last update ' . $channel_id . ': ' . $updated, LOGGER_DEBUG);
         return true;
     }
 
-    function stop() {
+    function stop($channel_id = "") {
         $procid = random_string(10);
-        set_config("faces", "status", "stopped " . datetime_convert() . " pid " . $procid);
+        set_config("faces", "status" . $channel_id, "stopped " . datetime_convert() . " pid " . $procid);
     }
 
-    function finished() {
+    function finished($channel_id = "") {
         $procid = random_string(10);
-        set_config("faces", "status", "finished " . datetime_convert() . " pid " . $procid);
+        set_config("faces", "status" . $channel_id, "finished " . datetime_convert() . " pid " . $procid);
     }
 
 }

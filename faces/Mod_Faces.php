@@ -38,9 +38,9 @@ class Faces extends Controller {
 
     function get() {
 
-        //----------------------------------------------------------------------
-        // permisson checks
-        //----------------------------------------------------------------------
+//----------------------------------------------------------------------
+// permisson checks
+//----------------------------------------------------------------------
         if (!$this->owner) {
             if (local_channel()) { // if no channel name was provided, assume the current logged in channel
                 $channel = \App::get_channel();
@@ -75,7 +75,7 @@ class Faces extends Controller {
 
         $channel = \App::get_channel();
 
-        // tell the browser about the log level
+// tell the browser about the log level
         $loglevel = -1;
         $logEnabled = get_config('system', 'debugging');
         if ($logEnabled) {
@@ -85,15 +85,15 @@ class Faces extends Controller {
         if (argc() > 2) {
             switch (argv(2)) {
                 case 'settings':
-                    // API: /faces/nick/settings
+// API: /faces/nick/settings
                     $o = $this->showSettingsPage($loglevel);
                     return $o;
                 case 'remove':
-                    // API: /faces/nick/remove
+// API: /faces/nick/remove
                     $o = $this->showRemovePage($loglevel);
                     return $o;
                 case 'help':
-                    // API: /faces/nick/help
+// API: /faces/nick/help
                     $o = $this->showHelpPage();
                     return $o;
                 default:
@@ -101,9 +101,9 @@ class Faces extends Controller {
             }
         }
 
-        //----------------------------------------------------------------------
-        // fill some elements in the
-        //----------------------------------------------------------------------
+//----------------------------------------------------------------------
+// fill some elements in the
+//----------------------------------------------------------------------
 
 
         $version = $this->getAppVersion();
@@ -141,13 +141,13 @@ class Faces extends Controller {
             logger('api = ' . $api, LOGGER_DEBUG);
             if ($api === 'start') {
                 // API: /faces/nick/start
-                $this->startFaceRecognition('start', false);
+                $this->startDetection('start', false);
             } elseif ($api === 'recognize') {
                 // API: /faces/nick/recognize
-                $this->startFaceRecognition('recognize', false);
+                $this->startRecognition();
             } elseif ($api === 'results') {
                 // API: /faces/nick/results
-                $this->startFaceRecognition('results', false);
+                $this->startDetection('results', false);
             } elseif ($api === 'status') {
                 // API: /faces/nick/status
                 $this->getStatus();
@@ -168,7 +168,7 @@ class Faces extends Controller {
     }
 
     private function checkOwner() {
-        // Determine which channel's faces to display to the observer
+// Determine which channel's faces to display to the observer
         $nick = null;
         if (argc() > 1) {
             $nick = argv(1); // if the channel name is in the URL, use that
@@ -199,7 +199,7 @@ class Faces extends Controller {
             return array('status' => false, 'message' => 'Owner profil has not addon installed');
         }
 
-        // Leave this check because the observer needs permissions to view photos too
+// Leave this check because the observer needs permissions to view photos too
         if (!perm_is_allowed($owner_uid, get_observer_hash(), 'view_storage')) {
             logger('Stop: Permission view storage denied', LOGGER_DEBUG);
             return array('status' => false, 'message' => 'Permission view storage denied');
@@ -219,7 +219,7 @@ class Faces extends Controller {
         return $r[0]["app_version"];
     }
 
-    private function startFaceRecognition($action, $rm_params) {
+    private function startDetection($action, $rm_params) {
 
         require_once('FaceRecognition.php');
         $fr = new FaceRecognition();
@@ -230,6 +230,7 @@ class Faces extends Controller {
                 json_return_and_die(array('status' => true, 'message' => 'Face detection is still busy'));
             }
         }
+
 
         $is_touch = false;
         if ($action === 'results') {
@@ -258,20 +259,11 @@ class Faces extends Controller {
 
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if (!$block) {
-            if ($action === 'start' || $action === 'recognize') {
+            if ($action === 'start') {
                 $storeDirectory = $this->getStoreDir();
                 $recognize = false;
-                if ($action === 'recognize') {
-                    $recognize = true;  // run the face recognition for owner channel only
-                }
                 $channel_id = $this->owner['channel_id'];
                 $fr->start($storeDirectory, $channel_id, $recognize, $rm_params);
-            }
-            if ($action === 'recognize') {
-                // prevent to show old names if not processed by face recognition
-                $this->files_faces = [];
-                $this->files_names = [];
-                $this->files_attributes = [];
             }
             if ($rm_params) {
                 return;
@@ -291,6 +283,45 @@ class Faces extends Controller {
             'message' => "ok"));
     }
 
+    private function startRecognition() {
+        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
+        if ($block) {
+            json_return_and_die(array(
+                'status' => true,
+                'names' => [],
+                'names_waiting' => [],
+                'attributes' => [],
+                'message' => "recognition (python) is blocked on this server"));
+        }
+
+        require_once('FaceRecognition.php');
+        $fr = new FaceRecognition();
+
+        $channel_id = $this->owner['channel_id'];
+        if ($fr->isScriptRunning($channel_id)) {
+            json_return_and_die(array(
+                'status' => true,
+                'names' => [],
+                'names_waiting' => [],
+                'attributes' => [],
+                'message' => "recognition still running for this user"));
+        }
+
+        $storeDirectory = $this->getStoreDir();
+        $recognize = true;
+        $rm_params = "";
+        $fr->start($storeDirectory, $channel_id, $recognize, $rm_params);
+
+        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes) . ",  names_waiting=" . json_encode($this->fileNameNames), LOGGER_DEBUG);
+
+        json_return_and_die(array(
+            'status' => true,
+            'names' => [], // prevent to show old names if not processed by face recognition
+            'names_waiting' => [], // prevent to show old names if not processed by face recognition
+            'attributes' => [], // prevent to show old names if not processed by face recognition
+            'message' => "ok"));
+    }
+
     private function getStoreDir() {
         $storeDirectory = getcwd() . "/store/" . $this->owner['channel_address'];
         return $storeDirectory;
@@ -303,8 +334,8 @@ class Faces extends Controller {
     }
 
     private function checkDataFiles(Directory $dir, String $path, $is_touch = false) {
-        // The pyhton script is allowed to write to existing files only. It will
-        // ignore images in directories where the data files are missing.
+// The pyhton script is allowed to write to existing files only. It will
+// ignore images in directories where the data files are missing.
         $children = $dir->getChildren();
         $check = true;
         foreach ($children as $child) {
@@ -364,15 +395,15 @@ class Faces extends Controller {
         date_default_timezone_set("UTC");
         $modified_fs = filemtime($path_fs);
         $modified_db = $file->getLastModified();
-        // inside Code\Storage\File put(...) the edited time in the db is set
-        // after the file is written to the file system. So it should be save
-        // to compare the times here.
+// inside Code\Storage\File put(...) the edited time in the db is set
+// after the file is written to the file system. So it should be save
+// to compare the times here.
         if ($modified_fs <= $modified_db) {
             return;
         }
-        // assume the file was written by the python scripts. Otherwise
-        // the last modified time in the file system should not be greater
-        // than the time in the database
+// assume the file was written by the python scripts. Otherwise
+// the last modified time in the file system should not be greater
+// than the time in the database
         logger($displaypath . " was written by python. Set file size and last modified in database and synchronize to clones...", LOGGER_DEBUG);
 
         $edited = date("Y-m-d H:i:s", $modified_fs);
@@ -499,7 +530,7 @@ class Faces extends Controller {
 
         $updated = $a[1] . " " . $a[2];
         $elapsed = strtotime(datetime_convert()) - strtotime($updated); // both UTC
-        // UTC in ISO data"2015-03-25T12:00:00Z", T... seperator, Z... UTC
+// UTC in ISO data"2015-03-25T12:00:00Z", T... seperator, Z... UTC
         $values["utc"] = $a[1] . "T" . $a[2] . "Z";
         $values["elapsed"] = $elapsed;
 
@@ -540,11 +571,11 @@ class Faces extends Controller {
             $chan_addr = $this->owner['channel_address'];
             $i = strpos($file, "/", strlen($chan_addr));
             $image = substr($file, $i + 1);
-            ////////////
+////////////
             require_once('Name.php');
             $writer = new Name();
             $success = $writer->write($names_file, $image, $face['name'], $face['id']);
-            ////////////
+////////////
             if (!$success) {
                 $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
                 logger($msg, LOGGER_NORMAL);
@@ -578,9 +609,11 @@ class Faces extends Controller {
         $exclude = ["reset", "experimental"];
         $isText = ["percent", "pixel", "training", "result", "zoom"];
         foreach ($config as $name => $values) {
-            for ($i = 0; $i < sizeof($values); $i++) {
+            for ($i = 0;
+                    $i < sizeof($values);
+                    $i++) {
                 $elName = $values[$i][0];
-                if(!$elName) {
+                if (!$elName) {
                     continue;  // not every config value is configured in the frontend
                 }
                 if (in_array($elName, $exclude)) {
@@ -668,7 +701,7 @@ class Faces extends Controller {
             $params .= " --rm_names on";
         }
         if ($params !== "") {
-            $this->startFaceRecognition("start", $params);
+            $this->startDetection("start", $params);
         }
     }
 

@@ -75,6 +75,7 @@ class Worker:
         self.ram_allowed = 80  # %
 
         self.config = None
+        self.status_suffix = ""
 
     def set_finder(self, json):
         deepface_specs = importlib.util.find_spec("deepface")
@@ -179,6 +180,8 @@ class Worker:
             self.stop()
 
         self.proc_id = proc_id
+        if is_recognize:
+            self.status_suffix = str(own_channel_id)
         self.write_alive_signal(self.RUNNING)
 
         # get all channel_id's (users) that have the app faces installed
@@ -919,7 +922,7 @@ class Worker:
         now = datetime.datetime.utcnow()
         content = status + " " + now.strftime('%Y-%m-%d %H:%M:%S') + " pid " + self.proc_id + " ram " + str(ram)
         query = "UPDATE config SET v = %s WHERE cat = %s AND k = %s"
-        data = (content, 'faces', 'status')
+        data = (content, 'faces', 'status' + self.status_suffix)
         self.db.update(query, data)
         logging.debug("lock status written to db:  " + content)
         if ram > self.ram_allowed:
@@ -927,8 +930,8 @@ class Worker:
             self.stop()
 
     def check_pid(self):
-        query = "SELECT v FROM config WHERE cat = 'faces' AND k = 'status'"
-        data = {}
+        query = "SELECT v FROM config WHERE cat = %s AND k = %s"
+        data = ('faces', "status" + self.status_suffix)
         rows = self.db.select(query, data)
         if len(rows) != 1:
             logging.critical("Found " + str(len(rows)) + " results for status in database")
