@@ -231,7 +231,12 @@ class Faces extends Controller {
             }
         }
 
-        $this->prepareFiles();
+        $is_touch = false;
+        if ($action === 'result') {
+            $is_touch = true;
+        }
+
+        $this->prepareFiles($is_touch);
         $config = $this->getConfig();
         $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
         $sort_exif = $config["exif"][0][1] ? $config["exif"][0][1] : false;
@@ -291,13 +296,13 @@ class Faces extends Controller {
         return $storeDirectory;
     }
 
-    private function prepareFiles() {
+    private function prepareFiles($is_touch = false) {
         $userDir = $this->getUserDir();
-        $this->getAddonDir(true);
-        $this->checkDataFiles($userDir, $userDir->getName());
+        $this->getAddonDir($is_touch);
+        $this->checkDataFiles($userDir, $userDir->getName(), $is_touch);
     }
 
-    private function checkDataFiles(Directory $dir, String $path) {
+    private function checkDataFiles(Directory $dir, String $path, $is_touch = false) {
         // The pyhton script is allowed to write to existing files only. It will
         // ignore images in directories where the data files are missing.
         $children = $dir->getChildren();
@@ -308,12 +313,16 @@ class Faces extends Controller {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
                         $dir->createFile($this->fileNameEmbeddings);
                     } else {
-                        $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
+                        if ($is_touch) {
+                            $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
+                        }
                     }
                     if (!$dir->childExists($this->fileNameFaces)) {
                         $dir->createFile($this->fileNameFaces);
                     } else {
-                        $this->touch($dir->getChild($this->fileNameFaces), $path);
+                        if ($is_touch) {
+                            $this->touch($dir->getChild($this->fileNameFaces), $path);
+                        }
                         $this->files_faces[] = $path . "/" . $this->fileNameFaces;
                     }
                     if ($dir->childExists($this->fileNameNames)) {
@@ -400,7 +409,7 @@ class Faces extends Controller {
         return $userDir;
     }
 
-    private function getAddonDir($touch) {
+    private function getAddonDir($is_touch = false) {
 
         $channelAddress = $this->owner['channel_address'];
         $addonDir = new Directory('/' . $channelAddress . '/' . $this->addonDirName, $this->getAuth());
@@ -410,7 +419,7 @@ class Faces extends Controller {
         if (!$addonDir->childExists($this->fileNameFacesStatistic)) {
             $addonDir->createFile($this->fileNameFacesStatistic);
         } else {
-            if ($touch) {
+            if ($is_touch) {
                 $this->touch($addonDir->getChild($this->fileNameFacesStatistic), $path);
             }
         }
@@ -418,7 +427,7 @@ class Faces extends Controller {
         if (!$addonDir->childExists($this->fileNameModelsStatistic)) {
             $addonDir->createFile($this->fileNameModelsStatistic);
         } else {
-            if ($touch) {
+            if ($is_touch) {
                 $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
             }
         }
@@ -431,7 +440,7 @@ class Faces extends Controller {
     }
 
     private function getConfigFile() {
-        $addonDir = $this->getAddonDir(false);
+        $addonDir = $this->getAddonDir();
         $confFile = null;
         if ($addonDir) {
             $confFile = $addonDir->getChild($this->fileNameConfig);
