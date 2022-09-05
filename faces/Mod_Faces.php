@@ -232,7 +232,7 @@ class Faces extends Controller {
         }
 
         $is_touch = false;
-        if ($action === 'result') {
+        if ($action === 'results') {
             $is_touch = true;
         }
 
@@ -339,7 +339,7 @@ class Faces extends Controller {
                 }
             } else if ($child instanceof Directory) {
                 $p = $path . "/" . $child->getName();
-                $this->checkDataFiles($child, $p);
+                $this->checkDataFiles($child, $p, $is_touch);
             }
         }
     }

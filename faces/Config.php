@@ -222,6 +222,8 @@ class FaceConfiguration {
             }
         }
         $config["zoom"][0][1] = $number;
+        
+        $config["worker"]["ram"] = get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80;
 
         return $config;
     }

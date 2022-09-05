@@ -267,7 +267,7 @@ class Finder:
             attributes['gender_prediction'] = gender_prediction[0]
         else:
             attributes['gender'] = ""
-            attributes['gender_prediction'] = ""
+            attributes['gender_prediction'] = -1
 
         if existing_face is not None and existing_face.race != "":
             attributes['races'] = existing_face.races
@@ -346,9 +346,12 @@ class Finder:
         duration_detection = round(toc - tic, 5)
         logging.debug(str(len(faces)) + " faces " + str(duration_detection) + " s  " + path)
 
-        success = {}
         count_1 = 0  # for logging only
         count_2 = 0  # for logging only
+
+        success = {}
+        for model_name in self.model_names:
+            success[model_name] = False
 
         # ---------------------------------
         # iterate every face in this image
@@ -377,8 +380,7 @@ class Finder:
             #
             # iterate activated models
             for model_name in self.model_names:
-                if model_name not in success:
-                    success[model_name] = False
+                success[model_name] = True
 
                 existing_face_for_model = df_detector.loc[(df_detector['model'] == model_name)]
                 if len(existing_face_for_model) != 0:
@@ -386,7 +388,6 @@ class Finder:
                     # -------------------------------------------------------------------------------------------------
                     # embedding for this model does exist
 
-                    success[model_name] = True  # do not add empty face later on
                     # copy facial attributes
                     for existing_face in existing_face_for_model.itertuples():
                         df.loc[(df['id'] == existing_face.id),
@@ -442,7 +443,6 @@ class Finder:
                         # prevent that the combination of file AND detector AND model is found again as "new"
                         df = self.add_empty_face_detection(path, duration_detection, model_name,
                                                            [x, y, w, h], 0, 0, mtime, df, detector_name)
-                        success[model_name] = True
                         continue
                     count_2 = count_2 + 1
                     toc = time.time()
@@ -482,7 +482,6 @@ class Finder:
                     logging.debug("creation of face representations took " +
                                   str(round(toc - tic, 5)) + " seconds using detector=" +
                                   detector_name + " for recognition model=" + model_name)
-                    success[model_name] = True
 
         if count_1 == 0:
             logging.debug("No face found in " + str(
@@ -559,6 +558,7 @@ class Finder:
              "",  # emotion
              -1,  # age
              "",  # gender
+             -1,  # gender_prediction
              "",  # races
              ""  # race
              ], index=faces_df.columns)
