@@ -580,6 +580,9 @@ class Faces extends Controller {
         foreach ($config as $name => $values) {
             for ($i = 0; $i < sizeof($values); $i++) {
                 $elName = $values[$i][0];
+                if(!$elName) {
+                    continue;  // not every config value is configured in the frontend
+                }
                 if (in_array($elName, $exclude)) {
                     continue;
                 }
