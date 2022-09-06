@@ -60,7 +60,7 @@ function import(&$a) {
 	Code\Module\import_faces_all($a);
 }
 
-function faces_plugin_admin(&$a, &$o) {
+function faces_plugin_admin(&$o) {
 
 	$pythoncheckmsg = "";
 	$finder1msg = "";
