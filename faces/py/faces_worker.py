@@ -42,7 +42,7 @@ class Worker:
         self.statistics = False  # True/False
         self.columnsToIncludeAll = ["model", "detector", "duration_detection", "duration_representation",
                                     "time_created", "distance", "distance_metric", "duration_recognized", "width",
-                                    "emotions", "gender_prediction"]
+                                    "emotions", "gender_prediction", "races"]
         self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.cs
         self.columnsSort = ["file", "position", "face_nr", "name", "name_recognized", "time_named", "exif_date",
                             "detector", "model", "mtime"]
