@@ -38,9 +38,9 @@ class Faces extends Controller {
 
     function get() {
 
-//----------------------------------------------------------------------
-// permisson checks
-//----------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // permisson checks
+        //----------------------------------------------------------------------
         if (!$this->owner) {
             if (local_channel()) { // if no channel name was provided, assume the current logged in channel
                 $channel = \App::get_channel();
@@ -75,7 +75,7 @@ class Faces extends Controller {
 
         $channel = \App::get_channel();
 
-// tell the browser about the log level
+        // tell the browser about the log level
         $loglevel = -1;
         $logEnabled = get_config('system', 'debugging');
         if ($logEnabled) {
@@ -85,15 +85,15 @@ class Faces extends Controller {
         if (argc() > 2) {
             switch (argv(2)) {
                 case 'settings':
-// API: /faces/nick/settings
+                    // API: /faces/nick/settings
                     $o = $this->showSettingsPage($loglevel);
                     return $o;
                 case 'remove':
-// API: /faces/nick/remove
+                    // API: /faces/nick/remove
                     $o = $this->showRemovePage($loglevel);
                     return $o;
                 case 'help':
-// API: /faces/nick/help
+                    // API: /faces/nick/help
                     $o = $this->showHelpPage();
                     return $o;
                 default:
@@ -101,9 +101,9 @@ class Faces extends Controller {
             }
         }
 
-//----------------------------------------------------------------------
-// fill some elements in the
-//----------------------------------------------------------------------
+        //----------------------------------------------------------------------
+        // fill some elements in the
+        //----------------------------------------------------------------------
 
 
         $version = $this->getAppVersion();
@@ -168,7 +168,7 @@ class Faces extends Controller {
     }
 
     private function checkOwner() {
-// Determine which channel's faces to display to the observer
+        // Determine which channel's faces to display to the observer
         $nick = null;
         if (argc() > 1) {
             $nick = argv(1); // if the channel name is in the URL, use that
@@ -199,7 +199,7 @@ class Faces extends Controller {
             return array('status' => false, 'message' => 'Owner profil has not addon installed');
         }
 
-// Leave this check because the observer needs permissions to view photos too
+        // Leave this check because the observer needs permissions to view photos too
         if (!perm_is_allowed($owner_uid, get_observer_hash(), 'view_storage')) {
             logger('Stop: Permission view storage denied', LOGGER_DEBUG);
             return array('status' => false, 'message' => 'Permission view storage denied');
@@ -334,8 +334,8 @@ class Faces extends Controller {
     }
 
     private function checkDataFiles(Directory $dir, String $path, $is_touch = false) {
-// The pyhton script is allowed to write to existing files only. It will
-// ignore images in directories where the data files are missing.
+        // The pyhton script is allowed to write to existing files only. It will
+        // ignore images in directories where the data files are missing.
         $children = $dir->getChildren();
         $check = true;
         foreach ($children as $child) {
@@ -395,15 +395,15 @@ class Faces extends Controller {
         date_default_timezone_set("UTC");
         $modified_fs = filemtime($path_fs);
         $modified_db = $file->getLastModified();
-// inside Code\Storage\File put(...) the edited time in the db is set
-// after the file is written to the file system. So it should be save
-// to compare the times here.
+        // inside Code\Storage\File put(...) the edited time in the db is set
+        // after the file is written to the file system. So it should be save
+        // to compare the times here.
         if ($modified_fs <= $modified_db) {
             return;
         }
-// assume the file was written by the python scripts. Otherwise
-// the last modified time in the file system should not be greater
-// than the time in the database
+        // assume the file was written by the python scripts. Otherwise
+        // the last modified time in the file system should not be greater
+        // than the time in the database
         logger($displaypath . " was written by python. Set file size and last modified in database and synchronize to clones...", LOGGER_DEBUG);
 
         $edited = date("Y-m-d H:i:s", $modified_fs);
@@ -530,7 +530,7 @@ class Faces extends Controller {
 
         $updated = $a[1] . " " . $a[2];
         $elapsed = strtotime(datetime_convert()) - strtotime($updated); // both UTC
-// UTC in ISO data"2015-03-25T12:00:00Z", T... seperator, Z... UTC
+        // UTC in ISO data"2015-03-25T12:00:00Z", T... seperator, Z... UTC
         $values["utc"] = $a[1] . "T" . $a[2] . "Z";
         $values["elapsed"] = $elapsed;
 
@@ -571,11 +571,11 @@ class Faces extends Controller {
             $chan_addr = $this->owner['channel_address'];
             $i = strpos($file, "/", strlen($chan_addr));
             $image = substr($file, $i + 1);
-////////////
+            ////////////
             require_once('Name.php');
             $writer = new Name();
             $success = $writer->write($names_file, $image, $face['name'], $face['id']);
-////////////
+            ////////////
             if (!$success) {
                 $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
                 logger($msg, LOGGER_NORMAL);
