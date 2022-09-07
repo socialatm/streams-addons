@@ -517,6 +517,8 @@ class Finder:
         # check if this image need to be processed
         if len(df) == 0:
             return True
+        if 0 in df["pixel"].values:
+            return False  # the detector has no face found
         existing_models = df["model"].values
         for model_name in self.model_names:
             if model_name not in existing_models:
