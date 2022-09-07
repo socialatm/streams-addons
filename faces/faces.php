@@ -132,6 +132,7 @@ function faces_plugin_admin(&$o) {
 
 function faces_plugin_admin_post(&$a) {
 
+<<<<<<< HEAD
     $block = ((x($_POST, 'block')) ? x($_POST, 'block') : false);
     set_config('faces', 'block_python', $block);
 
@@ -339,6 +340,89 @@ function faces_plugin_admin_post(&$a) {
 
     $ramcheckmsg = $ret["r"];
     set_config('faces', 'ramcheck', $ramcheckmsg);
+=======
+function faces_plugin_admin(&$o) {
+
+	$pythoncheckmsg = "";
+	$finder1msg = "";
+	$finder1checked = 0;
+	$finder2msg = "";
+	$finder2checked = 0;
+	$exiftoolmsg = "";
+	$exiftoolchecked = 0;
+
+	$ret = testPythonVersion();
+	if (!$ret['status']) {
+		$pythoncheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+	} else {
+		$pythoncheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+
+		$finder1checked = get_config('faces', 'finder1');
+		$ret = testPythonVersionCV2();
+		if (!$ret['status']) {
+			$finder1checked = 0;
+			$finder1msg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+		} else {
+			$finder1msg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+		}
+
+		$finder2checked = get_config('faces', 'finder2');
+		$ret = testPythonVersionFaceRecognition();
+		if (!$ret['status']) {
+			$finder2checked = 0;
+			$finder2msg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+		} else {
+			$finder2msg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+		}
+	}
+
+	$exiftoolchecked = get_config('faces', 'exiftool');
+	$ret = testExiftool();
+	if (!$ret['status']) {
+		$exiftoolchecked = 0;
+		$exiftoolmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
+	} else {
+		$exiftoolmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
+	}
+
+
+	$t = Theme::get_template("admin.tpl", "addon/faces/");
+
+	$limit = get_config('faces', 'limit');
+	if (!$limit) {
+		$limit = 100;
+	}
+
+	$zoom = get_config('faces', 'zoom');
+	if (!$zoom) {
+		$zoom = 3;
+	}
+
+	$maximages = get_config('faces', 'maximages');
+	if (!$maximages) {
+		$maximages = 6;
+	}
+	
+	$stats = getStatisticsAsHTML();
+
+	$o = replace_macros($t, array(
+		'$submit' => t('Submit'),
+		'$limit' => array('limit', 'Number of Images to dectect per Loop (Face Detection Scripts)', $limit, 'Number of images per detection loop (default = 100)'),
+		'$finder1' => array('finder1', "Finder 1", $finder1checked, "opencv , dnn, sklearn"),
+		'$finder1msg' => $finder1msg,
+		'$finder1config' => array('finder1config', "Finder 1 - Configuration", get_config('faces', 'finder1config'), "Leave empty or overwrite the defaults"),
+		'$finder2' => array('finder2', "Finder 2", $finder2checked, "face_recognition"),
+		'$finder2msg' => $finder2msg,
+		'$finder2config' => array('finder2config', "Finder 2 - Configuration", get_config('faces', 'finder2config'), "Leave empty or overwrite the defaults"),
+		'$exiftool' => array('exiftool', "Write Names into Images", $exiftoolchecked, "Exiftool"),
+		'$exiftoolmsg' => $exiftoolmsg,
+		'$pythoncheckmsg' => $pythoncheckmsg,
+		'$deletetables' => array('deletetables', "Delete Faces and Names of all Users", false, "Delete all rows in db tables this addon created"),
+		'$zoom' => array('zoom', 'Zoom - Start Value', $zoom, 'Number of Images displayed in a Row (allowed values 1 - 6)'),
+		'$maximages' => array('maximages', 'Number of Images the Browser loads at once (autoload)', $maximages, 'Allowed values: 2 - 20, default = 6)'),
+		'$facesstatistics' => $stats,
+	));
+>>>>>>> origin/dev
 }
 
 function stopRunningFaceRecognition() {

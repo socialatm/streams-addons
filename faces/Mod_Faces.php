@@ -245,11 +245,10 @@ class Faces extends Controller {
 
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
-            logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  names_waiting=" . json_encode($this->files_names) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+            logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
             json_return_and_die(array(
                 'status' => true,
                 'names' => $this->files_faces,
-                'names_waiting' => $this->files_names,
                 'attributes' => $this->files_attributes,
                 'immediatly' => $immediatly,
                 'sort_exif' => $sort_exif,
@@ -270,12 +269,11 @@ class Faces extends Controller {
             }
         }
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes) . ",  names_waiting=" . json_encode($this->fileNameNames), LOGGER_DEBUG);
+        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
 
         json_return_and_die(array(
             'status' => true,
             'names' => $this->files_faces,
-            'names_waiting' => $this->files_names,
             'attributes' => $this->files_attributes,
             'immediatly' => $immediatly,
             'sort_exif' => $sort_exif,
@@ -289,7 +287,6 @@ class Faces extends Controller {
             json_return_and_die(array(
                 'status' => true,
                 'names' => [],
-                'names_waiting' => [],
                 'attributes' => [],
                 'message' => "recognition (python) is blocked on this server"));
         }
@@ -302,7 +299,6 @@ class Faces extends Controller {
             json_return_and_die(array(
                 'status' => true,
                 'names' => [],
-                'names_waiting' => [],
                 'attributes' => [],
                 'message' => "recognition still running for this user"));
         }
@@ -312,12 +308,11 @@ class Faces extends Controller {
         $rm_params = "";
         $fr->start($storeDirectory, $channel_id, $recognize, $rm_params);
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes) . ",  names_waiting=" . json_encode($this->fileNameNames), LOGGER_DEBUG);
+        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
 
         json_return_and_die(array(
             'status' => true,
             'names' => [], // prevent to show old names if not processed by face recognition
-            'names_waiting' => [], // prevent to show old names if not processed by face recognition
             'attributes' => [], // prevent to show old names if not processed by face recognition
             'message' => "ok"));
     }
