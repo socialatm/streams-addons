@@ -783,7 +783,8 @@ function zoomLastPictures(img) {
     if (zoom === 1) {
         return;
     }
-    var w = $("#face-panel-pictures").width();
+    //var w = $("#face-panel-pictures").width();
+    let w = document.getElementById("face-panel-pictures").offsetWidth;
     var containers = document.getElementsByClassName("img-container-zoomable");
     if (containers.length === 1) {
         return;
