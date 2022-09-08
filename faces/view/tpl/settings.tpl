@@ -106,7 +106,7 @@
     <div class="submit">
         <input type="submit" name="page_faces" value="Submit" class="float-right">
     </div>
-
+    
     <div id="placeholdername_container" class="clearfix form-group checkbox">
         <label for="id_placeholdername">placeholdername</label>
         <div class="float-right">

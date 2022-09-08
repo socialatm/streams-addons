@@ -26,6 +26,7 @@ class Faces extends Controller {
     private $fileNameFacesStatistic = "face_statistics.csv";
     private $fileNameModelsStatistic = "model_statistics.csv";
     private $fileNameConfig = "config.json";
+    private $fileNameThresholds = "thresholds.json";
     private $files_faces = [];
     private $files_names = [];
     private $files_attributes = [];
@@ -87,6 +88,10 @@ class Faces extends Controller {
                 case 'settings':
                     // API: /faces/nick/settings
                     $o = $this->showSettingsPage($loglevel);
+                    return $o;
+                case 'thresholds':
+                    // API: /faces/nick/thresholds
+                    $o = $this->showThresholdsPage($loglevel);
                     return $o;
                 case 'remove':
                     // API: /faces/nick/remove
@@ -163,6 +168,12 @@ class Faces extends Controller {
             } elseif ($api === 'remove') {
                 // API: /faces/nick/remove
                 $this->remove();
+            } elseif ($api === 'rthresholds') {
+                // API: /faces/nick/rthresholds
+                $this->sendThresholds();
+            } elseif ($api === 'thresholds') {
+                // API: /faces/nick/thresholds
+                $this->setThresholds();
             }
         }
     }
@@ -462,6 +473,10 @@ class Faces extends Controller {
             $addonDir->createFile($this->fileNameConfig);
         }
 
+        if (!$addonDir->childExists($this->fileNameThresholds)) {
+            $addonDir->createFile($this->fileNameThresholds);
+        }
+
         return $addonDir;
     }
 
@@ -590,6 +605,16 @@ class Faces extends Controller {
         return $o;
     }
 
+    private function showThresholdsPage($loglevel) {
+
+        $o = replace_macros(Theme::get_template('thresholds.tpl', 'addon/faces'), array(
+            '$version' => $this->getAppVersion(),
+            '$loglevel' => $loglevel,
+        ));
+
+        return $o;
+    }
+
     private function sendConfig() {
         $this->prepareFiles();
         $config = $this->getConfig();
@@ -634,6 +659,63 @@ class Faces extends Controller {
         $fc->write($configFile, $config);
 
         $fr->finished();
+    }
+
+    private function getThresholds() {
+        require_once('Thresholds.php');
+        $th = new FaceThresholds();
+
+        $thresholds = [];
+
+        $file = $this->getThresholdsFile();
+        if (!$file) {
+            $thresholds = $th->getDefaults();
+            logger("using default thresholds because failed to read file", LOGGER_DEBUG);
+        } else {
+            $thresholds = $th->read($file);
+        }
+        logger("did read thresholds " . json_encode($thresholds), LOGGER_DEBUG);
+        return $thresholds;
+    }
+
+    private function sendThresholds() {
+        $this->prepareFiles();
+        $thresholds = $this->getThresholds();
+        require_once('Thresholds.php');
+        $th = new FaceThresholds();
+        $defaults = $th->getDefaults();
+        logger("Sending configuration... " . json_encode($thresholds), LOGGER_DEBUG);
+        json_return_and_die(array(
+            'thresholds' => $thresholds,
+            'defaults' => $defaults));
+    }
+
+    private function getThresholdsFile() {
+        $addonDir = $this->getAddonDir();
+        $thresholdsFile = null;
+        if ($addonDir) {
+            $thresholdsFile = $addonDir->getChild($this->fileNameThresholds);
+        }
+        return $thresholdsFile;
+    }
+
+    private function setThresholds() {
+        $this->prepareFiles();
+        //$thresholds = $this->getThresholds();
+
+        require_once('Thresholds.php');
+        $th = new FaceThresholds();
+        $defaults = $th->getDefaults();
+        foreach($defaults as $model => $model_metrics) {
+            foreach($model_metrics as $metric => $value) {
+                $received = $_POST[$model . "_" . $metric];
+                if(is_numeric($received)) {
+                    $defaults[$model][$metric] = $received;
+                }
+            }
+        }
+        $file = $this->getThresholdsFile();
+        $th->write($file, $defaults, true);
     }
 
     private function getConfig() {

@@ -25,3 +25,4 @@ faces/py/__pycache__/
 
 #Kdevelop project files
 *.kdev4
+/faces/py/venv/
