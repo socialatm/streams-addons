@@ -288,8 +288,10 @@ class Util:
                 correct = df_results.loc[(df_results['model'] == model) & (df_results['detector'] == detector) & (
                         df_results['name'] == df_results['name_recognized'])]
                 sum_correct += len(correct)
-                wrong = df_results.loc[(df_results['model'] == model) & (df_results['detector'] == detector) & (
-                        df_results['name'] != df_results['name_recognized'])]
+                wrong = df_results.loc[(df_results['model'] == model) &
+                                       (df_results['detector'] == detector) &
+                                       ( df_results['name'] != df_results['name_recognized']) &
+                                       ( df_results['name_recognized'] != "")]
                 sum_wrong += len(wrong)
                 ignored = df_results.loc[(df_results['model'] == model) & (df_results['detector'] == detector) & (
                         df_results['name'] == self.IGNORE)]
