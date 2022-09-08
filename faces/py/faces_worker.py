@@ -25,6 +25,7 @@ class Worker:
         self.recognizer = None
         self.dirImages = None
         self.file_name_config = "config.json"
+        self.file_name_config_thresholds = "thresholds.json"
         self.file_name_face_representations = "faces.gzip"
         self.file_name_faces = "faces.json"
         self.file_name_names = "names.json"
@@ -67,6 +68,7 @@ class Worker:
         self.file_names = None  # set by user via web browser (from outside)
         self.file_demography = None
         self.file_config = None
+        self.file_config_thresholds = None
         self.file_face_statistics = None
         self.file_model_statistics = None
         self.channel = None
@@ -75,6 +77,7 @@ class Worker:
         self.ram_allowed = 80  # %
 
         self.config = None
+        self.config_thresholds = None
         self.status_suffix = ""
 
     def set_finder(self, json):
@@ -244,6 +247,20 @@ class Worker:
             self.configure(conf)
         return True
 
+    def read_config_thresholds_file(self):
+        logging.debug("channel " + str(self.channel) + " - read config thresholds file")
+        if self.check_file_by_channel(self.file_name_config_thresholds) is False:
+            logging.debug("channel " + str(self.channel) + " - could not read file " + self.file_name_config_thresholds)
+            return
+        if os.path.exists(self.file_config_thresholds):
+            if os.stat(self.file_config_thresholds).st_size == 0:
+                logging.debug("channel " + str(self.channel) + " empty thresholds conf " + self.file_config_thresholds)
+                return
+        with open(self.file_config_thresholds, "r") as f:
+            conf = json.load(f)
+            self.config_thresholds = conf
+            self.recognizer.configure_thresholds(conf, self.finder.model_names)
+
     def process_dir(self, own_channel_id):
         logging.debug("Start with directory " + self.folder + " / channel " + str(self.channel))
 
@@ -383,6 +400,9 @@ class Worker:
         if self.config is None:
             if not self.read_config_file():
                 return
+        if self.config_thresholds is None:
+            self.read_config_thresholds_file()
+
         logging.info("START COMPARING FACES. Loading all necessary data...")
 
         df = self.load_face_names(folders)
@@ -702,6 +722,8 @@ class Worker:
             self.file_model_statistics = None
         elif file_name == self.file_name_config:
             self.file_config = None
+        elif file_name == self.file_name_config_thresholds:
+            self.file_config_thresholds = None
 
         display_path = os.path.join(self.dir_addon, file_name)
         query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
@@ -721,6 +743,9 @@ class Worker:
                 return True
             elif file_name == self.file_name_config:
                 self.file_config = path
+                return True
+            elif file_name == self.file_name_config_thresholds:
+                self.file_config_thresholds = path
                 return True
         logging.debug("no file or write permission, file " + display_path)
         return False

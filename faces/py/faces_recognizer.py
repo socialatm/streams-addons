@@ -12,10 +12,8 @@ class Recognizer:
         self.distance_metrics = []
         self.distance_metric_default = "cosine"
         self.first_result = True
+        self.thresholds_config = None
 
-    # csv
-    # example
-    #   distance_metric=cosine;first_result=on
     def configure(self, json):
 
         # --------------------------------------------------------------------------------------------------------------
@@ -52,6 +50,17 @@ class Recognizer:
             self.distance_metrics.append(self.distance_metric_default)
             logging.warning("Using distance_metric_default=" + self.distance_metric_default)
 
+    def configure_thresholds(self, json, model_names):
+        for model_name in model_names:
+            if json[model_name]:
+                if self.thresholds_config is None:
+                    self.thresholds_config = {}
+                for metric in self.distance_metrics:
+                    if json[model_name][metric]:
+                        if model_name not in self.thresholds_config:
+                            self.thresholds_config[model_name] = {}
+                        self.thresholds_config[model_name][metric] = float(json[model_name][metric])
+
     def train(self, names, model_name):
         self.names = names
         self.model_name = model_name
@@ -75,8 +84,11 @@ class Recognizer:
 
         thresholds = {}
         for distance_metric in self.distance_metrics:
-            threshold = dst.findThreshold(self.model_name, distance_metric)
-            thresholds[distance_metric] = threshold
+            if self.thresholds_config is not None and self.thresholds_config[self.model_name][distance_metric]:
+                thresholds[distance_metric] = self.thresholds_config[self.model_name][distance_metric]
+            else:
+                threshold = dst.findThreshold(self.model_name, distance_metric)
+                thresholds[distance_metric] = threshold
 
         #############################################################################################
         # start of face recognition
