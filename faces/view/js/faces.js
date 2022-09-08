@@ -431,27 +431,6 @@ function postNames() {
             'json');
 }
 
-function updateFaces(encodings) {
-    // the values of faces changed
-    // - if the user gave the face
-    //   o a name that was not known before (in DB an in name list)
-    //   o another name than before
-    // - the face recognition made some new guesses
-    ((loglevel >= 2) ? console.log(t() + " Update faces received from server. The faces are: " + JSON.stringify(Object.assign({}, encodings))) : null);
-    var i;
-    for (i = 0; i < encodings.length; i++) {
-        var k;
-        for (k = 0; k < receivedFaceEncodings.length; k++) {
-            if (encodings[i].id == receivedFaceEncodings[k].id) {
-                // replace and update ui (even if nothing changed)
-                receivedFaceEncodings[k] = encodings[i];
-                styleFaceFrame(receivedFaceEncodings[k]);
-                break;
-            }
-        }
-    }
-}
-
 $(".faces-search-inputs").focus(function () {
     stopLoadingImages = true;
 });
@@ -997,7 +976,7 @@ function setFrameSizes(img) {
         styleFaceFrame(face);
     }
     ((loglevel >= 3) ? console.log(t() + " finished to set frame size") : null);
-    zoomLastPictures(img);
+    //zoomLastPictures(img);
     appendNextPicture();
 }
 
@@ -1212,6 +1191,7 @@ function clearCounterImagesLoading() {
     $("#button_share_box_counter_download").html('<sub></sub>');
     ((loglevel >= 1) ? console.log(t() + " clear image counter shown to user") : null);
     animate_off();
+    zoomPictures();
 }
 
 function setCounterImagesLoading() {
