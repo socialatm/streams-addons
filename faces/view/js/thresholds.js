@@ -81,7 +81,6 @@ function setPostURL() {
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     ((loglevel >= 1) ? console.log(t() + " loglevel=" + loglevel) : null);
-    templateTextfield = $("#id_placeholdername_wrapper").prop('outerHTML');
     setPostURL();
     requestConfig();
 }

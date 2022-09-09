@@ -20,6 +20,7 @@ class Faces extends Controller {
     private $owner;
     private $observer;
     private $addonDirName = "faces";
+    private $probeDirName = "probe";
     private $fileNameEmbeddings = "faces.gzip";
     private $fileNameFaces = "faces.json";
     private $fileNameNames = "names.json";
@@ -27,6 +28,7 @@ class Faces extends Controller {
     private $fileNameModelsStatistic = "model_statistics.csv";
     private $fileNameConfig = "config.json";
     private $fileNameThresholds = "thresholds.json";
+    private $fileNameProbe = "probe.json";
     private $files_faces = [];
     private $files_names = [];
     private $files_attributes = [];
@@ -92,6 +94,10 @@ class Faces extends Controller {
                 case 'thresholds':
                     // API: /faces/nick/thresholds
                     $o = $this->showThresholdsPage($loglevel);
+                    return $o;
+                case 'probe':
+                    // API: /faces/nick/probe
+                    $o = $this->showProbePage($loglevel);
                     return $o;
                 case 'remove':
                     // API: /faces/nick/remove
@@ -174,6 +180,9 @@ class Faces extends Controller {
             } elseif ($api === 'thresholds') {
                 // API: /faces/nick/thresholds
                 $this->setThresholds();
+            } elseif ($api === 'probe') {
+                // API: /faces/nick/probe
+                $this->startProbe();
             }
         }
     }
@@ -273,7 +282,7 @@ class Faces extends Controller {
                 $storeDirectory = $this->getStoreDir();
                 $recognize = false;
                 $channel_id = $this->owner['channel_id'];
-                $fr->start($storeDirectory, $channel_id, $recognize, $rm_params);
+                $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
             }
             if ($rm_params) {
                 return;
@@ -317,7 +326,7 @@ class Faces extends Controller {
         $storeDirectory = $this->getStoreDir();
         $recognize = true;
         $rm_params = "";
-        $fr->start($storeDirectory, $channel_id, $recognize, $rm_params);
+        $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
 
         logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
 
@@ -326,6 +335,34 @@ class Faces extends Controller {
             'names' => [], // prevent to show old names if not processed by face recognition
             'attributes' => [], // prevent to show old names if not processed by face recognition
             'message' => "ok"));
+    }
+
+    private function startProbe() {
+        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
+        if ($block) {
+            json_return_and_die(array(
+                'status' => true,
+                'message' => "face recognition (python) is blocked on this server"));
+        }
+
+        require_once('FaceRecognition.php');
+        $fr = new FaceRecognition();
+
+        $channel_id = $this->owner['channel_id'];
+        if ($fr->isScriptRunning($channel_id)) {
+            json_return_and_die(array(
+                'status' => true,
+                'message' => "another face recognition is still busy"));
+        }
+
+        $storeDirectory = $this->getStoreDir();
+        $recognize = true;
+        $rm_params = "";
+        $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "--probe on ");
+
+        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+
+        notice('probe started' . EOL);
     }
 
     private function getStoreDir() {
@@ -480,6 +517,35 @@ class Faces extends Controller {
         return $addonDir;
     }
 
+    private function prepareProbeDirs() {
+
+        $channelAddress = $this->owner['channel_address'];
+        $addonDir = new Directory('/' . $channelAddress . '/' . $this->addonDirName, $this->getAuth());
+
+        $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName . DIRECTORY_SEPARATOR . $this->probeDirName;
+
+        if (!$addonDir->childExists($this->probeDirName)) {
+            $addonDir->createDirectory($this->probeDirName);
+        }
+        if (!$addonDir->getChild($this->probeDirName)->childExists($this->fileNameProbe)) {
+            !$addonDir->getChild($this->probeDirName)->createFile($this->fileNameProbe);
+        } else {
+            $this->touch($addonDir->getChild($this->probeDirName)->getChild($this->fileNameProbe), $path);
+        }
+        if (!$addonDir->getChild($this->probeDirName)->childExists("known")) {
+            !$addonDir->getChild($this->probeDirName)->createDirectory("known");
+        }
+        if (!$addonDir->getChild($this->probeDirName)->childExists("unknown")) {
+            !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
+        }
+        if (!$addonDir->getChild($this->probeDirName)->childExists("Jane")) {
+            !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
+        }
+        if (!$addonDir->getChild($this->probeDirName)->childExists("Bob")) {
+            !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+        }
+    }
+
     private function getConfigFile() {
         $addonDir = $this->getAddonDir();
         $confFile = null;
@@ -608,6 +674,18 @@ class Faces extends Controller {
     private function showThresholdsPage($loglevel) {
 
         $o = replace_macros(Theme::get_template('thresholds.tpl', 'addon/faces'), array(
+            '$version' => $this->getAppVersion(),
+            '$loglevel' => $loglevel,
+        ));
+
+        return $o;
+    }
+
+    private function showProbePage($loglevel) {
+        
+        $this->prepareProbeDirs();
+
+        $o = replace_macros(Theme::get_template('probe.tpl', 'addon/faces'), array(
             '$version' => $this->getAppVersion(),
             '$loglevel' => $loglevel,
         ));

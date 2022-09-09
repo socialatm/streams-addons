@@ -4,7 +4,7 @@ namespace Code\Module;
 
 class FaceRecognition {
 
-    function start($storeDirectory, $channel_id, $recognize, $rm_params) {
+    function start($storeDirectory, $channel_id, $recognize, $rm_params, $probe_param) {
         $status_suffix = "";
         if ($recognize) {
             $status_suffix = $channel_id;
@@ -38,7 +38,7 @@ class FaceRecognition {
 
         $param_recognize = "";
         if ($recognize) {
-            $param_recognize = " --recognize=on";
+            $param_recognize = " --recognize on";
         }
 
         @include('.htconfig.php');
@@ -46,8 +46,9 @@ class FaceRecognition {
                 . " --host " . $db_host . " --user " . $db_user . " --pass " . $db_pass . " --db " . $db_data
                 . " --imagespath " . $storeDirectory . " --channelid " . $channel_id
                 . " --procid " . $procid
-                . $param_recognize
-                . $rm_params
+                . $param_recognize . " "
+                . $rm_params . " "
+                . $probe_param . " "
                 . " --loglevel " . $loglevel . $logfileparam);
 
         logger('The pyhton script will be executed using the following command ...', LOGGER_DEBUG);
