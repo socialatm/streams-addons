@@ -274,7 +274,7 @@ class Util:
                                      'duration_detection']]
 
         df_most_effective = pd.DataFrame(
-            columns=['model', 'detector', 'accuracy', 'detected', 'verified', 'recognized', 'correct', 'wrong',
+            columns=['model', 'detector', 'accuracy', 'detected', 'recognized', 'set', 'correct', 'wrong',
                      'ignored', "seconds", 'seconds/face'])
         models = df_results.model.unique()
         detectors = df_results.detector.unique()
@@ -285,29 +285,34 @@ class Util:
             sum_detected = 0
             sum_recognized = 0
             for model in models:
-                correct = df_results.loc[(df_results['model'] == model) & (df_results['detector'] == detector) & (
-                        df_results['name'] == df_results['name_recognized'])]
+                correct = df_results.loc[(df_results['model'] == model) &
+                                         (df_results['detector'] == detector) &
+                                         (df_results['name'] != "") &
+                                         (df_results['name'] == df_results['name_recognized'])]
                 sum_correct += len(correct)
                 wrong = df_results.loc[(df_results['model'] == model) &
                                        (df_results['detector'] == detector) &
-                                       ( df_results['name'] != df_results['name_recognized']) &
-                                       ( df_results['name_recognized'] != "")]
+                                       (df_results['name'] != df_results['name_recognized']) &
+                                       (df_results['name_recognized'] != "")]
                 sum_wrong += len(wrong)
-                ignored = df_results.loc[(df_results['model'] == model) & (df_results['detector'] == detector) & (
-                        df_results['name'] == self.IGNORE)]
+                ignored = df_results.loc[(df_results['model'] == model) &
+                                         (df_results['detector'] == detector) &
+                                         (df_results['name'] == self.IGNORE)]
                 sum_ignored += len(ignored)
-                df_all = df_results.loc[
-                    (df_results['model'] == model) & (df_results['detector'] == detector), 'duration_representation']
+                df_all = df_results.loc[(df_results['model'] == model) &
+                                        (df_results['detector'] == detector), 'duration_representation']
                 if len(df_all) == 0:
                     continue
                 detected = df.loc[(df['model'] == model) & (df['detector'] == detector) & (df['pixel'] > 0)]
-                recognized = df.loc[(df['model'] == model) & (df['detector'] == detector)
-                                    & (df['pixel'] > 0) & (df['name_recognized'] != "")]
+                recognized = df.loc[(df['model'] == model) &
+                                    (df['detector'] == detector) &
+                                    (df['pixel'] > 0) &
+                                    (df['name_recognized'] != "")]
                 sum_detected += len(detected)
                 sum_recognized += len(recognized)
                 accuracy = round(len(correct) * 100 / len(df_all), 1)
                 row = {'model': model, 'detector': detector, 'accuracy': accuracy, 'detected': len(detected),
-                       'verified': len(df_all), 'recognized': len(recognized), 'correct': len(correct),
+                       'set': len(df_all), 'recognized': len(recognized), 'correct': len(correct),
                        'wrong': len(wrong), 'ignored': len(ignored), 'seconds': round(sum(df_all.values)),
                        'seconds/face': round(sum(df_all.values) / len(df_all), 2)}
                 df_most_effective = df_most_effective.append(row, ignore_index=True)
@@ -317,7 +322,7 @@ class Util:
                     continue
                 accuracy = round(sum_correct * 100 / len(df_all), 1)
                 row = {'model': "", 'detector': detector, 'accuracy': accuracy, 'detected': sum_detected,
-                       'verified': len(df_all), 'recognized': sum_recognized, 'correct': sum_correct,
+                       'set': len(df_all), 'recognized': sum_recognized, 'correct': sum_correct,
                        'wrong': sum_wrong, 'ignored': sum_ignored, 'seconds': round(sum(df_all.values)),
                        'seconds/face': round(sum(df_all.values) / len(df_all), 2)}
                 df_most_effective = df_most_effective.append(row, ignore_index=True)
