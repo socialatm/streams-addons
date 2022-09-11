@@ -31,7 +31,6 @@ class Faces extends Controller {
     private $fileNameProbe = "probe.csv";
     private $files_faces = [];
     private $files_names = [];
-    private $files_attributes = [];
 
     function init() {
 
@@ -265,11 +264,11 @@ class Faces extends Controller {
 
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
-            logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+            logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
             json_return_and_die(array(
                 'status' => true,
                 'names' => $this->files_faces,
-                'attributes' => $this->files_attributes,
+                'names_waiting' => $this->files_names,
                 'immediatly' => $immediatly,
                 'sort_exif' => $sort_exif,
                 'zoom' => $zoom,
@@ -289,12 +288,12 @@ class Faces extends Controller {
             }
         }
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+        logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
 
         json_return_and_die(array(
             'status' => true,
             'names' => $this->files_faces,
-            'attributes' => $this->files_attributes,
+            'names_waiting' => $this->files_names,
             'immediatly' => $immediatly,
             'sort_exif' => $sort_exif,
             'zoom' => $zoom,
@@ -328,21 +327,21 @@ class Faces extends Controller {
         $rm_params = "";
         $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+        logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
 
         json_return_and_die(array(
             'status' => true,
             'names' => [], // prevent to show old names if not processed by face recognition
             'attributes' => [], // prevent to show old names if not processed by face recognition
+            'names_waiting' => [],
             'message' => "ok"));
     }
 
     private function startProbe() {
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
-            json_return_and_die(array(
-                'status' => true,
-                'message' => "face recognition (python) is blocked on this server"));
+            notice('face recognition (python) is blocked on this server' . EOL);
+            return;
         }
         $this->getAddonDir();  // create probe.json (results) if it does not exist
 
@@ -361,7 +360,7 @@ class Faces extends Controller {
         $rm_params = "";
         $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "--probe on ");
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces) . ",  demography=" . json_encode($this->files_attributes), LOGGER_DEBUG);
+        logger("probe distance metrics was started", LOGGER_DEBUG);
 
         notice('probe started' . EOL);
     }
@@ -401,13 +400,17 @@ class Faces extends Controller {
                         $this->files_faces[] = $path . "/" . $this->fileNameFaces;
                     }
                     if ($dir->childExists($this->fileNameNames)) {
-                        $f = $dir->getChild($this->fileNameNames);
-                        $stream = $f->get();
-                        $contents = stream_get_contents($stream);
-                        if ($contents == "") {
-                            $f->delete();
-                        } else {
-                            $this->files_names[] = $path . "/" . $this->fileNameNames;
+//                        $f = $dir->getChild($this->fileNameNames);
+//                        $stream = $f->get();
+//                        $contents = stream_get_contents($stream);
+//                        if ($contents == "") {
+//                            //$f->delete();
+//                        } else {
+//                            $this->files_names[] = $path . "/" . $this->fileNameNames;
+//                        }
+                        $this->files_names[] = $path . "/" . $this->fileNameNames;
+                        if ($is_touch) {
+                            $this->touch($dir->getChild($this->fileNameNames), $path);
                         }
                     }
                     $check = false;
@@ -683,7 +686,7 @@ class Faces extends Controller {
     }
 
     private function showProbePage($loglevel) {
-        
+
         $this->getAddonDir(); // create probe.json (results) if it does not exist
         $this->prepareProbeDirs();
 
@@ -786,10 +789,10 @@ class Faces extends Controller {
         require_once('Thresholds.php');
         $th = new FaceThresholds();
         $defaults = $th->getDefaults();
-        foreach($defaults as $model => $model_metrics) {
-            foreach($model_metrics as $metric => $value) {
+        foreach ($defaults as $model => $model_metrics) {
+            foreach ($model_metrics as $metric => $value) {
                 $received = $_POST[$model . "_" . $metric];
-                if(is_numeric($received)) {
+                if (is_numeric($received)) {
                     $defaults[$model][$metric] = $received;
                 }
             }

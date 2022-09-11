@@ -526,6 +526,7 @@ class Worker:
         df = df.drop('min_size_train', axis=1)
         df = df.drop('min_size_result', axis=1)
 
+        logging.info("FINISHED COMPARING FACES. Checking for changes to save...")
         directories = df.directory.unique()
         for d in directories:
             df_directory = df[df['directory'] == d]
@@ -668,6 +669,8 @@ class Worker:
         else:
             logging.debug("faces have not changed. No need to store faces to file.")
 
+        self.empty_names_for_browser()
+
     def read_new_names(self, df):
         df_browser = self.get_face_names_set_by_browser()
         if df_browser is None:
@@ -686,11 +689,11 @@ class Worker:
 
         df = self.util.copy_name_to_same_faces(df)
 
-        self.empty_names_for_browser()
-
         return df
 
     def empty_names_for_browser(self):
+        if self.file_names is None:
+            return
         if os.path.exists(self.file_names):
             f = open(self.file_names, 'w')
             f.write("")

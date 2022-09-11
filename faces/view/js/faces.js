@@ -21,6 +21,8 @@ var receivedNames = [];
 var picturesProcessedID = [];
 var files_name = []; // async http post for jquery >= 1.8 seems to be not asynchronous anymore
 var counter_files_name = 0;
+var counter_files_name_waiting = 0;
+var names_waiting = [];
 
 var server_procid = "";
 var server_time = "";
@@ -43,6 +45,8 @@ function clear() {
     countFilteredImages = images.length;
     files_name = [];
     counter_files_name = 0;
+    counter_files_name_waiting = 0;
+    names_waiting = [];
     $("#face-panel-pictures").empty();
 }
 
@@ -84,7 +88,7 @@ function postStart(isStart) {
         ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
-            loadFaceData(data['names']); // creates list of images
+            loadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
         setConfig(data);
         waitForFinishedFaceDetection();
@@ -105,7 +109,7 @@ function postUpdate() {
         ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
         ((loglevel >= 2) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
-            loadFaceData(data['names']); // creates list of images
+            loadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
         setConfig(data);
     },
@@ -124,19 +128,35 @@ function setConfig(data) {
     }
 }
 
-function loadFaceData(files) {
-    var i;
-    for (i = 0; i < files.length; i++) {
-        var f = files[i];
+function loadFaceData(files, files_waiting_names) {
+    let i;
+    for (i = 0; i < files_waiting_names.length; i++) {
+        let f = files_waiting_names[i];
         ((loglevel >= 2) ? console.log(t() + " Received file " + f) : null);
-        var url = window.location.origin + "/cloud/" + f;
+        let url = window.location.origin + "/cloud/" + f;
+        jQuery.ajax({
+            url: url,
+            success: function (data) {
+                ((loglevel >= 3) ? console.log(t() + " loaded " + data) : null);
+                readWaitingNames(data);
+                if (++counter_files_name_waiting === files_waiting_names.length) {
+                    ((loglevel >= 2) ? console.log(t() + " last file was loaded: " + counter_files_name_waiting) : null);
+                }
+            },
+            async: true
+        });
+    }
+    for (i = 0; i < files.length; i++) {
+        let f = files[i];
+        ((loglevel >= 2) ? console.log(t() + " Received file " + f) : null);
+        let url = window.location.origin + "/cloud/" + f;
         jQuery.ajax({
             url: url,
             success: function (data) {
                 ((loglevel >= 3) ? console.log(t() + " loaded " + data) : null);
                 readFaces(data, f);
                 if (++counter_files_name === files.length) {
-                    ((loglevel >= 3) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
+                    ((loglevel >= 2) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
                     if (stopLoadingImages) {
                         return;
                     }
@@ -147,6 +167,39 @@ function loadFaceData(files) {
             async: true
         });
     }
+}
+/*
+ * Read names that where set by the user (browser) and are not processed
+ * yet by the face recognition. The server will send old names and the browser will
+ * show thoses old names to the user. The user will irritated because he has 
+ * set the name already and thinks something went wrong.
+ * 
+ * This function is useing face id's. This is not safe if more than one
+ * detector and one model is generating the faces.
+ */
+function readWaitingNames(faces_waiting) {
+    let i = 0;
+    while (faces_waiting.id[i]) {
+        let id = faces_waiting.id[i];
+        let name = faces_waiting.name[i];
+        names_waiting.push({id: id, name: name});
+        ((loglevel >= 2) ? console.log(t() + " stored waiting face id=" + id + ", name=" + name) : null);
+        i++;
+    }
+}
+
+function getWaitingNameForId(id) {
+    let i;
+    for (i = 0; i < names_waiting.length; i++) {
+        var id_waiting = names_waiting[i].id;
+        if (id_waiting == id) {
+            name = names_waiting[i].name;
+            ((loglevel >= 2) ? console.log(t() + " return waiting face name=" + name + " for id=" + id) : null);
+            return name;
+        }
+    }
+    ((loglevel >= 2) ? console.log(t() + " found no waiting face name for id=" + id) : null);
+    return "";
 }
 
 function readFaces(imgs, csvFile) {
@@ -160,7 +213,7 @@ function readFaces(imgs, csvFile) {
             name: imgs.name[i],
             name_recognized: imgs.name_recognized[i],
             time_named: imgs.time_named[i],
-            time: sort_exif ? imgs.exif_date[i]:imgs.mtime[i],
+            time: sort_exif ? imgs.exif_date[i] : imgs.mtime[i],
             csv_file: csvFile,
             sent: false
         };
@@ -1001,12 +1054,15 @@ function styleFaceFrame(face) {
     }
     existing_name = "";
     face_existing = getFaceForId(face.id)
-    if(face_existing.sent)  {
+    if (face_existing.sent) {
         ((loglevel >= 2) ? console.log(t() + " This face name was set already. Style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
         existing_name = face_existing.name;
+    } else {
+        existing_name = getWaitingNameForId(face.id);
     }
-    
-    if(existing_name != "") {
+
+
+    if (existing_name != "") {
         nameFrame.style.border = "rgba(255,255,255,.5)";
         name = existing_name;
         isVerified = "1";
