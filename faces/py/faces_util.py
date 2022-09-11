@@ -451,7 +451,7 @@ class Util:
         metric = next(iter(threshold))
 
         if len(probe_cols) == 0:
-            probe_cols = ["detector", "model", "metric", "distance", "details"]
+            probe_cols = ["detector", "model", "metric", "distance", "min-max-average"]
 
         result = {}
 
@@ -471,7 +471,7 @@ class Util:
             if len(distances) > 0:
                 details[name] = [round(min(distances), 4), round(max(distances), 4),
                                  round(sum(distances) / len(distances), 4)]
-            result["details"] = details
+            result["min-max-average"] = details
             df_name_false_positives = df_name.loc[(df_name['directory'] == "faces/probe/unknown")]
             false_positives = len(df_name_false_positives)
             result[name] = positives

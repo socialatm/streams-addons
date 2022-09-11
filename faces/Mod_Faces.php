@@ -344,6 +344,7 @@ class Faces extends Controller {
                 'status' => true,
                 'message' => "face recognition (python) is blocked on this server"));
         }
+        $this->getAddonDir();  // create probe.json (results) if it does not exist
 
         require_once('FaceRecognition.php');
         $fr = new FaceRecognition();
@@ -683,6 +684,7 @@ class Faces extends Controller {
 
     private function showProbePage($loglevel) {
         
+        $this->getAddonDir(); // create probe.json (results) if it does not exist
         $this->prepareProbeDirs();
 
         $o = replace_macros(Theme::get_template('probe.tpl', 'addon/faces'), array(
