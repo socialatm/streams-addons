@@ -6,6 +6,8 @@ import logging
 class Recognizer:
 
     def __init__(self):
+        self.names = None
+        self.model_name = None
         self.distance_metrics_valid = ["cosine", "euclidean", "euclidean_l2"]
         # "Euclidean L2 form seems to be more stable than cosine and regular Euclidean distance
         # based on experiments." stated from https://github.com/serengil/deepface/
@@ -70,7 +72,7 @@ class Recognizer:
     # faces... pandas.DataFrame
     # model_name... name of the face regognition model, e.g. 'VGG-Face', 'Facenet', 'Facenet512', 'ArcFace'
     # return... an array of faces that where recognized
-    def recognize(self, faces):
+    def recognize(self, faces, thresholds):
         faces_recognized = []
         if len(faces) == 0:
             logging.debug("Received no face to recognize")
@@ -82,13 +84,14 @@ class Recognizer:
         start_time = time.time()
         matches = 0
 
-        thresholds = {}
-        for distance_metric in self.distance_metrics:
-            if self.thresholds_config is not None and self.thresholds_config[self.model_name][distance_metric]:
-                thresholds[distance_metric] = self.thresholds_config[self.model_name][distance_metric]
-            else:
-                threshold = dst.findThreshold(self.model_name, distance_metric)
-                thresholds[distance_metric] = threshold
+        if thresholds is None or len(thresholds) < 1:
+            thresholds = {}
+            for distance_metric in self.distance_metrics:
+                if self.thresholds_config is not None and self.thresholds_config[self.model_name][distance_metric]:
+                    thresholds[distance_metric] = self.thresholds_config[self.model_name][distance_metric]
+                else:
+                    threshold = dst.findThreshold(self.model_name, distance_metric)
+                    thresholds[distance_metric] = threshold
 
         #############################################################################################
         # start of face recognition
@@ -103,23 +106,22 @@ class Recognizer:
                     face['model']) + " but expected model=" + self.model_name)
                 return False
 
-            def find_distance(row):
-                img2_representation = row['representation']
-                distance = 1000  # initialize very large value
-                if self.distance_metric == 'cosine':
-                    distance = dst.findCosineDistance(img1_representation, img2_representation)
-                elif self.distance_metric == 'euclidean':
-                    distance = dst.findEuclideanDistance(img1_representation, img2_representation)
-                elif self.distance_metric == 'euclidean_l2':
-                    distance = dst.findEuclideanDistance(dst.l2_normalize(img1_representation),
-                                                         dst.l2_normalize(img2_representation))
-                return distance
-
             tic = time.time()
 
-            for distance_metric in self.distance_metrics:
-                self.distance_metric = distance_metric
-                threshold = thresholds[self.distance_metric]
+            for key in thresholds:
+                distance_metric = key
+
+                def find_distance(row):
+                    img2_representation = row['representation']
+                    distance = 1000  # initialize very large value
+                    if distance_metric == 'cosine':
+                        distance = dst.findCosineDistance(img1_representation, img2_representation)
+                    elif distance_metric == 'euclidean':
+                        distance = dst.findEuclideanDistance(img1_representation, img2_representation)
+                    elif distance_metric == 'euclidean_l2':
+                        distance = dst.findEuclideanDistance(dst.l2_normalize(img1_representation),
+                                                             dst.l2_normalize(img2_representation))
+                    return distance
 
                 self.names['distance'] = self.names.apply(find_distance, axis=1)
                 self.names = self.names.sort_values(by=["distance"])
@@ -128,12 +130,14 @@ class Recognizer:
                 name = candidate['name']
                 best_distance = candidate['distance']
 
+                threshold = thresholds[distance_metric]
+
                 if best_distance <= threshold:
                     face_recognized = {'id': face['id'],
                                        'name_recognized': name,
                                        'duration_recognized': round(time.time() - tic, 5),
                                        'distance': best_distance,
-                                       'distance_metric': self.distance_metric}
+                                       'distance_metric': distance_metric}
                     # logging.debug("a face was recognized as " + str(name) + ", face id=" + str(
                     #     face['id']) + ", model=" + self.model_name + ", file=" + face['file'])
                     faces_recognized.append(face_recognized)
@@ -143,3 +147,14 @@ class Recognizer:
                      "s " + self.model_name)
 
         return faces_recognized
+
+    def create_probe_thresholds(self, metric):
+        probe_thresholds = []
+        if self.thresholds_config is None:
+            default_threshold = dst.findThreshold(self.model_name, metric)
+        else:
+            default_threshold = self.thresholds_config[self.model_name][metric]
+        for x in range(5, 16, 1):
+            t = x / 10 * default_threshold
+            probe_thresholds.append({metric: t})
+        return probe_thresholds

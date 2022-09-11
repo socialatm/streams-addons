@@ -28,7 +28,7 @@ class Faces extends Controller {
     private $fileNameModelsStatistic = "model_statistics.csv";
     private $fileNameConfig = "config.json";
     private $fileNameThresholds = "thresholds.json";
-    private $fileNameProbe = "probe.json";
+    private $fileNameProbe = "probe.csv";
     private $files_faces = [];
     private $files_names = [];
     private $files_attributes = [];
@@ -505,6 +505,11 @@ class Faces extends Controller {
                 $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
             }
         }
+        if (!$addonDir->childExists($this->fileNameProbe)) {
+            !$addonDir->createFile($this->fileNameProbe);
+        } else {
+            $this->touch($addonDir->getChild($this->fileNameProbe), $path);
+        }
 
         if (!$addonDir->childExists($this->fileNameConfig)) {
             $addonDir->createFile($this->fileNameConfig);
@@ -526,11 +531,6 @@ class Faces extends Controller {
 
         if (!$addonDir->childExists($this->probeDirName)) {
             $addonDir->createDirectory($this->probeDirName);
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists($this->fileNameProbe)) {
-            !$addonDir->getChild($this->probeDirName)->createFile($this->fileNameProbe);
-        } else {
-            $this->touch($addonDir->getChild($this->probeDirName)->getChild($this->fileNameProbe), $path);
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("known")) {
             !$addonDir->getChild($this->probeDirName)->createDirectory("known");

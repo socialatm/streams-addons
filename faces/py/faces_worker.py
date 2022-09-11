@@ -31,6 +31,7 @@ class Worker:
         self.file_name_names = "names.json"
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
+        self.file_name_probe = "probe.csv"
         self.dir_addon = "faces"
 
         # Watch this!
@@ -71,13 +72,13 @@ class Worker:
         self.file_config_thresholds = None
         self.file_face_statistics = None
         self.file_model_statistics = None
+        self.file_probe = None
         self.channel = None
         self.util = faces_util.Util()
 
         self.ram_allowed = 80  # %
 
         self.config = None
-        self.config_thresholds = None
         self.status_suffix = ""
 
     def set_finder(self, json):
@@ -174,8 +175,9 @@ class Worker:
 
         self.util.is_css_position = self.finder.css_position
 
-    def run(self, dir_images, proc_id, own_channel_id, is_recognize):
-        logging.info("start dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
+    def run(self, dir_images, proc_id, own_channel_id, is_recognize, is_probe):
+        logging.info("start dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" +
+                     str(own_channel_id) + ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
 
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
@@ -224,13 +226,26 @@ class Worker:
                 # recognize only
                 # - if set as parameter from caller
                 # - for the user who called the script
-                self.recognize(folders)
+                if is_probe and is_recognize:
+                    folders = self.getProbeFolders()
+                    if not folders:
+                        continue
+                self.recognize(folders, is_probe)
             else:
                 logging.debug("no recognition, user channel  " + str(self.own_channel_id) + " != " + str(self.channel))
                 continue
 
         self.write_alive_signal(self.FINISHED)
         logging.info("finished dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
+
+    def getProbeFolders(self, ):
+        query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s AND `display_path` LIKE 'faces/probe/%'"
+        data = (self.channel, self.file_name_faces)
+        folders = self.db.select(query, data)
+        if len(folders) == 0:
+            logging.info("no probe pictures/names for channel " + str(self.channel))
+            return False
+        return folders
 
     def read_config_file(self):
         logging.debug("channel " + str(self.channel) + " - read config file")
@@ -258,7 +273,6 @@ class Worker:
                 return
         with open(self.file_config_thresholds, "r") as f:
             conf = json.load(f)
-            self.config_thresholds = conf
             self.recognizer.configure_thresholds(conf, self.finder.model_names)
 
     def process_dir(self, own_channel_id):
@@ -393,15 +407,16 @@ class Worker:
     # 6. Write the CSV (faces.json) if the values for "name" or "name_recognized" have changed
     # 7. If history is switched on: write faces.gzip (including now all face embedding AND names)
     #
-    def recognize(self, folders):
+    def recognize(self, folders, is_probe):
 
         # Read the configuration set by admin/user
         #
         if self.config is None:
-            if not self.read_config_file():
-                return
-        if self.config_thresholds is None:
+            self.read_config_file()
+        if self.recognizer.thresholds_config is None:
             self.read_config_thresholds_file()
+        probe_results = []
+        probe_cols = []
 
         logging.info("START COMPARING FACES. Loading all necessary data...")
 
@@ -450,13 +465,13 @@ class Worker:
                 df.loc[(df['model'] == model) &
                        (df['detector'] == detector) &
                        (df['name'] == "") &  # keep history of recognized names for statitstics
-                       (df['name'] != self.IGNORE) &  # the user has set this face to "ignore" (this is no face, meant like)
+                       (df['name'] != self.IGNORE) &  # the user has set this face to "ignore"
                        (df['duration_representation'] != 0.0) &
                        (df['time_named'] == ""),  # the user has set the name to "unknown"
                        ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
 
                 # Filter faces as training data
-                logging.debug( model + " " + detector + " gathering faces as training data...")
+                logging.debug(model + " " + detector + " gathering faces as training data...")
                 df_training_data = df.loc[
                     (df['model'] == model) &
                     (df['detector'] == detector) &
@@ -472,22 +487,39 @@ class Worker:
                 if len(df_model) == 0:
                     logging.debug("No faces to search for model=" + model)
                     continue
-                faces = self.recognizer.recognize(df_model)
-                if faces:
-                    # write result of matches (faces found) into the embeddings file
-                    for face in faces:
-                        face_id = face['id']
-                        df.loc[
-                            df['id'] == face_id,
-                            ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
-                            [
-                                face['name_recognized'],
-                                face['duration_recognized'],
-                                face['distance'],
-                                face['distance_metric']
-                            ]
-                    if self.recognizer.first_result:
-                        df_no_name = self.remove_other_than_recognized(faces, df_no_name)
+
+                if is_probe:
+                    for metric in self.recognizer.distance_metrics:
+                        probe_thresholds = self.recognizer.create_probe_thresholds(metric)
+                        for t in probe_thresholds:
+                            faces = self.recognizer.recognize(df_model, t)
+                            if faces:
+                                df = self.util.prepare_probe(df, model)
+                                results = self.util.analyse_probe(
+                                    df, faces, detector, model, t, probe_results, probe_cols)
+                                probe_results = results[0]
+                                probe_cols = results[1]
+                else:
+                    faces = self.recognizer.recognize(df_model, None)
+                    if faces:
+                        # write result of matches (faces found) into the embeddings file
+                        for face in faces:
+                            face_id = face['id']
+                            df.loc[
+                                df['id'] == face_id,
+                                ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
+                                [
+                                    face['name_recognized'],
+                                    face['duration_recognized'],
+                                    face['distance'],
+                                    face['distance_metric']
+                                ]
+                        if self.recognizer.first_result:
+                            df_no_name = self.remove_other_than_recognized(faces, df_no_name)
+        if is_probe:
+            result = self.util.build_probe_results(probe_results, probe_cols)
+            self.write_probe(result)
+            return
 
         most_effective_method = self.util.get_most_successful_method(df, False)
 
@@ -724,6 +756,8 @@ class Worker:
             self.file_config = None
         elif file_name == self.file_name_config_thresholds:
             self.file_config_thresholds = None
+        elif file_name == self.file_name_probe:
+            self.file_probe = None
 
         display_path = os.path.join(self.dir_addon, file_name)
         query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
@@ -746,6 +780,9 @@ class Worker:
                 return True
             elif file_name == self.file_name_config_thresholds:
                 self.file_config_thresholds = path
+                return True
+            elif file_name == self.file_name_probe:
+                self.file_probe = path
                 return True
         logging.debug("no file or write permission, file " + display_path)
         return False
@@ -928,6 +965,12 @@ class Worker:
             f = open(self.file_model_statistics, 'w')
             f.write("")
             f.close()
+
+    def write_probe(self, results):
+        if self.check_file_by_channel(self.file_name_probe) is False:
+            return
+        df = pd.DataFrame.from_dict(results)
+        df.to_csv(self.file_probe)
 
     def set_time_to_wait(self, seconds):
         self.timeToWait = seconds

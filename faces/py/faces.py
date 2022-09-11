@@ -16,6 +16,7 @@ parser.add_argument("--loglevel")
 parser.add_argument("--logfile")
 parser.add_argument("--procid")
 parser.add_argument("--recognize")
+parser.add_argument("--probe")
 parser.add_argument("--rm_detectors")
 parser.add_argument("--rm_models")
 parser.add_argument("--rm_names")
@@ -97,6 +98,11 @@ if args["recognize"]:
     is_recognize = True
 logging.debug("recognize  = " + str(is_recognize))
 
+is_probe = False
+if args["probe"]:
+    is_probe = True
+logging.debug("probe  = " + str(is_probe))
+
 worker = faces_worker.Worker()
 
 if logData:
@@ -114,7 +120,7 @@ worker.set_db(db)
 # +++++++++++++++++++
 # run
 # +++++++++++++++++++
-worker.run(args["imagespath"], args["procid"], channel_id, is_recognize)
+worker.run(args["imagespath"], args["procid"], channel_id, is_recognize, is_probe)
 
 db.close()
 logging.info("OK, good by...")

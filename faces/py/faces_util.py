@@ -428,3 +428,68 @@ class Util:
         ram_percent = int(round((used_memory / total_memory) * 100, 2))
         logging.debug("RAM memory used: " + str(ram_percent) + "%")
         return ram_percent
+
+    def prepare_probe(self, df, model):
+        df.loc[(df['model'] == model), ['name_recognized', 'distance']] = ["", ""]
+        return df
+
+    def analyse_probe(self, df, faces, detector, model, threshold, probe_results, probe_cols):
+        for face in faces:
+            face_id = face['id']
+            df.loc[df['id'] == face_id, ['name_recognized', 'distance']] = [face['name_recognized'], face['distance']]
+
+        dirs = df.directory.unique()
+        names = []
+        for d in dirs:
+            name = d[d.rfind("/") + 1:]
+            if name != "known" and name != "unknown":
+                names.append(name)
+
+        if len(names) == 0:
+            return probe_results
+
+        metric = next(iter(threshold))
+
+        if len(probe_cols) == 0:
+            probe_cols = ["detector", "model", "metric", "distance", "details"]
+
+        result = {}
+
+        result["detector"] = detector
+        result["model"] = model
+        result["metric"] = metric
+        result["distance"] = round(threshold[metric], 4)
+        for name in names:
+            df_name = df.loc[
+                (df['model'] == model) &
+                (df['detector'] == detector) &
+                (df['name_recognized'] == name), ['distance', 'directory']]
+            df_name_positives = df_name.loc[(df_name['directory'] == "faces/probe/" + name)]
+            positives = len(df_name_positives)
+            distances = df_name_positives["distance"].values # take no distances from directory unknown
+            details = {}
+            if len(distances) > 0:
+                details[name] = [round(min(distances), 4), round(max(distances), 4),
+                                 round(sum(distances) / len(distances), 4)]
+            result["details"] = details
+            df_name_false_positives = df_name.loc[(df_name['directory'] == "faces/probe/unknown")]
+            false_positives = len(df_name_false_positives)
+            result[name] = positives
+            result[name + "-in-unknown"] = false_positives
+            if name not in probe_cols:
+                probe_cols.append(name)
+                probe_cols.append(name + "-in-unknown")
+
+        probe_results.append(result)
+
+        return [probe_results, probe_cols]
+
+    def build_probe_results(self, probe_results, probe_cols):
+        result = []
+
+        for r in probe_results:
+            row = {}
+            for col in probe_cols:
+                row[col] = r[col]
+            result.append(row)
+        return result
