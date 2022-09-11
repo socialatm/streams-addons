@@ -31,12 +31,12 @@
     <div id="face_size_detection">
         <h3>Minimum Face Size - Detection</h3>
         <div>Faces smaller than this will be ignored.</div>
+        <div>Changing values here will have no effect on already detected faces.</div>
     </div>
     <div id="face_size_recognition">
-        <h3>Minimum Face Size - Recognition</h3>
-        <div>"training"... faces given a name by the user and now used to find the same person in other pictures.</div>
-        <div>"result"... faces not given a name by the user yet or marked as unknown.</div>
-        <div>Sizes are in pixel. </div>
+        <h3>Minimum Face Size - Recognition (Matching of Faces)</h3>
+        <div>"training" [pixel] ... training data, faces the user gave a name</div>
+        <div>"result" [pixel] ... faces to match with the training data</div>
     </div>
     <h2>Statistics</h2>
     <div id="face_history">
