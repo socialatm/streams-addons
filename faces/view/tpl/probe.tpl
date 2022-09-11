@@ -14,7 +14,7 @@
             </ul>
             by <a class='link_correction' href="faces/channel-nick/thresholds">overwriting</a> the default thresholds</li>
         <li>compare the accuracy of combinations of detector, model and distance metric
-        and help you to choose one that works best for you</li>
+            and help you to choose one that works best for you</li>
     </ul>
     <h2>What will happen?</h2>
     <p>
@@ -41,47 +41,69 @@
             Activate some detectors and models in the <a class='link_correction' href="faces/channel-nick/settings">settings</a>
         </li>
         <li>
-            Upload some pictures WITH Bob and Jane into the directory 
-            <a class='link_correction' href="cloud/channel-nick/faces/probe/known">known</a>
-            (It does not matter if more persons than Bob and Jane are in the pictures.)
-        </li>
-        <li>
-            Use the <a class='link_correction' href="faces/channel-nick">addon</a> 
-            to detect and name faces of Jane and Bob you uploaded to 
-            <a class='link_correction' href="faces/channel-nick">known</a> before.
-            <br>Hint: The browser sorts pictures for upload time. Pictures that you
-            just uploaded will land on top of older pictures.
-            <br>You can sort the pictures for the time they where shot.
-            Please use the setting "exif" in
-            the <a class='link_correction' href="faces/channel-nick/settings">settings</a>.
-        </li>
-        <li>
-            Copy some pictures of
+            Train the face recogntion. Use the directory 
+            <a class='link_correction' href="cloud/channel-nick/faces/probe/known">known</a>.
             <ul>
                 <li>
-                    Jane into <a class='link_correction' href="cloud/channel-nick/faces/probe/Jane">Jane</a>
-                    (rename as you like)
+                    Upload some pictures WITH Bob and Jane into the directory 
+                    <a class='link_correction' href="cloud/channel-nick/faces/probe/known">known</a>
+                    (It does not matter if other persons than Bob and Jane are shown in the pictures.)
                 </li>
                 <li>
-                    Bob into <a class='link_correction' href="cloud/channel-nick/faces/probe/Bob">Bob</a>
-                    (rename as you like)
+                    Use the <a class='link_correction' href="faces/channel-nick">addon</a> 
+                    to detect and name faces of Jane and Bob you uploaded to 
+                    <a class='link_correction' href="faces/channel-nick">known</a> before.
+                    <br>Hint: The browser sorts pictures for upload time. Pictures that you
+                    just uploaded will land on top of older pictures.
+                    <br>You can sort the pictures for the time they where shot.
+                    Please use the setting "exif" in
+                    the <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+                    page.
                 </li>
-                <li>...(create more, the name of the directory and person must be identical)</li>
             </ul>
-            Each picture should show one person only, e.g. Jane, Bob,...
-            <br>Do not set names for them. Leave this to the face recognition.
-            <br>(That is the purpose of the whole exercise: The face recognition
-            should find Jane and Bob in every single picture.)
         </li>
         <li>
-            Copy some pictures WITHOUT Jane and Bob into 
-            <a class='link_correction' href="cloud/channel-nick/faces/probe/unknown">unknown</a>.
-            <br>(That is the purpose of the whole exercise: The face recognition 
-            should not find Jane and Bob in this directory.)
+            Show persons to the face recognition it was trained for, see above.
+            <ul>
+                <li>
+                    Copy some pictures of
+                    <ul>
+                        <li>
+                            Jane into <a class='link_correction' href="cloud/channel-nick/faces/probe/Jane">Jane</a>
+                            (rename as you like)
+                        </li>
+                        <li>
+                            Bob into <a class='link_correction' href="cloud/channel-nick/faces/probe/Bob">Bob</a>
+                            (rename as you like)
+                        </li>
+                        <li>...(create more, the name of the directory and person must be identical)</li>
+                    </ul>
+                <li>
+                    Attention: Each picture should show one person only, e.g. Jane, Bob,...
+                </li>
+                <li>
+                    Attention: Do not set names for them. Leave this to the face recognition.
+                    <br>(That is the purpose of the whole exercise: The face recognition
+                    should find Jane and Bob in every single picture.)
+                </li>
+                </li>
+            </ul>
         </li>
         <li>
-            Seclect the detectors, models and distance metrics you want to probe 
-            under <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+            Show different persons to the face recognition it was not trained for.
+            Use the directory <a class='link_correction' href="cloud/channel-nick/faces/probe/unknown">unknown</a>.
+            <ul>
+                <li>
+                    Copy some pictures WITHOUT Jane and Bob into 
+                    <a class='link_correction' href="cloud/channel-nick/faces/probe/unknown">unknown</a>.
+                    <br>(That is the purpose of the whole exercise: The face recognition 
+                    should not find Jane and Bob in this directory.)
+                </li>
+            </ul>
+        </li>
+        <li>
+            Select the detectors, models and distance metrics you want to probe 
+            in <a class='link_correction' href="faces/channel-nick/settings">settings</a>
         </li>
         <li>
             Come back <a class='link_correction' href="faces/channel-nick/probe">here</a> 
@@ -97,6 +119,23 @@
             before.
         </li>
     </ul>
+    
+    <h2>Interpretation</h2>
+    <p>
+        The results in <a class='link_correction' href="cloud/channel-nick/faces/probe.json">probe.json</a>
+        should be self-explanatory.
+    </p>
+    <p>
+        It might be helpfull to look into the file        
+        <a class='link_correction' href="cloud/channel-nick/faces/face_statistics.csv">face_statistics.csv</a>
+        in <a class='link_correction' href="cloud/channel-nick/faces">faces</a>.
+        This file shows all the details about faces, what detectors found what face,
+        what model recognized a face,...
+        <br>To fill this file activate the setting "statistics" in the
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+        page and start the face recognition again by reloading the
+        <a class='link_correction' href="faces/channel-nick">addon</a>.
+    </p>
 
 
     <div class="submit">
