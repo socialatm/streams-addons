@@ -3,11 +3,11 @@ import os
 import pickle
 import pandas as pd
 import time
-import datetime
 import logging
 import sys
 import faces_exiftool
 import faces_util
+import json
 
 deepface_spec = importlib.util.find_spec("deepface")
 if deepface_spec is not None:
@@ -18,16 +18,17 @@ if deepface_spec is not None:
 class Worker:
 
     def __init__(self):
-        self.log_data = False
         self.finder = None
         self.recognizer = None
         self.dirImages = None
+        self.file_name_config = "config.json"
+        self.file_name_config_thresholds = "thresholds.json"
         self.file_name_face_representations = "faces.gzip"
-        self.file_name_facial_attributes = "demography.json"
         self.file_name_faces = "faces.json"
         self.file_name_names = "names.json"
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
+        self.file_name_probe = "probe.csv"
         self.dir_addon = "faces"
 
         # Watch this!
@@ -39,117 +40,102 @@ class Worker:
         self.keep_history = False  # True/False
         self.statistics = False  # True/False
         self.columnsToIncludeAll = ["model", "detector", "duration_detection", "duration_representation",
-                                    "time_created", "distance", "distance_metric", "duration_recognized", "width"]
-        self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.csv
+                                    "time_created", "distance", "distance_metric", "duration_recognized", "width",
+                                    "emotions", "gender_prediction", "races"]
+        self.columnsToInclude = []  # ["model", "detector"] extra columns if faces.json / faces.cs
         self.columnsSort = ["file", "position", "face_nr", "name", "name_recognized", "time_named", "exif_date",
                             "detector", "model", "mtime"]
-        self.timeLastAliveSignal = 0
         self.timeBackUp = 60 * 5  # second
-        self.lockFile = None
-        self.RUNNING = "running"
-        self.FINISHED = "finished"
-        self.pid = ""
         self.exiftool = None
-        self.removeDetectors = ""
-        self.removeModels = ""
+        self.remove_detectors = ""
+        self.remove_models = ""
         self.is_remove_names = False
         self.IGNORE = "-ignore-"
         self.sort_column = "mtime"
-        self.sort_direction = False
+        self.sort_ascending = False
+
         self.follow_sym_links = False
-        self.faces_statistics = None
-        self.models_statistics = None
+
+        self.file_face_statistics = None
+        self.file_model_statistics = None
         self.util = faces_util.Util()
 
-        self.ram_allowed = 90  # %
+        self.ram_allowed = 80  # %
 
-    def set_finder(self, csv):
+        self.config = None
+
+    def set_finder(self, json):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.finder = faces_finder.Finder()
-            self.finder.configure(csv)
+            self.finder.configure(json)
+            self.finder.ram_allowed = self.ram_allowed
+            self.finder.util = self.util
         else:
             logging.error("FAILED to set finder. Reason: module deepface not found")
 
-    def set_recognizer(self, csv):
-        deepface_spec = importlib.util.find_spec("deepface")
-        if deepface_spec is not None:
+    def set_recognizer(self, json):
+        deepface_specs = importlib.util.find_spec("deepface")
+        if deepface_specs is not None:
             self.recognizer = faces_recognizer.Recognizer()
-            self.recognizer.configure(csv)
+            self.recognizer.configure(json)
         else:
             logging.critical("FAILED to set finder. Reason: module deepface not found")
 
-    def configure(self, csv):
-        # example csv
-        # optional-face-data=duration_detection,duration_representation,time_created,distance,distance_metric,duration_recognized;statistics=True
-        for element in csv.split(";"):
-            conf = element.split("=")
-            if len(conf) < 2:
-                continue
-            key = conf[0].strip().lower()
-            value = conf[1].strip().lower()
-            if key == 'optional-face-data':
-                self.columnsToInclude = []
-                s = conf[1].split(",")
-                for column in s:
-                    column = column.strip().lower()
-                    if column in self.columnsToIncludeAll:
-                        self.columnsToInclude.append(column)
-                    else:
-                        logging.warning(column + " is not a valid column in faces.csv")
-                        logging.warning("Valid columns are: " + str(self.columnsToIncludeAll))
-            elif key == 'log_data':
-                if value == "on":
-                    self.log_data = True
-                if value == "off":
-                    self.log_data = False
-            elif key == 'statistics':
-                if value == "on" or value == 'true':
-                    self.statistics = True
-            elif key == 'history':
-                if value == "on" or value == "true":
-                    self.keep_history = True
-            elif key == 'sort_column':
-                column = value
-                if column in self.columnsSort:
-                    self.sort_column = column
-            elif key == 'sort_ascending':
-                if value == "1":
-                    self.sort_direction = False
+    def configure(self, json):
+
+        if "worker" in json:
+
+            # --------------------------------------------------------------------------------------------------------------
+            # set by admin in frontend
+
+            if "ram" in json["worker"]:
+                if isinstance(json["worker"]["ram"], str) and json["worker"]["ram"].isdigit():
+                    self.ram_allowed = int(json["worker"]["ram"])
                 else:
-                    self.sort_direction = True
-            elif key == 'follow_sym_links':
-                if value == "on":
-                    self.follow_sym_links = True
-            elif key == 'rm_detectors':
-                self.removeDetectors = conf[1].strip()
-                logging.debug("Configuration rm_detectors=" + self.removeDetectors)
-            elif key == 'rm_models':
-                self.removeModels = conf[1].strip()
-                logging.debug("Configuration rm_models=" + self.removeModels)
-            elif key == 'rm_names':
-                if value == "on" or value == "true":
-                    self.is_remove_names = True
+                    self.ram_allowed = json["worker"]["ram"]
 
-            elif conf[0].strip().lower() == 'ram':
-                ram = conf[1]
-                if ram.isdigit():
-                    self.ram_allowed = int(ram)
-                    logging.debug("set the max allowed ram to " + str(self.ram_allowed) + " %")
+            # --------------------------------------------------------------------------------------------------------------
+            # not set by user in frontend
+            if "sort_column" in json["worker"]:
+                self.sort_column = json["worker"]["sort_column"]
+
+            if "sort_ascending" in json["worker"]:
+                self.sort_ascending = json["worker"]["sort_ascending"]
+
+            if "interval_backup_detection" in json["worker"]:
+                if isinstance(json["worker"]["interval_backup_detection"], str) \
+                        and json["worker"]["interval_backup_detection"].isdigit():
+                    self.timeBackUp = int(json["worker"]["interval_backup_detection"])
                 else:
-                    logging.warning(str(ram) + " is not a number. Set to default " + str(self.ram_allowed) + " %")
+                    self.timeBackUp = json["worker"]["interval_backup_detection"]
 
-        logging.debug("Configuration log_data=" + str(self.log_data))
-        logging.debug("Configuration statistics=" + str(self.statistics))
-        logging.debug("Configuration history=" + str(self.keep_history))
-        logging.debug("Configuration sort_column=" + self.sort_column)
-        logging.debug("Configuration sort_ascending (ascending)=" + str(self.sort_direction))
-        logging.debug("Configuration follow_sym_links=" + str(self.follow_sym_links))
-        logging.debug("Configuration ram=" + str(self.ram_allowed))
-        logging.debug("Configuration rm_names=" + str(self.is_remove_names))
+        logging.debug("config: ram=" + str(self.ram_allowed))
+        logging.debug("config: sort_column=" + str(self.sort_column))
+        logging.debug("config: sort_ascending=" + str(self.sort_ascending))
+        logging.debug("config: interval_backup_detection=" + str(self.timeBackUp))
 
-        self.set_finder(csv)
-        self.set_recognizer(csv)
+        # --------------------------------------------------------------------------------------------------------------
+        # set by user in frontend
+
+        if "statistics" in json:
+            self.statistics = json["statistics"][0][1]
+        logging.debug("config: statistics=" + str(self.statistics))
+
+        if "history" in json:
+            self.keep_history = json["history"][0][1]
+        logging.debug("config: keep_history=" + str(self.keep_history))
+
+        # --------------------------------------------------------------------------------------------------------------
+        # set directly by calling script
+
+        logging.debug("config: rm_names=" + str(self.is_remove_names))
+        logging.debug("config: rm_models=" + str(self.remove_models))
+        logging.debug("config: rm_detectors=" + str(self.remove_detectors))
+        # --------------------------------------------------------------------------------------------------------------
+
+        self.set_finder(json)
+        self.set_recognizer(json)
 
         self.exiftool = faces_exiftool.ExifTool()
         if not self.exiftool.getVersion():
@@ -159,31 +145,100 @@ class Worker:
 
         self.util.is_css_position = self.finder.css_position
 
-    def run(self, dir_images, do_recognize):
-        logging.info("detector is " + self.finder.detector_name)
+    def run(self, dir_images, is_recognize, is_probe):
+        logging.info("start dir=" + dir_images ++ ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
-            logging.error("can not read directory " + self.dirImages)
+            logging.error("can not read image directory " + self.dirImages)
             sys.exit(1)
+        folders = []
         exclude = set(['lost+found', '.Trash-1000'])
         for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links, topdown=True):
             dirnames[:] = [d for d in dirnames if d not in exclude]  # works because of topdown=True is set
-            logging.debug(dir + " - start processing directory")
-            self.process_dir(dir)
-        logging.debug(self.finder.detector_name + " finished")
-        if do_recognize:
-            self.recognize()
+            folders.append(dir)
+
+        if not is_recognize:
+            # --------------------------------------------
+            # Detection
+            # --------------------------------------------
+            # detect faces in all folders containing images for a user
+            for folder in folders:
+                self.process_dir(folder)
+
+        # --------------------------------------------
+        # Recognition
+        # --------------------------------------------
+        # recognize only
+        # - if set as parameter from caller
+        # - for the user who called the script
+        if is_probe and is_recognize:
+            folders = self.get_probe_folders()
+            if not folders:
+                return
+        self.recognize(folders, is_probe)
 
     def process_dir(self, dir):
-        logging.debug(dir + " - start detecting/analyzing")
+        logging.debug("Start with directory " + dir)
 
         if not self.check_write_access(dir):
             return
 
+        # -------------------------------------------------------------
+        # Read the configuration set by admin/user
+        #
+        if self.config is None:
+            if not self.read_config_file():
+                return
+
+        # -------------------------------------------------------------
+        # Cleanup
+        #
+        # - Remove faces of images that do not exist anymore in a subdirectory
+        # - Remove faces for certain detectors and/or models (if set as parameter by the caller)
         self.cleanup(dir)
         self.remove_names(dir)
+
+        # -------------------------------------------------------------
+        # Detect
+        #
+        # process all images
         self.detect(dir)
-        self.analyse(dir)
+
+    def get_probe_folders(self, ):
+        folders = []
+        exclude = set(['lost+found', '.Trash-1000'])
+        for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links, topdown=True):
+            dirnames[:] = [d for d in dirnames if d not in exclude]  # works because of topdown=True is set
+            folders.append(dir)
+        return folders
+
+    def read_config_file(self):
+        conf_file = os.path.join(self.dirImages, self.dir_addon, self.file_name_config)
+        if not os.path.exists(conf_file) or not os.access(conf_file, os.R_OK):
+            logging.debug("config file not found " + conf_file)
+            return False
+        if os.stat(conf_file).st_size == 0:
+            logging.debug("config file is empty " + conf_file)
+            return False
+        logging.debug("read config from file " + conf_file)
+        with open(conf_file, "r") as f:
+            conf = json.load(f)
+            self.config = conf
+            self.configure(conf)
+        return True
+
+    def read_config_thresholds_file(self):
+        logging.debug("read config thresholds file")
+        conf_file = os.path.join(self.dirImages, self.dir_addon, self.file_name_config_thresholds)
+        if not os.path.exists(conf_file) or not os.access(conf_file, os.R_OK):
+            logging.debug("config file thresholds not found " + conf_file)
+            return False
+        if os.stat(conf_file).st_size == 0:
+            logging.debug("config file thresholds is empty " + conf_file)
+            return False
+        with open(conf_file, "r") as f:
+            conf = json.load(f)
+            self.recognizer.configure_thresholds(conf, self.finder.model_names)
 
     # Find and store all face representations for face recognition.
     # The face representations are stored in binary pickle file.
@@ -608,8 +663,8 @@ class Worker:
 
     def check_file_access_statistics(self):
         addon_directory = os.path.join(self.dirImages, self.dir_addon)
-        self.faces_statistics = os.path.join(addon_directory, self.file_name_faces_statistic)
-        self.models_statistics = os.path.join(addon_directory, self.file_name_models_statistic)
+        self.file_face_statistics = os.path.join(addon_directory, self.file_name_faces_statistic)
+        self.file_model_statistics = os.path.join(addon_directory, self.file_name_models_statistic)
         if not os.path.exists(addon_directory) and os.access(self.dirImages, os.W_OK):
             os.mkdir(addon_directory)
         if os.path.exists(addon_directory) and os.path.isdir(addon_directory) and os.access(addon_directory, os.W_OK):
@@ -706,7 +761,7 @@ class Worker:
         df.to_json(path)
 
     def cleanup(self, dir):
-        logging.debug(dir + " - 1. Step: cleaning up ---")
+        logging.debug(dir + " cleaning up...")
         images = self.get_images(dir)
         df = self.get_face_representations(dir)
         if df is not None:
@@ -730,17 +785,6 @@ class Worker:
                 if len(i) > 0:
                     logging.info(dir + " - " + str(len(images)) + " faces removed from face names")
 
-        df = self.get_facial_attributes(dir)
-        if df is not None:
-            keys = self.util.remove_detector_model(df, "", self.removeDetectors, dir)
-            i = df[~df.file.isin(images)].index
-            keys.extend(i.to_list())
-            if len(keys) > 0:
-                df = df.drop(keys)
-                self.store_facial_attributes(df, dir)
-                if len(i) > 0:
-                    logging.info(dir + " - " + str(len(i)) + " faces removed from facial attributes")
-
     def remove_names(self, dir):
         if self.is_remove_names:
             df = self.get_face_representations(dir)
@@ -763,7 +807,7 @@ class Worker:
             if not self.check_file_access_statistics():
                 return
             df = df.drop('representation', axis=1)
-            df.to_csv(self.faces_statistics)
+            df.to_csv(self.file_face_statistics)
             logging.debug("Wrote face statistics to file=" + self.file_name_faces_statistic)
             df_models = self.util.get_most_successful_method(df, True)
             name_count = len(df.name.unique()) - 1
@@ -773,13 +817,13 @@ class Worker:
             row = {'model': message, 'detector': "", 'accuracy': "", 'detected': "", 'verified': "", 'recognized': "",
                    'correct': "", 'wrong': "", 'ignored': "", 'seconds': "", 'seconds/face': ""}
             df_models = df_models.append(row, ignore_index=True)
-            df_models.to_csv(self.models_statistics)
+            df_models.to_csv(self.file_model_statistics)
             logging.debug("Wrote model statistics to file=" + self.file_name_models_statistic)
         else:
-            if os.path.exists(self.faces_statistics):
-                os.remove(self.faces_statistics)
-            if os.path.exists(self.models_statistics):
-                os.remove(self.models_statistics)
+            if os.path.exists(self.file_face_statistics):
+                os.remove(self.file_face_statistics)
+            if os.path.exists(self.file_model_statistics):
+                os.remove(self.file_model_statistics)
 
     def write_exif_dates(self, df, dir):
         if not self.exiftool:

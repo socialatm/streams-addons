@@ -225,7 +225,7 @@ class Worker:
                 # - if set as parameter from caller
                 # - for the user who called the script
                 if is_probe and is_recognize:
-                    folders = self.getProbeFolders()
+                    folders = self.get_probe_folders()
                     if not folders:
                         continue
                 self.recognize(folders, is_probe)
@@ -236,7 +236,7 @@ class Worker:
         self.write_alive_signal(self.FINISHED)
         logging.info("finished dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" + str(own_channel_id))
 
-    def getProbeFolders(self, ):
+    def get_probe_folders(self):
         query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s AND `display_path` LIKE 'faces/probe/%'"
         data = (self.channel, self.file_name_faces)
         folders = self.db.select(query, data)
