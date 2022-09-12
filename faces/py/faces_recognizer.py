@@ -12,7 +12,7 @@ class Recognizer:
         # "Euclidean L2 form seems to be more stable than cosine and regular Euclidean distance
         # based on experiments." stated from https://github.com/serengil/deepface/
         self.distance_metrics = []
-        self.distance_metric_default = "cosine"
+        self.distance_metric_default = "euclidean_l2"
         self.first_result = True
         self.thresholds_config = None
 
