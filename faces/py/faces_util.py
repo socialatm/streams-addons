@@ -56,25 +56,28 @@ class Util:
     def remove_detector_model(self, df, models_to_remove, remove_detectors, dir):
         keys = []
         if (models_to_remove != "") and (remove_detectors != ""):
-            for model in models_to_remove.split(","):
-                for detector in remove_detectors.split(","):
-                    i = df.loc[(df['detector'] == detector) & (df['model'] == model)].index
-                    keys.extend(i.to_list())
-            logging.info("directory " + dir + " - removing " + str(
-                len(keys)) + " faces for detector=" + remove_detectors + " and model=" + models_to_remove)
+            if "detector" in df.columns and "model" in df.columns:
+                for model in models_to_remove.split(","):
+                    for detector in remove_detectors.split(","):
+                        i = df.loc[(df['detector'] == detector) & (df['model'] == model)].index
+                        keys.extend(i.to_list())
+                logging.info("directory " + dir + " - removing " + str(
+                    len(keys)) + " faces for detector=" + remove_detectors + " and model=" + models_to_remove)
         elif remove_detectors != "":
-            for detector in remove_detectors.split(","):
-                i = df.loc[df['detector'] == detector].index
-                keys.extend(i.to_list())
-            logging.info(
-                "directory " + dir + " - removing " + str(
-                    len(keys)) + " faces for detectors=" + remove_detectors)
+            if "detector" in df.columns:
+                for detector in remove_detectors.split(","):
+                    i = df.loc[df['detector'] == detector].index
+                    keys.extend(i.to_list())
+                logging.info(
+                    "directory " + dir + " - removing " + str(
+                        len(keys)) + " faces for detectors=" + remove_detectors)
         elif models_to_remove != "":
-            for model in models_to_remove.split(","):
-                i = df.loc[df['model'] == model].index
-                keys.extend(i.to_list())
-            logging.info(
-                "directory " + dir + " - removing " + str(len(keys)) + " faces for model=" + models_to_remove)
+            if "model" in df.columns:
+                for model in models_to_remove.split(","):
+                    i = df.loc[df['model'] == model].index
+                    keys.extend(i.to_list())
+                logging.info(
+                    "directory " + dir + " - removing " + str(len(keys)) + " faces for model=" + models_to_remove)
         return keys
 
     def copy_name_to_same_faces(self, df):

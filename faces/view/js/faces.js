@@ -425,6 +425,7 @@ function preparePostName(face_id_full, name) {
         "name": name
     });
     hideEditFrame();
+    styleFaceFrame(face);
     postNames();
 }
 

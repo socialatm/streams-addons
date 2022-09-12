@@ -110,7 +110,7 @@ if logData:
 if args["rm_models"]:
     worker.remove_models = args["rm_models"]
 if args["rm_detectors"]:
-    worker.remove_models = args["rm_detectors"]
+    worker.remove_detectors = args["rm_detectors"]
 if args["rm_names"]:
     worker.is_remove_names = True
 
