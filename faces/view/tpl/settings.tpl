@@ -3,7 +3,8 @@
     <h1>Face Detection, Recognition and Matching</h1>
     <div id="face_detectors">
         <h2>Step 1 - Face Detection - Detectors</h2>
-        <div>A face detector finds the position of a face and hands it over to
+        <div>A face detector finds the position and size of a face, 
+            cuts it off and hands it over to
             a face recognition model (see next step).</div>
         <div>Recommended: Choose one single detector only except you want to compare
             the effectivness of detectors. Every additional detector will slow down
@@ -12,7 +13,7 @@
     <div id="face_models">
         <h2>Step 2 - Face Recognition - Models</h2>
         <div>A face recognition model takes a face from a face detector and
-            creates a so called embedding (basically an array of numbers) that
+            creates an embedding (basically a vector) that
             represents a face.</div>
         <div>Recommended: Choose one single model only except you want to compare
             the effectivness of models. Every additional model will slow down
@@ -21,11 +22,9 @@
     <div id="face_metrics">
         <h2>Step 3 - Face Matching - Distance Metrics</h2>
         <div>A distance metric is a function that calculates a distance between
-            embeddings (faces) that where created by a recognition model (see above).</div>
-        <div>Recommended: Choosing more than one option might improve the recognition rate.
-            Keep in mind that if you choose more than one option
-            this will slow down the matching of faces by factor 2, euclidean_l2 even more
-            (but it is sometimes more reliable).</div>
+            vectors (embeddings) that where created by a recognition model (see above).</div>
+        <div>Recommended: Choose one single distance metric only except you want to compare
+            the effectivness of metrics.</div>
     </div>
     <h2>Tuning</h2>
     <div id="face_size_detection">
@@ -35,29 +34,32 @@
     </div>
     <div id="face_size_recognition">
         <h3>Minimum Face Size - Recognition (Matching of Faces)</h3>
-        <div>"training" [pixel] ... training data, faces the user gave a name</div>
-        <div>"result" [pixel] ... faces to match with the training data</div>
+        <div><strong>training</strong>... [px] training data, faces having a name</div>
+        <div><strong>result</strong>... [px] faces without a name</div>
+        <div>Faces smaller than this will be ignored.</div>
     </div>
     <h2>Statistics</h2>
     <div id="face_history">
         <h3>Keep History</h3>
-        <div>This keeps a record of how correct the recognition works over time
-            This will allow you to activate the statistics at any time later (see below).</div>
-        <div>If the "immediate search" is switched on (see below) it might be more
-            save to switch the "history" on as well.</div>
+        <div>
+            Store the recognized name along with the name set by the
+            user.
+        </div>
+        <div>
+            This will allow you to compare the accuracy of different
+            recognition models.
+        </div>
     </div>
     <div id="face_statistics">
-        <h3>Write Statistics into a CSV File</h3>
-        <div>Activate this if you want to write all deteted and recognized faces 
-            into one single CSV file "faces/faces_statistics.csv" and if you want 
-            to compare the results of different combinations of detectors, models
-            and distance metrics. The results will go into a CSV file "faces/models_statistics.csv".
-            Make sure to activate the "history" above.</div>
+        <h3>Write Statistics</h3>
+        <div>Write all detected and recognized faces into one single file 
+            <a class='link_correction' href="cloud/channel-nick/faces/model_statistics.csv">models_statistics.csv</a>
+            This allows you to view details on what detector found what face,
+            what model recognized what name, the time it took,...</div>
     </div>
     <div id="face_enforce_all">
         <h3>Enforce all Models to match Faces</h3>
-        <div>Activate only if you want to look at statistics for example if you
-            want to compare the effectivness of detectors, models and distance metrics.
+        <div>Compare the effectivness of detectors, models and distance metrics.
             If switched on this will slow down face matching.</div>
         <div>Recommended: Switch off</div>
     </div>
@@ -65,7 +67,7 @@
     <div id="face_performance">
         <h3>Immediate Search</h3>
         <div>Start the face recognition always immediatly after a users has set
-            or changed a name. Advantage: The names will be updated in the
+            a name. Advantage: The names will be updated in the
             browser as soon as the face recognition finds a person. Disadvantage:
             Increased server load.</div>
     </div>
@@ -75,9 +77,9 @@
     <div id="face_sortation">
         <h3>Date and Time</h3>
         <div>Sort the images by the time an images was taken (exif) or the
-        time it was uploaded. Some images do not carry the information when
-        they where taken.</div>
-        <div>Recommended: Switch off</div>
+            time it was uploaded. Some images do not carry the information when
+            they where taken.</div>
+        <div>Recommended: Switch off to get consistent results</div>
     </div>
     <h2>Zoom</h2>
     <div id="face_zoom">
@@ -106,7 +108,7 @@
     <div class="submit">
         <input type="submit" name="page_faces" value="Submit" class="float-right">
     </div>
-    
+
     <div id="placeholdername_container" class="clearfix form-group checkbox">
         <label for="id_placeholdername">placeholdername</label>
         <div class="float-right">

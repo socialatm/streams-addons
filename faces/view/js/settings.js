@@ -155,6 +155,18 @@ function presetExperimental() {
     }
 }
 
+function correctLinks() {
+    $('.link_correction').each(function (i, obj) {
+        path = window.location.pathname;
+        path = path.substr(0,path.lastIndexOf("/settings"));
+        channel = path.substr(path.lastIndexOf("/") + 1);
+        link = obj.href;
+        link = link.replace("channel-nick", channel);
+        obj.href = link;
+        ((loglevel >= 1) ? console.log(t() + " link nr=" + i) : null);
+    });
+}
+
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     ((loglevel >= 1) ? console.log(t() + " loglevel=" + loglevel) : null);
@@ -163,6 +175,7 @@ $(document).ready(function () {
     templateTextfield = $("#id_placeholdername_wrapper").prop('outerHTML');
     $("#id_placeholdername_wrapper").remove();
     setPostURL();
+    correctLinks();
     requestConfig();
 }
 );
