@@ -20,7 +20,6 @@ class Worker:
     def __init__(self):
         self.proc_id = None
         self.db = None
-        self.log_data = False
         self.finder = None
         self.recognizer = None
         self.dirImages = None
@@ -158,7 +157,6 @@ class Worker:
         # --------------------------------------------------------------------------------------------------------------
         # set directly by calling script
 
-        logging.debug("config: log_data=" + str(self.log_data))
         logging.debug("config: rm_names=" + str(self.is_remove_names))
         logging.debug("config: rm_models=" + str(self.remove_models))
         logging.debug("config: rm_detectors=" + str(self.remove_detectors))

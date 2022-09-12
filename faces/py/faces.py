@@ -104,9 +104,6 @@ if args["probe"]:
 logging.debug("probe  = " + str(is_probe))
 
 worker = faces_worker.Worker()
-
-if logData:
-    worker.log_data = True
 if args["rm_models"]:
     worker.remove_models = args["rm_models"]
 if args["rm_detectors"]:
