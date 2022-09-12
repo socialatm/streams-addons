@@ -615,7 +615,7 @@ class Worker:
             path = x['file']
             index = path.rfind("/")
             if index < 0:
-                directory = path
+                directory = ""
             else:
                 directory = path[0:index]
             return directory
