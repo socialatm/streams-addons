@@ -129,6 +129,12 @@ function setConfig(data) {
 }
 
 function loadFaceData(files, files_waiting_names) {
+    // Read names.json.
+    // Why? names.json contains the names the user has set. If this file is not
+    // empty the face recognition has not processed these names and faces.json
+    // reflect an outdated status (names). To avoid "wrong" (old) names displayed
+    // to the user: read the recent name changes from names.json an use the names
+    // in there.
     let i;
     for (i = 0; i < files_waiting_names.length; i++) {
         let f = files_waiting_names[i];
@@ -146,6 +152,9 @@ function loadFaceData(files, files_waiting_names) {
             async: true
         });
     }
+    // Read faces.json per subdirectory.
+    // faces.json contains the information about the postition of faces in 
+    // images and their names.
     for (i = 0; i < files.length; i++) {
         let f = files[i];
         ((loglevel >= 2) ? console.log(t() + " Received file " + f) : null);

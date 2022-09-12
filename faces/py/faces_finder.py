@@ -321,7 +321,7 @@ class Finder:
         detector = self.detectors[detector_name]
         start_time = time.time()
         logging.debug(path + " detecting faces....")
-        mtime = str(datetime.fromtimestamp(os.path.getmtime(os_path_on_server)))
+        mtime = time.strftime('%Y-%m-%dT%H:%M:%S+00:00', time.gmtime(os.path.getmtime(os_path_on_server)))
         img = cv2.imread(os_path_on_server)
         tic = time.time()
         try:
