@@ -351,6 +351,21 @@ class Util:
                             return True
         return False
 
+    def remove_other_than_recognized(self, faces, df):
+        for face in faces:
+            face_id = face["id"]
+            face = df.loc[df['id'] == face_id, ["file", "face_nr"]]
+            if len(face) == 0:
+                continue  # has different detector and was removed in loop before
+            file = face["file"].item()
+            face_nr = face["face_nr"].item()
+            f = df.loc[(df['file'] == file) & (df['face_nr'] == face_nr)]
+            keys = f.index
+            if len(keys) == 1:
+                return df
+            df = df.drop(keys[1:])
+        return df
+
     def create_frame_embeddings(self):
         df = pd.DataFrame({'id': pd.Series(dtype='str'),
                            'file': pd.Series(dtype='str'),

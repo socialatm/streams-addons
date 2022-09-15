@@ -396,13 +396,14 @@ class Worker:
     # -------------------------------------------------------------
     # Basic steps:
     # 1. In every directory
-    #    - Load all DataFrames holding the face representations (faces.gzip)
-    #    - Load all DataFrames holding the names (faces.json)
-    #    - Write all names (set by the user) from faces.json to faces.gzip
-    # 2. Add all DataFrames to get one big DataFrame holding all face representation and known names
-    # 4. Try to recognize known faces in every directory
+    #    - Load DataFrame holding the face representations (faces.gzip)
+    #    - Load DataFrame holding the names (faces.json)
+    #    - Write all names (set by the user) from df (faces.json) to DataFrame holding the face representations
+    # 2. Append the df's from each directory to get one big DataFrame holding all face representation and known names
+    # 4. Try to recognize faces in the big df (match embeddings)
     # 5. Check if the recognition found new faces or changed names
-    # 6. Write the CSV (faces.json) if the values for "name" or "name_recognized" have changed
+    # 6. Write the names (faces.json) if the values for "name" or "name_recognized" have changed.
+    #    This browser will read this file.
     # 7. If history is switched on: write faces.gzip (including now all face embedding AND names)
     #
     def recognize(self, folders, is_probe):
@@ -513,7 +514,7 @@ class Worker:
                                     face['distance_metric']
                                 ]
                         if self.recognizer.first_result:
-                            df_no_name = self.remove_other_than_recognized(faces, df_no_name)
+                            df_no_name = self.util.remove_other_than_recognized(faces, df_no_name)
         if is_probe:
             result = self.util.build_probe_results(probe_results, probe_cols)
             self.write_probe(result)
@@ -531,21 +532,6 @@ class Worker:
             self.store_face_names_if_changed(df_directory, d, most_effective_method)
 
         self.write_statistics(df, self.dirImages)
-
-    def remove_other_than_recognized(self, faces, df):
-        for face in faces:
-            face_id = face["id"]
-            face = df.loc[df['id'] == face_id, ["file", "face_nr"]]
-            if len(face) == 0:
-                continue  # has different detector and was removed in loop before
-            file = face["file"].item()
-            face_nr = face["face_nr"].item()
-            f = df.loc[(df['file'] == file) & (df['face_nr'] == face_nr)]
-            keys = f.index
-            if len(keys) == 1:
-                return df
-            df = df.drop(keys[1:])
-        return df
 
     def load_face_names(self, folders):
         # df

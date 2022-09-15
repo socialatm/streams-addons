@@ -146,7 +146,7 @@ class Worker:
         self.util.is_css_position = self.finder.css_position
 
     def run(self, dir_images, is_recognize, is_probe):
-        logging.info("start dir=" + dir_images ++ ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
+        logging.info("start dir=" + dir_images + + ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read image directory " + self.dirImages)
@@ -204,13 +204,18 @@ class Worker:
         # process all images
         self.detect(dir)
 
-    def get_probe_folders(self, ):
+    def get_probe_folders(self):
         folders = []
         exclude = set(['lost+found', '.Trash-1000'])
         for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links, topdown=True):
             dirnames[:] = [d for d in dirnames if d not in exclude]  # works because of topdown=True is set
             folders.append(dir)
         return folders
+
+    def write_probe(self, results):
+        path = os.path.join(self.dirImages, self.dir_addon, self.file_name_probe)
+        df = pd.DataFrame.from_dict(results)
+        df.to_csv(path)
 
     def read_config_file(self):
         conf_file = os.path.join(self.dirImages, self.dir_addon, self.file_name_config)
@@ -243,41 +248,58 @@ class Worker:
     # Find and store all face representations for face recognition.
     # The face representations are stored in binary pickle file.
     def detect(self, dir):
-        logging.debug(dir + " - 2. Step: detecting new images ---")
+        logging.debug("START DETECTION, CREATION of EMBEDDINGS and FACIAL ATTRIBUTES ---")
 
+        # get all embeddings and attributes for the images in directory
         df = self.get_face_representations(dir)  # pandas.DataFrame holding all face representation
 
-        images = self.add_new_images(df, self.file_name_face_representations, dir)
+        if df is None:
+            df = self.util.create_frame_embeddings()
+
+        images = self.get_images()
         if len(images) == 0:
-            logging.debug(dir + " - No new images for face detection in directory")
+            logging.debug("No new images in directory")
             return
 
-        logging.debug(dir + " - searching for faces in " + str(len(images)) + " new  images")
+        logging.debug("searching for faces in " + str(len(images)) + " images")
 
-        if not self.finder.is_loaded():
-            self.finder.load()
-
-        time_start_detection = time.time()
-        logging.debug(dir + " - start to detect faces for " + str(len(images)) + " images")
+        # --------------------------------------------------------------------------------------------------------------
+        # iterate all images in a directory
+        time_start = time.time()
+        embeddings_file_has_changed = False
         for image in images:
-            # The list of models per detector can change. Do not find existing representations again.
+
+            path = image
             os_path_on_server = os.path.join(self.dirImages, image)
-            existing_models = []
-            if df is not None:
-                existing_models = df.loc[
-                    (df["file"] == image) & (df["detector"] == self.finder.detector_name), "model"].values
-            faces = self.finder.detect(image, os_path_on_server, existing_models)
-            if faces:
-                for face in faces:
-                    df = self.util.add_row_embedding(df, face)
 
-            elapsed_time = time.time() - time_start_detection
-            if elapsed_time > self.timeBackUp:
-                if self.store_face_presentations(df, dir) is False:
-                    return
-                logging.debug(dir + " - elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
-                time_start_detection = time.time()
+            logging.debug(path)
 
+            # ----------------------------------------------------------------------------------------------------------
+            # iterate all activated detectors to
+            # - find new combinations for each image of detector and
+            #   a. model (face recognition) and
+            #   b. attributes (emotion, gender, age, race)
+            # - create and store embeddings for each face
+            # - analyse the attributes of each face
+            for key in self.finder.detectors:
+                logging.debug(path + " " + key)
+
+                result = self.finder.detect(path, os_path_on_server, key, df)
+                self.checkRAM(df, dir)  # store face embeddings and exit if max ram is exceeded
+                df = result[0]
+                if result[1]:
+                    embeddings_file_has_changed = True
+
+                elapsed_time = time.time() - time_start
+                if elapsed_time > self.timeBackUp:
+                    if self.store_face_presentations(df) is False:
+                        return
+                    logging.info("elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
+                    time_start = time.time()
+
+        if not embeddings_file_has_changed:
+            logging.debug("nothing changed in this directory")
+            return
         # ---
         # Find same faces by position in images.
         # Explanation:
@@ -286,6 +308,9 @@ class Worker:
         #   o in same file
         #   o at same position (x, y, h, w)
         df = self.util.number_unique_faces(df)
+
+        # Copy names to faces that where found by new detectors or models
+        df = self.util.copy_name_to_same_faces(df)
 
         # Why not storing the faces (faces.json) at this point of time?
         # - The face detection and the creation of the face representations are cpu, memory and time-consuming
@@ -296,58 +321,40 @@ class Worker:
         #     are written into to faces.json
         # - After some time the face detection has ended and will write faces.json.
         #   This overwrites the face names the user has set in the meantime.
-        logging.debug(dir + " - finished detection of faces in " + str(len(images)) + " images")
+        logging.info("finished detection of faces in " + str(len(images)) + " images")
         df = self.write_exif_dates(df, dir)
 
         if self.store_face_presentations(df, dir) is False:
             return
         self.init_face_names(df, dir)
 
-    # Find and store all facial attributes, emotion, age, gender, race
-    # What facial attributes to find is configurable, see method setFinder().
-    def analyse(self, dir):
-        if not self.finder.is_analyse_on():
-            return
-
-        logging.debug(dir + " - 3. Step: analysing facial attributes ---")
-        df = self.get_facial_attributes(dir)  # pandas.DataFrame holding all facial attributes
-
-        images = self.add_new_images(df, self.file_name_facial_attributes, dir)
-        if len(images) == 0:
-            logging.debug(dir + " - No new images for analysis of facial attributes")
-            return
-
-        logging.debug(dir + " - analyzing facial attributes in " + str(len(images)) + " new images")
-
-        if not self.finder.is_loaded():
-            self.finder.load()
-
-        logging.debug(dir + " - start to analyse faces in " + str(len(images)) + " images")
-        for image in images:
-            os_path_on_server = os.path.join(self.dirImages, image)
-            faces = self.finder.analyse(image, os_path_on_server)
-            if faces:
-                for face in faces:
-                    df = self.util.add_row_attributes(df, face)
-
-        logging.debug(dir + " - finished analyse of faces in " + str(len(images)) + " images")
-        self.store_facial_attributes(df, dir)
-
     # -------------------------------------------------------------
     # Basic steps:
     # 1. In every directory
-    #    - Load all DataFrames holding the face representations (faces.gzip)
-    #    - Load all DataFrames holding the names (faces.json)
-    #    - Write all names (set by the user) from faces.json to faces.gzip
-    # 2. Add all DataFrames to get one big DataFrame holding all face representation and known names
-    # 4. Try to recognize known faces in every directory
+    #    - Load DataFrame holding the face representations (faces.gzip)
+    #    - Load DataFrame holding the names (faces.json)
+    #    - Write all names (set by the user) from df (faces.json) to DataFrame holding the face representations
+    # 2. Append the df's from each directory to get one big DataFrame holding all face representation and known names
+    # 4. Try to recognize faces in the big df (match embeddings)
     # 5. Check if the recognition found new faces or changed names
-    # 6. Write the CSV (faces.json) if the values for "name" or "name_recognized" have changed
+    # 6. Write the names (faces.json) if the values for "name" or "name_recognized" have changed.
+    #    This browser will read this file.
     # 7. If history is switched on: write faces.gzip (including now all face embedding AND names)
     #
-    def recognize(self):
+    def recognize(self, folders, is_probe):
+
+        # Read the configuration set by admin/user
+        #
+        if self.config is None:
+            self.read_config_file()
+        if self.recognizer.thresholds_config is None:
+            self.read_config_thresholds_file()
+        probe_results = []
+        probe_cols = []
+
         logging.info("START COMPARING FACES. Loading all necessary data...")
-        df = self.load_face_names()
+
+        df = self.load_face_names(folders)
         if df is None:
             return
 
@@ -366,70 +373,94 @@ class Worker:
         df['min_size_train'] = df.apply(include_as_training_data, axis=1)
         df['min_size_result'] = df.apply(include_as_result_data, axis=1)
 
-        logging.debug("Get all faces with a name, face representation and min width")
-        df_no_name = df.loc[
-            (df['name'] == "") &
-            (df['name'] != self.IGNORE) &
-            (df['duration_representation'] != 0.0) &
-            (df['min_size_result'] == 1) &
-            (df['time_named'] == ""), ['id', 'representation', 'model', 'file', 'face_nr']]
+        for key in self.finder.detectors:
+            detector = key
 
-        # Loop through models
-        # - loop through the ordered list models (start parameter)
-        # - optionally stop recognition after a first match (start parameter)
-        models = df.model.unique()
-        for model in models:
-            if model not in self.finder.model_names:
-                continue
-            # Set back previous results
-            # Why?
-            # - parameters might change (distance metrics, min face width)
-            # - show results for parameters of this run only
-            df.loc[(df['model'] == model) &
-                   (df['name'] == "") &  # keep history of recognized names for statitstics
-                   (df['name'] != self.IGNORE) &  # the user has set this face to "ignore" (this is no face, meant like)
-                   (df['duration_representation'] != 0.0) &
-                   (df['time_named'] == ""),  # the user has set the name to "unknown"
-                   ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
-
-            # Filter faces as training data
-            logging.debug("Start recognition using model=" + model + " Gathering faces as training data...")
-            df_training_data = df.loc[
-                (df['model'] == model) &
-                (df['name'] != "") &
+            logging.debug(detector + " = detector: Get all faces with a name, face representation and min width")
+            df_no_name = df.loc[
+                (df['name'] == "") &
+                (df['detector'] == detector) &
                 (df['name'] != self.IGNORE) &
-                (df['min_size_train'] == 1) &
-                (df['representation'] != ""), ['id', 'representation', 'name']]
-            if len(df_training_data) == 0:
-                logging.debug("No training data (names set) for model=" + model)
-                continue
-            self.recognizer.train(df_training_data, model)
-            df_model = df_no_name.loc[df_no_name['model'] == model]
-            if len(df_model) == 0:
-                logging.debug("No faces to search for model=" + model)
-                continue
-            faces = self.recognizer.recognize(df_model)
-            if faces:
-                # write result of matches (faces found) into the embeddings file
-                for face in faces:
-                    face_id = face['id']
-                    df.loc[
-                        df['id'] == face_id,
-                        ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
-                        [
-                            face['name_recognized'],
-                            face['duration_recognized'],
-                            face['distance'],
-                            face['distance_metric']
-                        ]
-                if self.recognizer.first_result:
-                    df_no_name = self.remove_other_than_recognized(faces, df_no_name)
+                (df['duration_representation'] != 0.0) &
+                (df['min_size_result'] == 1) &
+                (df['time_named'] == ""), ['id', 'representation', 'model', 'detector', 'file', 'face_nr']]
+
+            # Loop through models
+            # - loop through the ordered list models (start parameter)
+            # - optionally stop recognition after a first match (start parameter)
+            models = df.model.unique()
+            for model in models:
+                if model not in self.finder.model_names:
+                    continue
+                # Set back previous results
+                # Why?
+                # - parameters might change (distance metrics, min face width)
+                # - show results for parameters of this run only
+                df.loc[(df['model'] == model) &
+                       (df['detector'] == detector) &
+                       (df['name'] == "") &  # keep history of recognized names for statitstics
+                       (df['name'] != self.IGNORE) &  # the user has set this face to "ignore"
+                       (df['duration_representation'] != 0.0) &
+                       (df['time_named'] == ""),  # the user has set the name to "unknown"
+                       ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
+
+                # Filter faces as training data
+                logging.debug(model + " " + detector + " gathering faces as training data...")
+                df_training_data = df.loc[
+                    (df['model'] == model) &
+                    (df['detector'] == detector) &
+                    (df['name'] != "") &
+                    (df['name'] != self.IGNORE) &
+                    (df['min_size_train'] == 1) &
+                    (df['representation'] != ""), ['id', 'representation', 'name', 'model', 'detector']]
+                if len(df_training_data) == 0:
+                    logging.debug("No training data (names set) for model=" + model)
+                    continue
+                self.recognizer.train(df_training_data, model)
+                df_model = df_no_name.loc[df_no_name['model'] == model]
+                if len(df_model) == 0:
+                    logging.debug("No faces to search for model=" + model)
+                    continue
+
+                if is_probe:
+                    for metric in self.recognizer.distance_metrics:
+                        probe_thresholds = self.recognizer.create_probe_thresholds(metric)
+                        for t in probe_thresholds:
+                            faces = self.recognizer.recognize(df_model, t)
+                            if faces:
+                                df = self.util.prepare_probe(df, model)
+                                results = self.util.analyse_probe(
+                                    df, faces, detector, model, t, probe_results, probe_cols)
+                                probe_results = results[0]
+                                probe_cols = results[1]
+                else:
+                    faces = self.recognizer.recognize(df_model, None)
+                    if faces:
+                        # write result of matches (faces found) into the embeddings file
+                        for face in faces:
+                            face_id = face['id']
+                            df.loc[
+                                df['id'] == face_id,
+                                ['name_recognized', 'duration_recognized', 'distance', 'distance_metric']] = \
+                                [
+                                    face['name_recognized'],
+                                    face['duration_recognized'],
+                                    face['distance'],
+                                    face['distance_metric']
+                                ]
+                        if self.recognizer.first_result:
+                            df_no_name = self.util.remove_other_than_recognized(faces, df_no_name)
+        if is_probe:
+            result = self.util.build_probe_results(probe_results, probe_cols)
+            self.write_probe(result)
+            return
 
         most_effective_method = self.util.get_most_successful_method(df, False)
 
         df = df.drop('min_size_train', axis=1)
         df = df.drop('min_size_result', axis=1)
 
+        logging.info("FINISHED COMPARING FACES. Checking for changes to save...")
         directories = df.directory.unique()
         for d in directories:
             df_directory = df[df['directory'] == d]
@@ -437,22 +468,77 @@ class Worker:
 
         self.write_statistics(df, self.dirImages)
 
-    def remove_other_than_recognized(self, faces, df):
-        for face in faces:
-            face_id = face["id"]
-            face = df.loc[df['id'] == face_id, ["file", "face_nr"]]
-            if len(face) == 0:
-                continue  # has different detector and was removed in loop before
-            file = face["file"].item()
-            face_nr = face["face_nr"].item()
-            f = df.loc[(df['file'] == file) & (df['face_nr'] == face_nr)]
-            keys = f.index
-            if len(keys) == 1:
-                return df
-            df = df.drop(keys[1:])
+    def load_face_names(self, folders):
+        # df
+        # df is the one big pandas.DataFrame that holds
+        # - all face representations
+        # - all names
+        # - over all directories
+        df = None
+        for f in folders:
+            self.folder = f
+
+            # ---
+            # Concatenate all face representations of all directories
+            df_representations = self.get_face_representations(f)
+            if df_representations is None:
+                continue
+
+            # ---
+            # Read names in directory
+            df_names = self.get_face_names(f)
+
+            if df_names is not None:
+                # ---
+                # Write all known names into the face representations
+                # Background:
+                # This step is needed if
+                #  - "statistics mode" / "history" is not switched on
+                #  - names are written
+                # Background:
+                # If the "statistics mode" is NOT switched on then names are stored only in the file ".faces.json"
+                # If the "statistics mode" IS switched on then names are stored along with the face representations
+                # in the file ".faces.gzip".
+                for face in df_names.itertuples():
+                    df_representations.loc[(df_representations['id'] == face.id),
+                                           ['name', 'time_named']] = [face.name, face.time_named]
+
+            # Read face names set from outside (usually by the user via the browser)
+            # Background:
+            #   The user will name faces in the browser.
+            #   The new or changed names will be written into a file names.json.
+            #
+            # What does happen in the next call?
+            #   1. Read the new or changed names from names.json
+            #   2. Remove the names from the file names.json (empty the data frame)
+            df_representations = self.read_new_names(df_representations, f)
+
+            # ---
+            # Concatenate all face representations (including known names) of all directories
+            if df is None:
+                df = df_representations
+            else:
+                df = pd.concat([df, df_representations], ignore_index=True)
+
+        if df is None:
+            return df
+
+        # column 'directory' to have a quick filter for directories
+        def append_directory(x):
+            path = x['file']
+            index = path.rfind("/")
+            if index < 0:
+                directory = ""
+            else:
+                directory = path[0:index]
+            return directory
+
+        df['directory'] = df.apply(append_directory, axis=1)
+        logging.debug("Appended directory to each face")
+
         return df
 
-    def load_face_names(self):
+    def load_face_names_old(self):
         # df
         # df is the one big pandas.DataFrame that holds
         # - all face representations
@@ -546,12 +632,8 @@ class Worker:
         df = self.util.filter_by_last_named(df_reduced)
 
         df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
-        # if most_effective_method is not None:  # for unit testing
-        #     df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
-        # else:
-        #     df = self.util.minimize_results(df, False)
 
-        df_names = self.get_face_names()  # this will read new or changed names set by the use via the web browser
+        df_names = self.get_face_names(faces_dir)  # this will new/changed names set by the use via the web browser
 
         # compare the content of the results (face recognition) with the content of the file containing the names
         # (that might have changed while the face recognition was running)
@@ -561,6 +643,8 @@ class Worker:
             self.write_results(df_recognized, df, faces_dir)
         else:
             logging.debug("faces have not changed. No need to store faces to file.")
+
+        self.empty_names_for_browser(faces_dir)
 
     def read_new_names(self, df, dir):
         df_browser = self.get_face_names_set_by_browser(dir)
@@ -580,8 +664,6 @@ class Worker:
 
         df = self.util.copy_name_to_same_faces(df)
 
-        self.empty_names_for_browser(dir)
-
         return df
 
     def empty_names_for_browser(self, dir):
@@ -599,41 +681,6 @@ class Worker:
         self.store_face_names(df_names, abs_dir)
         if self.keep_history:
             self.store_face_presentations(df_recognized, abs_dir)
-
-    # Add new images to a pandas.DataFrame for
-    # - faces representations, faces.pkl, or
-    # - facial attributes, faces_attributes.csv
-    # - names of faces, faces.csv
-    #
-    # df...  pandas.DataFrame
-    # dir... String, directory
-    def add_new_images(self, df, storage, dir):
-        images = self.get_images(dir)
-        new_images = []
-        for image in images:
-            # Look for new images
-            if df is None:
-                new_images.append(image)
-            else:
-                if storage is self.file_name_face_representations:
-                    for model_name in self.finder.model_names:
-                        if not ((df['file'] == image) & (df['model'] == model_name) & (
-                                df['detector'] == self.finder.detector_name)).any():
-                            # path AND detector AND model do not exist in one row in stored DataFrame
-                            logging.debug(
-                                dir + " - adding image because new combination of image=" +
-                                image + " AND model=" + model_name + " AND detector=" + self.finder.detector_name)
-                            new_images.append(image)
-                            break
-                if storage is self.file_name_facial_attributes:
-                    if not ((df['file'] == image) & (df['detector'] == self.finder.detector_name)).any():
-                        # path AND detector do not exist in one row in stored DataFrame
-                        logging.debug(
-                            dir + " - adding image because new combination of image=" + image +
-                            " AND detector=" + self.finder.detector_name)
-                        new_images.append(image)
-
-        return new_images
 
     def get_images(self, dir):
         images = []
@@ -689,23 +736,6 @@ class Worker:
         df.to_parquet(path, engine="pyarrow", compression='gzip')
         logging.debug(dir + " - stored face representations in file " + path)
         return True
-
-    def get_facial_attributes(self, dir):
-        # Load stored facial attributes
-        df = None  # pandas.DataFrame that holds all facial attributes
-        path = os.path.join(dir, self.file_name_facial_attributes)
-        if os.path.exists(path):
-            if os.stat(path).st_size == 0:
-                logging.info(dir + " - file holding face attributes is empty " + path)
-                return df
-            df = pd.read_json(path)
-            logging.debug(dir + " - loaded facial attributes from file " + path)
-        return df
-
-    def store_facial_attributes(self, df, dir):
-        path = os.path.join(dir, self.file_name_facial_attributes)
-        df.to_json(path)
-        logging.debug(dir + " - stored facial attributes in file " + path)
 
     def get_face_names_set_by_browser(self, dir):
         # Load stored names
@@ -848,7 +878,8 @@ class Worker:
             continue
         return df
 
-    def checkRAM(self):
+    def checkRAM(self, df, dir):
         if not self.util.check_ram(self.ram_allowed):
+            self.store_face_presentations(df, dir)
             logging.error("Stopping program. Good By...")
             sys.exit(1)
