@@ -346,8 +346,8 @@ class Util:
                 for face_b in faces_b.itertuples():
                     position_b = face_b.position
                     if self.is_same_face(face_a.iloc[0, 2], position_b):
-                        if face_a.name.values[0] != face_b.name or face_a.name_recognized.values[
-                            0] != face_b.name_recognized:
+                        if face_a.name.values[0] != face_b.name or \
+                                face_a.name_recognized.values[0] != face_b.name_recognized:
                             return True
         return False
 
@@ -484,7 +484,7 @@ class Util:
                 (df['name_recognized'] == name), ['distance', 'directory']]
             df_name_positives = df_name.loc[(df_name['directory'] == "faces/probe/" + name)]
             positives = len(df_name_positives)
-            distances = df_name_positives["distance"].values # take no distances from directory unknown
+            distances = df_name_positives["distance"].values  # take no distances from directory unknown
             details = {}
             if len(distances) > 0:
                 details[name] = [round(min(distances), 4), round(max(distances), 4),

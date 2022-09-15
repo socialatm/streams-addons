@@ -832,10 +832,11 @@ class Worker:
         if self.file_names is None:
             return df  # prior to this step a check might have failed
         # double check because the file might be deleted meanwhile
-        if os.path.exists(self.file_names):
-            if os.stat(self.file_names).st_size == 0:
-                logging.debug("file holding face names is empty " + self.file_names)
-                return df
+        if not os.path.exists(self.file_names):
+            return df
+        if os.stat(self.file_names).st_size == 0:
+            logging.debug("file holding face names is empty " + self.file_names)
+            return df
         df = pd.read_json(self.file_names)
         logging.debug("loaded names set/changed by user from file " + self.file_names + " full: " + self.file_names)
         return df

@@ -30,6 +30,7 @@ class Worker:
         self.file_name_models_statistic = "model_statistics.csv"
         self.file_name_probe = "probe.csv"
         self.dir_addon = "faces"
+        self.dir_probe = "probe"
 
         # Watch this!
         # What happens if self.keep_history = True
@@ -146,7 +147,7 @@ class Worker:
         self.util.is_css_position = self.finder.css_position
 
     def run(self, dir_images, is_recognize, is_probe):
-        logging.info("start dir=" + dir_images + + ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
+        logging.info("start dir=" + dir_images + ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
         self.dirImages = dir_images
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read image directory " + self.dirImages)
@@ -205,9 +206,10 @@ class Worker:
         self.detect(dir)
 
     def get_probe_folders(self):
+        start_dir = os.path.join(self.dirImages, self.dir_addon, self.dir_probe)
         folders = []
         exclude = set(['lost+found', '.Trash-1000'])
-        for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links, topdown=True):
+        for dir, dirnames, files in os.walk(start_dir, followlinks=self.follow_sym_links, topdown=True):
             dirnames[:] = [d for d in dirnames if d not in exclude]  # works because of topdown=True is set
             folders.append(dir)
         return folders
@@ -256,7 +258,7 @@ class Worker:
         if df is None:
             df = self.util.create_frame_embeddings()
 
-        images = self.get_images()
+        images = self.get_images(dir)
         if len(images) == 0:
             logging.debug("No new images in directory")
             return
@@ -292,7 +294,7 @@ class Worker:
 
                 elapsed_time = time.time() - time_start
                 if elapsed_time > self.timeBackUp:
-                    if self.store_face_presentations(df) is False:
+                    if self.store_face_presentations(df, dir) is False:
                         return
                     logging.info("elapsed time " + str(elapsed_time) + " > " + str(self.timeBackUp))
                     time_start = time.time()
@@ -466,7 +468,7 @@ class Worker:
             df_directory = df[df['directory'] == d]
             self.store_face_names_if_changed(df_directory, d, most_effective_method)
 
-        self.write_statistics(df, self.dirImages)
+        self.write_statistics(df)
 
     def load_face_names(self, folders):
         # df
@@ -476,7 +478,6 @@ class Worker:
         # - over all directories
         df = None
         for f in folders:
-            self.folder = f
 
             # ---
             # Concatenate all face representations of all directories
@@ -538,72 +539,6 @@ class Worker:
 
         return df
 
-    def load_face_names_old(self):
-        # df
-        # df is the one big pandas.DataFrame that holds
-        # - all face representations
-        # - all names
-        # - over all directories
-        df = None
-        for dir, dirnames, files in os.walk(self.dirImages, followlinks=self.follow_sym_links):
-            # ---
-            # Concatenate all face representations of all directories
-            df_representations = self.get_face_representations(dir)
-            if df_representations is None:
-                continue
-            # ---
-            # Read names in directory
-            df_names = self.get_face_names(dir)
-
-            if df_names is not None:
-                # ---
-                # Write all known names into the face representations
-                # Background:
-                # This step is needed if
-                #  - "statistics mode" / "history" is not switched on
-                #  - names are written
-                # Background:
-                # If the "statistics mode" is NOT switched on then names are stored only in the file ".faces.json"
-                # If the "statistics mode" IS switched on then names are stored along with the face representations
-                # in the file ".faces.gzip".
-                for face in df_names.itertuples():
-                    df_representations.loc[(df_representations['id'] == face.id), ['name', 'time_named']] = [face.name,
-                                                                                                             face.time_named]
-            # Read face names set from outside (usually by the user via the browser)
-            # Background:
-            #   The user will name faces in the browser.
-            #   The new or changed names will be written into a file names.json.
-            #
-            # What does happen in the next call?
-            #   1. Read the new or changed names from names.json
-            #   2. Remove the names from the file names.json (empty the data frame)
-            df_representations = self.read_new_names(df_representations, dir)
-
-            # ---
-            # Concatenate all face representations (including known names) of all directories
-            if df is None:
-                df = df_representations
-            else:
-                df = pd.concat([df, df_representations], ignore_index=True)
-
-        if df is None:
-            return df
-
-        # column 'directory' to have a quick filter for directories
-        def append_directory(x):
-            path = x['file']
-            index = path.rfind("/")
-            if index < 0:
-                directory = ""
-            else:
-                directory = path[0:index]
-            return directory
-
-        df['directory'] = df.apply(append_directory, axis=1)
-        logging.debug("Appended directory to each face")
-
-        return df
-
     # The main goal of this function is to avoid writing results (.faces.csv)
     # if nothing has changed after the process of face recognition.
     # Why does it matter?
@@ -633,7 +568,7 @@ class Worker:
 
         df = self.util.keep_most_effectiv_method_only(df, most_effective_method)
 
-        df_names = self.get_face_names(faces_dir)  # this will new/changed names set by the use via the web browser
+        df_names = self.get_face_names(abs_dir)  # this will new/changed names set by the use via the web browser
 
         # compare the content of the results (face recognition) with the content of the file containing the names
         # (that might have changed while the face recognition was running)
@@ -644,7 +579,7 @@ class Worker:
         else:
             logging.debug("faces have not changed. No need to store faces to file.")
 
-        self.empty_names_for_browser(faces_dir)
+        self.empty_names_for_browser(abs_dir)
 
     def read_new_names(self, df, dir):
         df_browser = self.get_face_names_set_by_browser(dir)
@@ -741,10 +676,11 @@ class Worker:
         # Load stored names
         df = None  # pandas.DataFrame that holds all face names
         path = os.path.join(dir, self.file_name_names)
-        if os.path.exists(self.path):
-            if os.stat(self.path).st_size == 0:
-                logging.debug(dir + " - file holding names is empty yet " + path)
-                return df
+        if not os.path.exists(path):
+            return df
+        if os.stat(path).st_size == 0:
+            logging.debug(dir + " - file holding names is empty yet " + path)
+            return df
         df = pd.read_json(path)
         logging.debug(dir + " - loaded names from file " + path)
         return df
@@ -754,7 +690,7 @@ class Worker:
         df = None  # pandas.DataFrame that holds all face names
         path = os.path.join(dir, self.file_name_faces)
         if os.path.exists(path):
-            if os.stat(self.path).st_size == 0:
+            if os.stat(path).st_size == 0:
                 logging.debug(dir + " - file holding names is empty yet " + path)
                 return df
             df = pd.read_json(path)
@@ -784,10 +720,10 @@ class Worker:
         if 'representation' in df.columns:  # for unit testing
             df = df.drop('representation', axis=1)
 
-        df = df.sort_values(by=[self.sort_column], ascending=[self.sort_direction])
+        df = df.sort_values(by=[self.sort_column], ascending=[self.sort_ascending])
         df.reset_index(drop=True, inplace=True)
 
-        path = os.path.join(self.dirImages, dir, self.file_name_faces)
+        path = os.path.join(dir, self.file_name_faces)
         df.to_json(path)
 
     def cleanup(self, dir):
@@ -795,7 +731,7 @@ class Worker:
         images = self.get_images(dir)
         df = self.get_face_representations(dir)
         if df is not None:
-            keys = self.util.remove_detector_model(df, self.removeModels, self.removeDetectors, dir)
+            keys = self.util.remove_detector_model(df, self.remove_models, self.remove_detectors, dir)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:
@@ -806,7 +742,7 @@ class Worker:
 
         df = self.get_face_names(dir)
         if df is not None:
-            keys = self.util.remove_detector_model(df, self.removeModels, self.removeDetectors, dir)
+            keys = self.util.remove_detector_model(df, self.remove_models, self.remove_detectors, dir)
             i = df[~df.file.isin(images)].index
             keys.extend(i.to_list())
             if len(keys) > 0:
@@ -832,7 +768,7 @@ class Worker:
                 logging.info(dir + " - removed all names from faces file")
                 self.store_face_names(df, dir)
 
-    def write_statistics(self, df, most_effective_method):
+    def write_statistics(self, df):
         if self.statistics:
             if not self.check_file_access_statistics():
                 return
