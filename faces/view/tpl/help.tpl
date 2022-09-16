@@ -25,21 +25,18 @@
 </p>
 <p>
     This addon makes it easy for you to play around with some parameters without
-    the need of programming skills.
-</p>
-<p>
-    Parameters you can set:
+    the need of programming skills:
 </p>
 <ul>
-    <li>Detectors (this is a FACE)</li>
-    <li>Models (this face is JANE)</li>
+    <li>Choose detectors (this is a FACE)</li>
+    <li>Choose models (this face is JANE)</li>
     <li>Combine detectors and models. Be aware that 5 detectors combined with
         7 models will produce 35 faces (instead of one) that have to be created, stored and matched.</li>
     <li>Set a minimum size for a face to be detected.</li>
     <li>Set the minimum size of know faces used search the same person (to train the model).</li>
     <li>Set the minimum size of unknown faces to be matched with known faces.</li>
     <li>Choose a distance metric to match faces, or use all.</li>
-    <li>Threshold of confidence: Recognition - this face is JANE.
+    <li>Choose a threshold of confidence for the recognition (this face is JANE).
         This threshold depends on the combination of a model and a distance metric.
         The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds
         <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">see</a>.
@@ -49,27 +46,26 @@
     Parameters you can not set:
 </p>
 <ul>
-    <li>Threshold of confidence: Detection - this is a FACE</li>
-    <li>Method to align and normalize faces to increase the accuracy.</li>
+    <li>Threshold of confidence for the detection (this is a FACE)</li>
+    <li>Method to align and normalize faces to increase the accuracy</li>
 </ul>
 <h2>
     Proove Myths
 </h2>
+<p>
+    How well does face recognition work in real life situations? What are the
+    limits?
+</p>
+<p>
+    Just proove it using this software!
+</p>
 <p>
     AI ("artifical intelligence" we should better call it machine learning)
     is conquering more and more aspects of our lifes.
     Most of us will use face recognition for fun.
     Some just search their foto album. Others search for relatives using payed websites.
     Sometimes the consequences of this technology are quite serious.
-    People sometimes land on terrorist lists or get blackmailed.
-</p>
-<p>
-    In any case you can almost be sure as soon as you upload a photo to a private company it will
-    be used for purposes you are not asked for and did not aggreed to.
-</p>
-<p>
-    Once they have it... How well do recent face recognition methods work?
-    How reliably do they recognize YOU?
+    People can land on terrorist lists or get blackmailed.
 </p>
 <p>
     How many false positives are produced by differnet detectors and recognition models?
