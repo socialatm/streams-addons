@@ -401,5 +401,33 @@
     false positives = persons that are not "Jane").
 </p>
 
+<hr>
+
+<h1>Remote Detection and Recognition</h1>
+
+<h2>What and Why</h2>
+<p>
+    You want to avoid to run the CPU and RAM consuming task of face recognition
+    on your server?
+</p>
+<p>
+    There is a python script that provides the same functionality than the
+    script running on the server.
+</p>
+<p>
+    How it works? The cloud files are accessible via webDAV. Once your local 
+    machine is connected via webDAV the python script
+    is able to read the pictures on the server and write back the results files.
+    It will also read the configuration.
+</p>
+<p>
+    The admin can block the python script on the server in the admin page of
+    the addon. The user is still able to view the faces and set names.
+</p>
+<h2>Main Page</h2>
+<p>
+    Open <a class='link_correction' href="faces/channel-nick/">here</a>.
+</p>
+
 
 <script src="/addon/faces/view/js/help.js"></script>
