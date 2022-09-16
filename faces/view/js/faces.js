@@ -1072,14 +1072,16 @@ function styleFaceFrame(face) {
     if (!face.name_recognized) {  // This can happen if the user sets the name to "unknown"
         face.name_recognized = "";  // avoid "undefined"
     }
-    existing_name = "";
-    face_existing = getFaceForId(face.id);
-    if (face_existing.sent) {
-        ((loglevel >= 2) ? console.log(t() + " This face name was set already. Style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
-        existing_name = face_existing.name;
-    } else {
-        existing_name = getWaitingNameForFace(face);
-    }
+//    existing_name = "";
+//    face_existing = getFaceForId(face.id);
+//    if (face_existing.sent) {
+//        ((loglevel >= 2) ? console.log(t() + " This face name was set already. Style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
+//        existing_name = face_existing.name;
+//    } else {
+//        existing_name = getWaitingNameForFace(face);
+//    }
+    
+    existing_name = getWaitingNameForFace(face);
 
 
     if (existing_name != "") {

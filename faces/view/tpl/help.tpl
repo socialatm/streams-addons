@@ -3,12 +3,12 @@
     There are a couple of reasons why this addon was written.
 </p>
 <h2>
-    Reclaim AI from commercial Companies
+    Reclaim artificial Intelligence (AI) from private Companies
 </h2>
 <p>
-    You can use commercial providers to recognize faces. Usually you have to upload  
-    pictures to them. Keep in mind, companies have to make money. They will keep, sell and re-uses your data in their own
-    interest.
+    To recognizes faces you will usually use the service of a private company.
+    Keep in mind, companies have to make money. They will keep, sell and re-use your data in their own
+    interest without asking you.
 </p>
 <p>
     Keep the data where it belongs to - to YOU.
@@ -36,24 +36,24 @@
     <li>Combine detectors and models. Be aware that 5 detectors combined with
         7 models will produce 35 faces (instead of one) that have to be created, stored and matched.</li>
     <li>Set a minimum size for a face to be detected.</li>
-    <li>Set the minimum size of faces used to find the same person (to train the model).</li>
-    <li>Set the minimum size of faces still unknown and to be matched with known faces.</li>
+    <li>Set the minimum size of know faces used search the same person (to train the model).</li>
+    <li>Set the minimum size of unknown faces to be matched with known faces.</li>
     <li>Choose a distance metric to match faces, or use all.</li>
+    <li>Threshold of confidence: Recognition - this face is JANE.
+        This threshold depends on the combination of a model and a distance metric.
+        The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds
+        <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">see</a>.
+    </li>
 </ul>
 <p>
     Parameters you can not set:
 </p>
 <ul>
     <li>Threshold of confidence: Detection - this is a FACE</li>
-    <li>Threshold of confidence: Recognition - this face is JANE.
-        This threshold depends on the combination model - distance metric.
-        The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds
-        <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">see</a>.
-    </li>
     <li>Method to align and normalize faces to increase the accuracy.</li>
 </ul>
 <p>
-    Open/TODO: How usefull is it to configure these parameters as well?
+    Open/TODO: How usefull is it to configure the above parameters as well?
 </p>
 <h2>
     Proove Myths
@@ -79,9 +79,10 @@
 </p>
 <p>
     Of course the big players like Google, Apple, Amazon,... have a bunch of other data
-    to make a better prediction. They can match the metadata like location, 
-    social circle and much more to tell you who is most likly on a picture.
-    But this is a different story. Face recognition itself can do no more magic than for
+    to make a better prediction than this software can do for you.
+    They will use the location data, 
+    the social circle, nearby bluetooth devices and and other data to tell you who is most likly on a picture.
+    This is a different story. Face recognition itself can do no more magic than for
     you.
 </p>
 
@@ -112,7 +113,8 @@
     neutral looking avatar face. The result is handed over to the next step.
 </p>
 <h3>3. Creation of Face Representations</h3>
-<p>This process creates a face representation for each face, sometimes called embedding, basically a vector of float numbers.
+<p>This process creates a face representation for a face, basically a
+    multidimensional vector, sometimes called embedding.
     The embeddings are created once and are stored in the file face.gzip.</p>
 <p>Available face recognition models:</p>
 <ul>
