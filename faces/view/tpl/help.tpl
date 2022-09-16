@@ -72,7 +72,7 @@
     How reliably do they recognize YOU?
 </p>
 <p>
-    How many false positives are produced by differnet detectors and recognition models.
+    How many false positives are produced by differnet detectors and recognition models?
 </p>
 <p>
     Of course the big players like Google, Apple, Amazon,... have a bunch of other data
