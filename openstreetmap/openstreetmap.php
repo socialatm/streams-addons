@@ -76,8 +76,7 @@ function openstreetmap_location(&$item) {
 	}
 
 	$marker = get_config('openstreetmap', 'marker', 1);
-
-    $output = '';
+    
 	$coord = $lat || $lon;
 
 	$rendered_loc = (($itemlocation && !$coord) ? '<a target="map" title="' . $itemlocation . '" href="'.$nomserver . '?q=' . urlencode($itemlocation) . '">' . $itemlocation . '</a>' : $itemlocation);
