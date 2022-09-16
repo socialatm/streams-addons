@@ -56,7 +56,7 @@
     Proove Myths
 </h2>
 <p>
-    AI ("artifical intellegence" we should better call it machine learning)
+    AI ("artifical intelligence" we should better call it machine learning)
     is conquering more and more aspects of our lifes.
     Most of us will use face recognition for fun.
     Some just search their foto album. Others search for relatives using payed websites.
@@ -64,7 +64,7 @@
     People sometimes land on terrorist lists or get blackmailed.
 </p>
 <p>
-    In any case you can almost be sure as soon as you upload a photo to a commercial provider it will
+    In any case you can almost be sure as soon as you upload a photo to a private company it will
     be used for purposes you are not asked for and did not aggreed to.
 </p>
 <p>
