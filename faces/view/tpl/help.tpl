@@ -52,9 +52,6 @@
     <li>Threshold of confidence: Detection - this is a FACE</li>
     <li>Method to align and normalize faces to increase the accuracy.</li>
 </ul>
-<p>
-    Open/TODO: How usefull is it to configure the above parameters as well?
-</p>
 <h2>
     Proove Myths
 </h2>
