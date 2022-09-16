@@ -191,23 +191,25 @@ function readWaitingNames(faces_waiting) {
     while (faces_waiting.id[i]) {
         let id = faces_waiting.id[i];
         let name = faces_waiting.name[i];
-        names_waiting.push({id: id, name: name});
-        ((loglevel >= 2) ? console.log(t() + " stored waiting face id=" + id + ", name=" + name) : null);
+        let url = "/cloud/" + channel_name + "/" + faces_waiting.file[i];
+        let pos = faces_waiting.position[i].map(Number);  // convert array of strings to array of numbers
+        names_waiting.push({id: id, name: name, url: url, pos: pos});
+        ((loglevel >= 2) ? console.log(t() + " stored waiting face id=" + id + ", name=" + name + ", url=" + url) : null);
         i++;
     }
 }
 
-function getWaitingNameForId(id) {
+function getWaitingNameForFace(face) {
     let i;
     for (i = 0; i < names_waiting.length; i++) {
-        var id_waiting = names_waiting[i].id;
-        if (id_waiting == id) {
-            name = names_waiting[i].name;
-            ((loglevel >= 2) ? console.log(t() + " return waiting face name=" + name + " for id=" + id) : null);
-            return name;
+        let face_waiting = names_waiting[i];
+        if (face_waiting.url === face.url) {
+            let face_existing = isSameFace(face, face_waiting);
+            if (face_existing) {
+                return names_waiting[i].name;
+            }
         }
     }
-    ((loglevel >= 2) ? console.log(t() + " found no waiting face name for id=" + id) : null);
     return "";
 }
 
@@ -985,29 +987,37 @@ function getFaceAtSamePosition(image, face) {
     var faces = image.faces;
     for (j = 0; j < faces.length; j++) {
         var f = faces[j];
-        // margins left, right, top, bottom in percent
-        middle_of_face_x = face.pos[0] + (100 - (face.pos[1] + face.pos[0])) / 2;
-        middle_of_face_y = face.pos[2] + (100 - (face.pos[2] + face.pos[3])) / 2;
-        end_of_row_face_x = 100 - f.pos[1];
-        end_of_row_face_y = 100 - f.pos[3];
-        // is middle of face inside row position?
-        if ((f.pos[0] < middle_of_face_x) && (middle_of_face_x < (end_of_row_face_x))) {
-            if ((f.pos[2] < middle_of_face_y) && (middle_of_face_y < (end_of_row_face_y))) {
-                middle_of_row_face_x = f.pos[0] + (100 - (f.pos[1] + f.pos[0])) / 2
-                middle_of_row_face_y = f.pos[2] + (100 - (f.pos[2] + f.pos[3])) / 2
-                end_of_face_x = 100 - face.pos[1];
-                end_of_face_y = 100 - face.pos[3];
-                // is middle of row position inside face ?
-                if ((face.pos [0] < middle_of_row_face_x) && (middle_of_row_face_x < (end_of_face_x))) {
-                    if ((face.pos[2] < middle_of_row_face_y) && (middle_of_row_face_y < (end_of_face_y))) {
-                        ((loglevel >= 3) ? console.log(t() + " yes, found a face id=" + f.id + " at position=" + f.pos + " in image=" + face.url) : null);
-                        return f;
-                    }
+        let face_existing = isSameFace(f, face);
+        if (face_existing) {
+            return face_existing;
+        }
+    }
+    ((loglevel >= 3) ? console.log(t() + " did not find a face at position=" + face.pos + " in image=" + face.url + " for id=" + face.id) : null);
+    return false;
+}
+
+function isSameFace(f, face) {
+    // margins left, right, top, bottom in percent
+    middle_of_face_x = face.pos[0] + (100 - (face.pos[1] + face.pos[0])) / 2;
+    middle_of_face_y = face.pos[2] + (100 - (face.pos[2] + face.pos[3])) / 2;
+    end_of_row_face_x = 100 - f.pos[1];
+    end_of_row_face_y = 100 - f.pos[3];
+    // is middle of face inside row position?
+    if ((f.pos[0] < middle_of_face_x) && (middle_of_face_x < (end_of_row_face_x))) {
+        if ((f.pos[2] < middle_of_face_y) && (middle_of_face_y < (end_of_row_face_y))) {
+            middle_of_row_face_x = f.pos[0] + (100 - (f.pos[1] + f.pos[0])) / 2
+            middle_of_row_face_y = f.pos[2] + (100 - (f.pos[2] + f.pos[3])) / 2
+            end_of_face_x = 100 - face.pos[1];
+            end_of_face_y = 100 - face.pos[3];
+            // is middle of row position inside face ?
+            if ((face.pos [0] < middle_of_row_face_x) && (middle_of_row_face_x < (end_of_face_x))) {
+                if ((face.pos[2] < middle_of_row_face_y) && (middle_of_row_face_y < (end_of_face_y))) {
+                    ((loglevel >= 3) ? console.log(t() + " yes, found a face id=" + f.id + " at position=" + f.pos + " in image=" + face.url) : null);
+                    return f;
                 }
             }
         }
     }
-    ((loglevel >= 3) ? console.log(t() + " did not find a face at position=" + face.pos + " in image=" + face.url + " for id=" + face.id) : null);
     return false;
 }
 
@@ -1063,12 +1073,12 @@ function styleFaceFrame(face) {
         face.name_recognized = "";  // avoid "undefined"
     }
     existing_name = "";
-    face_existing = getFaceForId(face.id)
+    face_existing = getFaceForId(face.id);
     if (face_existing.sent) {
         ((loglevel >= 2) ? console.log(t() + " This face name was set already. Style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
         existing_name = face_existing.name;
     } else {
-        existing_name = getWaitingNameForId(face.id);
+        existing_name = getWaitingNameForFace(face);
     }
 
 

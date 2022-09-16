@@ -4,14 +4,14 @@ namespace Code\Module;
 
 class Name {
 
-    public function write(\Code\Storage\File $file, string $image, string $name, string $id) {
+    public function write(\Code\Storage\File $file, string $image, string $name, string $id, $position) {
         logger("Try to write name '" . $name . "' for face id ='" . $id . "' in image=" . $image, LOGGER_DEBUG);
 
         $stream = $file->get();
         $contents = stream_get_contents($stream);
         $faces = json_decode($contents, true);
 
-        $faces_replaced = $this->replace($faces, $image, $name, $id);
+        $faces_replaced = $this->replace($faces, $image, $name, $id, $position);
         if (!$faces_replaced) {
             return false;
         }
@@ -24,7 +24,7 @@ class Name {
         return true;
     }
 
-    private function replace($faces, string $image, string $name, string $id) {
+    private function replace($faces, string $image, string $name, string $id, $position) {
         $i = 0;
         while ($faces["id"][$i]) {
             $face_id = $faces["id"][$i];
@@ -36,6 +36,8 @@ class Name {
         }
         $faces["id"][$i] = $id;
         $faces["name"][$i] = $name;
+        $faces["file"][$i] = $image;
+        $faces["position"][$i] = $position;
         // $objDateTime = new DateTime('NOW'); 
         // $dateTimeString = $objDateTime->format(DateTime::W3C);
         date_default_timezone_set("UTC");

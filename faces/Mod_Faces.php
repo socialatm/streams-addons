@@ -654,7 +654,7 @@ class Faces extends Controller {
             ////////////
             require_once('Name.php');
             $writer = new Name();
-            $success = $writer->write($names_file, $image, $face['name'], $face['id']);
+            $success = $writer->write($names_file, $image, $face['name'], $face['id'], $face['position']);
             ////////////
             if (!$success) {
                 $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
