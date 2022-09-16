@@ -1,6 +1,6 @@
 <h1>Why this Addon?</h1>
 <p>
-    There are a couple of reasons why this addon was written.
+    There are a couple of reasons.
 </p>
 <h2>
     Reclaim artificial Intelligence (AI) from private Companies
@@ -28,18 +28,41 @@
     the need of programming skills:
 </p>
 <ul>
-    <li>Choose detectors (this is a FACE)</li>
-    <li>Choose models (this face is JANE)</li>
-    <li>Combine detectors and models. Be aware that 5 detectors combined with
-        7 models will produce 35 faces (instead of one) that have to be created, stored and matched.</li>
-    <li>Set a minimum size for a face to be detected.</li>
-    <li>Set the minimum size of know faces used search the same person (to train the model).</li>
-    <li>Set the minimum size of unknown faces to be matched with known faces.</li>
-    <li>Choose a distance metric to match faces, or use all.</li>
-    <li>Choose a threshold of confidence for the recognition (this face is JANE).
-        This threshold depends on the combination of a model and a distance metric.
-        The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds
-        <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">see</a>.
+    <li>
+        Chosse detectors (this is a FACE), see
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Chosse models (this face is JANE), see
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Combine detectors and models. Be aware that 5 detectors combined with
+        7 models will produce 35 faces (instead of one). All have to be created, stored and matched. See
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Set a minimum size for a face to be detected, see
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Set the minimum size of know faces used to search in other images (to train the model), see
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Set the minimum size of unknown faces to be matched with known faces, see
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Choose a distance metric to match faces, see
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    </li>
+    <li>
+        Choose a threshold of confidence for the recognition (this face is JANE), see
+        <a class='link_correction' href="faces/channel-nick/thresholds">thresholds</a>
+        <br>This threshold depends on the combination of a model and a distance metric.
+        The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds, more
+        <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">background</a>.
     </li>
 </ul>
 <p>
@@ -111,7 +134,7 @@
     The embeddings are created once and are stored in the file face.gzip.</p>
 <p>Available face recognition models:</p>
 <ul>
-    <li>Facnenet (Google)</li>
+    <li>Facenet (Google)</li>
     <li>Facenet512 (Google)</li>
     <li>Deepface (Facebook)</li>
     <li>SFace</li>
@@ -126,15 +149,16 @@
     This process matches face representations (vectors) for similarity.
     Available metrics:
 </p>
-<p>
-    Available distance metrics:
-</p>
 <ul>
     <li>cosine</li>
     <li>euclidean</li>
     <li>euclidean_l2</li>
 </ul>
-<p>Please look at the <a href="https://github.com/serengil/deepface">official
+
+<h2>Further Reading</h2>
+
+<p>
+    Please look at the <a href="https://github.com/serengil/deepface">official
         documentation</a> and <a href="https://sefiks.com/talks/">public talks</a>
     of Sefik Ilkin Serengil who is the author of the underlying backend deepface.
 </p>
@@ -175,5 +199,207 @@
     </li>
 </ul>
 
+<hr>
+
+<h1>Reference</h1>
+
+<h2>Main Page</h2>
+<p>
+    Open <a class='link_correction' href="faces/channel-nick/">here</a>.
+</p>
+
+<h3>Filter / Search</h3>
+<p>
+    <button class="btn" id="button-faces-filter"><i class="fa fa-filter fa-2x"></i></button>
+    at the bottom of the page.
+</p>
+<ul>
+    <li>
+        <strong>Name</strong>: Choose one or more names from the list.
+    </li>
+    <li>
+        <strong>AND</strong> search: Find pictures only where "Jane" and "Bob" are together in 
+        a picture.
+    </li>
+    <li>
+        <strong>Date</strong>: Choose a start and/or an end date.
+        You can use the <strong>upload</strong> date of the picture or the date when the
+        picture was <strong>taken</strong> (exif date). 
+        Default is the upload date. Use the
+        <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+        to change the setting. Be aware that not every single pictures carries
+        the information when it was taken. 01.01.1970 will be used if no information
+        is available.
+    </li>
+</ul>
+
+<h3>Toogle Frames</h3>
+<p>
+    <button class="btn" id="button-faces-hide-frames"><i class="fa fa-eye-slash fa-2x"></i></button>
+    at the bottom of the page. Hide the frames for better visibility of faces.
+</p>
+
+<h3>Zoom</h3>
+<p>
+    <button class="btn faces_zoom" id="button_faces_zoom_in"><i
+            class="fa fa-search-plus fa-2x"></i></button>
+    <button class="btn faces_zoom" id="button_faces_zoom_out"><i
+            class="fa fa-search-minus fa-2x"></i></button>
+    at the bottom of the page.
+    Show one or up to six images in one row. Set the default zoom under
+    <a class='link_correction' href="faces/channel-nick/settings">settings</a>.
+</p>
+
+<hr>
+
+<h2>Settings</h2>
+<p>
+    Open with <a class='link_correction' href="faces/channel-nick/settings">settings</a>.
+</p>
+
+<h3>Detectors</h3>
+
+<p>
+    Activate one or more detectors.
+</p>
+
+<h3>Models</h3>
+
+<p>
+    Activate one or more models.
+</p>
+
+<h3>Distance Metrics</h3>
+
+<p>
+    Activate one or more distance metrics.
+</p>
+
+<h3>Tuning - Detection</h3>
+
+<p>
+    Set a minimum size for a face to be found in pixel and/or percent of the image
+    width. Smaller faces will be ignored.
+</p>
+
+<h3>Tuning - Recognition</h3>
+
+<p>
+    Set a minimum size for faces used  as training data and for the faces
+    that still do not carry a name. Some detectors like retinaface or mtcnn
+    are very acurate in finding small faces that might often be in the
+    background and thus are not relevant for you.
+</p>
+
+<h3>Statistics - History</h3>
+
+<p>
+    Store the recognized name along with the name set by the user.
+    This will allow you to compare the accuracy of different recognition models. 
+</p>
+
+<h3>Statistics - Write Statistics</h3>
+
+<p>
+    Write all detected and recognized faces into one single file 
+    <a class='link_correction' href="cloud/channel-nick/faces/face_statistics.csv">face_statistics.csv</a>
+    This allows you to view details on what detector found what face,
+    what model recognized what name, the time it took,...
+</p>
+
+<h3>Statistics - Enforce all Models to match Faces</h3>
+
+<p>
+    Compare the effectivness of detectors, models and distance metrics.
+    There is a result file for this,
+    <a class='link_correction' href="cloud/channel-nick/faces/model_statistics.csv">model_statistics.csv</a>.
+    If you want to have usefull results you should enable the "history" above and
+    probably "immediate search". For your convenience activate
+    the preset "experimental" below. This will to the right settings for you
+    If switched on this will slow down face matching. There is a good chance to
+    find to much false postives (faces that are not "Jane").
+</p>
+
+<h3>Performance - Immediate Search</h3>
+
+<p>
+    Start the face recognition always immediatly after a users has set
+    a name. Advantage: The names will be updated in the
+    browser as soon as the face recognition finds a person. Disadvantage:
+    Increased server load. 
+</p>
+
+<h3>Browser Appearance - Sortation</h3>
+
+<p>
+    Sort the images by the time an images was taken (exif) or the time it was uploaded.
+    Some images do not carry the information when they where taken.
+    Recommended: Switch off to get consistent results.
+</p>
+
+<h3>Browser Appearance - Zoom</h3>
+
+<p>
+    Start value for zoom. Possible values: 1 to 6.
+</p>
+
+<h3>Facial Attributes and Demography</h3>
+
+<p>
+    Acitvate emotion, age, gender, race. The results are not displayed in any
+    way at the moment.
+</p>
+
+<h3>Presets - Experimental</h3>
+
+<p>
+    Activate only if you want to compare all detectors, models and distance metrics. Make sure the server has enough CPU and RAM.
+    Recommended: Switch on for experimental reasons only. THIS CONSUMES MUCH CPU, RAM, TIME AND ENERGY.
+</p>
+
+<h3>Presets - Default</h3>
+
+<p>
+    Reset all of the options above to default ones.
+    RECOMMENDED: SWITCH ON and press "Submit".
+</p>
+
+<hr>
+
+<h2>Remove</h2>
+
+<p>
+    Open with <a class='link_correction' href="faces/channel-nick/remove">remove</a>.
+</p>
+<p>
+    Remove faces and/or names there. You can also remove faces for a certain
+    detetor or a model or a combination of detector and models.
+</p>
+
+<hr>
+
+<h2>Thresholds (advanced)</h2>
+<p>
+    Open with <a class='link_correction' href="faces/channel-nick/thresholds">thresholds</a>.
+    Fine tune the thresholds for recognition models.
+    You can play around with the thresholds in conjunction with
+    <a class='link_correction' href="faces/channel-nick/probe">probe</a>.
+    The author of deepface Sefik Ilkin Serengil already fine tuned most thresholds
+    <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">see</a>.
+</p>
+
+<hr>
+
+<h2>Probe (advanced)</h2>
+<p>
+    Open with <a class='link_correction' href="faces/channel-nick/probe">probe</a>.
+    You will find a detailed description there. In short this feature will
+    start a search using different thresholds for distance metrics.
+    The programm will show you the results
+    in a table (csv file). The goal is to determine optimised thresholds that find
+    "Jane" in all pictures without finding to much "Jane"s ( =
+    false positives = persons that are not "Jane").
+</p>
 
 
+<script src="/addon/faces/view/js/help.js"></script>
