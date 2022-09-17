@@ -260,6 +260,7 @@ class Faces extends Controller {
         $config = $this->getConfig();
         $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
         $sort_exif = $config["exif"][0][1] ? $config["exif"][0][1] : false;
+        $sort_ascending = $config["ascending"][0][1] ? $config["ascending"][0][1] : false;
         $zoom = $config["zoom"][0][1] ? $config["zoom"][0][1] : 2;
 
         if ($fr->isScriptRunning() && $action === 'start') {
@@ -271,6 +272,7 @@ class Faces extends Controller {
                 'names_waiting' => $this->files_names,
                 'immediatly' => $immediatly,
                 'sort_exif' => $sort_exif,
+                'sort_ascending' => $sort_ascending,
                 'zoom' => $zoom,
                 'message' => "ok"));
         }
@@ -296,6 +298,7 @@ class Faces extends Controller {
             'names_waiting' => $this->files_names,
             'immediatly' => $immediatly,
             'sort_exif' => $sort_exif,
+            'sort_ascending' => $sort_ascending,
             'zoom' => $zoom,
             'message' => "ok"));
     }

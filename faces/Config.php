@@ -206,6 +206,7 @@ class FaceConfiguration {
         }
            
         $config["exif"][0][2] = false;
+        $config["ascending"][0][2] = false;
         
         $min = 1;
         $max = 6;
@@ -261,6 +262,7 @@ class FaceConfiguration {
         $config = $this->addConfigElement("faces_experimental", "experimental", $config, false);
         $config = $this->addConfigElement("immediatly", "immediatly", $config, false);
         $config = $this->addConfigElement("exif", "exif", $config, false);
+        $config = $this->addConfigElement("ascending", "ascending", $config, false);
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
         $config["zoom"] = [["zoom", 2]];

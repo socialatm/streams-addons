@@ -29,6 +29,7 @@ var server_time = "";
 
 var immediateSearch = false;
 var sort_exif = false;
+var sortDirectionReverse = false;
 
 function t() {
     var now = new Date();
@@ -141,6 +142,10 @@ function setConfig(data, is_start) {
     if (data['sort_exif']) {
         sort_exif = data['sort_exif'];
         ((loglevel >= 1) ? console.log(t() + " set config data - sort_exif= " + sort_exif) : null);
+    }
+    if (data['sort_ascending']) {
+        sortDirectionReverse = data['sort_ascending'];
+        ((loglevel >= 1) ? console.log(t() + " set config data - sort_ascending= " + sortDirectionReverse) : null);
     }
     if (is_start) {
         if (data['zoom']) {
