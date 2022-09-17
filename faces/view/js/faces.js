@@ -136,7 +136,7 @@ function postUpdate() {
 function setConfig(data, is_start) {
     if (data['immediatly']) {
         immediateSearch = data['immediatly'];
-        ((loglevel >= 1) ? console.log(t() + " set config data - immediatly= " + immediatly) : null);
+        ((loglevel >= 1) ? console.log(t() + " set config data - immediatly= " + immediateSearch) : null);
     }
     if (data['sort_exif']) {
         sort_exif = data['sort_exif'];
@@ -160,15 +160,16 @@ function loadFaceData(files, files_waiting_names) {
     let i;
     for (i = 0; i < files_waiting_names.length; i++) {
         let f = files_waiting_names[i];
-        ((loglevel >= 2) ? console.log(t() + " load face data - requesting file " + f) : null);
+        ((loglevel >= 2) ? console.log(t() + " load face data - waiting names - requesting file " + f) : null);
         let url = window.location.origin + "/cloud/" + f;
         jQuery.ajax({
             url: url,
             success: function (data) {
-                ((loglevel >= 3) ? console.log(t() + " load face data - received from server: file=" + f + ", data= " + data) : null);
+                ((loglevel >= 1) ? console.log(t() + " load face data - waiting names - received response from server") : null);
+                ((loglevel >= 3) ? console.log(t() + " load face data - waiting names - received from server: data= " + data) : null);
                 readWaitingNames(data);
                 if (++counter_files_name_waiting === files_waiting_names.length) {
-                    ((loglevel >= 2) ? console.log(t() + " load face data - finished - last file (waiting faces) was loaded: " + counter_files_name_waiting) : null);
+                    ((loglevel >= 2) ? console.log(t() + " load face data - finished - waiting names - last file (waiting faces) was loaded: " + counter_files_name_waiting) : null);
                 }
             },
             async: true
@@ -184,6 +185,7 @@ function loadFaceData(files, files_waiting_names) {
         jQuery.ajax({
             url: url,
             success: function (data) {
+                ((loglevel >= 1) ? console.log(t() + " load face data - received response from server") : null);
                 ((loglevel >= 3) ? console.log(t() + " load face data - received from server: file=" + f + ", data= " + data) : null);
                 readFaces(data, f);
                 if (++counter_files_name === files.length) {
