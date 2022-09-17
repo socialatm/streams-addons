@@ -73,11 +73,8 @@ function getLogLevel() {
     return logLevel;
 }
 
-function postStart(isStart) {
+function postStart() {
     let postURL = window.location + "/start";
-    if (!isStart) {
-        postURL = window.location + "/recognize";
-    }
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
 
     $.post(postURL, {}, function (data) {
@@ -90,7 +87,27 @@ function postStart(isStart) {
         if (data['names']) {
             loadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
-        setConfig(data);
+        setConfig(data, true);
+        waitForFinishedFaceDetection();
+    },
+            'json');
+}
+
+function postRecognize() {
+    let postURL = window.location + "/recognize";
+    ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
+
+    $.post(postURL, {}, function (data) {
+        if (!data['status']) {
+            ((loglevel >= 0) ? console.log(t() + " post recognize - ERROR " + data['message']) : null);
+            return;
+        }
+        ((loglevel >= 1) ? console.log(t() + " post recognize - received server message: " + data['message']) : null);
+        ((loglevel >= 3) ? console.log(t() + " post recognize - received server data response: " + JSON.stringify(data)) : null);
+        if (data['names']) {
+            loadFaceData(data['names'], data['names_waiting']); // creates list of images
+        }
+        setConfig(data, false);
         waitForFinishedFaceDetection();
     },
             'json');
@@ -111,20 +128,25 @@ function postUpdate() {
         if (data['names']) {
             loadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
-        setConfig(data);
+        setConfig(data, false);
     },
             'json');
 }
 
-function setConfig(data) {
+function setConfig(data, is_start) {
     if (data['immediatly']) {
         immediateSearch = data['immediatly'];
+        ((loglevel >= 1) ? console.log(t() + " set config data - immediatly= " + immediatly) : null);
     }
     if (data['sort_exif']) {
         sort_exif = data['sort_exif'];
+        ((loglevel >= 1) ? console.log(t() + " set config data - sort_exif= " + sort_exif) : null);
     }
-    if (data['zoom']) {
-        zoom = data['zoom'];
+    if (is_start) {
+        if (data['zoom']) {
+            zoom = data['zoom'];
+            ((loglevel >= 1) ? console.log(t() + " set config data - zoom= " + zoom) : null);
+        }
     }
 }
 
@@ -971,7 +993,7 @@ function updateFace(face) {
                 ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
                 let name = images[i].faces[j].name;
                 images[i].faces[j] = face;
-                if(name !== "") {
+                if (name !== "") {
                     images[i].faces[j].name = name;
                     ((loglevel >= 3) ? console.log(t() + " update face in data array - existing name=" + name + " was kept - id = " + face.id + ", url=" + face.url) : null);
                 }
@@ -1084,7 +1106,7 @@ function styleFaceFrame(face) {
 //    } else {
 //        existing_name = getWaitingNameForFace(face);
 //    }
-    
+
     existing_name = getWaitingNameForFace(face);
 
 
