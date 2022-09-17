@@ -78,15 +78,15 @@ function postStart(isStart) {
     if (!isStart) {
         postURL = window.location + "/recognize";
     }
-    ((loglevel >= 1) ? console.log(t() + " about to start the face detection and recognition: url = " + postURL) : null);
+    ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
 
     $.post(postURL, {}, function (data) {
         if (!data['status']) {
             ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
             return;
         }
-        ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
-        ((loglevel >= 3) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
+        ((loglevel >= 1) ? console.log(t() + " post start - received server message: " + data['message']) : null);
+        ((loglevel >= 3) ? console.log(t() + " post start - received server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
             loadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
@@ -100,14 +100,14 @@ function postUpdate() {
     var action = new Array();
     var postURL = window.location + "/results";
     //clear();
-    ((loglevel >= 1) ? console.log(t() + " about to get the results of the face detection and recognition: url = " + postURL) : null);
+    ((loglevel >= 1) ? console.log(t() + " post update - requesting results, url = " + postURL) : null);
     $.post(postURL, {action}, function (data) {
         if (!data['status']) {
             ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
             return;
         }
-        ((loglevel >= 1) ? console.log(t() + " server message: " + data['message']) : null);
-        ((loglevel >= 2) ? console.log(t() + " server data response: " + JSON.stringify(data)) : null);
+        ((loglevel >= 1) ? console.log(t() + " post update - received results with server message: " + data['message']) : null);
+        ((loglevel >= 3) ? console.log(t() + " post update - received results with server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
             loadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
@@ -138,15 +138,15 @@ function loadFaceData(files, files_waiting_names) {
     let i;
     for (i = 0; i < files_waiting_names.length; i++) {
         let f = files_waiting_names[i];
-        ((loglevel >= 2) ? console.log(t() + " Received file " + f) : null);
+        ((loglevel >= 2) ? console.log(t() + " load face data - requesting file " + f) : null);
         let url = window.location.origin + "/cloud/" + f;
         jQuery.ajax({
             url: url,
             success: function (data) {
-                ((loglevel >= 3) ? console.log(t() + " loaded " + data) : null);
+                ((loglevel >= 3) ? console.log(t() + " load face data - received from server: file=" + f + ", data= " + data) : null);
                 readWaitingNames(data);
                 if (++counter_files_name_waiting === files_waiting_names.length) {
-                    ((loglevel >= 2) ? console.log(t() + " last file was loaded: " + counter_files_name_waiting) : null);
+                    ((loglevel >= 2) ? console.log(t() + " load face data - finished - last file (waiting faces) was loaded: " + counter_files_name_waiting) : null);
                 }
             },
             async: true
@@ -157,15 +157,15 @@ function loadFaceData(files, files_waiting_names) {
     // images and their names.
     for (i = 0; i < files.length; i++) {
         let f = files[i];
-        ((loglevel >= 2) ? console.log(t() + " Received file " + f) : null);
+        ((loglevel >= 2) ? console.log(t() + " load face data - requesting file " + f) : null);
         let url = window.location.origin + "/cloud/" + f;
         jQuery.ajax({
             url: url,
             success: function (data) {
-                ((loglevel >= 3) ? console.log(t() + " loaded " + data) : null);
+                ((loglevel >= 3) ? console.log(t() + " load face data - received from server: file=" + f + ", data= " + data) : null);
                 readFaces(data, f);
                 if (++counter_files_name === files.length) {
-                    ((loglevel >= 2) ? console.log(t() + " last file was loaded: " + counter_files_name) : null);
+                    ((loglevel >= 2) ? console.log(t() + "load face data - finished - last file was loaded: " + counter_files_name) : null);
                     if (stopLoadingImages) {
                         return;
                     }
@@ -206,6 +206,7 @@ function getWaitingNameForFace(face) {
         if (face_waiting.url === face.url) {
             let face_existing = isSameFace(face, face_waiting);
             if (face_existing) {
+                ((loglevel >= 3) ? console.log(t() + " is waiting face: name=" + face.name + " of face id= " + face.id + " was sent to server, url=" + face.url) : null);
                 return names_waiting[i].name;
             }
         }
@@ -237,7 +238,7 @@ function readFaces(imgs, csvFile) {
 function appendFaceToImages(face) {
     var existingFace = getFaceForId(face.id);
     if (existingFace) {
-        ((loglevel >= 2) ? console.log(t() + " try to update face id=" + face.id + " of image=" + face['url']) : null);
+        ((loglevel >= 2) ? console.log(t() + " append face to image in data array - face does exists already - updating face, id=" + face.id + ", url=" + face['url']) : null);
         updateFace(face);
         return;
     }
@@ -247,7 +248,7 @@ function appendFaceToImages(face) {
             var existingFace = getFaceAtSamePosition(image, face);
             if (!existingFace) {
                 image['faces'].push(face);
-                ((loglevel >= 2) ? console.log(t() + " appended face to image = " + face['url']) : null);
+                ((loglevel >= 2) ? console.log(t() + " append face to image in data array - new face id=" + face.id + ", url= " + face['url']) : null);
             } else {
                 face.id = existingFace.id;
                 updateFace(face);
@@ -265,7 +266,7 @@ function appendFaceToImages(face) {
     faces.push(face);
     var image = {id: imageCounter++, url: face['url'], faces: faces, pass: true, time: face['time']};
     images.push(image);
-    ((loglevel >= 2) ? console.log(t() + " created new image = " + face['url']) : null);
+    ((loglevel >= 2) ? console.log(t() + " append face to image in data array - finished - created new image = " + face['url']) : null);
 }
 
 
@@ -436,10 +437,10 @@ var unsentNames = [];
 
 function removeNameFromUnsentList(face) {
     if (!face) {
-        ((loglevel >= 1) ? console.log(t() + " can not remove face id from unsent list because the id is null (received as server response)") : null);
+        ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - can not remove face id from unsent list because the id is null (received as server response)") : null);
         return false;
     }
-    ((loglevel >= 1) ? console.log(t() + "remove face from unsent list, face = " + JSON.stringify(face)) : null);
+    ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - face = " + JSON.stringify(face)) : null);
     var faceID = face.id;
     var hasRemoved = false;
     var i;
@@ -448,21 +449,21 @@ function removeNameFromUnsentList(face) {
         if (faceID === id) {
             //unsentNames.remove(unsentNames[i]);
             unsentNames.splice(i, 1);
-            ((loglevel >= 1) ? console.log(t() + " removed face with id = " + id + " from list of unsent faces") : null);
+            ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - removed face id = " + id + " from list of unsent faces") : null);
             hasRemoved = true;
             break;
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " Success yes/no for: face was removed from list of unsent faces : " + hasRemoved) : null);
+    ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - Success yes/no for: face was removed from list of unsent faces : " + hasRemoved) : null);
     return hasRemoved;
 }
 
 
 
 function postNames() {
-    ((loglevel >= 1) ? console.log(t() + " post the next name in the list of unsent faces ") : null);
+    ((loglevel >= 1) ? console.log(t() + " post names - post the next name in the list of unsent faces ") : null);
     if (unsentNames.length === 0) {
-        ((loglevel >= 1) ? console.log(t() + " no name left to send ") : null);
+        ((loglevel >= 1) ? console.log(t() + " post names - no name left to send ") : null);
         clearCounterNamesSending();
         if (!isFaceRecognitionRunning && immediateSearch) {
             postStart(false);
@@ -472,24 +473,24 @@ function postNames() {
     var action = new Array();
     action["face"] = unsentNames[0];
     var nameString = JSON.stringify(unsentNames[0]);
-    ((loglevel >= 1) ? console.log(t() + " About to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
+    ((loglevel >= 1) ? console.log(t() + " post names - about to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
     animate_on();
     setCounterNamesSending();
     var postURL = window.location + "/name";
     ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);
     $.post(postURL, {face: unsentNames[0]}, function (data) {
-        ((loglevel >= 1) ? console.log(t() + " Received response from server after posting a name") : null);
+        ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
         if (data['status']) {
-            ((loglevel >= 1) ? console.log(t() + " Server response to sending the name was without errors") : null);
+            ((loglevel >= 1) ? console.log(t() + " post names - receiced server response to sending the name was without errors") : null);
             if (removeNameFromUnsentList(data['face'])) {
                 styleFaceFrame(data['face']);
                 postNames();
             } else {
-                ((loglevel >= 1) ? console.log(t() + " Stop sendings names because failed to removed a name/face frome the unsent list. The name/face was received from the server (as response to set its name)") : null);
+                ((loglevel >= 1) ? console.log(t() + " post names - stop sendings names because failed to removed a name/face frome the unsent list. The name/face was received from the server (as response to set its name)") : null);
                 clearCounterNamesSending();
             }
         } else {
-            ((loglevel >= 0) ? console.log(t() + " Error sending name. Server responded with: " + data['message']) : null);
+            ((loglevel >= 0) ? console.log(t() + " post names - rrror sending name. Server responded with: " + data['message']) : null);
             clearCounterNamesSending();
         }
     },
@@ -883,12 +884,11 @@ function openSingleImage(img) {
 }
 
 function appendPicture(img) {
-    ((loglevel >= 1) ? console.log(t() + " start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
+    ((loglevel >= 1) ? console.log(t() + "append picture: start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
     var html = "";
     var faces = img.faces;
     var i;
     for (i = 0; i < faces.length; i++) {
-        ((loglevel >= 2) ? console.log(t() + " append face number = " + i + " in image") : null);
         // row from db table face_encodings (joined with attach.hash to complete the URL)
         var face = faces[i];
         if (i === 0) {
@@ -899,7 +899,7 @@ function appendPicture(img) {
             html += "   <div class=\"face-container\">";
             html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
         }
-        ((loglevel >= 2) ? console.log(t() + " adding face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
+        ((loglevel >= 2) ? console.log(t() + "append picture: face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
         var top = 1;
         var left = 1;
         var bottom = 98;
@@ -916,15 +916,15 @@ function appendPicture(img) {
     }
     if (mostRecentImageLoadedId == "") {
         mostRecentImageLoadedId = img.id;
-        ((loglevel >= 2) ? console.log(t() + " most recent image id: " + mostRecentImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + "append picture:  most recent image id: " + mostRecentImageLoadedId) : null);
     }
 
     if (oldestImageLoadedId == 0) {
         oldestImageLoadedId = img.id;
-        ((loglevel >= 2) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + "append picture:  oldest image id: " + oldestImageLoadedId) : null);
     } else if (img.id < oldestImageLoadedId) {
         oldestImageLoadedId = img.id;
-        ((loglevel >= 2) ? console.log(t() + " oldest image id: " + oldestImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + "append picture:  oldest image id: " + oldestImageLoadedId) : null);
     }
     if (stopLoadingImages) {
         return;
@@ -937,11 +937,11 @@ function getImageForId(id) {
     var i;
     for (i = 0; i < images.length; i++) {
         if (id == images[i].id) {
-            ((loglevel >= 3) ? console.log(t() + " returning image for id = " + id + " found in the list of received images") : null);
+            ((loglevel >= 3) ? console.log(t() + " get image for id - returning image for id = " + id + " found in the list of received images") : null);
             return images[i];
         }
     }
-    ((loglevel >= 3) ? console.log(t() + " found no image for id = " + id + " in the list of received images") : null);
+    ((loglevel >= 3) ? console.log(t() + " get image for id - nothing found - no image for id = " + id + " in the list of received images") : null);
     return false;
 }
 
@@ -952,12 +952,12 @@ function getFaceForId(id) {
         for (j = 0; j < faces.length; j++) {
             var face = faces[j];
             if (id == face.id) {
-                ((loglevel >= 3) ? console.log(t() + " returning face for id = " + id + " found in the list of received images") : null);
+                ((loglevel >= 3) ? console.log(t() + " get face for id - returning id = " + id + " found in the list of received faces") : null);
                 return face;
             }
         }
     }
-    ((loglevel >= 3) ? console.log(t() + " found no face for id = " + id + " in the list of received images") : null);
+    ((loglevel >= 3) ? console.log(t() + " get face for id -  not found - no face id = " + id + " in the list of received faces") : null);
     return false
 }
 
@@ -968,22 +968,26 @@ function updateFace(face) {
         for (j = 0; j < faces.length; j++) {
             var f = faces[j];
             if (f.id == face.id) {
-                ((loglevel >= 3) ? console.log(t() + " update face id = " + face.id + " in the underlying data array") : null);
+                ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
+                let name = images[i].faces[j].name;
                 images[i].faces[j] = face;
-                ((loglevel >= 3) ? console.log(t() + " style face frame for id = " + face.id) : null);
+                if(name !== "") {
+                    images[i].faces[j].name = name;
+                    ((loglevel >= 3) ? console.log(t() + " update face in data array - existing name=" + name + " was kept - id = " + face.id + ", url=" + face.url) : null);
+                }
                 styleFaceFrame(face);
                 return true;
             }
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " found no faces for id = " + id + " to update") : null);
+    ((loglevel >= 1) ? console.log(t() + " update face in data array - found no faces for id = " + face.id + ", url=" + face.url) : null);
     return false;
 }
 
 // If faces are updated they have not always the same face id because the are found by different detectors/models.
 // Check the position of existing faces (frames arround faces) to avoid multiple frames around a same face.
 function getFaceAtSamePosition(image, face) {
-    ((loglevel >= 3) ? console.log(t() + " try to find a face at the same position=" + face.pos + " in image=" + face.url + ", faces id=" + face.id) : null);
+    ((loglevel >= 3) ? console.log(t() + " get face at same position - start - position=" + face.pos + ", url=" + face.url + ", face id=" + face.id) : null);
     var faces = image.faces;
     for (j = 0; j < faces.length; j++) {
         var f = faces[j];
@@ -992,7 +996,7 @@ function getFaceAtSamePosition(image, face) {
             return face_existing;
         }
     }
-    ((loglevel >= 3) ? console.log(t() + " did not find a face at position=" + face.pos + " in image=" + face.url + " for id=" + face.id) : null);
+    ((loglevel >= 3) ? console.log(t() + " get face at same position - finished - no face found - position=" + face.pos + ", url=" + face.url + ", face id=" + face.id) : null);
     return false;
 }
 
@@ -1056,10 +1060,10 @@ function setFrameSizes(img) {
 
 function styleFaceFrame(face) {
     if (!face) {
-        ((loglevel >= 2) ? console.log(t() + " style frame for face = null > can not style (update frame style and name) ") : null);
+        ((loglevel >= 2) ? console.log(t() + " style face: for face = null > can not style (update frame style and name) ") : null);
         return;
     }
-    ((loglevel >= 2) ? console.log(t() + " style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
+    ((loglevel >= 2) ? console.log(t() + " style face: for face = " + JSON.stringify(Object.assign({}, face))) : null);
     var nameFrame = document.getElementById("face-" + face.id);
     if (!nameFrame) {
         // no image yet to update (happens after http get = loading the page)
@@ -1088,6 +1092,7 @@ function styleFaceFrame(face) {
         nameFrame.style.border = "rgba(255,255,255,.5)";
         name = existing_name;
         isVerified = "1";
+        ((loglevel >= 3) ? console.log(t() + " style face:  existing face, id = " + face.id + ", url=" + face.url) : null);
     } else if (face.name != "") {
         // prio 1 because this face was given a name by user
         if (face.name == "-ignore-") {
@@ -1097,36 +1102,36 @@ function styleFaceFrame(face) {
         nameFrame.style.border = "rgba(255,255,255,.5)";
         name = face.name;
         isVerified = "1";
-        ((loglevel >= 3) ? console.log(t() + " verified face, id = " + face.id) : null);
+        ((loglevel >= 3) ? console.log(t() + " style face:  named face, id = " + face.id + ", url=" + face.url) : null);
     } else if (face.name_recognized != "") {
         // prio 2 because this is guessed by the face recognition
         nameFrame.style.border = "medium dashed red";
         if (face.time_named == "") {
             name = face.name_recognized;
         }
-        ((loglevel >= 3) ? console.log(t() + " recognized face, id = " + face.id + " (guessed by face recognition)") : null);
+        ((loglevel >= 3) ? console.log(t() + " style face: recognized face, id = " + face.id + ", url=" + face.url) : null);
     } else {
         // prio 3 because this is the default if nothing is known about this face
         nameFrame.style.border = "medium dotted red";
-        ((loglevel >= 3) ? console.log(t() + " nothing known about this and therefor styled as dotted red") : null);
+        ((loglevel >= 3) ? console.log(t() + " style face:  no name yet face, id = " + face.id + ", url=" + face.url) : null);
     }
     nameFrame.getElementsByClassName("face-name-shown")[0].innerHTML = name;
     nameFrame.setAttribute("isVerified", isVerified);
-    ((loglevel >= 2) ? console.log(t() + " frame shows name = " + name) : null);
+    ((loglevel >= 2) ? console.log(t() + " style face:  end - frame shows name = " + name + ", id = " + face.id + ", url=" + face.url) : null);
 }
 
 function styleAllAgain() {
-    ((loglevel >= 1) ? console.log(t() + " start - style all again") : null);
+    ((loglevel >= 1) ? console.log(t() + " style all again - start") : null);
     var i;
     for (i = 0; i < images.length; i++) {
         var faces = images[i].faces;
         for (j = 0; j < faces.length; j++) {
             var face = faces[j];
-            ((loglevel >= 3) ? console.log(t() + " style face frame for id = " + face.id) : null);
+            ((loglevel >= 3) ? console.log(t() + " style all again - styleface, id = " + face.id + ", url=" + face.url) : null);
             styleFaceFrame(face);
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " finished - style all again") : null);
+    ((loglevel >= 1) ? console.log(t() + " style all again - finished") : null);
 }
 
 function checkServerStatus(status) {
