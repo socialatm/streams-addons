@@ -17,7 +17,7 @@
     Make your own Experiments
 </h2>
 <p>
-    ...and choose what works best.
+    ...and choose what works best for you.
 </p>
 <p>
     This addon bundles some of the most recent state-of-the-art face recognition methods
@@ -29,11 +29,11 @@
 </p>
 <ul>
     <li>
-        Chosse detectors (this is a FACE), see
+        Choose detectors (task = this is a FACE), see
         <a class='link_correction' href="faces/channel-nick/settings">settings</a>
     </li>
     <li>
-        Chosse models (this face is JANE), see
+        Choose models (task = this face is JANE), see
         <a class='link_correction' href="faces/channel-nick/settings">settings</a>
     </li>
     <li>
@@ -60,8 +60,9 @@
     <li>
         Choose a threshold of confidence for the recognition (this face is JANE), see
         <a class='link_correction' href="faces/channel-nick/thresholds">thresholds</a>
-        <br>This threshold depends on the combination of a model and a distance metric.
-        The author of deepface Sefik Ilkin Serengil already fine tuned these thresholds, more
+        <br>The optimal value of a threshold depends mainly on the combination of a model and a distance metric
+        but also on the detector used by a model.
+        The author of deepface Sefik Ilkin Serengil already fine tuned the thresholds, more
         <a href="https://sefiks.com/2020/05/22/fine-tuning-the-threshold-in-face-recognition/">background</a>.
     </li>
 </ul>
@@ -96,7 +97,7 @@
 <p>
     Of course the big players like Google, Apple, Amazon,... have a bunch of other data
     to make a better prediction than this software can do for you.
-    They will use the location data, 
+    They will use the location data in images, 
     the social circle, nearby bluetooth devices and and other data to tell you who is most likly on a picture.
     This is a different story. Face recognition itself can do no more magic than for
     you.
@@ -124,13 +125,16 @@
 <h3>2. Alignment and Normalization</h3>
 <p>
     The alignment rotates the face until the
-    eyes are at the same horizontal line. Normalization corrects the perspective,
+    eyes sit on the same horizontal line.
+</p>
+<p>
+    The normalization corrects the perspective,
     light, face expression (duck face, smile,...) and produces a kind of
     neutral looking avatar face. The result is handed over to the next step.
 </p>
 <h3>3. Creation of Face Representations</h3>
 <p>This process creates a face representation for a face, basically a
-    multidimensional vector, sometimes called embedding.
+    multidimensional vector, also called embedding.
     The embeddings are created once and are stored in the file face.gzip.</p>
 <p>Available face recognition models:</p>
 <ul>
