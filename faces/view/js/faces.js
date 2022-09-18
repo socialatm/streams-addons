@@ -913,7 +913,7 @@ function openSingleImage(img) {
 }
 
 function appendPicture(img) {
-    ((loglevel >= 1) ? console.log(t() + "append picture: start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
+    ((loglevel >= 1) ? console.log(t() + " append picture: start to show image to user, image = " + JSON.stringify(Object.assign({}, img))) : null);
     var html = "";
     var faces = img.faces;
     var i;
@@ -928,7 +928,7 @@ function appendPicture(img) {
             html += "   <div class=\"face-container\">";
             html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
         }
-        ((loglevel >= 2) ? console.log(t() + "append picture: face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
+        ((loglevel >= 2) ? console.log(t() + " append picture: face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
         var top = 1;
         var left = 1;
         var bottom = 98;
@@ -945,15 +945,15 @@ function appendPicture(img) {
     }
     if (mostRecentImageLoadedId == "") {
         mostRecentImageLoadedId = img.id;
-        ((loglevel >= 2) ? console.log(t() + "append picture:  most recent image id: " + mostRecentImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + " append picture:  most recent image id: " + mostRecentImageLoadedId) : null);
     }
 
     if (oldestImageLoadedId == 0) {
         oldestImageLoadedId = img.id;
-        ((loglevel >= 2) ? console.log(t() + "append picture:  oldest image id: " + oldestImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + " append picture:  oldest image id: " + oldestImageLoadedId) : null);
     } else if (img.id < oldestImageLoadedId) {
         oldestImageLoadedId = img.id;
-        ((loglevel >= 2) ? console.log(t() + "append picture:  oldest image id: " + oldestImageLoadedId) : null);
+        ((loglevel >= 2) ? console.log(t() + " append picture:  oldest image id: " + oldestImageLoadedId) : null);
     }
     if (stopLoadingImages) {
         return;
