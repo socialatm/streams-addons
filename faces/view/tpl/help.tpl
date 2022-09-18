@@ -410,13 +410,16 @@
 
 <h2>Probe (advanced)</h2>
 <p>
-    Open with <a class='link_correction' href="faces/channel-nick/probe">probe</a>.
-    You will find a detailed description there. In short this feature will
-    start a search using different thresholds for distance metrics.
-    The programm will show you the results
-    in a table (csv file). The goal is to determine optimised thresholds that find
+    The goal is to determine optimised thresholds that find
     "Jane" in all pictures without finding to much "Jane"s ( =
     false positives = persons that are not "Jane").
+</p>
+<p>
+    Open with <a class='link_correction' href="faces/channel-nick/probe">probe</a>.
+    You will find detailed step-by-step instructions there. In short this feature will
+    start a search using different thresholds for distance metrics.
+    The programm will show you the results
+    in a table (csv file).
 </p>
 
 <hr>
@@ -425,7 +428,7 @@
 
 <h2>What and Why</h2>
 <p>
-    You want to avoid to run the CPU and RAM consuming task of face recognition
+    You don't want to run the CPU and RAM consuming task of face recognition
     on your server?
 </p>
 <p>
@@ -433,18 +436,26 @@
     script running on the server.
 </p>
 <p>
-    How it works? The cloud files are accessible via webDAV. Once your local 
-    machine is connected via webDAV the python script
-    is able to read the pictures on the server and write back the results files.
-    It will also read the configuration.
+    How does it work? Do you remember?
+    The cloud files on the server are accessible via webDAV.
 </p>
 <p>
-    The admin can block the python script on the server in the admin page of
-    the addon. The user is still able to view the faces and set names.
+    Once your local 
+    machine is connected with the cloud file storage on the server via webDAV the python script
+    on your local machine is able to read the pictures on the server
+    and write back the results files.
 </p>
-<h2>Main Page</h2>
 <p>
-    Open <a class='link_correction' href="faces/channel-nick/">here</a>.
+    The script looks for the configuration on the server. Visit
+    <a class='link_correction' href="faces/channel-nick/settings">settings</a>
+    and 
+    <a class='link_correction' href="faces/channel-nick/thresholds">thresholds</a>
+    to change it.    
+</p>
+<p>
+    The admin page of the addon has a setting to block the execution of
+    the python script on the server. If this is activated
+    the user is still able to view the faces in the browser and to set names there.
 </p>
 
 
