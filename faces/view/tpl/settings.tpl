@@ -6,7 +6,7 @@
         <div>A face detector finds the position and size of a face, 
             cuts it off and hands it over to
             a face recognition model (see next step).</div>
-        <div>Recommended: Choose one single detector only except you want to compare
+        <div>Recommended: Choose one single detector except you want to compare
             the effectivness of detectors. Every additional detector will slow down
             everything by factor 2.</div>
     </div>
@@ -15,7 +15,7 @@
         <div>A face recognition model takes a face from a face detector and
             creates an embedding (basically a vector) that
             represents a face.</div>
-        <div>Recommended: Choose one single model only except you want to compare
+        <div>Recommended: Choose one single model except you want to compare
             the effectivness of models. Every additional model will slow down
             everything by factor 2.</div>
     </div>
@@ -23,7 +23,9 @@
         <h2>Step 3 - Face Matching - Distance Metrics</h2>
         <div>A distance metric is a function that calculates a distance between
             vectors (embeddings) that where created by a recognition model (see above).</div>
-        <div>Recommended: Choose one single distance metric only except you want to compare
+        <div>Advanced: Set your own
+            <a class='link_correction' href="faces/channel-nick/thresholds">thresholds</a>.</div>
+        <div>Recommended: Choose one single distance metric except you want to compare
             the effectivness of metrics.</div>
     </div>
     <h2>Tuning</h2>
@@ -47,13 +49,14 @@
         </div>
         <div>
             This will allow you to compare the accuracy of different
-            recognition models.
+            recognition models in
+            <a class='link_correction' href="cloud/channel-nick/faces/model_statistics.csv">model_statistics.csv</a>.
         </div>
     </div>
     <div id="face_statistics">
         <h3>Write Statistics</h3>
         <div>Write all detected and recognized faces into one single file 
-            <a class='link_correction' href="cloud/channel-nick/faces/model_statistics.csv">models_statistics.csv</a>
+            <a class='link_correction' href="cloud/channel-nick/faces/face_statistics.csv">face_statistics.csv</a>
             This allows you to view details on what detector found what face,
             what model recognized what name, the time it took,...</div>
     </div>
