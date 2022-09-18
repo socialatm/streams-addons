@@ -208,6 +208,11 @@
     Open <a class='link_correction' href="faces/channel-nick/">here</a>.
 </p>
 <p>
+    The page will stay empty until the first detection has finished. This can
+    take minutes to hours depending on the number of images, the processing
+    power of the server and the settings (detectors, models, facial attributes).
+</p>
+<p>
     Detected faces show a frame.
 </p>
 <p>
