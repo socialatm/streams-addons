@@ -207,6 +207,33 @@
 <p>
     Open <a class='link_correction' href="faces/channel-nick/">here</a>.
 </p>
+<p>
+    Detected faces show a frame.
+</p>
+<p>
+    Click into the frame to set a name. A dialog will pop-up.
+</p>
+<ul>
+    <li>
+        Type a name into the text field and press enter or the button thumbs-up.
+    </li>
+    <li>
+        <button class="btn" id="face-edit-set-name"> <i class="fa fa-thumbs-up fa-2x"></i></button>
+        Confirm the name.
+    </li>
+    <li>
+        <button class="btn" id="face-edit-set-unknown"> <i class="fa fa-question fa-2x"></i></button>
+        This is person you don't know. This face will not be matched with known
+        faces anymore but you still will see the frame around the face and are able
+        to set a name later on.
+    </li>
+    <li>
+        <button class="btn" id="face-edit-set-ignore"> <i class="fa fa-eye-slash fa-2x"></i></button>
+        This is no face at all. Tell the face recognition to ignore this. You will
+        not see this face again in the browser.
+    </li>
+</ul>
+
 
 <h3>Filter / Search</h3>
 <p>
@@ -218,7 +245,7 @@
         <strong>Name</strong>: Choose one or more names from the list.
     </li>
     <li>
-        <strong>AND</strong> search: Find pictures only where "Jane" and "Bob" are together in 
+        <strong>AND</strong> search: Find pictures only where "Jane" AND "Bob" are together in 
         a picture.
     </li>
     <li>

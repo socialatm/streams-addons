@@ -869,6 +869,7 @@ class Faces extends Controller {
     }
 
     private function showHelpPage() {
+        Head::add_css('/addon/faces/view/css/faces.css');
         $o = replace_macros(Theme::get_template('help.tpl', 'addon/faces'), array());
         return $o;
     }
