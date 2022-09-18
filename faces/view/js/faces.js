@@ -1126,6 +1126,7 @@ function styleFaceFrame(face) {
         // prio 1 because this face was given a name by user
         if (face.name == "-ignore-") {
             document.getElementById("face-" + face.id).remove();
+            ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
             return;
         }
         nameFrame.style.border = "rgba(255,255,255,.5)";

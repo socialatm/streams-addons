@@ -329,13 +329,31 @@
     Increased server load. 
 </p>
 
-<h3>Browser Appearance - Sortation</h3>
+<h3>Browser Appearance - Sorting</h3>
 
 <p>
-    Sort the images by the time an images was taken (exif) or the time it was uploaded.
-    Some images do not carry the information when they where taken.
-    Recommended: Switch off to get consistent results.
+    Sort the images by the time an images was:
 </p>
+
+<ul>
+    <li>taken (exif))</li>
+    <li>uploaded</li>
+</ul>
+
+<p>
+    Watch this: Some images do not carry the information when they where taken.
+    In this case the exif date will be shown as 01.01.1970.
+</p>
+
+<p>
+    Sort the images:
+</p>
+
+<ul>
+    <li>ascending</li>
+    <li>descending</li>
+</ul>
+
 
 <h3>Browser Appearance - Zoom</h3>
 

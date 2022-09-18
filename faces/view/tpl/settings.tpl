@@ -73,7 +73,7 @@
     </div>
     <hr/>
     <h1>Browser Appearance</h1>
-    <h2>Sortation</h2>
+    <h2>Sorting</h2>
     <div id="face_sortation">
         <h3>Date and Time</h3>
         <div>Sort the images by the time an images was taken (exif) or the
