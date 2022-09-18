@@ -632,10 +632,10 @@ class Worker:
         df_reduced = df_reduced.loc[(df_reduced['pixel'] != 0)]
 
         # remove faces the user wants to ignore (detected as face but is something else)
-        keys = df_reduced.loc[(df_reduced['name'] == self.IGNORE)].index
-        if len(keys) > 0:
-            df_reduced = df_reduced.drop((keys))
-            logging.debug(faces_dir + " - removed " + str(len(keys)) + " ignored faces in results")
+        # keys = df_reduced.loc[(df_reduced['name'] == self.IGNORE)].index
+        # if len(keys) > 0:
+        #     df_reduced = df_reduced.drop((keys))
+        #     logging.debug(faces_dir + " - removed " + str(len(keys)) + " ignored faces in results")
 
         # "reduce" result file
         df = self.util.filter_by_last_named(df_reduced)

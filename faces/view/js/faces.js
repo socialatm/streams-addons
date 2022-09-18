@@ -1118,6 +1118,11 @@ function styleFaceFrame(face) {
 
 
     if (existing_name != "") {
+        if (existing_name == "-ignore-") {
+            document.getElementById("face-" + face.id).remove();
+            ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
+            return;
+        }
         nameFrame.style.border = "rgba(255,255,255,.5)";
         name = existing_name;
         isVerified = "1";
