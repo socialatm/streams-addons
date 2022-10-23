@@ -41,8 +41,22 @@ function openstreetmap_alterheader($navHtml) {
  */
 function openstreetmap_location(&$item) {
 
-	if (! (strlen($item['location']) || strlen($item['coord'])))
-		return;
+    $itemlocation = $item['location'];
+    $lat = $item['lat'];
+    $lon = $item['lon'];
+
+    if (! ($lat || $lon)) {
+        if ($item['coord']) {
+            $tmp = explode(' ', trim($item['coord']));
+            if (count($tmp) > 1) {
+                $lat = $tmp[0];
+                $lon = $tmp[1];
+            }
+        }
+    }
+    if (!$itemlocation && !($lat || $lon)) {
+        return;
+    }
 
 	/*
 	 * Get the configuration variables from the config.
@@ -62,35 +76,31 @@ function openstreetmap_location(&$item) {
 	}
 
 	$marker = get_config('openstreetmap', 'marker', 1);
+    
+	$coord = $lat || $lon;
 
-	$location = '';
-	$coord    = '';
+	$rendered_loc = (($itemlocation && !$coord) ? '<a target="map" title="' . $itemlocation . '" href="'.$nomserver . '?q=' . urlencode($itemlocation) . '">' . $itemlocation . '</a>' : $itemlocation);
 
-	$location = $item['location'];
+	if ($coord) {
+        $lat = urlencode(round(floatval($lat), 5));
+    	$lon = urlencode(round(floatval($lon), 5));
 
-	$location = (($location && (! $item['coord'])) ? '<a target="map" title="' . $item['location'] . '" href="'.$nomserver . '?q=' . urlencode($item['location']) . '">' . $item['location'] . '</a>' : $location);
-
-	if ($item['coord']) {
-		$coords = explode(' ', $item['coord']);
-		if (count($coords) > 1) {
-			$lat = urlencode(round($coords[0], 5));
-			$lon = urlencode(round($coords[1], 5));
-			$coord = '<a target="map" class="OSMMapLink" title="' . $item['coord'] . '" href="'. $tmsserver;
-			if (intval($marker)) {
-				$coord .= '?mlat=' . $lat . '&mlon=' . $lon;
-			}
-			$coord .= '#map=' . intval($zoom) . '/' . $lat . '/' . $lon .'">Map</a>';
-		}
+        $rendered_coord = '<a target="map" class="OSMMapLink" title="' . $lat . ' ' . $lon . '" href="' . $tmsserver ;
+        if (intval($marker)) {
+            $rendered_coord .= '?mlat=' . $lat . '&mlon=' . $lon;
+        }
+        $rendered_coord .= '#map=' . intval($zoom) . '/' . $lat . '/' . $lon .'">' . t('Map') . '</a>';
 	}
-	if (strlen($coord)) {
-		if ($location) {
-			$location .= '&nbsp;<span class="smalltext">(' . $coord . ')</span>';
+
+	if ($rendered_coord) {
+		if ($rendered_loc) {
+			$rendered_loc .= '&nbsp;<span class="smalltext">(' . $rendered_coord . ')</span>';
 		}
 		else {
-			$location = '<span class="smalltext">' . $coord . '</span>';
+			$rendered_loc = '<span class="smalltext">' . $rendered_coord . '</span>';
 		}
 	}
-	$item['html'] = $location;
+	$item['html'] = $rendered_loc;
 }
 
 

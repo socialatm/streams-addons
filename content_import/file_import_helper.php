@@ -39,7 +39,7 @@ require_once('include/import.php');
 
 	$j = json_decode($x['body'],true);
 
-	$r = sync_files($channel,[$j]);
+	sync_files($channel,[$j]);
 
 	killme();
 
