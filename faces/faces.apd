@@ -1,4 +1,4 @@
-version: 0.1 (deepface)
+version: 0.2
 url: $baseurl/faces/$nick
 requires: local_channel
 name: Faces

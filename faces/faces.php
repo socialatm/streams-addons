@@ -6,7 +6,7 @@ use Code\Render\Theme;
 /**
  * Name: Faces
  * Description: face recognition
- * Version: 0.1 (deepface)
+ * Version: 0.2
  * Author: Tom Wiedenhöft
  * Maintainer: Tom Wiedenhöft
  *
