@@ -14,7 +14,7 @@ use Code\Extend\Route;
 
 function fuzzloc_load() {
 
-	Hook::register('post_local', 'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
+	Hook::register('post_prestore', 'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
 	Route::register('addon/fuzzloc/Mod_Fuzzloc.php','fuzzloc');
 
 	logger("loaded fuzzloc");
@@ -32,7 +32,9 @@ function fuzzloc_unload() {
 	 */
 
 	Hook::unregister('post_local',    'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
-	Route::unregister('addon/fuzzloc/Mod_Fuzzloc.php','fuzzloc');
+    Hook::unregister('post_prestore', 'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
+
+    Route::unregister('addon/fuzzloc/Mod_Fuzzloc.php','fuzzloc');
 
 	logger("removed fuzzloc");
 }
@@ -63,7 +65,7 @@ function fuzzloc_post_hook(&$item) {
 		return;
 	}
 
-	if (! $item['coord']) {
+	if (! ($item['lat'] || $item['lon'])) {
 		return;
 	}
 
@@ -85,11 +87,8 @@ function fuzzloc_post_hook(&$item) {
 
 	logger('fuzzloc invoked',LOGGER_DEBUG);
 
-	$coord = trim($item['coord']);
-    $coord = str_replace(array(',','/','  '),array(' ',' ',' '),$coord);
-
-	$lat = (float) trim(substr($coord, 0, strpos($coord, ' ')));
-    $lon = (float) trim(substr($coord, strpos($coord, ' ')+1));
+	$lat = (float) $item['lat'];
+    $lon = (float) $item['lon'];
 
 	$dir1 = intval(mt_rand(0,1));
 	$dir2 = intval(mt_rand(0,1));
@@ -109,7 +108,8 @@ function fuzzloc_post_hook(&$item) {
 	$lat = $lat + fuzzloc_mtod($offset1,$lat);
     $lon = $lon + fuzzloc_mtod($offset2,$lat);
 
-	$item['coord'] = $lat . ' ' .  $lon;
+	$item['lat'] = $lat;
+    $item['lon'] = $lon;
 
 }
 

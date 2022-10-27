@@ -1,7 +1,6 @@
 <?php
 
-use Ramsey\Uuid\Uuid;
-use Ramsey\Uuid\Exception\UnableToBuildUuidException;
+use Symfony\Component\Uid\Uuid;
 use Code\Extend\Route;
 use Code\Extend\Hook;
 
@@ -455,10 +454,11 @@ class QueueWorkerUtils {
 				$argv     = $workinfo['argv'];
 				logger('Run: process: ' . json_encode($argv), LOGGER_DEBUG);
 
-				$cls  = '\\Code\\Daemon\\' . $argv[0];
+				$className  = '\\Code\\Daemon\\' . $argv[0];
 				$argv = flatten_array_recursive($argv);
 				$argc = count($argv);
-				$cls::run($argc, $argv);
+                $daemon = new $className();
+				$daemon->run($argc, $argv);
 
 				// @FIXME: Right now we assume that if we get a return, everything is OK.
 				// At some point we may want to test whether the run returns true/false
@@ -491,8 +491,9 @@ class QueueWorkerUtils {
 					);
 					continue;
 				}
-				$cls = '\\Code\\Daemon\\' . $argv[0];
-				$cls::run($argc, $argv);
+				$className = '\\Code\\Daemon\\' . $argv[0];
+                $daemon = new $className();
+				$daemon->run($argc, $argv);
 				q("delete from workerq where workerq_id = %d",
 					$work[0]['workerq_id']
 				);
@@ -515,14 +516,8 @@ class QueueWorkerUtils {
 	 * @return string $uuid
 	 */
 	private static function get_uuid($data) {
-		$namespace = '3a112e42-f147-4ccf-a78b-f6841339ea2a';
-		try {
-			$uuid = Uuid::uuid5($namespace, $data)->toString();
-		} catch (UnableToBuildUuidException $e) {
-			logger('UUID generation failed');
-			return '';
-		}
-		return $uuid;
+		$namespace = Uuid::fromString('3a112e42-f147-4ccf-a78b-f6841339ea2a');
+		return (string) Uuid::v5($namespace, $data);
 	}
 
 	public static function uninstall() {

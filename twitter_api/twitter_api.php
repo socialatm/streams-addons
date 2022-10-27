@@ -494,8 +494,10 @@ function api_statuses_update( $type) {
 		}
 	}
 
-	if(requestdata('lat') && requestdata('long'))
-		$_REQUEST['coord'] = sprintf("%s %s",requestdata('lat'),requestdata('long'));
+	if(requestdata('lat') && requestdata('long')) {
+		$_REQUEST['lat'] = requestdata('lat');
+        $_REQUEST['lon'] = requestdata('long');
+    }
 
 	$_REQUEST['profile_uid'] = api_user();
 
@@ -503,7 +505,7 @@ function api_statuses_update( $type) {
 		$_REQUEST['type'] = 'net-comment';
 	else {
 		$_REQUEST['type'] = 'wall';
-		
+
 		if(x($_FILES,'media')) {
 			if(is_array($_FILES['media']['name'])) {
 				$num_uploads = count($_FILES['media']['name']);
@@ -602,10 +604,10 @@ function api_get_status($xchan_hash) {
 			'in_reply_to_screen_name' => $in_reply_to_screen_name,
 			'geo' => '',
 			'favorited' => false,
-			'coordinates' => $lastwall['coord'],
+			'coordinates' => (($lastwall['lat'] || $lastwall['lon']) ? $lastwall['lat'] . ' ' . $lastwall['lon'] : ''),
 			'place' => $lastwall['location'],
-			'contributors' => ''					
-		);
+			'contributors' => ''
+    		);
 
 	}
 	
@@ -700,7 +702,7 @@ function api_users_show( $type){
 			'in_reply_to_screen_name' => $in_reply_to_screen_name,
 			'geo' => '',
 			'favorited' => false,
-			'coordinates' => $lastwall['coord'],
+			'coordinates' => (($lastwall['lat'] || $lastwall['lon']) ? $lastwall['lat'] . ' ' . $lastwall['lon'] : ''),
 			'place' => $lastwall['location'],
 			'contributors' => ''					
 		);
@@ -1375,7 +1377,7 @@ function api_format_items($r,$user_info,$type = 'json') {
 				'published'    => api_date($item['created']),
 				'message_id'   => $item['mid'],
 				'url'		   => $item['plink'],
-				'coordinates'  => $item['coord'],
+				'coordinates'  => (($item['lat'] || $item['lon']) ? $item['lat'] . ' ' . $item['lon'] : ''),
 				'place'        => $item['location'],
 				'contributors' => '',
 				'annotations'  => '',
@@ -1533,9 +1535,9 @@ function api_statusnet_config($type) {
 			'shorturllength' => 30,
     
     		'platform' => [
-				'PLATFORM_NAME' => Code\Lib\System::get_platform_name(),
+				'REPOSITORY_ID' => Code\Lib\System::get_platform_name(),
 				'STD_VERSION' => Code\Lib\System::get_project_version(),
-				'ZOT_REVISION' => ZOT_REVISION,
+				'NOMAD_PROTOCOL_VERSION' => NOMAD_PROTOCOL_VERSION,
 				'DB_UPDATE_VERSION' => Code\Lib\System::get_update_version()
 			]
 		]
