@@ -177,11 +177,6 @@ class Worker:
         logging.info("start dir=" + dir_images + ", proc_id=" + proc_id + ", own_channel_id=" +
                      str(own_channel_id) + ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
 
-        self.dirImages = dir_images
-        if os.access(self.dirImages, os.R_OK) is False:
-            logging.error("can not read directory " + self.dirImages)
-            self.stop()
-
         self.proc_id = proc_id
         if is_recognize:
             self.status_suffix = str(own_channel_id)
@@ -199,8 +194,20 @@ class Worker:
             # next user (channel that activated the addon)
             # --------------------------------------------
 
-            # get all folders containing images for a user
             self.channel = app_channel[0]
+
+            query = "SELECT channel_address FROM `channel` WHERE `channel_id` = " + str(self.channel)
+            data = {}
+            channel_addresses = self.db.select(query, data)
+            channel_address = channel_addresses[0][0]
+
+            dir_store, tail = os.path.split(dir_images)
+            self.dirImages = os.path.join(dir_store, channel_address)
+            if os.access(self.dirImages, os.R_OK) is False:
+                logging.error("can not read directory " + self.dirImages)
+                self.stop()
+
+            # get all folders containing images for a user
             query = "SELECT folder FROM `attach` WHERE `uid` = %s AND `filename` = %s"
             data = (self.channel, self.file_name_faces)
             folders = self.db.select(query, data)
@@ -230,7 +237,7 @@ class Worker:
                         continue
                 self.recognize(folders, is_probe)
             else:
-                logging.debug("no recognition, user channel  " + str(self.own_channel_id) + " != " + str(self.channel))
+                logging.debug("no recognition, user channel  " + str(own_channel_id) + " != " + str(self.channel))
                 continue
 
         self.write_alive_signal(self.FINISHED)
@@ -721,18 +728,21 @@ class Worker:
             return False
 
         path = os.path.join(self.dirImages, r[0][0])
-        if os.path.exists(path) and os.path.isfile(path) and os.access(path, os.W_OK):
-            if file_name == self.file_name_face_representations:
-                self.file_embeddings = path
-                return True
-            elif file_name == self.file_name_faces:
-                self.file_faces = path
-                return True
-            elif file_name == self.file_name_names:
-                self.file_names = path
-                return True
-        logging.debug("no file or write permission, file " + path)
-        return False
+        if not os.path.exists(path) or not os.path.isfile(path):
+            logging.debug("no file " + path)
+            return False
+        if not os.access(path, os.W_OK):
+            logging.debug("no write permission for file " + path)
+            return False
+
+        if file_name == self.file_name_face_representations:
+            self.file_embeddings = path
+        elif file_name == self.file_name_faces:
+            self.file_faces = path
+        elif file_name == self.file_name_names:
+            self.file_names = path
+
+        return True
 
     def check_file_by_channel(self, file_name):
         if file_name == self.file_name_faces_statistic:
@@ -855,7 +865,7 @@ class Worker:
     def init_face_names(self, df_representation):
         df_names = self.get_face_names()
         if (df_names is None) or (len(df_names) == 0):
-            logging.debug("No face names yet or no longer because images where delete in dir. File=" + self.file_faces)
+            logging.debug("No face names yet or image(s) where delete in dir. File=" + self.file_faces)
             most_effective_method = self.util.get_most_successful_method(df_representation, False)
             df_names = self.util.filter_by_last_named(df_representation)
             df_names = self.util.number_unique_faces(df_names)
