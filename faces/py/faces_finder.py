@@ -300,7 +300,7 @@ class Finder:
             attributes['race'] = ""
 
         toc = time.time()
-        logging.debug("face processing took " + str(round(toc - tic, 3)) + " seconds")
+        logging.debug("analyzing facial attributes took " + str(round(toc - tic, 3)) + " seconds")
         return attributes
 
     def detect(self, path, os_path_on_server, detector_name, df):
