@@ -704,7 +704,7 @@ class Faces extends Controller {
     private function sendConfig() {
         $this->prepareFiles();
         $config = $this->getConfig();
-        logger("Sending configuration... " . json_encode($config), LOGGER_DEBUG);
+        logger("Sending configuration... " . json_encode($config), LOGGER_DATA);
         json_return_and_die(array('config' => $config));
     }
 
@@ -817,7 +817,7 @@ class Faces extends Controller {
         } else {
             $config = $fc->read($configFile);
         }
-        logger("did read configuration " . json_encode($config), LOGGER_DEBUG);
+        logger("did read configuration " . json_encode($config), LOGGER_DATA);
         return $config;
     }
 

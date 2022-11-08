@@ -51,6 +51,8 @@ Prepare directories for the installation and execution of deepface.
     chown www-data:www-data /var/www/.cache/
     mkdir /var/www/.deepface
     chown www-data:www-data /var/www/.deepface/
+    mkdir -p /var/www/.config/matplotlib
+    chown www-data:www-data /var/www/.config/matplotlib
 
 ### Install and Test
  

@@ -41,7 +41,7 @@ class FaceConfiguration {
 
         $file->put($json);
 
-        logger('wrote configuration file=' . $file->getName() . ", content=" . $json, LOGGER_DEBUG);
+        logger('wrote configuration file=' . $file->getName() . ", content=" . $json, LOGGER_DATA);
     }
 
     function checkConfig($config) {
