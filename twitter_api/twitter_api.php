@@ -1535,9 +1535,9 @@ function api_statusnet_config($type) {
 			'shorturllength' => 30,
     
     		'platform' => [
-				'PLATFORM_NAME' => Code\Lib\System::get_platform_name(),
+				'REPOSITORY_ID' => Code\Lib\System::get_platform_name(),
 				'STD_VERSION' => Code\Lib\System::get_project_version(),
-				'ZOT_REVISION' => ZOT_REVISION,
+				'NOMAD_PROTOCOL_VERSION' => NOMAD_PROTOCOL_VERSION,
 				'DB_UPDATE_VERSION' => Code\Lib\System::get_update_version()
 			]
 		]
