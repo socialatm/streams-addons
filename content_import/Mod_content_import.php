@@ -145,7 +145,7 @@ class Content_import extends Controller {
             '$desc' => t('This will import all your conversations and cloud files from a cloned channel on another server. This may take a while if you have lots of posts and or files.'),
             '$items' => [ 'items', t('Include posts'), true, t('Conversations, Articles, Cards, and other posted content'), [ t('No'),t('Yes') ]],
             '$files' => [ 'files', t('Include files'), true, t('Files, Photos and other cloud storage'), [ t('No'),t('Yes') ]],
-            '$force' => [ 'force', t('Force file updates'), true, t('Default is to ignore files that have already been imported'), [ t('No'),t('Yes') ]],
+            '$force' => [ 'force', t('Force file updates'), true, t('Otherwise ignore files that have already been imported'), [ t('No'),t('Yes') ]],
             '$fr_server' => ['hz_server', t('Original Server base URL'),'',''],
             '$since' => ['since', t('Since modified date yyyy-mm-dd'),'0001-01-01 00:00:00',''],
             '$until' => ['until', t('Until modified date yyyy-mm-dd'),datetime_convert('UTC',date_default_timezone_get(),'now'),''],

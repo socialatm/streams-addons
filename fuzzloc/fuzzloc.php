@@ -14,7 +14,7 @@ use Code\Extend\Route;
 
 function fuzzloc_load() {
 
-	Hook::register('post_prestore', 'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
+	Hook::register('post_location', 'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
 	Route::register('addon/fuzzloc/Mod_Fuzzloc.php','fuzzloc');
 
 	logger("loaded fuzzloc");
@@ -31,7 +31,7 @@ function fuzzloc_unload() {
 	 *
 	 */
 
-	Hook::unregister('post_local',    'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
+	Hook::unregister_by_file('addon/fuzzloc/fuzzloc.php');
     Hook::unregister('post_prestore', 'addon/fuzzloc/fuzzloc.php', 'fuzzloc_post_hook');
 
     Route::unregister('addon/fuzzloc/Mod_Fuzzloc.php','fuzzloc');
@@ -57,15 +57,7 @@ function fuzzloc_post_hook(&$item) {
 		return;
 	}
 
-	if (local_channel() != $item['uid']) {   /* Does this person own the post? */
-		return;
-	}
-	
-	if ($item['parent']) {   /* If the item has a parent, this is a comment or something else, not a status post. */
-		return;
-	}
-
-	if (! ($item['lat'] || $item['lon'])) {
+    if (! ($item['latitude'] || $item['longitude'])) {
 		return;
 	}
 
@@ -87,8 +79,8 @@ function fuzzloc_post_hook(&$item) {
 
 	logger('fuzzloc invoked',LOGGER_DEBUG);
 
-	$lat = (float) $item['lat'];
-    $lon = (float) $item['lon'];
+	$lat = (float) $item['latitude'];
+    $lon = (float) $item['longitude'];
 
 	$dir1 = intval(mt_rand(0,1));
 	$dir2 = intval(mt_rand(0,1));
@@ -108,8 +100,8 @@ function fuzzloc_post_hook(&$item) {
 	$lat = $lat + fuzzloc_mtod($offset1,$lat);
     $lon = $lon + fuzzloc_mtod($offset2,$lat);
 
-	$item['lat'] = $lat;
-    $item['lon'] = $lon;
+	$item['latitude'] = $lat;
+    $item['longitude'] = $lon;
 
 }
 
