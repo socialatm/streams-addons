@@ -62,28 +62,27 @@ class Worker:
         self.util = faces_util.Util()
 
         self.ram_allowed = 80  # %
-
-        self.config = None
-
-    def set_finder(self, json):
+        
+    def init_finder(self):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.finder = faces_finder.Finder()
-            self.finder.configure(json)
-            self.finder.ram_allowed = self.ram_allowed
             self.finder.util = self.util
         else:
             logging.error("FAILED to set finder. Reason: module deepface not found")
-
-    def set_recognizer(self, json):
+            sys.exit(1)
+        
+    def init_recognizer(self):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.recognizer = faces_recognizer.Recognizer()
-            self.recognizer.configure(json)
         else:
             logging.critical("FAILED to set finder. Reason: module deepface not found")
+            sys.exit(1)
 
-    def configure(self, json):
+    def configure(self):
+        
+        json = self.read_config_file()
 
         if "worker" in json:
 
@@ -135,8 +134,11 @@ class Worker:
         logging.debug("config: rm_detectors=" + str(self.remove_detectors))
         # --------------------------------------------------------------------------------------------------------------
 
-        self.set_finder(json)
-        self.set_recognizer(json)
+        # configure finder
+        self.finder.configure(json)
+        self.finder.ram_allowed = self.ram_allowed
+        # configure recognizer
+        self.recognizer.configure(json)
 
         self.exiftool = faces_exiftool.ExifTool()
         if not self.exiftool.getVersion():
@@ -149,6 +151,11 @@ class Worker:
     def run(self, dir_images, is_recognize, is_probe):
         logging.info("start dir=" + dir_images + ", recognize=" + str(is_recognize) + ", probe=" + str(is_probe))
         self.dirImages = dir_images
+        
+        self.init_finder()
+        self.init_recognizer()
+        self.configure()
+            
         if os.access(self.dirImages, os.R_OK) is False:
             logging.error("can not read image directory " + self.dirImages)
             sys.exit(1)
@@ -161,7 +168,7 @@ class Worker:
         if not is_recognize:
             # --------------------------------------------
             # Detection
-            # --------------------------------------------
+            # --------------------------------------------                
             # detect faces in all folders containing images for a user
             for folder in folders:
                 self.process_dir(folder)
@@ -183,13 +190,6 @@ class Worker:
 
         if not self.check_write_access(dir):
             return
-
-        # -------------------------------------------------------------
-        # Read the configuration set by admin/user
-        #
-        if self.config is None:
-            if not self.read_config_file():
-                return
 
         # -------------------------------------------------------------
         # Cleanup
@@ -223,16 +223,14 @@ class Worker:
         conf_file = os.path.join(self.dirImages, self.dir_addon, self.file_name_config)
         if not os.path.exists(conf_file) or not os.access(conf_file, os.R_OK):
             logging.debug("config file not found " + conf_file)
-            return False
+            return {}
         if os.stat(conf_file).st_size == 0:
             logging.debug("config file is empty " + conf_file)
-            return False
+            return {}
         logging.debug("read config from file " + conf_file)
         with open(conf_file, "r") as f:
             conf = json.load(f)
-            self.config = conf
-            self.configure(conf)
-        return True
+            return conf
 
     def read_config_thresholds_file(self):
         logging.debug("read config thresholds file")
@@ -345,10 +343,7 @@ class Worker:
     #
     def recognize(self, folders, is_probe):
 
-        # Read the configuration set by admin/user
-        #
-        if self.config is None:
-            self.read_config_file()
+        # Read the configuration for thresholds file if any
         if self.recognizer.thresholds_config is None:
             self.read_config_thresholds_file()
         probe_results = []
@@ -769,9 +764,9 @@ class Worker:
                 self.store_face_names(df, dir)
 
     def write_statistics(self, df):
+        if not self.check_file_access_statistics():
+            return
         if self.statistics:
-            if not self.check_file_access_statistics():
-                return
             df = df.drop('representation', axis=1)
             df.to_csv(self.file_face_statistics)
             logging.debug("Wrote face statistics to file=" + self.file_name_faces_statistic)

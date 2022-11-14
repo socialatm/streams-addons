@@ -4,7 +4,7 @@ import logging
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--imagespath", help="absolute path to image dir")
+parser.add_argument("--dir", help="absolute path to image dir")
 parser.add_argument("--loglevel")
 parser.add_argument("--logfile")
 parser.add_argument("--recognize")
@@ -21,15 +21,13 @@ args = vars(parser.parse_args())
 frm = logging.Formatter("{asctime} {levelname} {process} {filename} {lineno}: {message}", style="{")
 logger = logging.getLogger()
 log_file = args["logfile"]
-print("param logfile=" + log_file)
 if (log_file is not None) and (log_file != ""):
+    print("param logfile=" + log_file)
     handler_file = logging.FileHandler(log_file, "w")
     handler_file.setFormatter(frm)
     logger.addHandler(handler_file)
     print("yes, logger is configured to write to file")
 
-loglevel = int(args["loglevel"])
-print("param loglevel=" + str(loglevel))
 """ 
 values from PHP...
 LOGGER_NORMAL 0
@@ -38,7 +36,9 @@ LOGGER_DEBUG 2
 LOGGER_DATA 3
 LOGGER_ALL 4
 """
-if loglevel:
+if args["loglevel"] is not None:
+    loglevel = int(args["loglevel"])
+    print("param loglevel=" + str(loglevel))
     if loglevel < 0:
         logger.setLevel(logging.NOTSET)
     elif loglevel >= 2:
@@ -54,10 +54,10 @@ logging.debug("started logging")
 # run parameters
 # +++++++++++++++++++
 
-imgdir = args["imagespath"]
+imgdir = args["dir"]
 if imgdir is None:
     imgdir = os.getcwd()
-    logging.info("Missing parameter --imagespath ? Using current directory " + imgdir + " to find pictures")
+    logging.info("Missing parameter --dir ? Using current directory " + imgdir + " to find pictures")
 logging.info("image directory = " + imgdir)
 
 is_recognize = False
