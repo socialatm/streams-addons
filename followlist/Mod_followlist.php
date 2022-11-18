@@ -75,7 +75,7 @@ class Followlist extends Controller {
 				notice( t('Adding connections') . EOL);
 				
 				foreach ($actors as $actor) {
-					if (get_config('system','followlist_test',true)) {
+					if (get_config('system','followlist_test',false)) {
 						logger('followlist: ' . $actor);
 						continue;
 					}
