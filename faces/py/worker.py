@@ -619,7 +619,9 @@ class Worker:
             files = os.listdir(dir)
             valid_images = [".jpg", "jpeg", ".png", ".JPG", "JPEG", ".PNG"]
             for file in files:
+                logging.debug("file " + file)
                 p = os.path.join(dir, file)
+                logging.debug("p " + p)
                 if not os.path.isfile(p):
                     continue
                 ext = os.path.splitext(p)[1]
@@ -628,7 +630,11 @@ class Worker:
                 if "," in file:
                     continue  # csv format
                 # use a relative path to keep compatibility with server version
-                df_path = p[len(self.dirImages) + 1:]
+                df_path = p[len(self.dirImages):]
+                if df_path.startswith("/"):
+                    # Double check if this path is relativ!
+                    # Why? This is the format the web version uses
+                    df_path = df_path[1:]
                 images.append(df_path)
         return images
 
