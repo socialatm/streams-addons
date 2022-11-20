@@ -4,7 +4,7 @@ import logging
 import os
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dir", help="absolute path to image dir")
+parser.add_argument("--directory", "-d", help="absolute path to image dir")
 parser.add_argument("--loglevel")
 parser.add_argument("--logfile")
 parser.add_argument("--recognize")
@@ -54,7 +54,7 @@ logging.debug("started logging")
 # run parameters
 # +++++++++++++++++++
 
-imgdir = args["dir"]
+imgdir = args["directory"]
 if imgdir is None:
     imgdir = os.getcwd()
     logging.info("Missing parameter --dir ? Using current directory " + imgdir + " to find pictures")
