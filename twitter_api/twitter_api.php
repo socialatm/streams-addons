@@ -750,7 +750,7 @@ function api_statuses_home_timeline( $type){
 	if (api_user() != $user_info['uid']) {
 		$observer = App::get_observer();
 		require_once('include/permissions.php');
-		if(! perm_is_allowed($user_info['uid'],(($observer) ? $observer['xchan_hash'] : ''),'view_stream'))
+		if(! perm_is_allowed($user_info['uid'], (($observer) ? $observer['xchan_hash'] : ''), 'view_stream'))
 			return '';
 		$sql_extra .= ' and item_private = 0 ';
 	}
@@ -953,7 +953,7 @@ function api_statuses_repeat( $type){
 		intval($id)
 	);
 
-	if(perm_is_allowed($r[0]['uid'],$observer['xchan_hash'],'view_stream')) {
+	if(perm_is_allowed($r[0]['uid'], $observer['xchan_hash'], 'view_stream')) {
 		if ($r[0]['body'] != '') {
 			$_REQUEST['body'] = html_entity_decode('&#x2672; ', ENT_QUOTES, 'UTF-8') . '[zrl=' . $r[0]['reply_url'] . ']' . $r[0]['reply_author'] . '[/zrl] ' . "\n" . $r[0]['body'];
 			$_REQUEST['profile_uid'] = api_user();
@@ -1232,7 +1232,7 @@ function api_favorites( $type){
 	if(api_user() != $user_info['uid']) {
 		$observer = App::get_observer();
 		require_once('include/permissions.php');
-		if(! perm_is_allowed($user_info['uid'],(($observer) ? $observer['xchan_hash'] : ''),'view_stream'))
+		if(! perm_is_allowed($user_info['uid'], (($observer) ? $observer['xchan_hash'] : ''), 'view_stream'))
 			return '';
 		$sql_extra .= ' and item_private = 0 ';
 	}
