@@ -123,6 +123,7 @@ class Finder:
                         logging.warning("Valid detectors are: " + str(self.detectors_valid))
         if len(self.detector_names) == 0:
             self.detector_names.append(self.detector_name_default)  # default
+            self.detectors[self.detector_name_default] = None
         logging.debug("config: detectors=" + str(self.detector_names))
 
         if "models" in json:
@@ -136,6 +137,9 @@ class Finder:
                             str(el) + " is not a valid model (or already set). Hint: The model name is case " +
                             "sensitive.  Loading default model if no more valid model name is given...")
                         logging.warning("Valid models are: " + str(self.models_valid))
+        if len(self.model_names) == 0:
+            self.model_names.append(self.model_name_default)  # default
+            self.models[self.model_name_default] = None
         logging.debug("config: models=" + str(self.model_names))
 
         if "demography" in json:

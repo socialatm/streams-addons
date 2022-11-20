@@ -6,7 +6,7 @@ use Code\Render\Theme;
 /**
  * Name: Faces
  * Description: face recognition
- * Version: 0.3
+ * Version: 0.4
  * Author: Tom Wiedenhöft
  * Maintainer: Tom Wiedenhöft
  *
@@ -428,7 +428,7 @@ function testDeepfaceModules($pdetectors, $pmodels, $pdemography) {
     $models = [];
     $demography = [];
     $ram = 0;
-    $cmd = "python3 /var/www/mywebsite/addon/faces/py/availability.py --detectors " . $pdetectors . " --models " . $pmodels . " --demography " . $pdemography;
+    $cmd = "python3 " . getcwd() . "/addon/faces/py/availability.py --detectors " . $pdetectors . " --models " . $pmodels . " --demography " . $pdemography;
     exec($cmd, $output);
     foreach ($output as $line) {
         logger($line, LOGGER_DEBUG);

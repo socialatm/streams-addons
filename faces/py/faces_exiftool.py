@@ -41,7 +41,7 @@ class ExifTool:
         #       ResourceWarning: Enable tracemalloc to get the object allocation traceback
         # Monitoring the processes of the OS it seems that "proc.kill()" works but is slow.
         version = None
-        proc = subprocess.Popen(['exiftool', '-ver'], stdout=subprocess.PIPE)
+        proc = subprocess.Popen(['exiftool', '-ver'], stdout=subprocess.PIPE, shell=True)
         while True:
             line = proc.stdout.readline()
             if not line:
