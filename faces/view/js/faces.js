@@ -566,6 +566,14 @@ $('#face-active-filter-names').on('click', '.btn-face-search-name', function () 
 
 $(".face-date").change(function () {
     ((loglevel >= 1) ? console.log(t() + " user changed search date  ") : null);
+    let from = $("#face-date-from").val();    
+    if(from.startsWith("0")) {
+        return;
+    }  
+    let to = $("#face-date-to").val();
+    if(to.startsWith("0")) {
+        return;
+    }
     search();
 });
 
@@ -622,17 +630,21 @@ function filterImages() {
         var passedName = false;
 
         var date = images[i].time;
-        if (!date || date == "") {
+        if (!date || date === "") {
+            ((loglevel >= 3) ? console.log(t() + " image id=" + images[i].id + " did not pass the filter, no date found in image") : null);
+            images[i]['pass'] = false;
             continue;
         }
         var splittees = date.split("T");
-        if (splittees.length != 2) {
-            break;
+        if (splittees.length !== 2) {
+            ((loglevel >= 3) ? console.log(t() + " image id=" + images[i].id + " did not pass the filter, no wrong date format found in image, missing T") : null);
+            images[i]['pass'] = false;
+            continue;
         }
         date = splittees[0];
         if (date >= filter.from && date <= filter.to) {
             passedTime = true;
-            if (names.length == 0) {
+            if (names.length === 0) {
                 passedName = true;
             } else {
                 var and = filter.and;
@@ -641,7 +653,7 @@ function filterImages() {
                     var passedName = false;
                     for (j = 0; j < faces.length; j++) {
                         var face = faces[j];
-                        if ((face.name != "" && name == face.name) || (face.name == "" && face.time_named == "" && name == face.name_recognized)) {
+                        if ((face.name !== "" && name === face.name) || (face.name === "" && face.time_named === "" && name === face.name_recognized)) {
                             passedName = true;
                             break;
                         }
