@@ -432,19 +432,19 @@ function setNameIgnore() {
 function preparePostName(face_id_full, name) {
     ((loglevel >= 1) ? console.log(t() + " start to prepare name  to send it to the server, face id = " + face_id_full) : null);
     var face_id = face_id_full.split("-")[1];
+    var name_old = document.getElementById(face_id_full).innerText;
+    var face = getFaceForId(face_id);
     if (name === -2) {
         // clicked "ignore"
         name = "-ignore-";
     } else if (name === -1) {
-        // clickt "unknown"
+        // clicked "unknown"
         name = "";
+        face.name_old = name_old;
     } else if (name === -3) {
         // let the face recognition try to guess
         name = "";
     }
-    var name_old = document.getElementById(face_id_full).innerText;
-    var face = getFaceForId(face_id);
-    face.sent = true;
     face.name = name;
     var file = face['url'];
     var position = face['pos'];
@@ -1117,6 +1117,9 @@ function styleFaceFrame(face) {
     if (!face.name_recognized) {  // This can happen if the user sets the name to "unknown"
         face.name_recognized = "";  // avoid "undefined"
     }
+    if (!face.name_old) {  // This can happen if the user sets the name to "unknown"
+        face.name_old = "";  // avoid "undefined"
+    }
 //    existing_name = "";
 //    face_existing = getFaceForId(face.id);
 //    if (face_existing.sent) {
@@ -1140,7 +1143,6 @@ function styleFaceFrame(face) {
         isVerified = "1";
         ((loglevel >= 3) ? console.log(t() + " style face:  existing face, id = " + face.id + ", url=" + face.url) : null);
     } else if (face.name != "") {
-        // prio 1 because this face was given a name by user
         if (face.name == "-ignore-") {
             document.getElementById("face-" + face.id).remove();
             ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
@@ -1150,15 +1152,17 @@ function styleFaceFrame(face) {
         name = face.name;
         isVerified = "1";
         ((loglevel >= 3) ? console.log(t() + " style face:  named face, id = " + face.id + ", url=" + face.url) : null);
+    } else if (face.name_old !== face.name && face.name === "") {
+        nameFrame.style.border = "medium dotted red";
+        name = face.name;
+        ((loglevel >= 3) ? console.log(t() + " style face: recognized face, id = " + face.id + ", url=" + face.url) : null);
     } else if (face.name_recognized != "") {
-        // prio 2 because this is guessed by the face recognition
         nameFrame.style.border = "medium dashed red";
         if (face.time_named == "") {
             name = face.name_recognized;
         }
         ((loglevel >= 3) ? console.log(t() + " style face: recognized face, id = " + face.id + ", url=" + face.url) : null);
     } else {
-        // prio 3 because this is the default if nothing is known about this face
         nameFrame.style.border = "medium dotted red";
         ((loglevel >= 3) ? console.log(t() + " style face:  no name yet face, id = " + face.id + ", url=" + face.url) : null);
     }
