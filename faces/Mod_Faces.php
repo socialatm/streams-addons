@@ -152,9 +152,6 @@ class Faces extends Controller {
             if ($api === 'start') {
                 // API: /faces/nick/start
                 $this->startDetection('start', false);
-            } elseif ($api === 'recognize') {
-                // API: /faces/nick/recognize
-                $this->startRecognition();
             } elseif ($api === 'results') {
                 // API: /faces/nick/results
                 $this->startDetection('results', false);
@@ -303,46 +300,6 @@ class Faces extends Controller {
             'sort_ascending' => $sort_ascending,
             'zoom' => $zoom,
             'python_blocked' => $block,
-            'message' => "ok"));
-    }
-
-    private function startRecognition() {
-        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
-        if ($block) {
-            json_return_and_die(array(
-                'status' => true,
-                'python_blocked' => $block,
-                'names' => [],
-                'attributes' => [],
-                'message' => "recognition (python) is blocked on this server"));
-        }
-
-        require_once('FaceRecognition.php');
-        $fr = new FaceRecognition();
-
-        $channel_id = $this->owner['channel_id'];
-        if ($fr->isScriptRunning($channel_id)) {
-            json_return_and_die(array(
-                'status' => true,
-                'python_blocked' => $block,
-                'names' => [],
-                'attributes' => [],
-                'message' => "recognition still running for this user"));
-        }
-
-        $storeDirectory = $this->getStoreDir();
-        $recognize = true;
-        $rm_params = "";
-        $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
-
-        logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
-
-        json_return_and_die(array(
-            'status' => true,
-            'python_blocked' => $block,
-            'names' => [], // prevent to show old names if not processed by face recognition
-            'attributes' => [], // prevent to show old names if not processed by face recognition
-            'names_waiting' => [],
             'message' => "ok"));
     }
 

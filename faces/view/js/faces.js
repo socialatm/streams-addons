@@ -108,33 +108,6 @@ function postStart() {
 }
 
 /*
- * Start the face recogniton only in the backend (without detection)
- * 
- * @returns {undefined}
- */
-function postRecognize() {
-    let postURL = window.location + "/recognize";
-    ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
-
-    $.post(postURL, {}, function (data) {
-        if (!data['status']) {
-            ((loglevel >= 0) ? console.log(t() + " post recognize - ERROR " + data['message']) : null);
-            return;
-        }
-        ((loglevel >= 1) ? console.log(t() + " post recognize - received server message: " + data['message']) : null);
-        ((loglevel >= 3) ? console.log(t() + " post recognize - received server data response: " + JSON.stringify(data)) : null);
-        if (data['names']) {
-            //downloadFaceData(data['names'], data['names_waiting']); // creates list of images
-        }
-        setConfig(data, false);
-        if (!python_is_blocked) {
-            waitForFinishedFaceDetection();
-        }
-    },
-            'json');
-}
-
-/*
  * Download the results of the face recognition and show
  * 
  * @returns {undefined}
@@ -210,6 +183,10 @@ function downloadFaceData() {
                     readWaitingNames(data);
                     downloadFaceData();
                 },
+                error: function (data) {
+                    ((loglevel >= 1) ? console.log(t() + " empty names file") : null);
+                    downloadFaceData();
+                },
                 async: true
             });
         }
@@ -226,6 +203,10 @@ function downloadFaceData() {
                 ((loglevel >= 1) ? console.log(t() + " load face data - received response from server") : null);
                 ((loglevel >= 3) ? console.log(t() + " load face data - received from server: file=" + f + ", data= " + data) : null);
                 readFaces(data, f);
+                downloadFaceData();
+            },
+            error: function (data) {
+                ((loglevel >= 1) ? console.log(t() + " empty faces file") : null);
                 downloadFaceData();
             },
             async: true
@@ -279,7 +260,7 @@ function getWaitingNameForFace(face) {
 
 function correctToWaitingName(face) {
     let n = getWaitingNameForFace(face);
-    if(n !== "") {
+    if (n !== "") {
         face.name = n;
         ((loglevel >= 3) ? console.log(t() + " name corrected to (waiting) name=" + face.name + " of face id= " + face.id + ", url=" + face.url) : null);
     }
@@ -295,6 +276,7 @@ function readFaces(imgs, csvFile) {
             pos: imgs.position[i],
             face_nr: imgs.face_nr[i],
             name: imgs.name[i],
+            name_preserved: false,
             name_recognized: imgs.name_recognized[i],
             time_named: imgs.time_named[i],
             time: sort_exif ? imgs.exif_date[i] : imgs.mtime[i],
@@ -332,7 +314,7 @@ function appendFaceToImages(face) {
     if (appended) {
         return;
     }
-    if (face.name.trim() == "-ignore-") {
+    if (face.name.trim() === "-ignore-") {
         return;
     }
     var faces = [];
@@ -477,7 +459,7 @@ function setNameIgnore() {
 function preparePostName(face_id_full, name) {
     ((loglevel >= 1) ? console.log(t() + " start to prepare name  to send it to the server, face id = " + face_id_full) : null);
     var face_id = face_id_full.split("-")[1];
-    var name_old = document.getElementById(face_id_full).innerText;
+    // var name_old = document.getElementById(face_id_full).innerText;
     var face = getFaceForId(face_id);
     if (name === -2) {
         // clicked "ignore"
@@ -490,6 +472,7 @@ function preparePostName(face_id_full, name) {
         // let the face recognition try to guess
         name = "";
     }
+    setPreservedNameFaceForId(face_id, name);  // to preserve the name when the face recognition is still running
     face.name = name;
     var file = face['url'];
     var position = face['pos'];
@@ -498,7 +481,6 @@ function preparePostName(face_id_full, name) {
         "id": face_id,
         "file": file,
         "position": position,
-        "name_old": name_old,
         "name": name
     });
     hideEditFrame();
@@ -1046,6 +1028,21 @@ function getFaceForId(id) {
     return false
 }
 
+function setPreservedNameFaceForId(id, name) {
+    var i;
+    for (i = 0; i < images.length; i++) {
+        var faces = images[i].faces;
+        for (j = 0; j < faces.length; j++) {
+            var face = faces[j];
+            if (id === face.id) {
+                ((loglevel >= 3) ? console.log(t() + " set preserved name=" + name + "for face id = " + id) : null);
+                images[i].faces[j].name_preserved = name;
+                return;
+            }
+        }
+    }
+}
+
 function updateFace(face) {
     var i;
     for (i = 0; i < images.length; i++) {
@@ -1054,7 +1051,16 @@ function updateFace(face) {
             var f = faces[j];
             if (f.id === face.id) {
                 ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
+                name_preserved = images[i].faces[j].name_preserved;
                 face = correctToWaitingName(face);
+                if(name_preserved !== false) {
+                    // temporarily stored by browser after name was set by the user
+                    face.name_preserved = name_preserved;
+                    face.name = name_preserved;
+                    if(images[i].faces[j].time_named === "") {
+                        face.time_named = "dummy time named for frame style";
+                    }
+                }
                 images[i].faces[j] = face;
                 styleFaceFrame(face);
                 return true;
@@ -1164,16 +1170,16 @@ function styleFaceFrame(face) {
         document.getElementById("face-" + face.id).remove();
         ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
         return;
-    } else if (face.name !== "") {
-        nameFrame.style.border = "rgba(255,255,255,.5)";
-        name = face.name;
-        isVerified = "1";
-        ((loglevel >= 3) ? console.log(t() + " style face:  named face, id = " + face.id + ", url=" + face.url) : null);
     } else if (face.name === "" && face.time_named !== "") {
         // the user marked this face as "unknow"
         name = "";
         nameFrame.style.border = "medium dotted grey";
         ((loglevel >= 3) ? console.log(t() + " style face: face marked as unknown, id = " + face.id + ", url=" + face.url) : null);
+    } else if (face.name !== "") {
+        nameFrame.style.border = "rgba(255,255,255,.5)";
+        name = face.name;
+        isVerified = "1";
+        ((loglevel >= 3) ? console.log(t() + " style face:  named face, id = " + face.id + ", url=" + face.url) : null);
     } else if (face.name_recognized !== "") {
         name = face.name_recognized;
         nameFrame.style.border = "medium dashed red";
