@@ -256,6 +256,8 @@ class Faces extends Controller {
             $is_touch = true;
         }
 
+        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
+
         $this->prepareFiles($is_touch);
         $config = $this->getConfig();
         $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
@@ -274,10 +276,10 @@ class Faces extends Controller {
                 'sort_exif' => $sort_exif,
                 'sort_ascending' => $sort_ascending,
                 'zoom' => $zoom,
+                'python_blocked' => $block,
                 'message' => "ok"));
         }
 
-        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if (!$block) {
             if ($action === 'start') {
                 $storeDirectory = $this->getStoreDir();
@@ -300,6 +302,7 @@ class Faces extends Controller {
             'sort_exif' => $sort_exif,
             'sort_ascending' => $sort_ascending,
             'zoom' => $zoom,
+            'python_blocked' => $block,
             'message' => "ok"));
     }
 
@@ -308,6 +311,7 @@ class Faces extends Controller {
         if ($block) {
             json_return_and_die(array(
                 'status' => true,
+                'python_blocked' => $block,
                 'names' => [],
                 'attributes' => [],
                 'message' => "recognition (python) is blocked on this server"));
@@ -320,6 +324,7 @@ class Faces extends Controller {
         if ($fr->isScriptRunning($channel_id)) {
             json_return_and_die(array(
                 'status' => true,
+                'python_blocked' => $block,
                 'names' => [],
                 'attributes' => [],
                 'message' => "recognition still running for this user"));
@@ -334,6 +339,7 @@ class Faces extends Controller {
 
         json_return_and_die(array(
             'status' => true,
+            'python_blocked' => $block,
             'names' => [], // prevent to show old names if not processed by face recognition
             'attributes' => [], // prevent to show old names if not processed by face recognition
             'names_waiting' => [],

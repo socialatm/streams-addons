@@ -14,6 +14,7 @@ var endPanel = null;
 // TODO set log level by server
 var loglevel = 3; // 0 = errors/warnings, 1 = info, 2 = debug, 3 = dump data structures
 
+let filesToLoad = {faces: [], names: []};
 let images = [];
 let channel_name = "";
 var receivedFaceEncodings = [];
@@ -31,6 +32,8 @@ var immediateSearch = false;
 var sort_exif = false;
 var sortDirectionReverse = false;
 
+let python_is_blocked = false;
+
 function t() {
     var now = new Date();
     var dateString = now.toISOString();
@@ -38,6 +41,7 @@ function t() {
 }
 
 function clear() {
+    filesToLoad = {faces: [], names: []};
     images = [];
     faces = [];
     receivedFaceEncodings = [];
@@ -74,6 +78,11 @@ function getLogLevel() {
     return logLevel;
 }
 
+/*
+ * This startst the face detection and recognition in the backend
+ * 
+ * @returns {undefined}
+ */
 function postStart() {
     let postURL = window.location + "/start";
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
@@ -86,14 +95,23 @@ function postStart() {
         ((loglevel >= 1) ? console.log(t() + " post start - received server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post start - received server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
-            loadFaceData(data['names'], data['names_waiting']); // creates list of images
+            names_waiting = [];
+            filesToLoad = {faces: data['names'], names: data['names_waiting']};
+            downloadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
         setConfig(data, true);
-        waitForFinishedFaceDetection();
+        if (!python_is_blocked) {
+            waitForFinishedFaceDetection();
+        }
     },
             'json');
 }
 
+/*
+ * Start the face recogniton only in the backend (without detection)
+ * 
+ * @returns {undefined}
+ */
 function postRecognize() {
     let postURL = window.location + "/recognize";
     ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
@@ -106,14 +124,21 @@ function postRecognize() {
         ((loglevel >= 1) ? console.log(t() + " post recognize - received server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post recognize - received server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
-            loadFaceData(data['names'], data['names_waiting']); // creates list of images
+            //downloadFaceData(data['names'], data['names_waiting']); // creates list of images
         }
         setConfig(data, false);
-        waitForFinishedFaceDetection();
+        if (!python_is_blocked) {
+            waitForFinishedFaceDetection();
+        }
     },
             'json');
 }
 
+/*
+ * Download the results of the face recognition and show
+ * 
+ * @returns {undefined}
+ */
 function postUpdate() {
     var action = new Array();
     var postURL = window.location + "/results";
@@ -127,7 +152,9 @@ function postUpdate() {
         ((loglevel >= 1) ? console.log(t() + " post update - received results with server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post update - received results with server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
-            loadFaceData(data['names'], data['names_waiting']); // creates list of images
+            names_waiting = [];
+            filesToLoad = {faces: data['names'], names: data['names_waiting']};
+            downloadFaceData(data['names'], []); // creates list of images
         }
         setConfig(data, false);
     },
@@ -137,54 +164,60 @@ function postUpdate() {
 function setConfig(data, is_start) {
     if (data['immediatly']) {
         immediateSearch = data['immediatly'];
-        ((loglevel >= 1) ? console.log(t() + " set config data - immediatly= " + immediateSearch) : null);
+        ((loglevel >= 1) ? console.log(t() + " set config data - immediatly=" + immediateSearch) : null);
     }
     if (data['sort_exif']) {
         sort_exif = data['sort_exif'];
-        ((loglevel >= 1) ? console.log(t() + " set config data - sort_exif= " + sort_exif) : null);
+        ((loglevel >= 1) ? console.log(t() + " set config data - sort_exif=" + sort_exif) : null);
     }
     if (data['sort_ascending']) {
         sortDirectionReverse = data['sort_ascending'];
-        ((loglevel >= 1) ? console.log(t() + " set config data - sort_ascending= " + sortDirectionReverse) : null);
+        ((loglevel >= 1) ? console.log(t() + " set config data - sort_ascending=" + sortDirectionReverse) : null);
     }
     if (is_start) {
         if (data['zoom']) {
             zoom = data['zoom'];
-            ((loglevel >= 1) ? console.log(t() + " set config data - zoom= " + zoom) : null);
+            ((loglevel >= 1) ? console.log(t() + " set config data - zoom=" + zoom) : null);
         }
     }
-}
-
-function loadFaceData(files, files_waiting_names) {
-    // Read names.json.
-    // Why? names.json contains the names the user has set. If this file is not
-    // empty the face recognition has not processed these names and faces.json
-    // reflect an outdated status (names). To avoid "wrong" (old) names displayed
-    // to the user: read the recent name changes from names.json an use the names
-    // in there.
-    let i;
-    for (i = 0; i < files_waiting_names.length; i++) {
-        let f = files_waiting_names[i];
-        ((loglevel >= 2) ? console.log(t() + " load face data - waiting names - requesting file " + f) : null);
-        let url = window.location.origin + "/cloud/" + f;
-        jQuery.ajax({
-            url: url,
-            success: function (data) {
-                ((loglevel >= 1) ? console.log(t() + " load face data - waiting names - received response from server") : null);
-                ((loglevel >= 3) ? console.log(t() + " load face data - waiting names - received from server: data= " + data) : null);
-                readWaitingNames(data);
-                if (++counter_files_name_waiting === files_waiting_names.length) {
-                    ((loglevel >= 2) ? console.log(t() + " load face data - finished - waiting names - last file (waiting faces) was loaded: " + counter_files_name_waiting) : null);
-                }
-            },
-            async: true
-        });
+    if (data['python_blocked']) {
+        python_is_blocked = true;
+    } else {
+        python_is_blocked = false;
     }
-    // Read faces.json per subdirectory.
-    // faces.json contains the information about the postition of faces in 
-    // images and their names.
-    for (i = 0; i < files.length; i++) {
-        let f = files[i];
+    ((loglevel >= 1) ? console.log(t() + " set config data - python_blocked=" + python_is_blocked) : null);
+}
+function downloadFaceData() {
+    if (stopLoadingImages) {
+        return;
+    }
+    if (filesToLoad.names.length > 0) {
+        // Read list of names.json per directory.
+        // Why? names.json contains the names the user has set. If this file is not
+        // empty the face recognition has not processed these names and faces.json
+        // reflect an outdated status (names). To avoid "wrong" (old) names displayed
+        // to the user: read the recent name changes from names.json an use the names
+        // in there.
+        if (filesToLoad.names.length > 0) {
+            let f = filesToLoad.names.shift();
+            ((loglevel >= 2) ? console.log(t() + " load face data - waiting names - requesting file " + f) : null);
+            let url = window.location.origin + "/cloud/" + f;
+            jQuery.ajax({
+                url: url,
+                success: function (data) {
+                    ((loglevel >= 1) ? console.log(t() + " load face data - waiting names - received response from server") : null);
+                    ((loglevel >= 3) ? console.log(t() + " load face data - waiting names - received from server: data= " + data) : null);
+                    readWaitingNames(data);
+                    downloadFaceData();
+                },
+                async: true
+            });
+        }
+    } else if (filesToLoad.faces.length > 0) {
+        // Read faces.json per directory.
+        // faces.json contains the information about the postition of faces in 
+        // images and their names.
+        let f = filesToLoad.faces.shift();
         ((loglevel >= 2) ? console.log(t() + " load face data - requesting file " + f) : null);
         let url = window.location.origin + "/cloud/" + f;
         jQuery.ajax({
@@ -193,19 +226,20 @@ function loadFaceData(files, files_waiting_names) {
                 ((loglevel >= 1) ? console.log(t() + " load face data - received response from server") : null);
                 ((loglevel >= 3) ? console.log(t() + " load face data - received from server: file=" + f + ", data= " + data) : null);
                 readFaces(data, f);
-                if (++counter_files_name === files.length) {
-                    ((loglevel >= 2) ? console.log(t() + "load face data - finished - last file was loaded: " + counter_files_name) : null);
-                    if (stopLoadingImages) {
-                        return;
-                    }
-                    filterAndSort();
-                    appendPictures();
-                }
+                downloadFaceData();
             },
             async: true
         });
+    } else {
+        ((loglevel >= 2) ? console.log(t() + "load face data and names - finished - last file was downloaded: " + counter_files_name) : null);
+        if (stopLoadingImages) {
+            return;
+        }
+        filterAndSort();
+        appendPictures();
     }
 }
+
 /*
  * Read names that where set by the user (browser) and are not processed
  * yet by the face recognition. The server will send old names and the browser will
@@ -243,6 +277,15 @@ function getWaitingNameForFace(face) {
     return "";
 }
 
+function correctToWaitingName(face) {
+    let n = getWaitingNameForFace(face);
+    if(n !== "") {
+        face.name = n;
+        ((loglevel >= 3) ? console.log(t() + " name corrected to (waiting) name=" + face.name + " of face id= " + face.id + ", url=" + face.url) : null);
+    }
+    return face;
+}
+
 function readFaces(imgs, csvFile) {
     let i = 0;
     while (imgs.file[i]) {
@@ -276,6 +319,7 @@ function appendFaceToImages(face) {
         if (image['url'] === face['url']) {
             var existingFace = getFaceAtSamePosition(image, face);
             if (!existingFace) {
+                face = correctToWaitingName(face);
                 image['faces'].push(face);
                 ((loglevel >= 2) ? console.log(t() + " append face to image in data array - new face id=" + face.id + ", url= " + face['url']) : null);
             } else {
@@ -292,6 +336,7 @@ function appendFaceToImages(face) {
         return;
     }
     var faces = [];
+    face = correctToWaitingName(face);
     faces.push(face);
     var image = {id: imageCounter++, url: face['url'], faces: faces, pass: true, time: face['time']};
     images.push(image);
@@ -440,7 +485,7 @@ function preparePostName(face_id_full, name) {
     } else if (name === -1) {
         // clicked "unknown"
         name = "";
-        face.name_old = name_old;
+        face.time_named = "dummy time stamp for styling frame";
     } else if (name === -3) {
         // let the face recognition try to guess
         name = "";
@@ -512,7 +557,6 @@ function postNames() {
         if (data['status']) {
             ((loglevel >= 1) ? console.log(t() + " post names - receiced server response to sending the name was without errors") : null);
             if (removeNameFromUnsentList(data['face'])) {
-                styleFaceFrame(data['face']);
                 postNames();
             } else {
                 ((loglevel >= 1) ? console.log(t() + " post names - stop sendings names because failed to removed a name/face frome the unsent list. The name/face was received from the server (as response to set its name)") : null);
@@ -566,12 +610,12 @@ $('#face-active-filter-names').on('click', '.btn-face-search-name', function () 
 
 $(".face-date").change(function () {
     ((loglevel >= 1) ? console.log(t() + " user changed search date  ") : null);
-    let from = $("#face-date-from").val();    
-    if(from.startsWith("0")) {
+    let from = $("#face-date-from").val();
+    if (from.startsWith("0")) {
         return;
-    }  
+    }
     let to = $("#face-date-to").val();
-    if(to.startsWith("0")) {
+    if (to.startsWith("0")) {
         return;
     }
     search();
@@ -1008,14 +1052,10 @@ function updateFace(face) {
         var faces = images[i].faces;
         for (j = 0; j < faces.length; j++) {
             var f = faces[j];
-            if (f.id == face.id) {
+            if (f.id === face.id) {
                 ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
-                let name = images[i].faces[j].name;
+                face = correctToWaitingName(face);
                 images[i].faces[j] = face;
-                if (name !== "") {
-                    images[i].faces[j].name = name;
-                    ((loglevel >= 3) ? console.log(t() + " update face in data array - existing name=" + name + " was kept - id = " + face.id + ", url=" + face.url) : null);
-                }
                 styleFaceFrame(face);
                 return true;
             }
@@ -1117,50 +1157,26 @@ function styleFaceFrame(face) {
     if (!face.name_recognized) {  // This can happen if the user sets the name to "unknown"
         face.name_recognized = "";  // avoid "undefined"
     }
-    if (!face.name_old) {  // This can happen if the user sets the name to "unknown"
-        face.name_old = "";  // avoid "undefined"
-    }
-//    existing_name = "";
-//    face_existing = getFaceForId(face.id);
-//    if (face_existing.sent) {
-//        ((loglevel >= 2) ? console.log(t() + " This face name was set already. Style frame for face = " + JSON.stringify(Object.assign({}, face))) : null);
-//        existing_name = face_existing.name;
-//    } else {
-//        existing_name = getWaitingNameForFace(face);
-//    }
-
-    existing_name = getWaitingNameForFace(face);
 
 
-    if (existing_name != "") {
-        if (existing_name == "-ignore-") {
-            document.getElementById("face-" + face.id).remove();
-            ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
-            return;
-        }
-        nameFrame.style.border = "rgba(255,255,255,.5)";
-        name = existing_name;
-        isVerified = "1";
-        ((loglevel >= 3) ? console.log(t() + " style face:  existing face, id = " + face.id + ", url=" + face.url) : null);
-    } else if (face.name != "") {
-        if (face.name == "-ignore-") {
-            document.getElementById("face-" + face.id).remove();
-            ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
-            return;
-        }
+    if (face.name !== "" && face.name === "-ignore-") {
+        // The user marked this face as "is not a face"
+        document.getElementById("face-" + face.id).remove();
+        ((loglevel >= 3) ? console.log(t() + " style face:  ignored face, id = " + face.id + ", url=" + face.url) : null);
+        return;
+    } else if (face.name !== "") {
         nameFrame.style.border = "rgba(255,255,255,.5)";
         name = face.name;
         isVerified = "1";
         ((loglevel >= 3) ? console.log(t() + " style face:  named face, id = " + face.id + ", url=" + face.url) : null);
-    } else if (face.name_old !== face.name && face.name === "") {
-        nameFrame.style.border = "medium dotted red";
-        name = face.name;
-        ((loglevel >= 3) ? console.log(t() + " style face: recognized face, id = " + face.id + ", url=" + face.url) : null);
-    } else if (face.name_recognized != "") {
+    } else if (face.name === "" && face.time_named !== "") {
+        // the user marked this face as "unknow"
+        name = "";
+        nameFrame.style.border = "medium dotted grey";
+        ((loglevel >= 3) ? console.log(t() + " style face: face marked as unknown, id = " + face.id + ", url=" + face.url) : null);
+    } else if (face.name_recognized !== "") {
+        name = face.name_recognized;
         nameFrame.style.border = "medium dashed red";
-        if (face.time_named == "") {
-            name = face.name_recognized;
-        }
         ((loglevel >= 3) ? console.log(t() + " style face: recognized face, id = " + face.id + ", url=" + face.url) : null);
     } else {
         nameFrame.style.border = "medium dotted red";
