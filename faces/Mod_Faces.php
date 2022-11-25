@@ -152,6 +152,9 @@ class Faces extends Controller {
             if ($api === 'start') {
                 // API: /faces/nick/start
                 $this->startDetection('start', false);
+            } elseif ($api === 'recognize') {
+                // API: /faces/nick/recognize
+                $this->startRecognition();
             } elseif ($api === 'results') {
                 // API: /faces/nick/results
                 $this->startDetection('results', false);
@@ -301,6 +304,37 @@ class Faces extends Controller {
             'zoom' => $zoom,
             'python_blocked' => $block,
             'message' => "ok"));
+    }
+
+    private function startRecognition() {
+        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
+        if ($block) {
+            logger("sending status=ok, python is blocked, face recogntion not started", LOGGER_DEBUG);
+            json_return_and_die(array('status' => true, 'message' => "ok, python is blocked, face recogntion not started"));
+        }
+
+        $immediatly = (get_config('faces', 'immediatly') ? get_config('faces', 'immediatly') : false);
+        if (!$immediatly) {
+            logger("sending status=ok, immediate search not activated, face recogntion not started", LOGGER_DEBUG);
+            json_return_and_die(array('status' => true, 'message' => "ok, immediate search not activated, face recogntion not started"));
+        }
+
+        require_once('FaceRecognition.php');
+        $fr = new FaceRecognition();
+
+        $channel_id = $this->owner['channel_id'];
+        if ($fr->isScriptRunning($channel_id)) {
+            logger("sending status=ok, recognition is still running for this user", LOGGER_DEBUG);
+            json_return_and_die(array('status' => true, 'message' => "ok, recognition is still running for this user"));
+        }
+
+        $storeDirectory = $this->getStoreDir();
+        $recognize = true;
+        $rm_params = "";
+        $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
+
+        logger("sending message=ok, face recognition started", LOGGER_DEBUG);
+        json_return_and_die(array('status' => true, 'message' => "face recognition started"));
     }
 
     private function startProbe() {
@@ -627,7 +661,8 @@ class Faces extends Controller {
                 logger($msg, LOGGER_NORMAL);
                 json_return_and_die(array('status' => false, 'message' => $msg));
             }
-            json_return_and_die(array('status' => true, 'face' => $face, 'message' => "ok"));
+            $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
+            json_return_and_die(array('status' => true, 'message' => "name was written", 'face' => json_encode($face)));
         }
     }
 

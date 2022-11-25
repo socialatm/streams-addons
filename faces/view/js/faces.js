@@ -5,6 +5,7 @@ var loadedCountMaxMultiplier = 3;
 var loadedCountMax = loadedCountMaxMultiplier * zoom;  // How many picture to load befor stopping. After the stop the user has to scroll down to load more images.
 var loadedCount = 0;
 var isFaceRecognitionRunning = false;
+var isWaitingForInitialDownload = false;
 var sortDirectionReverse = false;
 var stopLoadingImages = false;
 var blockScrolledToEnd = false;
@@ -83,7 +84,7 @@ function getLogLevel() {
  * 
  * @returns {undefined}
  */
-function postStart() {
+function postDetectAndRecognize() {
     let postURL = window.location + "/start";
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
 
@@ -106,13 +107,30 @@ function postStart() {
     },
             'json');
 }
+function postRecognize() {
+    let postURL = window.location + "/recognize";
+    ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
+
+    $.post(postURL, {}, function (data) {
+        if (!data['status']) {
+            ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
+            return;
+        }
+        ((loglevel >= 1) ? console.log(t() + " post recognize - received server message: " + data['message']) : null);
+        ((loglevel >= 3) ? console.log(t() + " post recognize - received server data response: " + JSON.stringify(data)) : null);
+        if (!python_is_blocked) {
+            waitForFinishedFaceDetection();
+        }
+    },
+            'json');
+}
 
 /*
  * Download the results of the face recognition and show
  * 
  * @returns {undefined}
  */
-function postUpdate() {
+function postDownloadResults() {
     var action = new Array();
     var postURL = window.location + "/results";
     //clear();
@@ -164,6 +182,7 @@ function downloadFaceData() {
     if (stopLoadingImages) {
         return;
     }
+    isWaitingForInitialDownload = true;
     if (filesToLoad.names.length > 0) {
         // Read list of names.json per directory.
         // Why? names.json contains the names the user has set. If this file is not
@@ -218,6 +237,7 @@ function downloadFaceData() {
         }
         filterAndSort();
         appendPictures();
+        isWaitingForInitialDownload = false;
     }
 }
 
@@ -522,7 +542,7 @@ function postNames() {
         ((loglevel >= 1) ? console.log(t() + " post names - no name left to send ") : null);
         clearCounterNamesSending();
         if (!isFaceRecognitionRunning && immediateSearch) {
-            postStart(false);
+            postRecognize();
         }
         return;
     }
@@ -1053,11 +1073,11 @@ function updateFace(face) {
                 ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
                 name_preserved = images[i].faces[j].name_preserved;
                 face = correctToWaitingName(face);
-                if(name_preserved !== false) {
+                if (name_preserved !== false) {
                     // temporarily stored by browser after name was set by the user
                     face.name_preserved = name_preserved;
                     face.name = name_preserved;
-                    if(images[i].faces[j].time_named === "") {
+                    if (images[i].faces[j].time_named === "") {
                         face.time_named = "dummy time named for frame style";
                     }
                 }
@@ -1253,24 +1273,30 @@ async function waitForFinishedFaceDetection() {
     var ms = 10000;
     var url = window.location + "/status";
     while (isFaceRecognitionRunning) {
-        var action = new Array();
-        var postURL = window.location + "/status";
-        ((loglevel >= 1) ? console.log(t() + " about to get the status of the face detection and recognition: url = " + postURL) : null);
-        $.post(postURL, {action}, function (data) {
-            ((loglevel >= 1) ? console.log(t() + " received server status " + JSON.stringify(data)) : null);
-            if (data['running']) {
-                checkServerStatus(data['status']);
-            } else {
-                isFaceRecognitionRunning = false;
-                checkServerStatus(data['status']);
-                if (unsentNames.length === 0) {
-                    postUpdate();
+        if (isWaitingForInitialDownload) {
+            ((loglevel >= 1) ? console.log(t() + " still waiting for initial download of faces and names to end") : null);
+        } else {
+            var action = new Array();
+            var postURL = window.location + "/status";
+            ((loglevel >= 1) ? console.log(t() + " about to get the status of the face detection and recognition: url = " + postURL) : null);
+            $.post(postURL, {action}, function (data) {
+                ((loglevel >= 1) ? console.log(t() + " received server status " + JSON.stringify(data)) : null);
+                if (data['running']) {
+                    checkServerStatus(data['status']);
                 } else {
-                    postNames();
+                    isFaceRecognitionRunning = false;
+                    checkServerStatus(data['status']);
+                    if (unsentNames.length === 0) {
+                        postDownloadResults();
+                        return;
+                    } else {
+                        //postNames();
+                        return;
+                    }
                 }
-            }
-        },
-                'json');
+            },
+                    'json');
+        }
         ((loglevel >= 1) ? console.log(t() + " wait for the face detection to finish, url= " + url + ", wait time=" + ms + " ms") : null);
         await sleep(ms);
     }
@@ -1439,7 +1465,7 @@ $(document).ready(function () {
     initDate("", "");
     channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
     //--------------------------------------------------------------------------
-    postStart(true);
+    postDetectAndRecognize();
 });
 
 
