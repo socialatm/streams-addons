@@ -661,8 +661,8 @@ class Faces extends Controller {
                 logger($msg, LOGGER_NORMAL);
                 json_return_and_die(array('status' => false, 'message' => $msg));
             }
-            $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
-            json_return_and_die(array('status' => true, 'message' => "name was written", 'face' => json_encode($face)));
+            logger('sending response: name was written for face=' . json_encode($face), LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => "name was written", 'face' => $face));
         }
     }
 
