@@ -349,6 +349,9 @@ class Util:
                         if face_a.name.values[0] != face_b.name or \
                                 face_a.name_recognized.values[0] != face_b.name_recognized:
                             return True
+                        elif face_b.time_named != face_a.time_named.values[0]:
+                            return True
+                            
         return False
 
     def remove_other_than_recognized(self, faces, df):
