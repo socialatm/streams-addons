@@ -78,7 +78,6 @@ class FaceRecognition {
         }
 
         if (strtolower($status) == "finished") {
-            logger("Status face detection " . $channel_id . ": finished", LOGGER_DEBUG);
             return false;
         }
 

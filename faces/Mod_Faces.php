@@ -134,8 +134,6 @@ class Faces extends Controller {
     }
 
     function post() {
-        logger('got a post request' . $api, LOGGER_DEBUG);
-
         $status = $this->permChecks();
 
         if (!$status['status']) {
@@ -267,7 +265,7 @@ class Faces extends Controller {
 
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
-            logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
+            logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_NORMAL);
             json_return_and_die(array(
                 'status' => true,
                 'names' => $this->files_faces,
@@ -292,7 +290,7 @@ class Faces extends Controller {
             }
         }
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
+        logger("sending names: " . json_encode($this->files_faces), LOGGER_NORMAL);
 
         json_return_and_die(array(
             'status' => true,
@@ -324,7 +322,7 @@ class Faces extends Controller {
 
         $channel_id = $this->owner['channel_id'];
         if ($fr->isScriptRunning($channel_id)) {
-            logger("sending status=ok, recognition is still running for this user", LOGGER_DEBUG);
+            logger("sending status=ok, recognition is still running for this user", LOGGER_NORMAL);
             json_return_and_die(array('status' => true, 'message' => "ok, recognition is still running for this user"));
         }
 
@@ -333,7 +331,7 @@ class Faces extends Controller {
         $rm_params = "";
         $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
 
-        logger("sending message=ok, face recognition started", LOGGER_DEBUG);
+        logger("sending message=ok, face recognition started", LOGGER_NORMAL);
         json_return_and_die(array('status' => true, 'message' => "face recognition started"));
     }
 
@@ -616,7 +614,7 @@ class Faces extends Controller {
 
         $values["procid"] = $a[4];
 
-        logger('Sending status: ' . json_encode($values), LOGGER_DEBUG);
+        logger('sending status: ' . json_encode($values), LOGGER_DEBUG);
         json_return_and_die(array('running' => $running, 'status' => $values));
     }
 
