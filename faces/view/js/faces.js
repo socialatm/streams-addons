@@ -1072,6 +1072,7 @@ function updateFace(face) {
             if (f.url === face.url) {
                 if (isSameFace(f, face)) {
                     ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
+                    let nameRecognizedOld = f.name_recognized;
                     name_preserved = images[i].faces[j].name_preserved;
                     face = correctToWaitingName(face);
                     if (name_preserved !== false) {
@@ -1083,7 +1084,7 @@ function updateFace(face) {
                         }
                     }
                     images[i].faces[j] = face;
-                    if(nameOld !== face.name || nameRecognizedOld !== face.name_recognized) {
+                    if(face.name === "" && face.time_named === "" && nameRecognizedOld !== face.name_recognized) {
                         styleFaceFrame(face);                        
                     }
                     return true;
