@@ -1069,25 +1069,27 @@ function updateFace(face) {
         var faces = images[i].faces;
         for (j = 0; j < faces.length; j++) {
             var f = faces[j];
-            if (f.id === face.id) {
-                ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
-                name_preserved = images[i].faces[j].name_preserved;
-                face = correctToWaitingName(face);
-                if (name_preserved !== false) {
-                    // temporarily stored by browser after name was set by the user
-                    face.name_preserved = name_preserved;
-                    face.name = name_preserved;
-                    if (images[i].faces[j].time_named === "") {
-                        face.time_named = "dummy time named for frame style";
+            if (f.url === face.url) {
+                if (isSameFace(f, face)) {
+                    ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
+                    name_preserved = images[i].faces[j].name_preserved;
+                    face = correctToWaitingName(face);
+                    if (name_preserved !== false) {
+                        // temporarily stored by browser after name was set by the user
+                        face.name_preserved = name_preserved;
+                        face.name = name_preserved;
+                        if (images[i].faces[j].time_named === "") {
+                            face.time_named = "dummy time named for frame style";
+                        }
                     }
+                    images[i].faces[j] = face;
+                    styleFaceFrame(face);
+                    return true;
                 }
-                images[i].faces[j] = face;
-                styleFaceFrame(face);
-                return true;
             }
         }
     }
-    ((loglevel >= 1) ? console.log(t() + " update face in data array - found no faces for id = " + face.id + ", url=" + face.url) : null);
+    ((loglevel >= 1) ? console.log(t() + " update face in data array - found no faces to update for url = " + face.url + ", id=" + face.id) : null);
     return false;
 }
 
