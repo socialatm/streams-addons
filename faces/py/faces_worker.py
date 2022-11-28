@@ -77,32 +77,32 @@ class Worker:
 
         self.ram_allowed = 80  # %
 
-        self.config = None
         self.status_suffix = ""
-
-    def set_finder(self, json):
+        
+    def init_finder(self):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.finder = faces_finder.Finder()
-            self.finder.configure(json)
-            self.finder.ram_allowed = self.ram_allowed
             self.finder.util = self.util
         else:
             logging.error("FAILED to set finder. Reason: module deepface not found")
-
-    def set_recognizer(self, json):
+            sys.exit(1)
+        
+    def init_recognizer(self):
         deepface_specs = importlib.util.find_spec("deepface")
         if deepface_specs is not None:
             self.recognizer = faces_recognizer.Recognizer()
-            self.recognizer.configure(json)
         else:
             logging.critical("FAILED to set finder. Reason: module deepface not found")
+            sys.exit(1)
 
     def set_db(self, db):
         self.db = db
         logging.debug("database was set")
 
-    def configure(self, json):
+    def configure(self):
+        
+        json = self.read_config_file()
 
         if "worker" in json:
 
@@ -162,8 +162,11 @@ class Worker:
         logging.debug("config: rm_detectors=" + str(self.remove_detectors))
         # --------------------------------------------------------------------------------------------------------------
 
-        self.set_finder(json)
-        self.set_recognizer(json)
+        # configure finder
+        self.finder.configure(json)
+        self.finder.ram_allowed = self.ram_allowed
+        # configure recognizer
+        self.recognizer.configure(json)
 
         self.exiftool = faces_exiftool.ExifTool()
         if not self.exiftool.getVersion():
@@ -214,6 +217,12 @@ class Worker:
             if len(folders) == 0:
                 logging.info("no files " + self.file_name_faces + " for channel " + str(self.channel))
                 continue
+            
+            # every channel has it's own configuration file
+            self.init_finder()
+            self.init_recognizer()
+            # configure both finder and recognizer
+            self.configure()
 
             if not is_recognize:
                 # --------------------------------------------
@@ -256,16 +265,14 @@ class Worker:
         logging.debug("channel " + str(self.channel) + " - read config file")
         if self.check_file_by_channel(self.file_name_config) is False:
             logging.debug("channel " + str(self.channel) + " - could not read config file " + self.file_name_config)
-            return False
+            return {}
         if os.path.exists(self.file_config):
             if os.stat(self.file_config).st_size == 0:
                 logging.debug("channel " + str(self.channel) + " - config file is empty " + self.file_config)
-                return False
+                return {}
         with open(self.file_config, "r") as f:
             conf = json.load(f)
-            self.config = conf
-            self.configure(conf)
-        return True
+            return conf
 
     def read_config_thresholds_file(self):
         logging.debug("channel " + str(self.channel) + " - read config thresholds file")
@@ -294,13 +301,6 @@ class Worker:
         if self.check_file_by_name(self.file_name_face_representations) is False:
             return
         self.check_file_by_name(self.file_name_names)  # for cleanup
-
-        # -------------------------------------------------------------
-        # Read the configuration set by admin/user
-        #
-        if self.config is None:
-            if not self.read_config_file():
-                return
 
         # -------------------------------------------------------------
         # Cleanup
@@ -416,9 +416,6 @@ class Worker:
     def recognize(self, folders, is_probe):
 
         # Read the configuration set by admin/user
-        #
-        if self.config is None:
-            self.read_config_file()
         if self.recognizer.thresholds_config is None:
             self.read_config_thresholds_file()
         probe_results = []

@@ -6,7 +6,7 @@ use Code\Render\Theme;
 /**
  * Name: Faces
  * Description: face recognition
- * Version: 0.3
+ * Version: 0.6
  * Author: Tom Wiedenhöft
  * Maintainer: Tom Wiedenhöft
  *
@@ -358,7 +358,7 @@ function testPythonVersion() {
     exec($cmd, $output, $r);
     if ($output[0]) {
         $ret_string = trim($output[0]);
-        logger("python version: " . $ret_string, LOGGER_DEBUG);
+        logger("python version: " . $ret_string, LOGGER_NORMAL);
         $version = substr($ret_string, 0, 3);
         $version_number = (float) $version;
         if ($version_number < 3.5) {
@@ -455,8 +455,8 @@ function testExiftool() {
     $cmd = 'exiftool -ver';
     exec($cmd, $o);
     if (!$o[0]) {
-        return array('status' => false, 'message' => 'Failed: Exiftool not found', LOGGER_DEBUG);
+        return array('status' => false, 'message' => 'Failed: Exiftool not found', LOGGER_NORMAL);
     }
-    logger("Exiftool version: " . $o[0], LOGGER_DEBUG);
+    logger("Exiftool version: " . $o[0], LOGGER_NORMAL);
     return array('status' => true, 'message' => 'Found  exiftool version = ' . $o[0], LOGGER_NORMAL);
 }

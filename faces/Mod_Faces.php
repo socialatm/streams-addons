@@ -134,15 +134,15 @@ class Faces extends Controller {
     }
 
     function post() {
-        logger('got a post request' . $api, LOGGER_DEBUG);
-
         $status = $this->permChecks();
 
         if (!$status['status']) {
-            notice($status['message'] . EOL);
-            json_return_and_die(array('status' => false, 'message' => $status['message']));
+            notice('permission check failed' . EOL);
+            logger('sending status=false, permission check failed', LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => 'permission check failed'));
         }
         if (!$this->observer) {
+            logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => 'Unknown observer. Please login.'));
         }
 
@@ -246,6 +246,7 @@ class Faces extends Controller {
         if (!$rm_params) {
             if ($fr->isScriptRunning() && $action !== 'start') {
                 notice('Face detection is still busy' . EOL);
+                logger('sending status=true, face detection is still busy', LOGGER_NORMAL);
                 json_return_and_die(array('status' => true, 'message' => 'Face detection is still busy'));
             }
         }
@@ -256,6 +257,8 @@ class Faces extends Controller {
             $is_touch = true;
         }
 
+        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
+
         $this->prepareFiles($is_touch);
         $config = $this->getConfig();
         $immediatly = $config["immediatly"][0][1] ? $config["immediatly"][0][1] : false;
@@ -265,7 +268,7 @@ class Faces extends Controller {
 
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
-            logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
+            logger("sending status=true, faces: " . json_encode($this->files_faces), LOGGER_NORMAL);
             json_return_and_die(array(
                 'status' => true,
                 'names' => $this->files_faces,
@@ -274,10 +277,10 @@ class Faces extends Controller {
                 'sort_exif' => $sort_exif,
                 'sort_ascending' => $sort_ascending,
                 'zoom' => $zoom,
+                'python_blocked' => $block,
                 'message' => "ok"));
         }
 
-        $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if (!$block) {
             if ($action === 'start') {
                 $storeDirectory = $this->getStoreDir();
@@ -290,7 +293,7 @@ class Faces extends Controller {
             }
         }
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
+        logger("sending status=true, faces: " . json_encode($this->files_faces), LOGGER_NORMAL);
 
         json_return_and_die(array(
             'status' => true,
@@ -300,17 +303,21 @@ class Faces extends Controller {
             'sort_exif' => $sort_exif,
             'sort_ascending' => $sort_ascending,
             'zoom' => $zoom,
+            'python_blocked' => $block,
             'message' => "ok"));
     }
 
     private function startRecognition() {
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
-            json_return_and_die(array(
-                'status' => true,
-                'names' => [],
-                'attributes' => [],
-                'message' => "recognition (python) is blocked on this server"));
+            logger("sending status=ok, python is blocked, face recogntion not started", LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => "ok, python is blocked, face recogntion not started"));
+        }
+
+        $immediatly = (get_config('faces', 'immediatly') ? get_config('faces', 'immediatly') : false);
+        if (!$immediatly) {
+            logger("sending status=ok, immediate search not activated, face recogntion not started", LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => "ok, immediate search not activated, face recogntion not started"));
         }
 
         require_once('FaceRecognition.php');
@@ -318,11 +325,8 @@ class Faces extends Controller {
 
         $channel_id = $this->owner['channel_id'];
         if ($fr->isScriptRunning($channel_id)) {
-            json_return_and_die(array(
-                'status' => true,
-                'names' => [],
-                'attributes' => [],
-                'message' => "recognition still running for this user"));
+            logger("sending status=ok, recognition is still running for this user", LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => "ok, recognition is still running for this user"));
         }
 
         $storeDirectory = $this->getStoreDir();
@@ -330,14 +334,8 @@ class Faces extends Controller {
         $rm_params = "";
         $fr->start($storeDirectory, $channel_id, $recognize, $rm_params, "");
 
-        logger("sending message=ok, names=" . json_encode($this->files_faces), LOGGER_DEBUG);
-
-        json_return_and_die(array(
-            'status' => true,
-            'names' => [], // prevent to show old names if not processed by face recognition
-            'attributes' => [], // prevent to show old names if not processed by face recognition
-            'names_waiting' => [],
-            'message' => "ok"));
+        logger("sending status=ok, face recognition started", LOGGER_NORMAL);
+        json_return_and_die(array('status' => true, 'message' => "face recognition started"));
     }
 
     private function startProbe() {
@@ -352,6 +350,7 @@ class Faces extends Controller {
         $fr = new FaceRecognition();
 
         $channel_id = $this->owner['channel_id'];
+        logger("sending status=ok, face recognition is still busy", LOGGER_NORMAL);
         if ($fr->isScriptRunning($channel_id)) {
             json_return_and_die(array(
                 'status' => true,
@@ -566,6 +565,7 @@ class Faces extends Controller {
         $rootDirectory = new Directory('/', $this->getAuth());
         $channelAddress = $this->owner['channel_address'];
         if (!$rootDirectory->childExists($channelAddress)) {
+            logger("sending status=false, no cloud directory", LOGGER_NORMAL);
             json_return_and_die(array('message' => 'No cloud directory.', 'success' => false));
         }
         return $rootDirectory;
@@ -596,7 +596,7 @@ class Faces extends Controller {
     private function getStatus() {
         $txt = get_config("faces", "status");
         if (!$txt) {
-            logger('The python script was never started befor', LOGGER_DEBUG);
+            logger('sending running=false , the python script was never started befor', LOGGER_NORMAL);
             json_return_and_die(array('running' => false));
         }
         logger('status face recognition: ' . $txt, LOGGER_DEBUG);
@@ -604,7 +604,7 @@ class Faces extends Controller {
         $status = $a[0];
 
         if (sizeof($a) < 5) {
-            logger("Status face recognition: not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_DEBUG);
+            logger("sending running=false, status face recognition: not the expected format. Content='" . trim($txt) . "' . Size of array not 4 if splitted by a space. Assuming that the python script is not running.", LOGGER_NORMAL);
             json_return_and_die(array('message' => 'wrong format in database', 'running' => false));
         }
 
@@ -619,7 +619,7 @@ class Faces extends Controller {
 
         $values["procid"] = $a[4];
 
-        logger('Sending status: ' . json_encode($values), LOGGER_DEBUG);
+        logger('sending running=.' . $running . ', values: ' . json_encode($values), LOGGER_NORMAL);
         json_return_and_die(array('running' => $running, 'status' => $values));
     }
 
@@ -628,19 +628,19 @@ class Faces extends Controller {
         if ($face) {
             logger('Received face ' . json_encode($face), LOGGER_DEBUG);
         } else {
-            logger('Parameter face was not received', LOGGER_DEBUG);
+            logger('sending status=false, parameter face was not received', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "Parameter face was not received"));
         }
 
 
         $file = $face['file'];
         if (!$face['position']) {
-            $msg = "received no face position to write a name. Received: " . json_encode($face);
+            $msg = "sending status=false, received no face position to write a name. Received: " . json_encode($face);
             logger($msg, LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => $msg));
         } elseif (!$file) {
             $msg = "received no file to write a name. Received: " . json_encode($face);
-            logger($msg, LOGGER_NORMAL);
+            logger('sending status=false, ' . $msg, LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => $msg));
         } else {
             $i = strpos($file, "/", strlen("cloud"));
@@ -661,10 +661,11 @@ class Faces extends Controller {
             ////////////
             if (!$success) {
                 $msg = "Failed to write name='" . $face['name'] . "' with id='" . $face['id'] . " for image='" . $image;
-                logger($msg, LOGGER_NORMAL);
+                logger('sending status=false, ' . $msg, LOGGER_NORMAL);
                 json_return_and_die(array('status' => false, 'message' => $msg));
             }
-            json_return_and_die(array('status' => true, 'face' => $face, 'message' => "ok"));
+            logger('sending status=true, name was written for face=' . json_encode($face), LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => "name was written", 'face' => $face));
         }
     }
 
@@ -770,7 +771,7 @@ class Faces extends Controller {
         require_once('Thresholds.php');
         $th = new FaceThresholds();
         $defaults = $th->getDefaults();
-        logger("Sending configuration... " . json_encode($thresholds), LOGGER_DEBUG);
+        logger("Sending tresholds... " . json_encode($thresholds), LOGGER_NORMAL);
         json_return_and_die(array(
             'thresholds' => $thresholds,
             'defaults' => $defaults));

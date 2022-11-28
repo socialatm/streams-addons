@@ -21,7 +21,7 @@ class Recognizer:
         # --------------------------------------------------------------------------------------------------------------
         # not set by user in frontend
 
-        if "valid_distance_metrics" in json["recognizer"]:
+        if "recognizer" in json and "valid_distance_metrics" in json["recognizer"]:
             self.distance_metrics_valid = json["recognizer"]["valid_distance_metrics"]
         logging.debug("config: valid_distance_metrics=" + str(self.distance_metrics_valid))
 
