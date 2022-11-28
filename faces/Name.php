@@ -19,7 +19,7 @@ class Name {
         logger("about to write name='" . $name . "' for face id ='" . $id . "'", LOGGER_DEBUG);
         $json = json_encode($faces_replaced);
         $file->put($json);
-        logger("wrote name='" . $name . "' for face id ='" . $id . "' in image=" . $image, LOGGER_NORMAL);
+        logger("wrote name='" . $name . "' for face id ='" . $id . "' in image=" . $image, LOGGER_DEBUG);
 
         return true;
     }
@@ -29,7 +29,7 @@ class Name {
         while ($faces["id"][$i]) {
             $face_id = $faces["id"][$i];
             if ($face_id === $id) {
-                logger("Existing face id ='" . $id . "'", LOGGER_NORMAL);
+                logger("Existing face id ='" . $id . "'", LOGGER_DEBUG);
                 break;
             }
             $i++;

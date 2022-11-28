@@ -51,7 +51,7 @@ class FaceRecognition {
                 . $probe_param . " "
                 . " --loglevel " . $loglevel . $logfileparam);
 
-        logger('The pyhton script will be executed using the following command ...', LOGGER_DEBUG);
+        logger('The pyhton script will be executed using the following command ...', LOGGER_NORMAL);
         // overwrite password
         $a = explode(" ", $cmd);
         $key = array_search("--pass", $a);
@@ -78,7 +78,6 @@ class FaceRecognition {
         }
 
         if (strtolower($status) == "finished") {
-            logger("Status face detection " . $channel_id . ": finished", LOGGER_DEBUG);
             return false;
         }
 
