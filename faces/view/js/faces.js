@@ -1083,7 +1083,9 @@ function updateFace(face) {
                         }
                     }
                     images[i].faces[j] = face;
-                    styleFaceFrame(face);
+                    if(nameOld !== face.name || nameRecognizedOld !== face.name_recognized) {
+                        styleFaceFrame(face);                        
+                    }
                     return true;
                 }
             }
