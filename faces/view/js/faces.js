@@ -102,7 +102,7 @@ function postDetectAndRecognize() {
         }
         setConfig(data, true);
         if (!python_is_blocked) {
-            waitForFinishedFaceDetection();
+            waitForFinishedFaceDetection(10000);
         }
     },
             'json');
@@ -119,7 +119,7 @@ function postRecognize() {
         ((loglevel >= 1) ? console.log(t() + " post recognize - received server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post recognize - received server data response: " + JSON.stringify(data)) : null);
         if (!python_is_blocked) {
-            waitForFinishedFaceDetection();
+            waitForFinishedFaceDetection(10000);
         }
     },
             'json');
@@ -1270,11 +1270,14 @@ function showServerStatus(seconds, elapsed_server) {
     }
 }
 
-async function waitForFinishedFaceDetection() {
+async function waitForFinishedFaceDetection(timeToSleep) {
+    let waitTimeForResult = timeToSleep;
     isFaceRecognitionRunning = true;
-    var ms = 10000;
     var url = window.location + "/status";
     while (isFaceRecognitionRunning) {
+        ((loglevel >= 1) ? console.log(t() + " wait for the face detection to finish, url= " + url + ", wait time=" + waitTimeForResult + " ms") : null);
+        await sleep(waitTimeForResult);
+        waitTimeForResult = 10000; // 10 seconds
         if (isWaitingForInitialDownload) {
             ((loglevel >= 1) ? console.log(t() + " still waiting for initial download of faces and names to end") : null);
         } else {
@@ -1299,8 +1302,6 @@ async function waitForFinishedFaceDetection() {
             },
                     'json');
         }
-        ((loglevel >= 1) ? console.log(t() + " wait for the face detection to finish, url= " + url + ", wait time=" + ms + " ms") : null);
-        await sleep(ms);
     }
 }
 
