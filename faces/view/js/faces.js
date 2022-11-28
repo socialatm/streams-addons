@@ -1084,8 +1084,8 @@ function updateFace(face) {
                         }
                     }
                     images[i].faces[j] = face;
-                    if(face.name === "" && face.time_named === "" && nameRecognizedOld !== face.name_recognized) {
-                        styleFaceFrame(face);                        
+                    if (face.name === "" && face.time_named === "" && nameRecognizedOld !== face.name_recognized) {
+                        styleFaceFrame(face);
                     }
                     return true;
                 }
@@ -1323,6 +1323,7 @@ function appendNextPicture() {
 }
 
 function appendPictures() {
+    let imagesShownBefore = picturesProcessedID.length;
     ((loglevel >= 1) ? console.log(t() + " start to append next picture... pictures processed so far = " + picturesProcessedID.length) : null);
     var k;
     for (k = 0; k < images.length; k++) {
@@ -1356,6 +1357,9 @@ function appendPictures() {
         ((loglevel >= 1) ? console.log(t() + " all images where processed. Reached end of list of images") : null);
         clearCounterImagesLoading();
     }
+    if (imagesShownBefore !== picturesProcessedID.length) {
+        zoomPictures();
+    }
 }
 
 function animate_on() {
@@ -1379,7 +1383,7 @@ function clearCounterImagesLoading() {
     $("#button_share_box_counter_download").html('<sub></sub>');
     ((loglevel >= 1) ? console.log(t() + " clear image counter shown to user") : null);
     animate_off();
-    zoomPictures();
+    //zoomPictures();
 }
 
 function setCounterImagesLoading() {
