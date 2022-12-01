@@ -1,7 +1,7 @@
 var zoom = 2;
 var minZoomLoaded = 1;
 var imageCounter = 0;
-var loadedCountMaxMultiplier = 2;
+var loadedCountMaxMultiplier = 3;
 var loadedCountMax = loadedCountMaxMultiplier * zoom;  // How many picture to load befor stopping. After the stop the user has to scroll down to load more images.
 var loadedCount = 0;
 var isFaceRecognitionRunning = false;
@@ -646,6 +646,7 @@ function search() {
     mostRecentImageLoadedId = "";
     filterAndSort();
     picturesProcessedID = [];
+    countDownloadedImages = 0;
     // stop loading images
     ((loglevel >= 1) ? console.log(t() + " Remove pictures ") : null);
     $("#face-panel-pictures").empty();
