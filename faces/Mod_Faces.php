@@ -387,14 +387,18 @@ class Faces extends Controller {
             if ($child instanceof File && $check) {
                 if ($child->getContentType() === strtolower('image/jpeg') || $child->getContentType() === strtolower('image/png')) {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
-                        $dir->createFile($this->fileNameEmbeddings);
+                        if ($this->can_write) {
+                            $dir->createFile($this->fileNameEmbeddings);
+                        }
                     } else {
                         if ($is_touch) {
                             $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
                         }
                     }
                     if (!$dir->childExists($this->fileNameFaces)) {
-                        $dir->createFile($this->fileNameFaces);
+                        if ($this->can_write) {
+                            $dir->createFile($this->fileNameFaces);
+                        }
                     } else {
                         if ($is_touch) {
                             $this->touch($dir->getChild($this->fileNameFaces), $path);
@@ -425,6 +429,9 @@ class Faces extends Controller {
     }
 
     private function touch(File $file, $path) {
+        if (!$this->can_write) {
+            return;
+        }
         $fName = $file->getName();
         $pos = strpos($path, "/");
         if ($pos) {
@@ -483,7 +490,9 @@ class Faces extends Controller {
         }
 
         if (!$userDir->childExists($this->addonDirName)) {
-            $userDir->createDirectory($this->addonDirName);
+            if ($this->can_write) {
+                $userDir->createDirectory($this->addonDirName);
+            }
         }
 
         return $userDir;
@@ -497,7 +506,9 @@ class Faces extends Controller {
         $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName;
 
         if (!$addonDir->childExists($this->fileNameFacesStatistic)) {
-            $addonDir->createFile($this->fileNameFacesStatistic);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameFacesStatistic);
+            }
         } else {
             if ($is_touch) {
                 $this->touch($addonDir->getChild($this->fileNameFacesStatistic), $path);
@@ -505,24 +516,32 @@ class Faces extends Controller {
         }
 
         if (!$addonDir->childExists($this->fileNameModelsStatistic)) {
-            $addonDir->createFile($this->fileNameModelsStatistic);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameModelsStatistic);
+            }
         } else {
             if ($is_touch) {
                 $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
             }
         }
         if (!$addonDir->childExists($this->fileNameProbe)) {
-            !$addonDir->createFile($this->fileNameProbe);
+            if ($this->can_write) {
+                !$addonDir->createFile($this->fileNameProbe);
+            }
         } else {
             $this->touch($addonDir->getChild($this->fileNameProbe), $path);
         }
 
         if (!$addonDir->childExists($this->fileNameConfig)) {
-            $addonDir->createFile($this->fileNameConfig);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameConfig);
+            }
         }
 
         if (!$addonDir->childExists($this->fileNameThresholds)) {
-            $addonDir->createFile($this->fileNameThresholds);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameThresholds);
+            }
         }
 
         return $addonDir;
@@ -536,19 +555,29 @@ class Faces extends Controller {
         $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName . DIRECTORY_SEPARATOR . $this->probeDirName;
 
         if (!$addonDir->childExists($this->probeDirName)) {
-            $addonDir->createDirectory($this->probeDirName);
+            if ($this->can_write) {
+                $addonDir->createDirectory($this->probeDirName);
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("known")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("known");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("known");
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("unknown")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("Jane")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("Bob")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+            }
         }
     }
 
@@ -653,7 +682,9 @@ class Faces extends Controller {
             $dirname = pathinfo($file, PATHINFO_DIRNAME);
             $imgDir = new Directory($dirname, $this->getAuth());
             if (!$imgDir->childExists($this->fileNameNames)) {
-                $imgDir->createFile($this->fileNameNames);
+                if ($this->can_write) {
+                    $imgDir->createFile($this->fileNameNames);
+                }
             }
             $names_file = $imgDir->getChild($this->fileNameNames);
             $chan_addr = $this->owner['channel_address'];
@@ -821,7 +852,7 @@ class Faces extends Controller {
             $config = $fc->getDefaultConfig();
             logger("using default configuration because failed to read config file", LOGGER_DEBUG);
         } else {
-            $config = $fc->read($configFile);
+            $config = $fc->read($configFile, $this->can_write);
         }
         logger("did read configuration " . json_encode($config), LOGGER_DATA);
         return $config;

@@ -11,7 +11,7 @@ class FaceConfiguration {
     private $available_metrics = "euclidean_l2,cosine,euclidean";
     private $available_attributes = "Emotion,Age,Gender,Race";
 
-    function read(\Code\Storage\File $file) {
+    function read(\Code\Storage\File $file, $can_write) {
 
         $JSONstream = $file->get();
         $contents = stream_get_contents($JSONstream);
@@ -24,7 +24,7 @@ class FaceConfiguration {
         } else {
             $config = $this->checkConfig($config);
             $toCompare = json_encode($config);
-            if ($contents != $toCompare) {
+            if ($contents != $toCompare && $can_write) {
                 // the admin might have changed the settings meanwhile
                 $this->write($file, $config);
             }
