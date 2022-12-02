@@ -624,6 +624,11 @@ class Faces extends Controller {
     }
 
     private function setName() {
+        if (!$this->can_write) {
+            notice("No write permission");
+            logger('sending status=false, message=no write permission', LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no write permission"));
+        }
         $face = $_POST["face"];
         if ($face) {
             logger('Received face ' . json_encode($face), LOGGER_DEBUG);
