@@ -660,6 +660,9 @@ class Worker:
         df = None  # pandas.DataFrame that holds all face representations
         path = os.path.join(dir, self.file_name_face_representations)
         if os.path.exists(path):
+            if os.stat(path).st_size == 0:
+                logging.debug(dir + " - file holding face representations is empty yet " + path)
+                return df
             df = pd.read_parquet(path, engine="pyarrow")
             logging.debug(dir + " - loaded face representations from file " + path)
         if df is not None and len(df) == 0:
