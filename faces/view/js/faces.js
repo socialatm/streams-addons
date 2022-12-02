@@ -25,6 +25,7 @@ var files_name = []; // async http post for jquery >= 1.8 seems to be not asynch
 var counter_files_name = 0;
 var counter_files_name_waiting = 0;
 var names_waiting = [];
+var countDownloadedImages = 0;
 
 var server_procid = "";
 var server_time = "";
@@ -53,6 +54,7 @@ function clear() {
     counter_files_name = 0;
     counter_files_name_waiting = 0;
     names_waiting = [];
+    countDownloadedImages = 0;
     $("#face-panel-pictures").empty();
 }
 
@@ -231,7 +233,7 @@ function downloadFaceData() {
             async: true
         });
     } else {
-        ((loglevel >= 2) ? console.log(t() + "load face data and names - finished - last file was downloaded: " + counter_files_name) : null);
+        ((loglevel >= 0) ? console.log(t() + " load face data and names - finished - last faces.json file was downloaded") : null);
         if (stopLoadingImages) {
             return;
         }
@@ -516,7 +518,7 @@ function removeNameFromUnsentList(face) {
         ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - can not remove face id from unsent list because the id is null (received as server response)") : null);
         return false;
     }
-    ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - face = " + JSON.stringify(face)) : null);
+    ((loglevel >= 2) ? console.log(t() + " remove face from unsent list - looking for face = " + JSON.stringify(face)) : null);
     var faceID = face.id;
     var hasRemoved = false;
     var i;
@@ -525,7 +527,7 @@ function removeNameFromUnsentList(face) {
         if (faceID === id) {
             //unsentNames.remove(unsentNames[i]);
             unsentNames.splice(i, 1);
-            ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - removed face id = " + id + " from list of unsent faces") : null);
+            ((loglevel >= 2) ? console.log(t() + " remove face from unsent list - removed face id = " + id + " from list of unsent faces") : null);
             hasRemoved = true;
             break;
         }
@@ -644,6 +646,7 @@ function search() {
     mostRecentImageLoadedId = "";
     filterAndSort();
     picturesProcessedID = [];
+    countDownloadedImages = 0;
     // stop loading images
     ((loglevel >= 1) ? console.log(t() + " Remove pictures ") : null);
     $("#face-panel-pictures").empty();
@@ -846,7 +849,6 @@ $("#button-faces-hide-frames").click(function () {
         styleAllAgain();
         isShowFrameON = true;
     }
-    //    zoomPictures();
 });
 
 $("#button_faces_zoom_in").click(function () {
@@ -1072,6 +1074,7 @@ function updateFace(face) {
             if (f.url === face.url) {
                 if (isSameFace(f, face)) {
                     ((loglevel >= 3) ? console.log(t() + " update face in data array - id = " + face.id + ", url=" + face.url) : null);
+                    let nameRecognizedOld = f.name_recognized;
                     name_preserved = images[i].faces[j].name_preserved;
                     face = correctToWaitingName(face);
                     if (name_preserved !== false) {
@@ -1083,7 +1086,9 @@ function updateFace(face) {
                         }
                     }
                     images[i].faces[j] = face;
-                    styleFaceFrame(face);
+                    if (face.name === "" && face.time_named === "" && nameRecognizedOld !== face.name_recognized) {
+                        styleFaceFrame(face);
+                    }
                     return true;
                 }
             }
@@ -1161,9 +1166,13 @@ function setFrameSizes(img) {
         nameFrame.style.right = faceLocation[1] + "%";
         styleFaceFrame(face);
     }
-    ((loglevel >= 3) ? console.log(t() + " finished to set frame size") : null);
+    ((loglevel >= 3) ? console.log(t() + " finished to set frame size for image " + image.url) : null);
+    countDownloadedImages++;
+    if(isImageDownloadFinished()) {
+        zoomLastPictures();
+    }
     //zoomLastPictures(img);
-    appendNextPicture();
+    //appendNextPictures();
 }
 
 
@@ -1256,7 +1265,7 @@ function checkServerStatus(status) {
 }
 
 function showServerStatus(seconds, elapsed_server) {
-    if (seconds != 0) {
+    if (seconds !== 0) {
         document.getElementById("faces_server_status").style.visibility = "visible";
         if (elapsed_server > 60) {
             document.getElementById("faces_server_status").style.color = "red";
@@ -1310,7 +1319,7 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function appendNextPicture() {
+function appendNextPictures() {
     ((loglevel >= 1) ? console.log(t() + " append next picture...") : null);
     if (stopLoadingImages) {
         ((loglevel >= 1) ? console.log(t() + " appending pictures was blocked ") : null);
@@ -1347,12 +1356,21 @@ function appendPictures() {
 
         setCounterImagesLoading();
         appendPicture(img);
-        break;
+        //break;
     }
     if (images.length === k) {
-        ((loglevel >= 1) ? console.log(t() + " all images where processed. Reached end of list of images") : null);
+        ((loglevel >= 1) ? console.log(t() + " all images where appended to html. Reached end of list of images to append.") : null);
         clearCounterImagesLoading();
     }
+}
+
+function isImageDownloadFinished() {
+    let numberToDownload = picturesProcessedID.length;
+    if(numberToDownload === countDownloadedImages) {
+        ((loglevel >= 1) ? console.log(t() + " all " + numberToDownload + " images where downloaded.") : null);
+        return true;
+    }
+    return false;
 }
 
 function animate_on() {
@@ -1376,7 +1394,7 @@ function clearCounterImagesLoading() {
     $("#button_share_box_counter_download").html('<sub></sub>');
     ((loglevel >= 1) ? console.log(t() + " clear image counter shown to user") : null);
     animate_off();
-    zoomPictures();
+    //zoomPictures();
 }
 
 function setCounterImagesLoading() {
@@ -1427,28 +1445,13 @@ function checkDateString(s) {
     return s;
 }
 
-$("#button_faces_zoom_in").click(function () {
-    ((loglevel >= 1) ? console.log(t() + " user clicked zoom in") : null);
-    if (zoom > 0) {
-        zoom -= 1;
-    } else {
-        return;
-    }
-    if (zoom < minZoomLoaded) {
-        //search();
-        minZoomLoaded = zoom;
-    } else {
-        zoomPictures();
-    }
-});
-
 var observerEnd = new IntersectionObserver(function (entries) {
     if (entries[0].isIntersecting === true) {
         ((loglevel >= 0) ? console.log(t() + " scrolled to end") : null);
         if (!blockScrolledToEnd) {
             blockScrolledToEnd = true;
             ((loglevel >= 1) ? console.log(t() + " loading more images was NOT blocked") : null);
-            appendNextPicture();
+            appendNextPictures();
         } else {
             ((loglevel >= 1) ? console.log(t() + " loading more images WAS blocked") : null);
         }
