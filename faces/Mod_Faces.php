@@ -60,10 +60,10 @@ class Faces extends Controller {
             goaway(z_root());
         }
 
-        if (is_null($this->observer)) {
-            logger('observer unkown', LOGGER_DEBUG);
-            goaway(z_root());
-        }
+//        if (is_null($this->observer)) {
+//            logger('observer unkown', LOGGER_DEBUG);
+//            goaway(z_root());
+//        }
 
         $status = $this->permChecks();
         if (!$status['status']) {
@@ -141,10 +141,10 @@ class Faces extends Controller {
             logger('sending status=false, permission check failed', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => 'permission check failed'));
         }
-        if (!$this->observer) {
-            logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
-            json_return_and_die(array('status' => false, 'message' => 'Unknown observer. Please login.'));
-        }
+//        if (!$this->observer) {
+//            logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
+//            json_return_and_die(array('status' => false, 'message' => 'Unknown observer. Please login.'));
+//        }
 
         if (argc() > 2) {
             $api = argv(2);
@@ -267,7 +267,7 @@ class Faces extends Controller {
         $zoom = $config["zoom"][0][1] ? $config["zoom"][0][1] : 2;
 
         if (!$this->can_write) {
-            notice('no permission to start the detection' . EOL);
+            //notice('no permission to start the detection' . EOL);
             // Show the images if the page is reloaded
             logger("sending status=true, no permission to start the detection, faces: " . json_encode($this->files_faces), LOGGER_NORMAL);
             json_return_and_die(array(
