@@ -325,7 +325,7 @@ class Faces extends Controller {
 
     private function startRecognition() {
         if (!$this->can_write) {
-            notice('no permission to start the recognition' . EOL);
+            //notice('no permission to start the recognition' . EOL);
             logger("sending status=ok, no permission to start the recognition", LOGGER_NORMAL);
             json_return_and_die(array('status' => true, 'message' => "no permission to start the recognition"));
         }
@@ -683,7 +683,7 @@ class Faces extends Controller {
 
     private function setName() {
         if (!$this->can_write) {
-            notice("No write permission to write a name" . EOL);
+            notice("No permission to write a name" . EOL);
             logger('sending status=false, message=no write permission', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "no write permission"));
         }
@@ -736,7 +736,7 @@ class Faces extends Controller {
 
     private function showSettingsPage($loglevel) {
         if (!$this->is_owner) {
-            notice('no permission for settings' . EOL);
+            notice('no permission to write settings' . EOL);
         }
 
         $o = replace_macros(Theme::get_template('settings.tpl', 'addon/faces'), array(
