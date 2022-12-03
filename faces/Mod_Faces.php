@@ -60,10 +60,10 @@ class Faces extends Controller {
             goaway(z_root());
         }
 
-        if (is_null($this->observer)) {
-            logger('observer unkown', LOGGER_DEBUG);
-            goaway(z_root());
-        }
+//        if (is_null($this->observer)) {
+//            logger('observer unkown', LOGGER_DEBUG);
+//            goaway(z_root());
+//        }
 
         $status = $this->permChecks();
         if (!$status['status']) {
@@ -141,10 +141,10 @@ class Faces extends Controller {
             logger('sending status=false, permission check failed', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => 'permission check failed'));
         }
-        if (!$this->observer) {
-            logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
-            json_return_and_die(array('status' => false, 'message' => 'Unknown observer. Please login.'));
-        }
+//        if (!$this->observer) {
+//            logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
+//            json_return_and_die(array('status' => false, 'message' => 'Unknown observer. Please login.'));
+//        }
 
         if (argc() > 2) {
             $api = argv(2);
@@ -266,6 +266,22 @@ class Faces extends Controller {
         $sort_ascending = $config["ascending"][0][1] ? $config["ascending"][0][1] : false;
         $zoom = $config["zoom"][0][1] ? $config["zoom"][0][1] : 2;
 
+        if (!$this->can_write) {
+            //notice('no permission to start the detection' . EOL);
+            // Show the images if the page is reloaded
+            logger("sending status=true, no permission to start the detection, faces: " . json_encode($this->files_faces), LOGGER_NORMAL);
+            json_return_and_die(array(
+                'status' => true,
+                'names' => $this->files_faces,
+                'names_waiting' => $this->files_names,
+                'immediatly' => $immediatly,
+                'sort_exif' => $sort_exif,
+                'sort_ascending' => $sort_ascending,
+                'zoom' => $zoom,
+                'python_blocked' => $block,
+                'message' => "ok"));
+        }
+
         if ($fr->isScriptRunning() && $action === 'start') {
             // Show the images if the page is reloaded
             logger("sending status=true, faces: " . json_encode($this->files_faces), LOGGER_NORMAL);
@@ -308,6 +324,12 @@ class Faces extends Controller {
     }
 
     private function startRecognition() {
+        if (!$this->can_write) {
+            //notice('no permission to start the recognition' . EOL);
+            logger("sending status=ok, no permission to start the recognition", LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => "no permission to start the recognition"));
+        }
+
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
             logger("sending status=ok, python is blocked, face recogntion not started", LOGGER_NORMAL);
@@ -339,6 +361,13 @@ class Faces extends Controller {
     }
 
     private function startProbe() {
+        if (!$this->is_owner) {
+            notice('no permission to run probe' . EOL);
+            logger("sending status=ok, no permission to run probe", LOGGER_NORMAL);
+            json_return_and_die(array(
+                'status' => true,
+                'message' => "no permission to run probe"));
+        }
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
             notice('face recognition (python) is blocked on this server' . EOL);
@@ -350,8 +379,8 @@ class Faces extends Controller {
         $fr = new FaceRecognition();
 
         $channel_id = $this->owner['channel_id'];
-        logger("sending status=ok, face recognition is still busy", LOGGER_NORMAL);
         if ($fr->isScriptRunning($channel_id)) {
+            logger("sending status=ok, face recognition is still busy", LOGGER_NORMAL);
             json_return_and_die(array(
                 'status' => true,
                 'message' => "another face recognition is still busy"));
@@ -387,14 +416,18 @@ class Faces extends Controller {
             if ($child instanceof File && $check) {
                 if ($child->getContentType() === strtolower('image/jpeg') || $child->getContentType() === strtolower('image/png')) {
                     if (!$dir->childExists($this->fileNameEmbeddings)) {
-                        $dir->createFile($this->fileNameEmbeddings);
+                        if ($this->can_write) {
+                            $dir->createFile($this->fileNameEmbeddings);
+                        }
                     } else {
                         if ($is_touch) {
                             $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
                         }
                     }
                     if (!$dir->childExists($this->fileNameFaces)) {
-                        $dir->createFile($this->fileNameFaces);
+                        if ($this->can_write) {
+                            $dir->createFile($this->fileNameFaces);
+                        }
                     } else {
                         if ($is_touch) {
                             $this->touch($dir->getChild($this->fileNameFaces), $path);
@@ -425,6 +458,9 @@ class Faces extends Controller {
     }
 
     private function touch(File $file, $path) {
+        if (!$this->can_write) {
+            return;
+        }
         $fName = $file->getName();
         $pos = strpos($path, "/");
         if ($pos) {
@@ -483,7 +519,9 @@ class Faces extends Controller {
         }
 
         if (!$userDir->childExists($this->addonDirName)) {
-            $userDir->createDirectory($this->addonDirName);
+            if ($this->can_write) {
+                $userDir->createDirectory($this->addonDirName);
+            }
         }
 
         return $userDir;
@@ -497,7 +535,9 @@ class Faces extends Controller {
         $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName;
 
         if (!$addonDir->childExists($this->fileNameFacesStatistic)) {
-            $addonDir->createFile($this->fileNameFacesStatistic);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameFacesStatistic);
+            }
         } else {
             if ($is_touch) {
                 $this->touch($addonDir->getChild($this->fileNameFacesStatistic), $path);
@@ -505,24 +545,32 @@ class Faces extends Controller {
         }
 
         if (!$addonDir->childExists($this->fileNameModelsStatistic)) {
-            $addonDir->createFile($this->fileNameModelsStatistic);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameModelsStatistic);
+            }
         } else {
             if ($is_touch) {
                 $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
             }
         }
         if (!$addonDir->childExists($this->fileNameProbe)) {
-            !$addonDir->createFile($this->fileNameProbe);
+            if ($this->can_write) {
+                !$addonDir->createFile($this->fileNameProbe);
+            }
         } else {
             $this->touch($addonDir->getChild($this->fileNameProbe), $path);
         }
 
         if (!$addonDir->childExists($this->fileNameConfig)) {
-            $addonDir->createFile($this->fileNameConfig);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameConfig);
+            }
         }
 
         if (!$addonDir->childExists($this->fileNameThresholds)) {
-            $addonDir->createFile($this->fileNameThresholds);
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameThresholds);
+            }
         }
 
         return $addonDir;
@@ -536,19 +584,29 @@ class Faces extends Controller {
         $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName . DIRECTORY_SEPARATOR . $this->probeDirName;
 
         if (!$addonDir->childExists($this->probeDirName)) {
-            $addonDir->createDirectory($this->probeDirName);
+            if ($this->can_write) {
+                $addonDir->createDirectory($this->probeDirName);
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("known")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("known");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("known");
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("unknown")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("Jane")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
+            }
         }
         if (!$addonDir->getChild($this->probeDirName)->childExists("Bob")) {
-            !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+            if ($this->can_write) {
+                !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+            }
         }
     }
 
@@ -625,7 +683,7 @@ class Faces extends Controller {
 
     private function setName() {
         if (!$this->can_write) {
-            notice("No write permission");
+            notice("No permission to write a name" . EOL);
             logger('sending status=false, message=no write permission', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "no write permission"));
         }
@@ -653,7 +711,9 @@ class Faces extends Controller {
             $dirname = pathinfo($file, PATHINFO_DIRNAME);
             $imgDir = new Directory($dirname, $this->getAuth());
             if (!$imgDir->childExists($this->fileNameNames)) {
-                $imgDir->createFile($this->fileNameNames);
+                if ($this->can_write) {
+                    $imgDir->createFile($this->fileNameNames);
+                }
             }
             $names_file = $imgDir->getChild($this->fileNameNames);
             $chan_addr = $this->owner['channel_address'];
@@ -675,6 +735,9 @@ class Faces extends Controller {
     }
 
     private function showSettingsPage($loglevel) {
+        if (!$this->is_owner) {
+            notice('no permission to write settings' . EOL);
+        }
 
         $o = replace_macros(Theme::get_template('settings.tpl', 'addon/faces'), array(
             '$version' => $this->getAppVersion(),
@@ -697,7 +760,11 @@ class Faces extends Controller {
     private function showProbePage($loglevel) {
 
         $this->getAddonDir(); // create probe.json (results) if it does not exist
-        $this->prepareProbeDirs();
+        if (!$this->is_owner) {
+            notice('no permission to run probe' . EOL);
+        } else {
+            $this->prepareProbeDirs();
+        }
 
         $o = replace_macros(Theme::get_template('probe.tpl', 'addon/faces'), array(
             '$version' => $this->getAppVersion(),
@@ -715,6 +782,10 @@ class Faces extends Controller {
     }
 
     private function setConfig() {
+        if (!$this->is_owner) {
+            notice('no permission to set the config' . EOL);
+            return;
+        }
         $this->prepareFiles();
         $config = $this->getConfig();
 
@@ -771,6 +842,10 @@ class Faces extends Controller {
     }
 
     private function sendThresholds() {
+        if (!$this->is_owner) {
+            notice('no permission set thresholds' . EOL);
+            return;
+        }
         $this->prepareFiles();
         $thresholds = $this->getThresholds();
         require_once('Thresholds.php');
@@ -792,6 +867,10 @@ class Faces extends Controller {
     }
 
     private function setThresholds() {
+        if (!$this->is_owner) {
+            notice('no permission set thresholds' . EOL);
+            return;
+        }
         $this->prepareFiles();
         //$thresholds = $this->getThresholds();
 
@@ -821,7 +900,7 @@ class Faces extends Controller {
             $config = $fc->getDefaultConfig();
             logger("using default configuration because failed to read config file", LOGGER_DEBUG);
         } else {
-            $config = $fc->read($configFile);
+            $config = $fc->read($configFile, $this->can_write);
         }
         logger("did read configuration " . json_encode($config), LOGGER_DATA);
         return $config;
@@ -844,6 +923,11 @@ class Faces extends Controller {
     }
 
     private function remove() {
+        if (!$this->is_owner) {
+            notice('no permission to remove results' . EOL);
+            logger("sending status=false, no permission to remove results", LOGGER_NORMAL);
+            return;
+        }
 
         $config = $this->getConfig();
         $params = "";
