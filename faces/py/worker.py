@@ -141,10 +141,6 @@ class Worker:
         self.recognizer.configure(json)
 
         self.exiftool = faces_exiftool.ExifTool()
-        if not self.exiftool.getVersion():
-            logging.warning(
-                "Exiftool is not available 'exiftool -ver'. Exiftool is used to read the date and time from images.")
-            self.exiftool = None
 
         self.util.is_css_position = self.finder.css_position
 
