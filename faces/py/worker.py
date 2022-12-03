@@ -141,10 +141,6 @@ class Worker:
         self.recognizer.configure(json)
 
         self.exiftool = faces_exiftool.ExifTool()
-        if not self.exiftool.getVersion():
-            logging.warning(
-                "Exiftool is not available 'exiftool -ver'. Exiftool is used to read the date and time from images.")
-            self.exiftool = None
 
         self.util.is_css_position = self.finder.css_position
 
@@ -660,6 +656,9 @@ class Worker:
         df = None  # pandas.DataFrame that holds all face representations
         path = os.path.join(dir, self.file_name_face_representations)
         if os.path.exists(path):
+            if os.stat(path).st_size == 0:
+                logging.debug(dir + " - file holding face representations is empty yet " + path)
+                return df
             df = pd.read_parquet(path, engine="pyarrow")
             logging.debug(dir + " - loaded face representations from file " + path)
         if df is not None and len(df) == 0:

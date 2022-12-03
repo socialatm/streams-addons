@@ -567,7 +567,7 @@ function postNames() {
                 clearCounterNamesSending();
             }
         } else {
-            ((loglevel >= 0) ? console.log(t() + " post names - rrror sending name. Server responded with: " + data['message']) : null);
+            ((loglevel >= 0) ? console.log(t() + " post names - error sending name. Server responded with: " + data['message']) : null);
             clearCounterNamesSending();
         }
     },

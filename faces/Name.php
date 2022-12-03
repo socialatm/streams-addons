@@ -43,7 +43,7 @@ class Name {
         date_default_timezone_set("UTC");
         $dateTimeString = date("Y-m-d\TH:i:sP");  // same as W3C format but always ...T+00:00
         $faces["time_named"][$i] = $dateTimeString;
-        logger("Wrote name=" . $name . "' for image=" . $image . " with face id ='" . $id, LOGGER_NORMAL);
+        logger("replaced name=" . $name . "' for image=" . $image . " with face id ='" . $id, LOGGER_DEBUG);
         return $faces;
     }
 
