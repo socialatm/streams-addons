@@ -205,6 +205,10 @@ class Faces extends Controller {
             logger('Stop: No owner profil', LOGGER_DEBUG);
             return array('status' => false, 'message' => 'No owner profil');
         }
+        
+        if($this->observer) {
+            logger('observer = ' . $this->observer['xchan_addr'], LOGGER_NORMAL);
+        }
 
         $this->is_owner = ($this->observer['xchan_hash'] && $this->observer['xchan_hash'] == $this->owner['xchan_hash']);
         if ($this->is_owner) {
@@ -364,9 +368,7 @@ class Faces extends Controller {
         if (!$this->is_owner) {
             notice('no permission to run probe' . EOL);
             logger("sending status=ok, no permission to run probe", LOGGER_NORMAL);
-            json_return_and_die(array(
-                'status' => true,
-                'message' => "no permission to run probe"));
+            return;
         }
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
@@ -735,7 +737,7 @@ class Faces extends Controller {
     }
 
     private function showSettingsPage($loglevel) {
-        if (!$this->is_owner) {
+        if (!$this->can_write) {
             notice('no permission to write settings' . EOL);
         }
 
@@ -760,8 +762,8 @@ class Faces extends Controller {
     private function showProbePage($loglevel) {
 
         $this->getAddonDir(); // create probe.json (results) if it does not exist
-        if (!$this->is_owner) {
-            notice('no permission to run probe' . EOL);
+        if (!$this->can_write || !$this->is_owner) {
+            notice('only the owner can run probe' . EOL);
         } else {
             $this->prepareProbeDirs();
         }
@@ -782,7 +784,7 @@ class Faces extends Controller {
     }
 
     private function setConfig() {
-        if (!$this->is_owner) {
+        if (!$this->can_write) {
             notice('no permission to set the config' . EOL);
             return;
         }
@@ -842,9 +844,12 @@ class Faces extends Controller {
     }
 
     private function sendThresholds() {
-        if (!$this->is_owner) {
-            notice('no permission set thresholds' . EOL);
+        if (!$this->can_write) {
+            notice('no write permission' . EOL);
             return;
+        }
+        if (!$this->is_owner) {
+            notice('only the owner can set thresholds' . EOL);
         }
         $this->prepareFiles();
         $thresholds = $this->getThresholds();
