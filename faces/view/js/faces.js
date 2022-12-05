@@ -877,6 +877,9 @@ $("#button_faces_zoom_out").click(function () {
 });
 
 function zoomPictures() {
+    if(!isImageDownloadFinished()) {
+        ((loglevel >= 1) ? console.log(t() + " zoom ignored because download of images not finished yet") : null);
+    }
     loadedCountMax = zoom * loadedCountMaxMultiplier;
     if (zoom < 1) {
         var containers = document.getElementsByClassName("img-container");
@@ -935,7 +938,7 @@ function zoomLastPictures(img) {
     for (i = 0; i < containers.length; i++) {
         var img_container = containers[i];
         var img = img_container.getElementsByTagName("img")[0];
-        if (h == 0) {
+        if (h === 0) {
             h = img.naturalHeight;
             w_all = w_all + img.naturalWidth;
             zoomenedImages[i] = ({h: img.naturalHeight, w: img.naturalWidth, factor: 1});
@@ -966,6 +969,23 @@ function zoomLastPictures(img) {
     }
 }
 
+function removeImagesNotLoaded() { 
+    let containers = document.getElementsByClassName("img-container");
+    let i = containers.length -1;
+    for (i; i >= 0; i--) {
+        let img_container = containers[i];
+        let face_container = img_container.getElementsByClassName("face-container")[0];
+        if(!face_container) {
+            continue;
+        }
+        let img = face_container.getElementsByTagName("img")[0];
+        px_width = img.naturalWidth;
+        if(px_width === 0) {
+            containers[i].remove();
+        }
+    }
+}
+
 function openSingleImage(img) {
     var url = img.getAttribute('src');
     var url_large = url.replace(/-\d$/, "");
@@ -986,7 +1006,7 @@ function appendPicture(img) {
             //html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\" width=\"" + width + "\">";
             html += "<div class=\"img-container img-container-zoomable\" id=\"img-container-" + img.id + "\">";
             html += "   <div class=\"face-container\">";
-            html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
+            html += "       <img src=\"" + url + "\" id=\"img-" + img.id + "\" class=\"img-face\" onload=\"setFrameSizes(this)\" onerror=\"removeImage(this)\" onclick=\"hideEditFrame(false)\" ondblclick=\"openSingleImage(this)\">";
         }
         ((loglevel >= 2) ? console.log(t() + " append picture: face number = " + i + " with face id=" + face.id + " to image with id=" + img.id) : null);
         var top = 1;
@@ -1167,12 +1187,12 @@ function setFrameSizes(img) {
         styleFaceFrame(face);
     }
     ((loglevel >= 3) ? console.log(t() + " finished to set frame size for image " + image.url) : null);
-    countDownloadedImages++;
-    if(isImageDownloadFinished()) {
-        zoomLastPictures();
-    }
-    //zoomLastPictures(img);
-    //appendNextPictures();
+    triggerZoomAfterImageDownload();
+}
+
+function removeImage(image) {
+    ((loglevel >= 1) ? console.log(t() + " failed to load image (probably no permission), removing... " + image.currentSrc) : null);
+    triggerZoomAfterImageDownload();
 }
 
 
@@ -1364,10 +1384,19 @@ function appendPictures() {
     }
 }
 
+function triggerZoomAfterImageDownload() {
+    countDownloadedImages++;
+    if(isImageDownloadFinished()) {
+        ((loglevel >= 1) ? console.log(t() + " zoom was triggered after download completetd.") : null);
+        zoomLastPictures();
+    }
+}
+
 function isImageDownloadFinished() {
     let numberToDownload = picturesProcessedID.length;
-    if(numberToDownload === countDownloadedImages) {
+    if (numberToDownload === countDownloadedImages) {
         ((loglevel >= 1) ? console.log(t() + " all " + numberToDownload + " images where downloaded.") : null);
+        removeImagesNotLoaded();
         return true;
     }
     return false;
@@ -1394,7 +1423,6 @@ function clearCounterImagesLoading() {
     $("#button_share_box_counter_download").html('<sub></sub>');
     ((loglevel >= 1) ? console.log(t() + " clear image counter shown to user") : null);
     animate_off();
-    //zoomPictures();
 }
 
 function setCounterImagesLoading() {
