@@ -39,6 +39,7 @@ class Faces extends Controller {
     }
 
     function get() {
+        logger('reveived get request', LOGGER_DEBUG);
 
         //----------------------------------------------------------------------
         // permisson checks
@@ -129,11 +130,14 @@ class Faces extends Controller {
             '$log_level' => $loglevel,
             '$submit' => t('Submit'),
         ));
-
+        
+        logger('returning page for faces.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
     function post() {
+        $api = argv(2);
+        logger('received post request api = ' . $api, LOGGER_DEBUG);
         $status = $this->permChecks();
 
         if (!$status['status']) {
@@ -147,8 +151,6 @@ class Faces extends Controller {
 //        }
 
         if (argc() > 2) {
-            $api = argv(2);
-            logger('api = ' . $api, LOGGER_DEBUG);
             if ($api === 'start') {
                 // API: /faces/nick/start
                 $this->startDetection('start', false);
@@ -205,9 +207,11 @@ class Faces extends Controller {
             logger('Stop: No owner profil', LOGGER_DEBUG);
             return array('status' => false, 'message' => 'No owner profil');
         }
-        
-        if($this->observer) {
+
+        if ($this->observer) {
             logger('observer = ' . $this->observer['xchan_addr'], LOGGER_NORMAL);
+        } else {
+            logger('observer not known (null)', LOGGER_NORMAL);
         }
 
         $this->is_owner = ($this->observer['xchan_hash'] && $this->observer['xchan_hash'] == $this->owner['xchan_hash']);
@@ -746,6 +750,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
+        logger('returning page for settings.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -755,7 +760,7 @@ class Faces extends Controller {
             '$version' => $this->getAppVersion(),
             '$loglevel' => $loglevel,
         ));
-
+        logger('returning page for thresholds.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -773,6 +778,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
+        logger('returning page for probe.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -924,6 +930,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
+        logger('returning page for remove.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -966,6 +973,7 @@ class Faces extends Controller {
     private function showHelpPage() {
         Head::add_css('/addon/faces/view/css/faces.css');
         $o = replace_macros(Theme::get_template('help.tpl', 'addon/faces'), array());
+        logger('returning page for help.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
