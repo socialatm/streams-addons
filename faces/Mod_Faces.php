@@ -39,6 +39,7 @@ class Faces extends Controller {
     }
 
     function get() {
+        logger('reveived get request', LOGGER_DEBUG);
 
         //----------------------------------------------------------------------
         // permisson checks
@@ -129,11 +130,14 @@ class Faces extends Controller {
             '$log_level' => $loglevel,
             '$submit' => t('Submit'),
         ));
-
+        
+        logger('returning page for faces.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
     function post() {
+        $api = argv(2);
+        logger('received post request api = ' . $api, LOGGER_DEBUG);
         $status = $this->permChecks();
 
         if (!$status['status']) {
@@ -147,8 +151,6 @@ class Faces extends Controller {
 //        }
 
         if (argc() > 2) {
-            $api = argv(2);
-            logger('api = ' . $api, LOGGER_DEBUG);
             if ($api === 'start') {
                 // API: /faces/nick/start
                 $this->startDetection('start', false);
@@ -204,6 +206,12 @@ class Faces extends Controller {
         if (!$owner_uid) {
             logger('Stop: No owner profil', LOGGER_DEBUG);
             return array('status' => false, 'message' => 'No owner profil');
+        }
+
+        if ($this->observer) {
+            logger('observer = ' . $this->observer['xchan_addr'], LOGGER_NORMAL);
+        } else {
+            logger('observer not known (null)', LOGGER_NORMAL);
         }
 
         $this->is_owner = ($this->observer['xchan_hash'] && $this->observer['xchan_hash'] == $this->owner['xchan_hash']);
@@ -364,9 +372,7 @@ class Faces extends Controller {
         if (!$this->is_owner) {
             notice('no permission to run probe' . EOL);
             logger("sending status=ok, no permission to run probe", LOGGER_NORMAL);
-            json_return_and_die(array(
-                'status' => true,
-                'message' => "no permission to run probe"));
+            return;
         }
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
@@ -735,7 +741,7 @@ class Faces extends Controller {
     }
 
     private function showSettingsPage($loglevel) {
-        if (!$this->is_owner) {
+        if (!$this->can_write) {
             notice('no permission to write settings' . EOL);
         }
 
@@ -744,6 +750,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
+        logger('returning page for settings.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -753,15 +760,15 @@ class Faces extends Controller {
             '$version' => $this->getAppVersion(),
             '$loglevel' => $loglevel,
         ));
-
+        logger('returning page for thresholds.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
     private function showProbePage($loglevel) {
 
         $this->getAddonDir(); // create probe.json (results) if it does not exist
-        if (!$this->is_owner) {
-            notice('no permission to run probe' . EOL);
+        if (!$this->can_write || !$this->is_owner) {
+            notice('only the owner can run probe' . EOL);
         } else {
             $this->prepareProbeDirs();
         }
@@ -771,6 +778,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
+        logger('returning page for probe.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -782,7 +790,7 @@ class Faces extends Controller {
     }
 
     private function setConfig() {
-        if (!$this->is_owner) {
+        if (!$this->can_write) {
             notice('no permission to set the config' . EOL);
             return;
         }
@@ -842,9 +850,12 @@ class Faces extends Controller {
     }
 
     private function sendThresholds() {
-        if (!$this->is_owner) {
-            notice('no permission set thresholds' . EOL);
+        if (!$this->can_write) {
+            notice('no write permission' . EOL);
             return;
+        }
+        if (!$this->is_owner) {
+            notice('only the owner can set thresholds' . EOL);
         }
         $this->prepareFiles();
         $thresholds = $this->getThresholds();
@@ -919,6 +930,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
+        logger('returning page for remove.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
@@ -961,6 +973,7 @@ class Faces extends Controller {
     private function showHelpPage() {
         Head::add_css('/addon/faces/view/css/faces.css');
         $o = replace_macros(Theme::get_template('help.tpl', 'addon/faces'), array());
+        logger('returning page for help.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
 
