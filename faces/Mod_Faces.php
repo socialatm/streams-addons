@@ -370,7 +370,7 @@ class Faces extends Controller {
 
     private function startProbe() {
         if (!$this->is_owner) {
-            notice('no permission to run probe' . EOL);
+            //notice('no permission to run probe' . EOL);
             logger("sending status=ok, no permission to run probe", LOGGER_NORMAL);
             return;
         }
@@ -755,6 +755,9 @@ class Faces extends Controller {
     }
 
     private function showThresholdsPage($loglevel) {
+        if (!$this->is_owner) {
+            notice('only the owner can set thresholds' . EOL);
+        }
 
         $o = replace_macros(Theme::get_template('thresholds.tpl', 'addon/faces'), array(
             '$version' => $this->getAppVersion(),
@@ -791,7 +794,7 @@ class Faces extends Controller {
 
     private function setConfig() {
         if (!$this->is_owner) {
-            notice('only the owner is allowed to change settings' . EOL);
+            //notice('only the owner is allowed to change settings' . EOL);
             return;
         }
         $this->prepareFiles();
@@ -850,13 +853,6 @@ class Faces extends Controller {
     }
 
     private function sendThresholds() {
-        if (!$this->can_write) {
-            notice('no write permission' . EOL);
-            return;
-        }
-        if (!$this->is_owner) {
-            notice('only the owner can set thresholds' . EOL);
-        }
         $this->prepareFiles();
         $thresholds = $this->getThresholds();
         require_once('Thresholds.php');
@@ -879,7 +875,6 @@ class Faces extends Controller {
 
     private function setThresholds() {
         if (!$this->is_owner) {
-            notice('no permission set thresholds' . EOL);
             return;
         }
         $this->prepareFiles();
@@ -918,6 +913,9 @@ class Faces extends Controller {
     }
 
     private function showRemovePage($loglevel) {
+        if (!$this->is_owner) {
+            notice('only the owner can remove results' . EOL);
+        }
 
         $block = (get_config('faces', 'block_python') ? get_config('faces', 'block_python') : false);
         if ($block) {
@@ -936,7 +934,6 @@ class Faces extends Controller {
 
     private function remove() {
         if (!$this->is_owner) {
-            notice('no permission to remove results' . EOL);
             logger("sending status=false, no permission to remove results", LOGGER_NORMAL);
             return;
         }
