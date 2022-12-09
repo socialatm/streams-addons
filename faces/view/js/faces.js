@@ -1498,7 +1498,6 @@ $(document).ready(function () {
     endPanel = $("#face-scroll-end").html();
     $("#face-scroll-end").remove();
     initDate("", "");
-    // https://digitalesparadies.de/faces/oj&owt=023967db0944609770bb46c121441483 
     channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
     channel_name = channel_name.split("?")[0];
     channel_name = channel_name.split("&")[0];
