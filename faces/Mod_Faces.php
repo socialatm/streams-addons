@@ -741,8 +741,8 @@ class Faces extends Controller {
     }
 
     private function showSettingsPage($loglevel) {
-        if (!$this->can_write) {
-            notice('no permission to write settings' . EOL);
+        if (!$this->is_owner) {
+            notice('only the owner is allowed to change settings' . EOL);
         }
 
         $o = replace_macros(Theme::get_template('settings.tpl', 'addon/faces'), array(
@@ -790,8 +790,8 @@ class Faces extends Controller {
     }
 
     private function setConfig() {
-        if (!$this->can_write) {
-            notice('no permission to set the config' . EOL);
+        if (!$this->is_owner) {
+            notice('only the owner is allowed to change settings' . EOL);
             return;
         }
         $this->prepareFiles();
