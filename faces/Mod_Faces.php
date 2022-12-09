@@ -130,7 +130,7 @@ class Faces extends Controller {
             '$log_level' => $loglevel,
             '$submit' => t('Submit'),
         ));
-        
+
         logger('returning page for faces.tpl' . $api, LOGGER_DEBUG);
         return $o;
     }
@@ -259,6 +259,7 @@ class Faces extends Controller {
             }
         }
 
+        $contacts = $this->getContacts();
 
         $is_touch = false;
         if ($action === 'results') {
@@ -287,6 +288,7 @@ class Faces extends Controller {
                 'sort_ascending' => $sort_ascending,
                 'zoom' => $zoom,
                 'python_blocked' => $block,
+                'contacts' => $contacts,
                 'message' => "ok"));
         }
 
@@ -302,6 +304,7 @@ class Faces extends Controller {
                 'sort_ascending' => $sort_ascending,
                 'zoom' => $zoom,
                 'python_blocked' => $block,
+                'contacts' => $contacts,
                 'message' => "ok"));
         }
 
@@ -328,6 +331,7 @@ class Faces extends Controller {
             'sort_ascending' => $sort_ascending,
             'zoom' => $zoom,
             'python_blocked' => $block,
+            'contacts' => $contacts,
             'message' => "ok"));
     }
 
@@ -974,4 +978,13 @@ class Faces extends Controller {
         return $o;
     }
 
+    private function getContacts() {
+        $uid = $this->owner["channel_id"];
+        load_contact_links($uid);
+        $cs = App::$contacts;
+        foreach ($cs as $c) {
+            $ret[$c['xchan_hash']] = [$c['xchan_hash'], $c['xchan_name'], $c['xchan_addr']];
+        }
+        return $ret;
+    }
 }
