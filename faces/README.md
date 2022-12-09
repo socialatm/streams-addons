@@ -7,7 +7,6 @@ The python scripts use other open source libraries:
 
 - deepface, MIT License, code https://github.com/serengil/deepface
 - mysql-connector-python, GNU GPLv2 (with FOSS License Exception), webpage https://pypi.org/project/mysql-connector-python/
-- exiftool,  GNU GPL (https://exiftool.org/#license, same as Perl), webpage https://exiftool.org/
 
 ---
 
@@ -121,20 +120,6 @@ Make sure to have installed mysql-connector-python
 
     su -
     pip install mysql-connector-python
-
-## Exiftool (recommended)
-
-    su -
-    apt-get install libimage-exiftool-perl perl-doc 
-
-Exiftool will be used to
-
-- read the creation date of images (to later sort and filter images by date and time)
-- write a name as keyword into an image.
-
-Why Exiftool?
-
-Exiftool is a well tested programm that stores keywords reliably and in a standard way, see https://exiftool.org/TagNames/MWG.html .
 
 ---
 

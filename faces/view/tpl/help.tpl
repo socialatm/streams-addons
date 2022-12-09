@@ -3,7 +3,7 @@
     There are a couple of reasons.
 </p>
 <h2>
-    Reclaim artificial Intelligence (AI) from private Companies
+    Reclaim Artificial Intelligence (AI) from private Companies
 </h2>
 <p>
     To recognizes faces you will usually use the service of a private company.
@@ -264,8 +264,8 @@
         Default is the upload date. Use the
         <a class='link_correction' href="faces/channel-nick/settings">settings</a>
         to change the setting. Be aware that not every single pictures carries
-        the information when it was taken. 01.01.1970 will be used if no information
-        is available.
+        the information when it was taken. Those pictures will not be shown if
+        the exif date is the filter criterion.
     </li>
 </ul>
 
@@ -493,6 +493,129 @@
     the python script on the server. If this is activated
     the user is still able to view the faces in the browser and to set names there.
 </p>
+<h2>Preparations</h2>
+<h3>WebDAV - Connect your Computer to the Cloud Files</h3>
+<p>
+    Mount WebDav-Share using fstab and davfs2<br>
+    (<a href="https://www.hagemann.ws/blog/linux-mount-webdav-share-using-fstab-and-davfs2.html">source</a>)
+</p>
+<p>  
+    <span style="color:red;">&lt;localuser&gt;</span>,
+    <span style="color:red;">&lt;localusergroup&gt;</span>: The username and group of the currently logged on local user <br>
+    <span style="color:red;">&lt;localdir&gt;</span>: The directory where the webdav share should be mounted to<br>
+    <span style="color:red;">&lt;webdavurl&gt;</span>: The URL of the webdav share,
+    for this server it is: <span style="color:red;" class='webdavurl'></span><br>
+    <span style="color:red;">&lt;webdavusername&gt;</span>: Login name, same as in browser<br>
+    <span style="color:red;">&lt;webdavpassword&gt;</span>: xxx, same as in browser<br>
+</p>
+<p>  
+    If you are not sure about <span style="color:red;">&lt;localuser&gt;</span>
+    and <span style="color:red;">&lt;localusergroup&gt;</span> open a terminal and type
+</p>
+<p>  
+    ...for user...
+</p>
+<code>
+    id -u -n 
+</code>
+<p>  
+    ...for group...
+</p>
+<code>
+    id -g -n
+</code>
+<br>
+<h4>Setup davfs</h4>
+<code>
+    sudo apt-get update<br>
+    sudo apt-get install davfs2<br><br>
+    # Add <span style="color:red;">&lt;localuser&gt;</span> to group davfs2
+    sudo usermod -aG davfs2 <span style="color:red;">&lt;localuser&gt;</span><br><br>
+    # Allow other users than root to mount davfs volumes<br>
+    sudo dpkg-reconfigure davfs2<br><br>
+    sudo sh -c 'echo "/mnt/<span style="color:red;">&lt;localdir&gt;</span> <span style="color:red;">&lt;webdavusername&gt;</span> <span style="color:red;">&lt;webdavpassword&gt;</span>" >> /etc/davfs2/secrets'<br>
+    sudo mkdir /mnt/<span style="color:red;">&lt;localdir&gt;</span>
+</code>
+<br>
+<h4>Setup /etc/fstab</h4>
+<code>
+    gedit admin:///etc/fstab
+</code>
+<p>
+    Edit /etc/fstab ...
+</p>
+<code>
+    ..<br>
+    <span style="color:red;">&lt;webdavurl&gt;</span> /mnt/<span style="color:red;">&lt;localdir&gt;</span> davfs rw,auto,user,uid=<span style="color:red;">&lt;localuser&gt;</span>,gid=<span style="color:red;">&lt;localusergroup&gt;</span>,_netdev 0 0<br>
+    ...
+</code>
+<p>
+    While <span style="color:red;">root</span> is the mounting user,
+    it is still possible to change the owner of the file system.
+    That is what options <span style="color:red;">uid</span> and
+    <span style="color:red;">gid</span> are for.
+</p>
+<br>
+<h4>Linking to your Home directory</h4>
+<p>
+    You might want to see the webdav share in your Home directory: 
+</p>
+<code>
+    ln -s /mnt/<span style="color:red;">&lt;localdir&gt;</span> /home/<span style="color:red;">&lt;localuser&gt;</span>/WebDav
+</code>
+<br>
+<h3>Install Python Package Manager and Python Modules</h3>
+<p>
+    The following was tested under Debian 11.
+</p>
+<p>
+    Python Package Manager
+</p>
+<code>
+    su -<br>
+    apt-get update<br>
+    apt-get -y install python3-pip<br>
+    pip --version
+</code>
+<p>
+    Python Modules
+</p>
+<code>
+    pip install deepface mediapipe fastparquet pyarrow
+</code>
+<br>
+<h3>Run the Script</h3>
+<p>
+    Do this only once
+</p>
+<code>
+    sudo apt-get install git<br>
+    cd ~<br>
+    git clone https://codeberg.org/streams/streams-addons.git
+</code>
+<p>
+    Every time you want to run the script...
+</p>
+<p>
+    Preparation: Connect via webDAV
+</p>
+<code>
+    mount /home/<span style="color:red;">&lt;localuser&gt;</span>/WebDav
+</code>
+<p>
+    Run the script.
+</p>
+<code>
+    cd ~<br>
+    cd streams-addons<br>
+    python3 faces/py/run.py -d /home/<span style="color:red;">&lt;localuser&gt;</span>/WebDav/
+</code>
+
+
+
+
+
+    
 
 
 <script src="/addon/faces/view/js/help.js"></script>

@@ -15,6 +15,7 @@ var endPanel = null;
 // TODO set log level by server
 var loglevel = 3; // 0 = errors/warnings, 1 = info, 2 = debug, 3 = dump data structures
 
+let url_addon = "";
 let filesToLoad = {faces: [], names: []};
 let images = [];
 let channel_name = "";
@@ -87,7 +88,7 @@ function getLogLevel() {
  * @returns {undefined}
  */
 function postDetectAndRecognize() {
-    let postURL = window.location + "/start";
+    let postURL = url_addon + "/start";
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
 
     $.post(postURL, {}, function (data) {
@@ -110,7 +111,7 @@ function postDetectAndRecognize() {
             'json');
 }
 function postRecognize() {
-    let postURL = window.location + "/recognize";
+    let postURL = url_addon + "/recognize";
     ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
 
     $.post(postURL, {}, function (data) {
@@ -134,7 +135,7 @@ function postRecognize() {
  */
 function postDownloadResults() {
     var action = new Array();
-    var postURL = window.location + "/results";
+    var postURL = url_addon + "/results";
     //clear();
     ((loglevel >= 1) ? console.log(t() + " post update - requesting results, url = " + postURL) : null);
     $.post(postURL, {action}, function (data) {
@@ -554,7 +555,7 @@ function postNames() {
     ((loglevel >= 1) ? console.log(t() + " post names - about to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
     animate_on();
     setCounterNamesSending();
-    var postURL = window.location + "/name";
+    var postURL = url_addon+ "/name";
     ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);
     $.post(postURL, {face: unsentNames[0]}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
@@ -1302,7 +1303,7 @@ function showServerStatus(seconds, elapsed_server) {
 async function waitForFinishedFaceDetection(timeToSleep) {
     let waitTimeForResult = timeToSleep;
     isFaceRecognitionRunning = true;
-    var url = window.location + "/status";
+    var url = url_addon + "/status";
     while (isFaceRecognitionRunning) {
         ((loglevel >= 1) ? console.log(t() + " wait for the face detection to finish, url= " + url + ", wait time=" + waitTimeForResult + " ms") : null);
         await sleep(waitTimeForResult);
@@ -1311,7 +1312,7 @@ async function waitForFinishedFaceDetection(timeToSleep) {
             ((loglevel >= 1) ? console.log(t() + " still waiting for initial download of faces and names to end") : null);
         } else {
             var action = new Array();
-            var postURL = window.location + "/status";
+            var postURL = url_addon + "/status";
             ((loglevel >= 1) ? console.log(t() + " about to get the status of the face detection and recognition: url = " + postURL) : null);
             $.post(postURL, {action}, function (data) {
                 ((loglevel >= 1) ? console.log(t() + " received server status " + JSON.stringify(data)) : null);
@@ -1498,11 +1499,9 @@ $(document).ready(function () {
     $("#face-scroll-end").remove();
     initDate("", "");
     channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
+    channel_name = channel_name.split("?")[0];
+    channel_name = channel_name.split("&")[0];
+    url_addon = window.location.origin + "/" + window.location.pathname.split("/")[1] + "/" + channel_name;
     //--------------------------------------------------------------------------
     postDetectAndRecognize();
 });
-
-
-//readFace("GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,\"[126, 174, 228, 302]\",1,,,,,");
-//readFace("GlzqHVvEekONvtM,/home/vm/dev/family-faces/py/delete_me/test/Brigitte_Bardot_1961.jpg,\"[126, 174, 228, 302]\",1,,,Brigitte Bardot,,Brigitte Bardot");
-//images.forEach(showImage);
