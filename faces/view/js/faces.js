@@ -1500,7 +1500,6 @@ $(document).ready(function () {
     initDate("", "");
     channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
     channel_name = channel_name.split("?")[0];
-    channel_name = channel_name.split("&")[0];
     url_addon = window.location.origin + "/" + window.location.pathname.split("/")[1] + "/" + channel_name;
     //--------------------------------------------------------------------------
     postDetectAndRecognize();
