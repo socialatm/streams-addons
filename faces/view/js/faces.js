@@ -21,6 +21,7 @@ let images = [];
 let channel_name = "";
 var receivedFaceEncodings = [];
 var receivedNames = [];
+var contacts = [];
 var picturesProcessedID = [];
 var files_name = []; // async http post for jquery >= 1.8 seems to be not asynchronous anymore
 var counter_files_name = 0;
@@ -98,6 +99,14 @@ function postDetectAndRecognize() {
         }
         ((loglevel >= 1) ? console.log(t() + " post start - received server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post start - received server data response: " + JSON.stringify(data)) : null);
+        if (data['contacts']) {
+            contacts = data['contacts'];
+            let i;
+            for (i in contacts) {
+                let contact = contacts[i];
+                appendContact(contact);
+            }
+        }
         if (data['names']) {
             names_waiting = [];
             filesToLoad = {faces: data['names'], names: data['names_waiting']};
@@ -307,7 +316,9 @@ function readFaces(imgs, csvFile) {
             sent: false
         };
         i++;
-        appendName({name: face.name});
+        face.name = replaceNameForXchan_hash(face.name);
+        face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
+        appendName(face.name);
         appendFaceToImages(face);
     }
 }
@@ -397,26 +408,53 @@ function editName(faceFrame) {
     ((loglevel >= 1) ? console.log(t() + " edit frame  was opened and shows name = " + name_shown) : null);
 }
 
+function replaceNameWithXchan_hash(name) {
+    for (let id in contacts) {
+        let contact = contacts[id];
+        let contact_name = contact[1] + " (" + contact[2] + ")";
+        if (name === contact_name) {
+            return id;
+        }
+    }
+    return name;
+}
+
+function replaceNameForXchan_hash(name) {
+    for (let id in contacts) {
+        if (id === name) {
+            let contact = contacts[id];
+            let contact_name = contact[1] + " (" + contact[2] + ")";
+            return contact_name;
+        }
+    }
+    return name;
+}
+
+function appendContact(contact) {
+    let contact_name = contact[1] + " (" + contact[2] + ")";
+    appendName(contact_name);
+}
+
 function appendName(name) {
-    ((loglevel >= 3) ? console.log(t() + " append single name to list (as option value)") : null);
+    ((loglevel >= 3) ? console.log(t() + " append name to list (as option value)") : null);
     if (!name) {
         ((loglevel >= 2) ? console.log(t() + " name is null") : null);
         return;
     }
-    if (name.name == "") {
+    if (name === "") {
         ((loglevel >= 3) ? console.log(t() + " name is empty") : null);
         return;
     }
     // append in ui
-    if (!isNameInList(name.name, "face-name-list-search")) {
-        $(".face-name-list").append("<option value=\"" + name.name + "\">" + name.name + "</option>");
-        ((loglevel >= 1) ? console.log(t() + " append name = " + name.name) : null);
+    if (!isNameInList(name, "face-name-list-search")) {
+        $(".face-name-list").append("<option value=\"" + name + "\">" + name + "</option>");
+        ((loglevel >= 1) ? console.log(t() + " append name = " + name) : null);
     }
     // append to list received names
     var i;
     for (i = 0; i < receivedNames.length; i++) {
-        var existing_name = receivedNames[i].name;
-        if (existing_name == name.name) {
+        let existing_name = receivedNames[i].name;
+        if (existing_name === name) {
             ((loglevel >= 2) ? console.log(t() + " name does exist already in array or received names") : null);
             return;
         }
@@ -431,7 +469,7 @@ function isNameInList(name, selector) {
     var i;
     for (i = 0; i < o.options.length; i++) {
         var text = o.options[i].text;
-        if (text == name) {
+        if (text === name) {
             ((loglevel >= 2) ? console.log(t() + " yes") : null);
             return true;
         }
@@ -449,16 +487,16 @@ function setName() {
     if (name === name_shown) {
         ((loglevel >= 1) ? console.log(t() + " name did not change") : null);
         var isVerified = document.getElementById(face_id_full).getAttribute("isVerified");
-        if (isVerified == "1") {
+        if (isVerified === "1") {
             ((loglevel >= 1) ? console.log(t() + " Do nothing, was verified already") : null);
             hideEditFrame();
             return;
         }
     }
-    if (name != "") {
+    if (name !== "") {
         if (!isNameInList(name, "face-name-list-search")) {
             ((loglevel >= 1) ? console.log(t() + " The new name = " + name + " will be appened to the name list (as option value) as soon as it was successfully sent to the server.") : null);
-            appendName({name: name});
+            appendName(name);
         }
         ((loglevel >= 1) ? console.log(t() + " The style of the frame will be changed after it was successfully sent to the server.") : null);//    document.getElementById(face_id_full).style.border = "medium solid green";
     }
@@ -499,7 +537,8 @@ function preparePostName(face_id_full, name) {
     face.name = name;
     var file = face['url'];
     var position = face['pos'];
-    name = name.replace(",", " ");  // format of csv 
+    name = name.replace(",", " ");  // format of csv
+    name = replaceNameWithXchan_hash(name);
     unsentNames.push({
         "id": face_id,
         "file": file,
@@ -526,7 +565,6 @@ function removeNameFromUnsentList(face) {
     for (i = 0; i < unsentNames.length; i++) {
         var id = unsentNames[i].id;
         if (faceID === id) {
-            //unsentNames.remove(unsentNames[i]);
             unsentNames.splice(i, 1);
             ((loglevel >= 2) ? console.log(t() + " remove face from unsent list - removed face id = " + id + " from list of unsent faces") : null);
             hasRemoved = true;
@@ -555,7 +593,7 @@ function postNames() {
     ((loglevel >= 1) ? console.log(t() + " post names - about to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
     animate_on();
     setCounterNamesSending();
-    var postURL = url_addon+ "/name";
+    var postURL = url_addon + "/name";
     ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);
     $.post(postURL, {face: unsentNames[0]}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
@@ -878,7 +916,7 @@ $("#button_faces_zoom_out").click(function () {
 });
 
 function zoomPictures() {
-    if(!isImageDownloadFinished()) {
+    if (!isImageDownloadFinished()) {
         ((loglevel >= 1) ? console.log(t() + " zoom ignored because download of images not finished yet") : null);
     }
     loadedCountMax = zoom * loadedCountMaxMultiplier;
@@ -970,18 +1008,18 @@ function zoomLastPictures(img) {
     }
 }
 
-function removeImagesNotLoaded() { 
+function removeImagesNotLoaded() {
     let containers = document.getElementsByClassName("img-container");
-    let i = containers.length -1;
+    let i = containers.length - 1;
     for (i; i >= 0; i--) {
         let img_container = containers[i];
         let face_container = img_container.getElementsByClassName("face-container")[0];
-        if(!face_container) {
+        if (!face_container) {
             continue;
         }
         let img = face_container.getElementsByTagName("img")[0];
         px_width = img.naturalWidth;
-        if(px_width === 0) {
+        if (px_width === 0) {
             containers[i].remove();
         }
     }
@@ -1087,6 +1125,8 @@ function setPreservedNameFaceForId(id, name) {
 }
 
 function updateFace(face) {
+    face.name = replaceNameForXchan_hash(face.name);
+    face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
     var i;
     for (i = 0; i < images.length; i++) {
         var faces = images[i].faces;
@@ -1387,7 +1427,7 @@ function appendPictures() {
 
 function triggerZoomAfterImageDownload() {
     countDownloadedImages++;
-    if(isImageDownloadFinished()) {
+    if (isImageDownloadFinished()) {
         ((loglevel >= 1) ? console.log(t() + " zoom was triggered after download completetd.") : null);
         zoomLastPictures();
     }
