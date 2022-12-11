@@ -15,6 +15,7 @@ var endPanel = null;
 // TODO set log level by server
 var loglevel = 3; // 0 = errors/warnings, 1 = info, 2 = debug, 3 = dump data structures
 
+let me = false;
 let url_addon = "";
 let filesToLoad = {faces: [], names: []};
 let images = [];
@@ -99,6 +100,7 @@ function postDetectAndRecognize() {
         }
         ((loglevel >= 1) ? console.log(t() + " post start - received server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post start - received server data response: " + JSON.stringify(data)) : null);
+        checkIfMe(data);
         if (data['contacts']) {
             contacts = data['contacts'];
             let i;
@@ -121,6 +123,9 @@ function postDetectAndRecognize() {
 }
 function postRecognize() {
     let postURL = url_addon + "/recognize";
+    if(me) {
+        postURL += "/me";
+    }
     ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
 
     $.post(postURL, {}, function (data) {
@@ -155,6 +160,7 @@ function postDownloadResults() {
         ((loglevel >= 1) ? console.log(t() + " post update - received results with server message: " + data['message']) : null);
         ((loglevel >= 3) ? console.log(t() + " post update - received results with server data response: " + JSON.stringify(data)) : null);
         if (data['names']) {
+            checkIfMe(data);
             names_waiting = [];
             filesToLoad = {faces: data['names'], names: data['names_waiting']};
             downloadFaceData(data['names'], []); // creates list of images
@@ -162,6 +168,20 @@ function postDownloadResults() {
         setConfig(data, false);
     },
             'json');
+}
+
+function checkIfMe(data) {
+    let splittees = window.location.pathname.split("/");
+    if (splittees.length > 3) {
+        let s = splittees[3];
+        s = s.split("?")[0];
+        if (s === "me") {
+            // "/faces/nick/me"
+            me = data['me'];  // = xchan_hash
+            return;
+        }
+    }
+    me = false;
 }
 
 function setConfig(data, is_start) {
@@ -316,6 +336,11 @@ function readFaces(imgs, csvFile) {
             sent: false
         };
         i++;
+        if (me) {
+            if (me !== face.name) {
+                continue;
+            }
+        }
         face.name = replaceNameForXchan_hash(face.name);
         face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
         appendName(face.name);
@@ -436,6 +461,12 @@ function appendContact(contact) {
 }
 
 function appendName(name) {
+    if (me) {
+        let temp_name = replaceNameWithXchan_hash(name);
+        if (me !== temp_name) {
+            return;
+        }
+    }
     ((loglevel >= 3) ? console.log(t() + " append name to list (as option value)") : null);
     if (!name) {
         ((loglevel >= 2) ? console.log(t() + " name is null") : null);
@@ -517,7 +548,7 @@ function setNameIgnore() {
     preparePostName(face_id_full, -2);
 }
 
-function preparePostName(face_id_full, name) {
+function preparePostName(face_id_full, name, isMe) {
     ((loglevel >= 1) ? console.log(t() + " start to prepare name  to send it to the server, face id = " + face_id_full) : null);
     var face_id = face_id_full.split("-")[1];
     // var name_old = document.getElementById(face_id_full).innerText;
@@ -539,12 +570,22 @@ function preparePostName(face_id_full, name) {
     var position = face['pos'];
     name = name.replace(",", " ");  // format of csv
     name = replaceNameWithXchan_hash(name);
-    unsentNames.push({
-        "id": face_id,
-        "file": file,
-        "position": position,
-        "name": name
-    });
+    if (isMe) {
+        unsentNamesMe.push({
+            "id": face_id,
+            "file": file,
+            "position": position,
+            "name": name
+        });
+        return;
+    } else {
+        unsentNames.push({
+            "id": face_id,
+            "file": file,
+            "position": position,
+            "name": name
+        });
+    }
     hideEditFrame();
     styleFaceFrame(face);
     postNames();
@@ -552,6 +593,7 @@ function preparePostName(face_id_full, name) {
 
 
 var unsentNames = [];
+var unsentNamesMe = [];
 
 function removeNameFromUnsentList(face) {
     if (!face) {
@@ -584,6 +626,8 @@ function postNames() {
         clearCounterNamesSending();
         if (!isFaceRecognitionRunning && immediateSearch) {
             postRecognize();
+        } else if(me) {
+            postRecognize();
         }
         return;
     }
@@ -593,7 +637,10 @@ function postNames() {
     ((loglevel >= 1) ? console.log(t() + " post names - about to send the first name in the list of unsent name to the server. Post value is : " + nameString) : null);
     animate_on();
     setCounterNamesSending();
-    var postURL = url_addon + "/name";
+    let postURL = url_addon + "/name";
+    if(me) {
+        postURL += "/me"
+    }
     ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);
     $.post(postURL, {face: unsentNames[0]}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
@@ -1009,6 +1056,7 @@ function zoomLastPictures(img) {
 }
 
 function removeImagesNotLoaded() {
+    let img_count = 0;
     let containers = document.getElementsByClassName("img-container");
     let i = containers.length - 1;
     for (i; i >= 0; i--) {
@@ -1017,12 +1065,42 @@ function removeImagesNotLoaded() {
         if (!face_container) {
             continue;
         }
+        img_count += countRemoveMeImages(face_container);
         let img = face_container.getElementsByTagName("img")[0];
         px_width = img.naturalWidth;
         if (px_width === 0) {
             containers[i].remove();
         }
     }
+    if (img_count > 0) {
+        document.getElementById("face-panel-remove-button").style.display = "block";
+        document.getElementById("face-span-image-count").textContent = img_count;
+    }
+}
+
+function countRemoveMeImages(face_container) {
+    if (!me) {
+        return 0;
+    }
+    let face_frames = face_container.getElementsByClassName("face-name-shown");
+    let k = 0;
+    for (k; k < face_frames.length; k++) {
+        let face_id = face_frames[k].textContent;
+        let face = getFaceForId(face_id);
+        let face_name = replaceNameWithXchan_hash(face.name);
+        if (face_name === me) {
+            preparePostName("dummy-" + face_id, -2, true);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+function removeMe() {
+    document.getElementById("face-panel-remove-button").style.display = "none";
+    unsentNames.push.apply(unsentNames, unsentNamesMe);
+    unsentNamesMe = [];
+    postNames();
 }
 
 function openSingleImage(img) {
@@ -1125,6 +1203,11 @@ function setPreservedNameFaceForId(id, name) {
 }
 
 function updateFace(face) {
+    if (me) {
+        if (me !== face.name) {
+            return;
+        }
+    }
     face.name = replaceNameForXchan_hash(face.name);
     face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
     var i;
@@ -1530,9 +1613,20 @@ var observerEnd = new IntersectionObserver(function (entries) {
 
 $(document).ready(function () {
     document.getElementById("faces_server_status").style.visibility = "hidden";
+    document.getElementById("face-panel-remove-button").style.display = "none";
     loglevel = parseInt($("#faces_log_level").text());
     console.log(t() + " log level = " + loglevel);
     observerEnd.observe(document.querySelector("#face-scoll-end"));
+    let splittees = window.location.pathname.split("/");
+    if (splittees.length > 3) {
+        let s = splittees[3];
+        s = s.split("?")[0];
+        if (s === "me") {
+            // "/faces/nick/me"
+            $("#face-edit-set-name").remove();
+            $("#face-edit-set-unknown").remove();
+        }
+    }
     faceEditControls = $("#template-face-frame-edit-controls").html();
     $("#template-face-frame-edit-controls").remove();
     endPanel = $("#face-scroll-end").html();
@@ -1541,6 +1635,5 @@ $(document).ready(function () {
     channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
     channel_name = channel_name.split("?")[0];
     url_addon = window.location.origin + "/" + window.location.pathname.split("/")[1] + "/" + channel_name;
-    //--------------------------------------------------------------------------
     postDetectAndRecognize();
 });

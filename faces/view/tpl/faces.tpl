@@ -1,4 +1,9 @@
 <div id="face-scroll-top-message">Loading...</div>
+<div id="face-panel-remove-button">
+        <button class="btn" id="face-button-remove-me" onclick="removeMe()">Remove Me</button>
+        from <span id="face-span-image-count">x</span> more image(s) not
+        shown below. You don't see all images because of missing permissions.
+</div>
 <div id="face-panel-pictures" class="clearfix">
     <!-- 
     -->

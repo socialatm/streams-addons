@@ -85,6 +85,8 @@ class Faces extends Controller {
             $loglevel = (get_config('system', 'loglevel') ? get_config('system', 'loglevel') : LOGGER_NORMAL);
         }
 
+        $me = false;
+
         if (argc() > 2) {
             switch (argv(2)) {
                 case 'settings':
@@ -246,6 +248,16 @@ class Faces extends Controller {
         return $r[0]["app_version"];
     }
 
+    function isMe() {
+        if (argc() > 3) {
+            $api = argv(3);
+            if ($api === 'me') {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private function startDetection($action, $rm_params) {
 
         require_once('FaceRecognition.php');
@@ -289,6 +301,7 @@ class Faces extends Controller {
                 'zoom' => $zoom,
                 'python_blocked' => $block,
                 'contacts' => $contacts,
+                'me' => $this->observer["xchan_hash"],
                 'message' => "ok"));
         }
 
@@ -332,11 +345,12 @@ class Faces extends Controller {
             'zoom' => $zoom,
             'python_blocked' => $block,
             'contacts' => $contacts,
+            'me' => $this->observer["xchan_hash"],
             'message' => "ok"));
     }
 
     private function startRecognition() {
-        if (!$this->can_write) {
+        if (!$this->can_write && !$this->isMe()) {
             //notice('no permission to start the recognition' . EOL);
             logger("sending status=ok, no permission to start the recognition", LOGGER_NORMAL);
             json_return_and_die(array('status' => true, 'message' => "no permission to start the recognition"));
@@ -642,20 +656,34 @@ class Faces extends Controller {
     private function getAuth() {
         $auth = new BasicAuth();
 
-        $ob_hash = get_observer_hash();
-
-        if ($ob_hash) {
-            if (local_channel()) {
-                $channel = \App::get_channel();
-                $auth->setCurrentUser($channel['channel_address']);
-                $auth->channel_id = $channel['channel_id'];
-                $auth->channel_hash = $channel['channel_hash'];
-                $auth->channel_account_id = $channel['channel_account_id'];
-                if ($channel['channel_timezone']) {
-                    $auth->setTimezone($channel['channel_timezone']);
-                }
+        $b = $this->isMe();
+        if ($b) {
+            $ob_hash = $this->owner['xchan_hash'];
+            $auth->setCurrentUser($this->owner['channel_address']);
+            $auth->channel_id = $this->owner['channel_id'];
+            $auth->channel_hash = $this->owner['channel_hash'];
+            $auth->channel_account_id = $this->owner['channel_account_id'];
+            if ($this->owner['channel_timezone']) {
+                $auth->setTimezone($this->owner['channel_timezone']);
             }
             $auth->observer = $ob_hash;
+        } else {
+
+            $ob_hash = get_observer_hash();
+
+            if ($ob_hash) {
+                if (local_channel()) {
+                    $channel = \App::get_channel();
+                    $auth->setCurrentUser($channel['channel_address']);
+                    $auth->channel_id = $channel['channel_id'];
+                    $auth->channel_hash = $channel['channel_hash'];
+                    $auth->channel_account_id = $channel['channel_account_id'];
+                    if ($channel['channel_timezone']) {
+                        $auth->setTimezone($channel['channel_timezone']);
+                    }
+                }
+                $auth->observer = $ob_hash;
+            }
         }
 
         return $auth;
@@ -692,7 +720,7 @@ class Faces extends Controller {
     }
 
     private function setName() {
-        if (!$this->can_write) {
+        if (!$this->can_write && !$this->isMe()) {
             notice("No permission to write a name" . EOL);
             logger('sending status=false, message=no write permission', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "no write permission"));
@@ -987,4 +1015,5 @@ class Faces extends Controller {
         }
         return $ret;
     }
+
 }
