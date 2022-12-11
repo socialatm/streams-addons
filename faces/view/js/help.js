@@ -17,11 +17,19 @@ function correctWebdavUrl() {
     });
 }
 
+function correctAddonUrl() {
+    $('.addonurl').each(function (i, obj) {
+        let url = window.location.origin + "/faces/" + channel_name;
+        obj.textContent = url;
+    });
+}
+
 $(document).ready(function () {
     channel_name = window.location.pathname.split("/")[2];
     channel_name = channel_name.split("?")[0];
     correctLinks();
     correctWebdavUrl();
+    correctAddonUrl();
 }
 );
 

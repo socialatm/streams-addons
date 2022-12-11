@@ -202,6 +202,18 @@
     <li>Right to object: <a href="https://gdpr-info.eu/art-21-gdpr/">Art. 21 GDPR</a>
     </li>
 </ul>
+<p>
+    If you were tagged by others: Visit their page of the addon and append
+    <strong>/me</strong> at the end of the URL. 
+</p>
+<ul>
+    <li>
+    Example: You tagged some of your contacts. Send this link
+    <a class='link_correction' href="faces/channel-nick/me"><span class='addonurl'></span>/me</a>
+    to your contact. Your contact can now (view and) remove his faces.
+    (He must be logged on.)
+    </li>
+</ul>
 
 <hr>
 
@@ -224,11 +236,21 @@
 </p>
 <ul>
     <li>
-        Type a name into the text field and press enter or the button thumbs-up.
+        Give a name by either
+        <ul>
+            <li>
+                typing any name like Brigitte Bardot, or
+            </li>
+            <li>
+                choosing one of your contacts from the list
+            </li>
+        </ul>
+        and press enter or the button thumbs-up. This name will be used to
+        find the same person in other images.
     </li>
     <li>
         <button class="btn" id="face-edit-set-name"> <i class="fa fa-thumbs-up fa-2x"></i></button>
-        Confirm the name.
+        Confirm the name. It will be used to find the same person in other images.
     </li>
     <li>
         <button class="btn" id="face-edit-set-unknown"> <i class="fa fa-question fa-2x"></i></button>
@@ -239,7 +261,7 @@
     <li>
         <button class="btn" id="face-edit-set-ignore"> <i class="fa fa-eye-slash fa-2x"></i></button>
         This is no face at all. Tell the face recognition to ignore this. You will
-        not see this face again in the browser.
+        never see this face again in the browser.
     </li>
 </ul>
 
