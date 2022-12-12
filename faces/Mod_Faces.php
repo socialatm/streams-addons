@@ -29,6 +29,7 @@ class Faces extends Controller {
     private $fileNameConfig = "config.json";
     private $fileNameThresholds = "thresholds.json";
     private $fileNameProbe = "probe.csv";
+    private $fileNameShare = "share.gzip";
     private $files_faces = [];
     private $files_names = [];
 
@@ -597,6 +598,16 @@ class Faces extends Controller {
             }
         }
 
+        if (!$addonDir->childExists($this->fileNameShare)) {
+            if ($this->can_write) {
+                $addonDir->createFile($this->fileNameShare);
+            }
+        } else {
+            if ($is_touch) {
+                $this->touch($addonDir->getChild($this->fileNameShare), $path);
+            }
+        }
+
         return $addonDir;
     }
 
@@ -833,7 +844,7 @@ class Faces extends Controller {
         $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
-        $isText = ["percent", "pixel", "training", "result", "zoom"];
+        $isText = ["percent", "pixel", "training", "result", "zoom", "most_similar_number", "most_similar_percent"];
         foreach ($config as $name => $values) {
             for ($i = 0;
                     $i < sizeof($values);

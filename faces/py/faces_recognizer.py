@@ -15,6 +15,9 @@ class Recognizer:
         self.distance_metric_default = "euclidean_l2"
         self.first_result = True
         self.thresholds_config = None
+        self.most_similar_apply = True
+        self.most_similar_percent = 70
+        self.most_similar_number = 10
 
     def configure(self, json):
 
@@ -51,6 +54,23 @@ class Recognizer:
         if len(self.distance_metrics) == 0:
             self.distance_metrics.append(self.distance_metric_default)
             logging.warning("Using distance_metric_default=" + self.distance_metric_default)
+            
+        if "most_similar_number" in json:
+            value = json["most_similar_number"][0][1]
+            if isinstance(value, str) and value.isdigit():
+                self.most_similar_number = int(value)
+            elif isinstance(value, int):
+                self.most_similar_number = value
+            
+        if "most_similar_percent" in json:
+            value = json["most_similar_percent"][0][1]
+            if isinstance(value, str) and value.isdigit():
+                self.most_similar_number = int(value)
+            elif isinstance(value, int):
+                self.most_similar_percent = value
+            
+        logging.debug("config: most_similar_number=" + str(self.most_similar_number))
+        logging.debug("config: most_similar_percent=" + str(self.most_similar_percent))
 
     def configure_thresholds(self, json, model_names):
         for model_name in model_names:
@@ -64,9 +84,13 @@ class Recognizer:
                         self.thresholds_config[model_name][metric] = float(json[model_name][metric])
 
     def train(self, names, model_name):
-        self.names = names
         self.model_name = model_name
-        logging.info("Received  " + str(len(names)) + " face(s) for model='" + model_name + "' as training data")
+        logging.debug("Received  " + str(len(names)) + " face(s) for model='" + model_name + "' as training data")
+        if self.most_similar_apply:
+            names = self.filter_best(names)
+        self.names = names
+        logging.info("Using  " + str(len(names)) + " face(s) for model='" + model_name + "' as training data")
+        return names
 
     # Params
     # faces... pandas.DataFrame
@@ -100,11 +124,6 @@ class Recognizer:
         #
         for index, face in faces.iterrows():
             img1_representation = face['representation']
-            # Check if face is really of the same model (Should always be. But if not: the results would be unexpected and the cause would not be obvious.)
-            if face['model'] != self.model_name:
-                logging.warning("Received face(id=" + face['id'] + ") with wrong model=" + str(
-                    face['model']) + " but expected model=" + self.model_name)
-                return False
 
             tic = time.time()
 
@@ -158,3 +177,59 @@ class Recognizer:
             t = x / 10 * default_threshold
             probe_thresholds.append({metric: t})
         return probe_thresholds
+    
+    def filter_best(self, training_data):
+        tic = time.time()
+        training_data["average_distance"] = 1000
+        names = training_data.name.unique()
+        # calculate distances between the same person
+        for name in names:
+            faces = training_data[training_data['name'] == name]
+            logging.debug("gathering most similar faces in " + str(len(faces)) + " faces for " + name)
+            if len(faces) < 3:
+                continue
+            for index, face in faces.iterrows():
+                img1_representation = face['representation']
+
+                def find_distance(row):
+                    img2_representation = row['representation']
+                    distance = 1000  # initialize very large value
+                    distance = dst.findCosineDistance(img1_representation, img2_representation)
+                    return distance
+
+                faces['distance'] = faces.apply(find_distance, axis=1)
+                distances = faces["distance"].values
+                sum = 0
+                for distance in distances:
+                    sum = sum + distance
+                average = sum / len(distances)
+                face["average_distance"] = average
+                training_data.at[index, "average_distance"] = average
+        # leave those embeddings for each person that have the nearest average distance to the same person
+        keys = []
+        for name in names:
+            faces = training_data[training_data['name'] == name]
+            # take the best as defined in percent and max number
+            faces = faces.sort_values(by=["average_distance"])
+            l = len(faces)
+            if l > 2:
+                l = l * self.most_similar_percent / 100
+                l = round(l)
+                if l < 1:
+                    l = 1
+            if l > self.most_similar_number:
+                l = self.most_similar_number
+            i = 0
+            for index, face in faces.iterrows():
+                if i >= l:
+                    keys.append(index)
+                i = 1 + i
+            logging.debug("left " + str(l) + " faces for " + name)
+        best = training_data.drop(keys)        
+        best = best.drop('average_distance', axis=1)
+        best = best.drop('id', axis=1)             
+        logging.debug("did choose best faces and left " + str(len(best)) + " out of " + str(len(training_data))
+                      + " faces as training data, max count=" + str(self.most_similar_number)
+                      + ", max percent=" + str(self.most_similar_percent)
+                      + " in " + str(round(time.time() - tic, 5)) + " s")
+        return best
