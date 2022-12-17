@@ -989,7 +989,6 @@ class Faces extends Controller {
         // xchan_name = "a"
         foreach ($cs as $c) {
             $url = $c['xchan_url'];
-            $url_shared_faces = str_replace("/channel/", "/cloud/", $url) . "/" . $this->addonDirName . "/" . $this->fileNameShare;
             $url_shared_faces = str_replace("/channel/", "/faces/", $url) . "/share";
             $ret[$c['xchan_hash']] = [
                 $c['xchan_hash'],
@@ -1033,7 +1032,7 @@ class Faces extends Controller {
         $contents = stream_get_contents($stream);
         $faces = json_decode($contents, true);
         logger("sending status=true, sending shared faces", LOGGER_NORMAL);
-        logger($contents, LOGGER_NORMAL);
+        logger($contents, LOGGER_DATA);
         json_return_and_die(array('status' => true, 'message' => "ok", 'faces' => $faces));
     }
 
@@ -1043,22 +1042,21 @@ class Faces extends Controller {
             json_return_and_die(array('status' => false, 'message' => "no write permission"));
         }
 
-        $faces = $_POST["faces"];
-
-        //$face = $_POST["face"];
-
-        if (!$faces) {
+        if (!$_POST["faces"]) {
             logger('sending status=false, no face received', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "no face received"));
         }
-//        $sender = $face["sender"];
-//        logger("Received shared faces from sender name = " . $sender);
-        logger('faces: ' . json_encode($face), LOGGER_DATA);
+        $s = $_POST["faces"];
+        $faces = json_decode($_POST["faces"], true);
+        
+        $sender = $_POST["sender"];  // shortened xchan_hash
+        if(!$sender) {
+            $sender = "unknown-sender";
+        }
+        logger("Received shared faces from sender name (shortened xchan_hash) = " . $sender, LOGGER_DEBUG);
+        logger('faces: ' . json_encode($faces), LOGGER_DATA);
 
-//        $xchan_hash_sender_begin = $face["hash"];
-//        $filename = "shared_" . $xchan_hash_sender_begin . ".json";
-        $filename = "shared.json";
-//        unset($face["hash"]);
+        $filename = "shared_" . $sender . ".json";
 
         $addonDir = $this->getAddonDir();
         $is_file = $addonDir->childExists($filename);
@@ -1067,20 +1065,9 @@ class Faces extends Controller {
         }
         $file = $addonDir->getChild($filename);
 
-        //$faces = null;
-//        $first = $face["first"];
-//        if ($first) {
-//            $faces = $face;
-//            unset($face["first"]);
-//        } else {
-//            $stream = $file->get();
-//            $contents = stream_get_contents($stream);
-//            $faces = json_decode($contents, true);
-//        }
-
         $json = json_encode($faces);
         $file->put($json);
-        logger("wrote shared faces for name=xxx to file=" . $filename, LOGGER_DEBUG);
+        logger("wrote shared faces into file=" . $filename, LOGGER_NORMAL);
 
         json_return_and_die(array('status' => true, 'message' => "shared faces received and stored for name "));
     }

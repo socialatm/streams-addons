@@ -280,7 +280,6 @@ function downloadFaceData() {
 }
 
 var is_first_face_sended = true;
-var faces_shared = {};
 
 function downloadSharedFaces() {
     if (files_shared.length > 0) {
@@ -290,135 +289,46 @@ function downloadSharedFaces() {
             downloadSharedFaces();
         } else {
             let hash = f[0].substring(0, 8);
-            let name = f[1];
             let url = f[3];
             ((loglevel >= 2) ? console.log(t() + " try to download shared faces, url=" + url) : null);
-
-
             $.ajax({
                 type: "POST",
                 url: url,
-                data: {xchan_name: name},
+                data: {},
                 contentType: "application/json",
                 success: function (result) {
-                    console.log(result);
+                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces, url=" + url) : null);
+                    ((loglevel >= 3) ? console.log(t() + " downloaded shared faces, received data=" + JSON.stringify(result)) : null);
                     if (result["faces"]) {
-                        faces_shared = result["faces"];
-                        postSharedFaces(result["faces"]);
+                        postSharedFaces(result["faces"], hash, url);
                     }
                     downloadSharedFaces();
                 },
                 error: function (result, status) {
-                    console.log(result);
+                    ((loglevel >= 1) ? console.log(t() + " failed to downloaded shared faces from url=" + url + ", got status=" + status) : null);
                     downloadSharedFaces();
                 }
             });
-
-//            $.post(url, {xchan_name: name}, function (data) {
-//                ((loglevel >= 1) ? console.log(t() + " downloaded names - received response from server after posting a name, url=" + url) : null);
-//                if (data['status']) {
-//                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces - receiced server response - ok - url=" + url) : null);
-//                    ((loglevel >= 1) ? console.log(t() + " data= " + JSON.stringify(data)) : null);
-//                    let faces = data["faces"];
-//                    faces_shared = data["faces"];
-//                    if (!faces) {
-//                        ((loglevel >= 1) ? console.log(t() + " downloaded shared faces - receiced server response - no faces received - url=" + url) : null);
-//                    } else {
-//                        let obj_keys = Object.keys(faces);
-//                        for (let index in Object.keys(faces.name)) {
-//                            let face = {};
-//                            for (let i = 0; i < obj_keys.length; i++) {
-//                                obj_key = obj_keys[i];
-//                                face[obj_key] = faces[obj_key][index];
-//                            }
-//                            face["sender"] = name;
-//                            face["hash"] = hash;
-//                            if (is_first_face_sended) {
-//                                face["first"] = is_first_face_sended;
-//                            }
-//                            is_first_face_sended = false;
-//                            shared_faces.push(face);
-//                        }
-//                    }
-//                    downloadSharedFaces();
-//                } else {
-//                    ((loglevel >= 1) ? console.log(t() + " download shared faces - receiced server response - failed - url=" + url) : null);
-//                }
-//            },
-//                    'json');
-
-
-
-//        jQuery.ajax({
-//            url: url,
-//            dataType: "json",
-//            success: function (data) {
-//                ((loglevel >= 1) ? console.log(t() + " downloaded shared faces, url=" + url) : null);
-//                ((loglevel >= 1) ? console.log(t() + " data= " + JSON.stringify(data)) : null);
-//                let obj_keys = Object.keys(data);
-//                for (let index in Object.keys(data.name)) {
-//                    let face = {};
-//                    for (let i = 0; i < obj_keys.length; i++) {
-//                        obj_key = obj_keys[i];
-//                        face[obj_key] = data[obj_key][index];
-//                    }
-//                    face["sender"] = name;
-//                    face["hash"] = hash;
-//                    if (is_first_face_sended) {
-//                        face["first"] = is_first_face_sended;
-//                    }
-//                    is_first_face_sended = false;
-//                    shared_faces.push(face);
-//                }
-//                downloadSharedFaces();
-//            },
-//            error: function (data) {
-//                ((loglevel >= 1) ? console.log(t() + " download of shared faces failed url=" + url) : null);
-//            },
-//            async: true
-//        });
-
         }
-    } else {
-        postSharedFaces();
     }
 }
 
-function postSharedFaces(fs) {
+function postSharedFaces(sharedFaces, hash, url) {
     var postURL = url_addon + "/shared";
-    ((loglevel >= 1) ? console.log(t() + " post shared faces of name = " + name) : null);
-    ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(fs)) : null);
+    ((loglevel >= 1) ? console.log(t() + " post shared faces downloaded from url = " + url) : null);
+    ((loglevel >= 3) ? console.log(t() + " post shared faces = " + JSON.stringify(sharedFaces)) : null);
+    
+    let s = JSON.stringify(sharedFaces);
 
-    $.post(postURL, {faces: "fs"}, function (data) {
-        ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
+    $.post(postURL, {faces: s, sender: hash}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post shared faces - received response - post url=" + postURL + " from server after posting shared faces downloaded from url=" + url) : null);
         if (data['status']) {
-            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok") : null);
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok - post url=" + postURL + ", for faces downloaded from url=" + url) : null);
         } else {
-            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed") : null);
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed - post url " + postURL + ", for faces downloaded from url=" + url) : null);
         }
     },
             'json');
-}
-
-function postSharedFacesLong() {
-    if (shared_faces.length > 0) {
-        let f = shared_faces.shift();
-
-        var postURL = url_addon + "/shared";
-        ((loglevel >= 1) ? console.log(t() + " post shared faces of name = " + name) : null);
-        ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(shared_faces)) : null);
-
-        $.post(postURL, {face: f}, function (data) {
-            ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
-            if (data['status']) {
-                ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok") : null);
-                postSharedFaces();
-            } else {
-                ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed") : null);
-            }
-        },
-                'json');
-    }
 }
 
 /*
