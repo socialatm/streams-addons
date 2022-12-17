@@ -1005,19 +1005,22 @@ class Faces extends Controller {
             json_return_and_die(array('status' => false, 'message' => "no write permission"));
         }
 
-        $face = $_POST["face"];
+        $faces = $_POST["faces"];
 
-        if (!$face) {
+        //$face = $_POST["face"];
+
+        if (!$faces) {
             logger('sending status=false, no face received', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "no face received"));
         }
-        $sender = $face["sender"];
-        logger("Received shared faces from sender name = " . $sender);
+//        $sender = $face["sender"];
+//        logger("Received shared faces from sender name = " . $sender);
         logger('faces: ' . json_encode($face), LOGGER_DATA);
 
-        $xchan_hash_sender_begin = $face["hash"];
-        $filename = "shared_" . $xchan_hash_sender_begin . ".json";
-        unset($face["hash"]);
+//        $xchan_hash_sender_begin = $face["hash"];
+//        $filename = "shared_" . $xchan_hash_sender_begin . ".json";
+        $filename = "shared.json";
+//        unset($face["hash"]);
 
         $addonDir = $this->getAddonDir();
         $is_file = $addonDir->childExists($filename);
@@ -1026,23 +1029,23 @@ class Faces extends Controller {
         }
         $file = $addonDir->getChild($filename);
 
-        $faces = null;
+        //$faces = null;
         
-        $first = $face["first"];
-        if ($first) {
-            $faces = $face;
-            unset($face["first"]);
-        } else {
-            $stream = $file->get();
-            $contents = stream_get_contents($stream);
-            $faces = json_decode($contents, true);
-        }
+//        $first = $face["first"];
+//        if ($first) {
+//            $faces = $face;
+//            unset($face["first"]);
+//        } else {
+//            $stream = $file->get();
+//            $contents = stream_get_contents($stream);
+//            $faces = json_decode($contents, true);
+//        }
 
-        $json = json_encode($face);
+        $json = json_encode($faces);
         $file->put($json);
-        logger("wrote shared faces for name='" . $sender . " to file=" . $filename, LOGGER_DEBUG);
+        logger("wrote shared faces for name=xxx to file=" . $filename, LOGGER_DEBUG);
 
-        json_return_and_die(array('status' => true, 'message' => "shared faces received and stored for name " . $sender));
+        json_return_and_die(array('status' => true, 'message' => "shared faces received and stored for name "));
     }
 
 }

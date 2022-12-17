@@ -326,6 +326,22 @@ function downloadSharedFaces() {
 }
 
 function postSharedFaces() {
+    var postURL = url_addon + "/shared";
+    ((loglevel >= 1) ? console.log(t() + " post shared faces of name = " + name) : null);
+    ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(shared_faces)) : null);
+
+    $.post(postURL, {faces: shared_faces}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
+        if (data['status']) {
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok") : null);
+        } else {
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed") : null);
+        }
+    },
+            'json');
+}
+
+function postSharedFacesLong() {
     if (shared_faces.length > 0) {
         let f = shared_faces.shift();
 
