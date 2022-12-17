@@ -389,7 +389,7 @@ function postSharedFaces(fs) {
     ((loglevel >= 1) ? console.log(t() + " post shared faces of name = " + name) : null);
     ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(fs)) : null);
 
-    $.post(postURL, {faces: fs}, function (data) {
+    $.post(postURL, {faces: "fs"}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
         if (data['status']) {
             ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok") : null);
