@@ -29,8 +29,12 @@ class Faces extends Controller {
     private $fileNameConfig = "config.json";
     private $fileNameThresholds = "thresholds.json";
     private $fileNameProbe = "probe.csv";
+    private $fileNameMostSimilar = "faces_most_similar.gzip";
+    private $fileNameShare = "share.json";
+    private $filesData = [];
     private $files_faces = [];
     private $files_names = [];
+    private $observerAuth;
 
     function init() {
 
@@ -163,8 +167,11 @@ class Faces extends Controller {
                 // API: /faces/nick/results
                 $this->startDetection('results', false);
             } elseif ($api === 'status') {
-                // API: /faces/nick/status
-                $this->getStatus();
+                // API: /faces/nick/results
+                $this->startDetection('results', false);
+            } elseif ($api === 'shared') {
+                // API: /faces/nick/shared
+                $this->storeShared();
             } elseif ($api === 'name') {
                 // API: /faces/nick/name
                 $this->setName();
@@ -428,6 +435,12 @@ class Faces extends Controller {
     private function prepareFiles($is_touch = false) {
         $userDir = $this->getUserDir();
         $this->getAddonDir($is_touch);
+
+        $this->filesData = [
+            $this->fileNameEmbeddings,
+            $this->fileNameFaces,
+            $this->fileNameNames
+        ];
         $this->checkDataFiles($userDir, $userDir->getName(), $is_touch);
     }
 
@@ -439,39 +452,24 @@ class Faces extends Controller {
         foreach ($children as $child) {
             if ($child instanceof File && $check) {
                 if ($child->getContentType() === strtolower('image/jpeg') || $child->getContentType() === strtolower('image/png')) {
-                    if (!$dir->childExists($this->fileNameEmbeddings)) {
-                        if ($this->can_write) {
-                            $dir->createFile($this->fileNameEmbeddings);
-                        }
-                    } else {
-                        if ($is_touch) {
-                            $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
-                        }
-                    }
-                    if (!$dir->childExists($this->fileNameFaces)) {
-                        if ($this->can_write) {
-                            $dir->createFile($this->fileNameFaces);
-                        }
-                    } else {
-                        if ($is_touch) {
-                            $this->touch($dir->getChild($this->fileNameFaces), $path);
-                        }
-                        $this->files_faces[] = $path . "/" . $this->fileNameFaces;
-                    }
-                    if ($dir->childExists($this->fileNameNames)) {
-//                        $f = $dir->getChild($this->fileNameNames);
-//                        $stream = $f->get();
-//                        $contents = stream_get_contents($stream);
-//                        if ($contents == "") {
-//                            //$f->delete();
-//                        } else {
-//                            $this->files_names[] = $path . "/" . $this->fileNameNames;
-//                        }
-                        $this->files_names[] = $path . "/" . $this->fileNameNames;
-                        if ($is_touch) {
-                            $this->touch($dir->getChild($this->fileNameNames), $path);
+
+                    foreach ($this->filesData as $f) {
+                        if (!$dir->childExists($f)) {
+                            if ($this->can_write) {
+                                $dir->createFile($f);
+                            }
+                        } else {
+                            if ($is_touch) {
+                                $this->touch($dir->getChild($f), $path);
+                            }
+                            if ($f === $this->fileNameNames) {
+                                $this->files_names[] = $path . "/" . $this->fileNameNames;
+                            } elseif ($f === $this->fileNameFaces) {
+                                $this->files_faces[] = $path . "/" . $this->fileNameFaces;
+                            }
                         }
                     }
+
                     $check = false;
                 }
             } else if ($child instanceof Directory) {
@@ -558,42 +556,26 @@ class Faces extends Controller {
 
         $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName;
 
-        if (!$addonDir->childExists($this->fileNameFacesStatistic)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameFacesStatistic);
-            }
-        } else {
-            if ($is_touch) {
-                $this->touch($addonDir->getChild($this->fileNameFacesStatistic), $path);
-            }
-        }
+        $filesAddonDir = [
+            $this->fileNameFacesStatistic,
+            $this->fileNameModelsStatistic,
+            $this->fileNameThresholds,
+            $this->fileNameProbe,
+            $this->fileNameConfig,
+            $this->fileNameMostSimilar,
+            $this->fileNameShare
+        ];
 
-        if (!$addonDir->childExists($this->fileNameModelsStatistic)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameModelsStatistic);
-            }
-        } else {
-            if ($is_touch) {
-                $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
-            }
-        }
-        if (!$addonDir->childExists($this->fileNameProbe)) {
-            if ($this->can_write) {
-                !$addonDir->createFile($this->fileNameProbe);
-            }
-        } else {
-            $this->touch($addonDir->getChild($this->fileNameProbe), $path);
-        }
+        foreach ($filesAddonDir as $f) {
 
-        if (!$addonDir->childExists($this->fileNameConfig)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameConfig);
-            }
-        }
-
-        if (!$addonDir->childExists($this->fileNameThresholds)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameThresholds);
+            if (!$addonDir->childExists($f)) {
+                if ($this->can_write) {
+                    $addonDir->createFile($f);
+                }
+            } else {
+                if ($is_touch) {
+                    $this->touch($addonDir->getChild($f), $path);
+                }
             }
         }
 
@@ -612,24 +594,13 @@ class Faces extends Controller {
                 $addonDir->createDirectory($this->probeDirName);
             }
         }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("known")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("known");
-            }
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("unknown")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
-            }
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("Jane")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
-            }
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("Bob")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+
+        $dirs = ["known", "unknown", "Jane", "Bob"];
+        foreach ($dirs as $d) {
+            if (!$addonDir->getChild($this->probeDirName)->childExists($d)) {
+                if ($this->can_write) {
+                    !$addonDir->getChild($this->probeDirName)->createDirectory($d);
+                }
             }
         }
     }
@@ -654,9 +625,12 @@ class Faces extends Controller {
     }
 
     private function getAuth() {
-        $auth = new BasicAuth();
 
         $b = $this->isMe();
+        if ($this->observerAuth && !$b) {
+            return $this->observerAuth;
+        }
+        $auth = new BasicAuth();
         if ($b) {
             $ob_hash = $this->owner['xchan_hash'];
             $auth->setCurrentUser($this->owner['channel_address']);
@@ -668,9 +642,7 @@ class Faces extends Controller {
             }
             $auth->observer = $ob_hash;
         } else {
-
             $ob_hash = get_observer_hash();
-
             if ($ob_hash) {
                 if (local_channel()) {
                     $channel = \App::get_channel();
@@ -683,6 +655,7 @@ class Faces extends Controller {
                     }
                 }
                 $auth->observer = $ob_hash;
+                $this->observerAuth = $auth;
             }
         }
 
@@ -732,7 +705,6 @@ class Faces extends Controller {
             logger('sending status=false, parameter face was not received', LOGGER_NORMAL);
             json_return_and_die(array('status' => false, 'message' => "Parameter face was not received"));
         }
-
 
         $file = $face['file'];
         if (!$face['position']) {
@@ -833,7 +805,7 @@ class Faces extends Controller {
         $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
-        $isText = ["percent", "pixel", "training", "result", "zoom"];
+        $isText = ["percent", "pixel", "training", "result", "zoom", "most_similar_number", "most_similar_percent"];
         foreach ($config as $name => $values) {
             for ($i = 0;
                     $i < sizeof($values);
@@ -1010,10 +982,67 @@ class Faces extends Controller {
         $uid = $this->owner["channel_id"];
         load_contact_links($uid);
         $cs = App::$contacts;
+        // xchan_url = "http://localhost/channel/a"
+        // xchan_name = "a"
         foreach ($cs as $c) {
-            $ret[$c['xchan_hash']] = [$c['xchan_hash'], $c['xchan_name'], $c['xchan_addr']];
+            $url = $c['xchan_url'];
+            $url_shared_faces = str_replace("/channel/", "/cloud/", $url) . "/" . $this->addonDirName . "/" . $this->fileNameShare;
+            $download = false;
+            $ret[$c['xchan_hash']] = [
+                $c['xchan_hash'],
+                $c['xchan_name'],
+                $c['xchan_addr'],
+                $url_shared_faces,
+                ($c['xchan_hash'] === $this->owner['xchan_hash'])
+            ];
         }
         return $ret;
+    }
+
+    private function storeShared() {
+        if (!$this->can_write) {
+            logger("sending status=false, no write permission", LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no write permission"));
+        }
+
+        $face = $_POST["face"];
+
+        if (!$face) {
+            logger('sending status=false, no face received', LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no face received"));
+        }
+        $sender = $face["sender"];
+        logger("Received shared faces from sender name = " . $sender);
+        logger('faces: ' . json_encode($face), LOGGER_DATA);
+
+        $xchan_hash_sender_begin = $face["hash"];
+        $filename = "shared_" . $xchan_hash_sender_begin . ".json";
+        unset($face["hash"]);
+
+        $addonDir = $this->getAddonDir();
+        $is_file = $addonDir->childExists($filename);
+        if (!$is_file) {
+            $addonDir->createFile($filename);
+        }
+        $file = $addonDir->getChild($filename);
+
+        $faces = null;
+        
+        $first = $face["first"];
+        if ($first) {
+            $faces = $face;
+            unset($face["first"]);
+        } else {
+            $stream = $file->get();
+            $contents = stream_get_contents($stream);
+            $faces = json_decode($contents, true);
+        }
+
+        $json = json_encode($face);
+        $file->put($json);
+        logger("wrote shared faces for name='" . $sender . " to file=" . $filename, LOGGER_DEBUG);
+
+        json_return_and_die(array('status' => true, 'message' => "shared faces received and stored for name " . $sender));
     }
 
 }

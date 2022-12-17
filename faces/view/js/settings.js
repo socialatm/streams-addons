@@ -72,6 +72,8 @@ function fillGUI(config) {
     createTextFields(config.min_face_width_detection, "#face_size_detection");
     createTextFields(config.min_face_width_recognition, "#face_size_recognition");
     createTextFields(config.zoom, "#face_zoom");
+    createTextFields(config.most_similar_percent, "#face_most_similar_recognition");
+    createTextFields(config.most_similar_number, "#face_most_similar_recognition");
 
     document.getElementById("id_reset").addEventListener("click", presetDefault);
     document.getElementById("id_experimental").addEventListener("click", presetExperimental);
@@ -139,6 +141,8 @@ function presetDefault() {
     $("#id_percent").val("2");
     $("#id_result").val("50");
     $("#id_training").val("224");
+    $("#id_most_similar_percent").val("70");
+    $("#id_most_similar_number").val("10");
 }
 
 function presetExperimental() {

@@ -39,6 +39,10 @@ var sortDirectionReverse = false;
 
 let python_is_blocked = false;
 
+// faces of other channels
+var shared_faces = [];
+var files_shared = [];
+
 function t() {
     var now = new Date();
     var dateString = now.toISOString();
@@ -107,7 +111,9 @@ function postDetectAndRecognize() {
             for (i in contacts) {
                 let contact = contacts[i];
                 appendContact(contact);
+                files_shared.push(contact);
             }
+            downloadSharedFaces();
         }
         if (data['names']) {
             names_waiting = [];
@@ -123,7 +129,7 @@ function postDetectAndRecognize() {
 }
 function postRecognize() {
     let postURL = url_addon + "/recognize";
-    if(me) {
+    if (me) {
         postURL += "/me";
     }
     ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
@@ -270,6 +276,73 @@ function downloadFaceData() {
         filterAndSort();
         appendPictures();
         isWaitingForInitialDownload = false;
+    }
+}
+
+var is_first_face_sended = true;
+
+function downloadSharedFaces() {
+    if (files_shared.length > 0) {
+        let f = files_shared.shift();
+        if (f[4]) {
+            // do not download shared face of own channel
+            downloadSharedFaces();
+        }
+        let hash = f[0].substring(0, 8);
+        let name = f[1];
+        let url = f[3];
+        ((loglevel >= 2) ? console.log(t() + " try to download shared faces, url=" + url) : null);
+        jQuery.ajax({
+            url: url,
+            dataType: "json",
+            success: function (data) {
+                ((loglevel >= 1) ? console.log(t() + " downloaded shared faces, url=" + url) : null);
+                ((loglevel >= 1) ? console.log(t() + " data= " + JSON.stringify(data)) : null);
+                let obj_keys = Object.keys(data);
+                for (let index in Object.keys(data.name)) {
+                    let face = {};
+                    for (let i = 0; i < obj_keys.length; i++) {
+                        obj_key = obj_keys[i];
+                        face[obj_key] = data[obj_key][index];
+                    }
+                    face["sender"] = name;
+                    face["hash"] = hash;
+                    if (is_first_face_sended) {
+                        face["first"] = is_first_face_sended;
+                    }
+                    is_first_face_sended = false;
+                    shared_faces.push(face);
+                }
+                downloadSharedFaces();
+            },
+            error: function (data) {
+                ((loglevel >= 1) ? console.log(t() + " download of shared faces failed url=" + url) : null);
+            },
+            async: true
+        });
+    } else {
+        postSharedFaces();
+    }
+}
+
+function postSharedFaces() {
+    if (shared_faces.length > 0) {
+        let f = shared_faces.shift();
+
+        var postURL = url_addon + "/shared";
+        ((loglevel >= 1) ? console.log(t() + " post shared faces of name = " + name) : null);
+        ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(shared_faces)) : null);
+
+        $.post(postURL, {face: f}, function (data) {
+            ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
+            if (data['status']) {
+                ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok") : null);
+                postSharedFaces();
+            } else {
+                ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed") : null);
+            }
+        },
+                'json');
     }
 }
 
@@ -626,7 +699,7 @@ function postNames() {
         clearCounterNamesSending();
         if (!isFaceRecognitionRunning && immediateSearch) {
             postRecognize();
-        } else if(me) {
+        } else if (me) {
             postRecognize();
         }
         return;
@@ -638,7 +711,7 @@ function postNames() {
     animate_on();
     setCounterNamesSending();
     let postURL = url_addon + "/name";
-    if(me) {
+    if (me) {
         postURL += "/me"
     }
     ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);

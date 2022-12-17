@@ -40,6 +40,15 @@
         <div><strong>result</strong>... [px] faces without a name</div>
         <div>Faces smaller than this will be ignored.</div>
     </div>
+    <div id="face_most_similar_recognition">
+        <h3>Most similar Faces only</h3>
+        <div>For the machine some faces look more similar to a person than others
+            although it is the same person. Use only the most similar faces for searching.
+        </div>
+        <div>
+            This speeds up the search and should result in less false positives.
+        </div>
+    </div>
     <h2>Statistics</h2>
     <div id="face_history">
         <h3>Keep History</h3>

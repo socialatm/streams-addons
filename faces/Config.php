@@ -222,7 +222,38 @@ class FaceConfiguration {
                 $number = $min;
             }
         }
-        $config["zoom"][0][1] = $number;
+        
+        $min = 1;
+        $max = 100;
+        $default = 70;
+        $number = $config["most_similar_percent"][0][1];
+        if (!is_numeric($number)) {
+            $number = $default;
+        } else {
+            $number = round($number);
+            if ($number > $max) {
+                $number = $max;
+            } elseif ($number < $min) {
+                $number = $min;
+            }
+        }
+        $config["most_similar_percent"][0][1] = $number;
+        
+        $min = 1;
+        $max = 100;
+        $default = 10;
+        $number = $config["most_similar_number"][0][1];
+        if (!is_numeric($number)) {
+            $number = $default;
+        } else {
+            $number = round($number);
+            if ($number > $max) {
+                $number = $max;
+            } elseif ($number < $min) {
+                $number = $min;
+            }
+        }
+        $config["most_similar_number"][0][1] = $number;
         
         $config["worker"]["ram"] = get_config('faces', 'max_ram') ? get_config('faces', 'max_ram') : 80;
 
@@ -266,6 +297,8 @@ class FaceConfiguration {
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
         $config["zoom"] = [["zoom", 2]];
+        $config["most_similar_percent"] = [["most_similar_percent", 70]];
+        $config["most_similar_number"] = [["most_similar_number", 10]];
         
         //----------------------------------------------------------------------
         // set by admin in admin page of addon
