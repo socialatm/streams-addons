@@ -2,7 +2,6 @@
 {{$pythoncheckmsg}}
 {{$deepfacecheckmsg}}
 {{$mysqlconnectorcheckmsg}}
-{{$exiftoolcheckmsg}}
 {{$ramcheckmsg}}
 <h1>Configuration</h1>
 <h2>Block Detection and Recognition on this Server</h2>
