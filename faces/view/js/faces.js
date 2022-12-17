@@ -302,7 +302,10 @@ function downloadSharedFaces() {
                 contentType: "application/json",
                 success: function (result) {
                     console.log(result);
-                    faces_shared = result["faces"];
+                    if (result["faces"]) {
+                        faces_shared = result["faces"];
+                        postSharedFaces(result["faces"]);
+                    }
                     downloadSharedFaces();
                 },
                 error: function (result, status) {
@@ -381,12 +384,12 @@ function downloadSharedFaces() {
     }
 }
 
-function postSharedFaces() {
+function postSharedFaces(fs) {
     var postURL = url_addon + "/shared";
     ((loglevel >= 1) ? console.log(t() + " post shared faces of name = " + name) : null);
-    ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(shared_faces)) : null);
+    ((loglevel >= 1) ? console.log(t() + " shared faces = " + JSON.stringify(fs)) : null);
 
-    $.post(postURL, {faces: faces_shared}, function (data) {
+    $.post(postURL, {faces: fs}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post names - received response from server after posting a name") : null);
         if (data['status']) {
             ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok") : null);
