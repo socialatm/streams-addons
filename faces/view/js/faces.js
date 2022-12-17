@@ -294,38 +294,55 @@ function downloadSharedFaces() {
             let url = f[3];
             ((loglevel >= 2) ? console.log(t() + " try to download shared faces, url=" + url) : null);
 
-            $.post(url, {xchan_name: name}, function (data) {
-                ((loglevel >= 1) ? console.log(t() + " downloaded names - received response from server after posting a name, url=" + url) : null);
-                if (data['status']) {
-                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces - receiced server response - ok - url=" + url) : null);
-                    ((loglevel >= 1) ? console.log(t() + " data= " + JSON.stringify(data)) : null);
-                    let faces = data["faces"];
-                    faces_shared = data["faces"];
-                    if (!faces) {
-                        ((loglevel >= 1) ? console.log(t() + " downloaded shared faces - receiced server response - no faces received - url=" + url) : null);
-                    } else {
-                        let obj_keys = Object.keys(faces);
-                        for (let index in Object.keys(faces.name)) {
-                            let face = {};
-                            for (let i = 0; i < obj_keys.length; i++) {
-                                obj_key = obj_keys[i];
-                                face[obj_key] = faces[obj_key][index];
-                            }
-                            face["sender"] = name;
-                            face["hash"] = hash;
-                            if (is_first_face_sended) {
-                                face["first"] = is_first_face_sended;
-                            }
-                            is_first_face_sended = false;
-                            shared_faces.push(face);
-                        }
-                    }
+
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: {xchan_name: name},
+                contentType: "application/json",
+                success: function (result) {
+                    console.log(result);
+                    faces_shared = result["faces"];
                     downloadSharedFaces();
-                } else {
-                    ((loglevel >= 1) ? console.log(t() + " download shared faces - receiced server response - failed - url=" + url) : null);
+                },
+                error: function (result, status) {
+                    console.log(result);
+                    downloadSharedFaces();
                 }
-            },
-                    'json');
+            });
+
+//            $.post(url, {xchan_name: name}, function (data) {
+//                ((loglevel >= 1) ? console.log(t() + " downloaded names - received response from server after posting a name, url=" + url) : null);
+//                if (data['status']) {
+//                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces - receiced server response - ok - url=" + url) : null);
+//                    ((loglevel >= 1) ? console.log(t() + " data= " + JSON.stringify(data)) : null);
+//                    let faces = data["faces"];
+//                    faces_shared = data["faces"];
+//                    if (!faces) {
+//                        ((loglevel >= 1) ? console.log(t() + " downloaded shared faces - receiced server response - no faces received - url=" + url) : null);
+//                    } else {
+//                        let obj_keys = Object.keys(faces);
+//                        for (let index in Object.keys(faces.name)) {
+//                            let face = {};
+//                            for (let i = 0; i < obj_keys.length; i++) {
+//                                obj_key = obj_keys[i];
+//                                face[obj_key] = faces[obj_key][index];
+//                            }
+//                            face["sender"] = name;
+//                            face["hash"] = hash;
+//                            if (is_first_face_sended) {
+//                                face["first"] = is_first_face_sended;
+//                            }
+//                            is_first_face_sended = false;
+//                            shared_faces.push(face);
+//                        }
+//                    }
+//                    downloadSharedFaces();
+//                } else {
+//                    ((loglevel >= 1) ? console.log(t() + " download shared faces - receiced server response - failed - url=" + url) : null);
+//                }
+//            },
+//                    'json');
 
 
 
