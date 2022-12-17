@@ -169,6 +169,9 @@ class Faces extends Controller {
             } elseif ($api === 'status') {
                 // API: /faces/nick/results
                 $this->startDetection('results', false);
+            } elseif ($api === 'share') {
+                // API: /faces/nick/share
+                $this->share();
             } elseif ($api === 'shared') {
                 // API: /faces/nick/shared
                 $this->storeShared();
@@ -987,7 +990,7 @@ class Faces extends Controller {
         foreach ($cs as $c) {
             $url = $c['xchan_url'];
             $url_shared_faces = str_replace("/channel/", "/cloud/", $url) . "/" . $this->addonDirName . "/" . $this->fileNameShare;
-            $download = false;
+            $url_shared_faces = str_replace("/channel/", "/faces/", $url) . "/share";
             $ret[$c['xchan_hash']] = [
                 $c['xchan_hash'],
                 $c['xchan_name'],
@@ -997,6 +1000,41 @@ class Faces extends Controller {
             ];
         }
         return $ret;
+    }
+
+    private function share() {
+        // TODO decide what faces to share depending on observer
+        // - observer must be in contact list
+        // - observer must have a close relationship (proximity slider)
+        $observer_hash = $this->observer['xchan_hash'];
+        $uid = $this->owner["channel_id"];
+        load_contact_links($uid);
+        $contacts = App::$contacts;
+        foreach ($contacts as $contact) {
+            if ($observer_hash === $contact['xchan_hash']) {
+                $this->sendSharedFaces();
+            }
+        }
+        logger("sending status=true, not in conctact list", LOGGER_NORMAL);
+        json_return_and_die(array('status' => true, 'message' => "not in conctact list"));
+    }
+
+    private function sendSharedFaces() {
+        $filename = "share.json";
+        $addonDir = $this->getAddonDir();
+        $is_file = $addonDir->childExists($filename);
+        if (!$is_file) {
+            $msg = "no file " . $this->fileNameShare;
+            logger("sending status=false, message: " . $msg, LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => $msg));
+        }
+        $file = $addonDir->getChild($filename);
+        $stream = $file->get();
+        $contents = stream_get_contents($stream);
+        $faces = json_decode($contents, true);
+        logger("sending status=true, sending shared faces", LOGGER_NORMAL);
+        logger($contents, LOGGER_NORMAL);
+        json_return_and_die(array('status' => true, 'message' => "ok", 'faces' => $faces));
     }
 
     private function storeShared() {
@@ -1030,7 +1068,6 @@ class Faces extends Controller {
         $file = $addonDir->getChild($filename);
 
         //$faces = null;
-        
 //        $first = $face["first"];
 //        if ($first) {
 //            $faces = $face;
