@@ -31,7 +31,8 @@ class Worker:
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
         self.file_name_probe = "probe.csv"
-        self.file_name_share = "share.gzip"
+        self.file_name_most_similar = "faces_most_similar.gzip"
+        self.file_name_share = "share.json"
         self.dir_addon = "faces"
 
         # Watch this!
@@ -73,6 +74,7 @@ class Worker:
         self.file_face_statistics = None
         self.file_model_statistics = None
         self.file_probe = None
+        self.file_most_similar = None
         self.file_share = None
         self.channel = None
         self.util = faces_util.Util()        
@@ -443,7 +445,7 @@ class Worker:
         
         #self.has_new_names = False   # DELETE this line
         df_best_trained = None
-        found_training_data = self.check_file_by_channel(self.file_name_share)
+        found_training_data = self.check_file_by_channel(self.file_name_most_similar)
         if not self.has_new_names:            
             if found_training_data:
                 df_best_trained = self.get_training_data()
@@ -781,6 +783,8 @@ class Worker:
             self.file_config_thresholds = None
         elif file_name == self.file_name_probe:
             self.file_probe = None
+        elif file_name == self.file_name_most_similar:
+            self.file_most_similar = None
         elif file_name == self.file_name_share:
             self.file_share = None
 
@@ -808,6 +812,9 @@ class Worker:
                 return True
             elif file_name == self.file_name_probe:
                 self.file_probe = path
+                return True
+            elif file_name == self.file_name_most_similar:
+                self.file_most_similar = path
                 return True
             elif file_name == self.file_name_share:
                 self.file_share = path
@@ -870,12 +877,12 @@ class Worker:
     def get_training_data(self):
         # Load stored training data
         df = None  # pandas.DataFrame that holds all face representations
-        if os.path.exists(self.file_share):
-            if os.stat(self.file_share).st_size == 0:
-                logging.debug("file training data is empty yet " + self.file_share)
+        if os.path.exists(self.file_most_similar):
+            if os.stat(self.file_most_similar).st_size == 0:
+                logging.debug("file training data is empty yet " + str(self.file_most_similar))
                 return df
-            df = pd.read_parquet(self.file_share, engine="pyarrow")
-            logging.debug("loaded training data from file " + self.file_share)
+            df = pd.read_parquet(self.file_most_similar, engine="pyarrow")
+            logging.debug("loaded training data from file " + str(self.file_most_similar))
         if df is not None and len(df) == 0:
             return None
         return df
@@ -885,15 +892,31 @@ class Worker:
             logging.debug("no training data to store (dataframe is None)")
             return
         if self.has_new_names:
-            if self.file_share is None:
-                logging.debug("not storing training results because failed to read filfe before " + self.file_share)
+            
+            # training data
+            if self.file_most_similar is None:
+                logging.debug("not storing training results because failed to read file before " + str(self.file_most_similar))
                 return
-            if os.path.exists(self.file_share) is False:
-                logging.debug("face training data (share) does not exist " + self.file_share)
+            if os.path.exists(self.file_most_similar) is False:
+                logging.debug("face training data does not exist " + str(self.file_most_similar))
                 return
             df.reset_index(drop=True, inplace=True)
-            df.to_parquet(self.file_share, engine="pyarrow", compression='gzip')
-            logging.debug("stored face training data in file " + self.file_share)
+            df.to_parquet(self.file_most_similar, engine="pyarrow", compression='gzip')
+            logging.debug("stored face training data in file " + str(self.file_most_similar))
+            
+            # faces to share
+            fns = self.check_file_by_channel(self.file_name_share)
+            if self.file_share is None:
+                logging.debug("not storing/sharing training results because failed to read file before " + str(self.file_share))
+                return
+            if os.path.exists(self.file_share) is False:
+                logging.debug("face training data (share) does not exist " + str(self.file_share))
+                return
+            # Remove faces that are not real contacts.
+            # Real contacts are represented by a hash value and should be 86 char long.
+            # Despite this we take min 50 chars and no blank to check wether it is a hash value.
+            df.loc[(df['name'].str.len() > 50) & (df['name'].str.find(" ") == -1)]
+            df.to_json(self.file_share)
 
     def get_face_names_set_by_browser(self):
         # Load stored names

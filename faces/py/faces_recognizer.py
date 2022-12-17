@@ -226,8 +226,10 @@ class Recognizer:
                 i = 1 + i
             logging.debug("left " + str(l) + " faces for " + name)
         best = training_data.drop(keys)        
-        best = best.drop('average_distance', axis=1)
-        best = best.drop('id', axis=1)             
+        if 'id' in best.columns:
+            best = best.drop('id', axis=1)
+        if 'distance' in best.columns:
+            best = best.drop('distance', axis=1)
         logging.debug("did choose best faces and left " + str(len(best)) + " out of " + str(len(training_data))
                       + " faces as training data, max count=" + str(self.most_similar_number)
                       + ", max percent=" + str(self.most_similar_percent)
