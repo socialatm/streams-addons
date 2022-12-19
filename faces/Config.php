@@ -223,6 +223,21 @@ class FaceConfiguration {
             }
         }
         
+        $min = 0;
+        $max = 99;
+        $default = 50;
+        $number = $config["closeness"][0][1];
+        if (!is_numeric($number)) {
+            $number = $default;
+        } else {
+            $number = round($number);
+            if ($number > $max) {
+                $number = $max;
+            } elseif ($number < $min) {
+                $number = $min;
+            }
+        }
+        
         $min = 1;
         $max = 100;
         $default = 70;
@@ -297,6 +312,7 @@ class FaceConfiguration {
         $config["min_face_width_detection"] = [["percent", 5], ["pixel", 50]];
         $config["min_face_width_recognition"] = [["training", 224], ["result", 50]];
         $config["zoom"] = [["zoom", 2]];
+        $config["closeness"] = [["closeness", 50]];
         $config["most_similar_percent"] = [["most_similar_percent", 70]];
         $config["most_similar_number"] = [["most_similar_number", 10]];
         

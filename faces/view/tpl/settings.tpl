@@ -100,8 +100,40 @@
     </div>
 
     <hr/>
+						
     <h1 id="face_attributes">Facial Attributes and Demography</h1>
+    
     <hr/>
+    
+    <h1>Share Faces</h1>
+    
+    <div id="contact-slider" class="slider form-group">
+    <!-- script>
+        $(document).ready(function() {
+
+            $("#contact-range").on('input', function() { csliderUpdate(); });
+            $("#contact-range").on('change', function() { csliderUpdate(); });
+
+            function csliderUpdate() {
+                    $(".range-value").html($("#contact-range").val());
+            }
+
+        });
+    </script -->
+
+        <div id="slider-container">
+        <i class="fa fa-fw fa-user range-icon"></i>
+        <input id="contact-range" title="50" type="range" min="0" max="99" name="closeness" value="50" list="affinity_labels">
+        <datalist id="affinity_labels">
+                                                                        </datalist>
+        <i class="fa fa-fw fa-users range-icon"></i>
+        <span class="range-value">50</span>
+        </div>
+    </div>
+    <div class="form-group">See friend zoom of individual contacts</div>
+    
+    <hr/>
+    
     <h1>Presets</h1>
     <div id="face_experimental">
         <h2>Experimental</h2>

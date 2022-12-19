@@ -75,8 +75,12 @@ function fillGUI(config) {
     createTextFields(config.most_similar_percent, "#face_most_similar_recognition");
     createTextFields(config.most_similar_number, "#face_most_similar_recognition");
 
+    document.getElementById("contact-range").value = config.closeness[0][1];
+    $("#contact-range" + name).addClass("belongsToExperimental"); // for presets
+
     document.getElementById("id_reset").addEventListener("click", presetDefault);
     document.getElementById("id_experimental").addEventListener("click", presetExperimental);
+    csliderUpdate();
 
     const checkboxes = document.getElementsByClassName('belongsToExperimental');
     for (const box of checkboxes) {
@@ -143,6 +147,7 @@ function presetDefault() {
     $("#id_training").val("224");
     $("#id_most_similar_percent").val("70");
     $("#id_most_similar_number").val("10");
+    $("#contact-range").val("50");
 }
 
 function presetExperimental() {
@@ -163,13 +168,24 @@ function presetExperimental() {
 function correctLinks() {
     $('.link_correction').each(function (i, obj) {
         path = window.location.pathname;
-        path = path.substr(0,path.lastIndexOf("/settings"));
+        path = path.substr(0, path.lastIndexOf("/settings"));
         channel = path.substr(path.lastIndexOf("/") + 1);
         link = obj.href;
         link = link.replace("channel-nick", channel);
         obj.href = link;
         ((loglevel >= 1) ? console.log(t() + " link nr=" + i) : null);
     });
+}
+
+$("#contact-range").on('input', function () {
+    csliderUpdate();
+});
+$("#contact-range").on('change', function () {
+    csliderUpdate();
+});
+
+function csliderUpdate() {
+    $(".range-value").html($("#contact-range").val());
 }
 
 $(document).ready(function () {

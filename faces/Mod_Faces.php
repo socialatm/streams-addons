@@ -808,7 +808,7 @@ class Faces extends Controller {
         $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
-        $isText = ["percent", "pixel", "training", "result", "zoom", "most_similar_number", "most_similar_percent"];
+        $isText = ["percent", "pixel", "training", "result", "zoom", "closeness", "most_similar_number", "most_similar_percent"];
         foreach ($config as $name => $values) {
             for ($i = 0;
                     $i < sizeof($values);
