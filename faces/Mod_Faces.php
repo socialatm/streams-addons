@@ -148,8 +148,8 @@ class Faces extends Controller {
 
         if (!$status['status']) {
             notice('permission check failed' . EOL);
-            logger('sending status=false, permission check failed', LOGGER_NORMAL);
-            json_return_and_die(array('status' => false, 'message' => 'permission check failed'));
+            logger('sending status=false' . $status['message'], LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => $status['message']));
         }
         if (!$this->observer) {
             logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
@@ -988,34 +988,72 @@ class Faces extends Controller {
         // xchan_url = "http://localhost/channel/a"
         // xchan_name = "a"
         foreach ($cs as $c) {
-            $url = $c['xchan_url'];
-            $url_shared_faces = str_replace("/channel/", "/faces/", $url) . "/share";
-            $ret[$c['xchan_hash']] = [
-                $c['xchan_hash'],
-                $c['xchan_name'],
-                $c['xchan_addr'],
-                $url_shared_faces,
-                ($c['xchan_hash'] === $this->owner['xchan_hash'])
-            ];
+            if ($this->isCloseEnough($c['xchan_hash'])) {
+                $url = $c['xchan_url'];
+                $url_shared_faces = str_replace("/channel/", "/faces/", $url) . "/share";
+                $ret[$c['xchan_hash']] = [
+                    $c['xchan_hash'],
+                    $c['xchan_name'],
+                    $c['xchan_addr'],
+                    $url_shared_faces,
+                    ($c['xchan_hash'] === $this->owner['xchan_hash'])
+                ];
+            }
         }
         return $ret;
     }
 
     private function share() {
-        // TODO decide what faces to share depending on observer
+        // decide what faces to share depending on observer
         // - observer must be in contact list
         // - observer must have a close relationship (proximity slider)
+        $ob_xchan_hash = $this->observer['xchan_hash'];
+        if ($this->isContact() && $this->isCloseEnough($ob_xchan_hash)) {
+            $this->sendSharedFaces();
+        }
+        $msg = "not connected or not close enough (affinity slider).";
+        logger("sending status=false, " . $msg, LOGGER_NORMAL);
+        json_return_and_die(array('status' => false, 'message' => $msg));
+        return false;
+    }
+
+    private function isContact() {
         $observer_hash = $this->observer['xchan_hash'];
         $uid = $this->owner["channel_id"];
         load_contact_links($uid);
         $contacts = App::$contacts;
         foreach ($contacts as $contact) {
             if ($observer_hash === $contact['xchan_hash']) {
-                $this->sendSharedFaces();
+                return true;
             }
         }
-        logger("sending status=true, not in conctact list", LOGGER_NORMAL);
-        json_return_and_die(array('status' => true, 'message' => "not in conctact list"));
+        logger("not in contact list", LOGGER_DEBUG);
+        return false;
+    }
+
+    private function isCloseEnough($observer_xchan_hash) {
+        $conf = $this->getConfig();
+        $closeness_min = $conf["closeness"][0][1];
+        if (!$closeness_min) {
+            // this might happen if addon is installed but never used, or
+            // the config file was deleted
+            logger("closeness not set for this observer" . $msg, LOGGER_DEBUG);
+            return false;
+        }
+
+        $r = q("SELECT abook_closeness from abook WHERE abook_channel = %d AND abook_xchan = '%s'",
+                intval($this->owner["channel_id"]),
+                dbesc($observer_xchan_hash)
+        );
+        if ($r) {
+            $closeness_found = $r[0]["abook_closeness"];
+            if ($closeness_found <= $closeness_min) {
+                // default is 80 if affinity addon is not installed or affinity is not set for contact
+                return true;
+            }
+        }
+        logger("contact not close enough, found " . $closeness_found . " but need " . $closeness_min, LOGGER_DEBUG);
+        return false;
     }
 
     private function sendSharedFaces() {
@@ -1048,12 +1086,22 @@ class Faces extends Controller {
         }
         $s = $_POST["faces"];
         $faces = json_decode($_POST["faces"], true);
-        
+
         $sender = $_POST["sender"];  // shortened xchan_hash
-        if(!$sender) {
+        if (!$sender) {
             $sender = "unknown-sender";
         }
-        logger("Received shared faces from sender name (shortened xchan_hash) = " . $sender, LOGGER_DEBUG);
+        $source_url = $_POST["url"];  // shortened xchan_hash
+        if (!$source_url) {
+            $source_url = "";
+        }
+
+        $size = count($faces["name"]);
+        for ($x = 0; $x < $size; $x++) {
+            $faces["source"][$x] = $source_url;
+        }
+
+        logger("Received shared faces from sender name (shortened xchan_hash) = " . $sender . " from url=" . $source_url, LOGGER_DEBUG);
         logger('faces: ' . json_encode($faces), LOGGER_DATA);
 
         $filename = "shared_" . $sender . ".json";

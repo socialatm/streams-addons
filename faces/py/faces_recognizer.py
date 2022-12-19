@@ -84,6 +84,8 @@ class Recognizer:
                         self.thresholds_config[model_name][metric] = float(json[model_name][metric])
 
     def train(self, names, model_name):
+        if not 'source' in names.columns:
+            names['source'] = ''  # for sharing faces with contacts
         self.model_name = model_name
         logging.debug("Received  " + str(len(names)) + " face(s) for model='" + model_name + "' as training data")
         if self.most_similar_apply:

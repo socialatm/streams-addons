@@ -296,15 +296,15 @@ function downloadSharedFaces() {
                 url: url,
                 data: {},
                 contentType: "application/json",
-                success: function (result) {
-                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces, url=" + url) : null);
-                    ((loglevel >= 3) ? console.log(t() + " downloaded shared faces, received data=" + JSON.stringify(result)) : null);
-                    if (result["faces"]) {
-                        postSharedFaces(result["faces"], hash, url);
+                success: function (data) {
+                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces, url=" + url + ", status=" + data['status'] + ", message=" + data['message']) : null);
+                    ((loglevel >= 3) ? console.log(t() + " downloaded shared faces, received data=" + JSON.stringify(data)) : null);
+                    if (data["faces"]) {
+                        postSharedFaces(data["faces"], hash, url);
                     }
                     downloadSharedFaces();
                 },
-                error: function (result, status) {
+                error: function (data, status) {
                     ((loglevel >= 1) ? console.log(t() + " failed to downloaded shared faces from url=" + url + ", got status=" + status) : null);
                     downloadSharedFaces();
                 }
@@ -320,7 +320,7 @@ function postSharedFaces(sharedFaces, hash, url) {
     
     let s = JSON.stringify(sharedFaces);
 
-    $.post(postURL, {faces: s, sender: hash}, function (data) {
+    $.post(postURL, {faces: s, sender: hash, url:url}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post shared faces - received response - post url=" + postURL + " from server after posting shared faces downloaded from url=" + url) : null);
         if (data['status']) {
             ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok - post url=" + postURL + ", for faces downloaded from url=" + url) : null);
