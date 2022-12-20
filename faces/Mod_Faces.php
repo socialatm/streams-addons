@@ -97,6 +97,10 @@ class Faces extends Controller {
                     // API: /faces/nick/settings
                     $o = $this->showSettingsPage($loglevel);
                     return $o;
+                case 'sharing':
+                    // API: /faces/nick/sharing
+                    $o = $this->showSharingPage($loglevel);
+                    return $o;
                 case 'thresholds':
                     // API: /faces/nick/thresholds
                     $o = $this->showThresholdsPage($loglevel);
@@ -137,7 +141,7 @@ class Faces extends Controller {
             '$submit' => t('Submit'),
         ));
 
-        logger('returning page for faces.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for faces.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -175,6 +179,9 @@ class Faces extends Controller {
             } elseif ($api === 'shared') {
                 // API: /faces/nick/shared
                 $this->storeShared();
+            } elseif ($api === 'contacts') {
+                // API: /faces/nick/contacts
+                $this->sendContacts();
             } elseif ($api === 'name') {
                 // API: /faces/nick/name
                 $this->setName();
@@ -184,6 +191,9 @@ class Faces extends Controller {
             } elseif ($api === 'settings') {
                 // API: /faces/nick/settings
                 $this->setConfig();
+            } elseif ($api === 'sharing') {
+                // API: /faces/nick/sharing
+                $this->setConfigShare();
             } elseif ($api === 'remove') {
                 // API: /faces/nick/remove
                 $this->remove();
@@ -757,7 +767,21 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
-        logger('returning page for settings.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for settings.tpl', LOGGER_DEBUG);
+        return $o;
+    }
+
+    private function showSharingPage($loglevel) {
+        if (!$this->is_owner) {
+            notice('only the owner is allowed to set sharing settings' . EOL);
+        }
+
+        $o = replace_macros(Theme::get_template('sharing.tpl', 'addon/faces'), array(
+            '$version' => $this->getAppVersion(),
+            '$loglevel' => $loglevel,
+        ));
+
+        logger('returning page for sharing.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -770,7 +794,7 @@ class Faces extends Controller {
             '$version' => $this->getAppVersion(),
             '$loglevel' => $loglevel,
         ));
-        logger('returning page for thresholds.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for thresholds.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -788,7 +812,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
-        logger('returning page for probe.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for probe.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -800,12 +824,10 @@ class Faces extends Controller {
     }
 
     private function setConfig() {
-        if (!$this->is_owner) {
-            //notice('only the owner is allowed to change settings' . EOL);
+        $config = $this->setConfigPrepare();
+        if (!$config) {
             return;
         }
-        $this->prepareFiles();
-        $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
         $isText = ["percent", "pixel", "training", "result", "zoom", "closeness", "most_similar_number", "most_similar_percent"];
@@ -830,6 +852,35 @@ class Faces extends Controller {
                 }
             }
         }
+
+        $this->setConfigWrite($config);
+    }
+
+    private function setConfigShare() {
+        $config = $this->setConfigPrepare();
+        if (!$config) {
+            return;
+        }
+
+        $received = $_POST["closeness"];
+        if ($received) {
+            $config["closeness"][0][1] = $received;
+        }
+
+        $this->setConfigWrite($config);
+    }
+
+    private function setConfigPrepare() {
+        if (!$this->is_owner) {
+            //notice('only the owner is allowed to change settings' . EOL);
+            false;
+        }
+        $this->prepareFiles();
+        $config = $this->getConfig();
+        return $config;
+    }
+
+    private function setConfigWrite($config) {
         require_once('FaceRecognition.php');
         $fr = new FaceRecognition();
         $fr->stop();
@@ -935,7 +986,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
-        logger('returning page for remove.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for remove.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -977,8 +1028,18 @@ class Faces extends Controller {
     private function showHelpPage() {
         Head::add_css('/addon/faces/view/css/faces.css');
         $o = replace_macros(Theme::get_template('help.tpl', 'addon/faces'), array());
-        logger('returning page for help.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for help.tpl', LOGGER_DEBUG);
         return $o;
+    }
+
+    private function sendContacts() {
+        $contacts = $this->getContacts();
+        
+        logger("sending status=true, contacts", LOGGER_NORMAL);
+        logger("contacts: " . json_encode($contacts), LOGGER_DATA);
+        json_return_and_die(array(
+            'status' => true,
+            'contacts' => $contacts));
     }
 
     private function getContacts() {

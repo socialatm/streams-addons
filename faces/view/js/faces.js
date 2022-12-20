@@ -40,7 +40,6 @@ var sortDirectionReverse = false;
 let python_is_blocked = false;
 
 // faces of other channels
-var shared_faces = [];
 var files_shared = [];
 
 function t() {
@@ -278,8 +277,6 @@ function downloadFaceData() {
         isWaitingForInitialDownload = false;
     }
 }
-
-var is_first_face_sended = true;
 
 function downloadSharedFaces() {
     if (files_shared.length > 0) {

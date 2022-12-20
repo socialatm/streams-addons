@@ -1,4 +1,4 @@
-<form id="face_form_settings" method="post" action="http://localhost/admin/addons/faces/" class="">
+<form id="face_form_settings" method="post" action="" class="">
 
     <h1>Face Detection, Recognition and Matching</h1>
     <div id="face_detectors">
@@ -108,24 +108,9 @@
     <h1>Share Faces</h1>
     
     <div id="contact-slider" class="slider form-group">
-    <!-- script>
-        $(document).ready(function() {
-
-            $("#contact-range").on('input', function() { csliderUpdate(); });
-            $("#contact-range").on('change', function() { csliderUpdate(); });
-
-            function csliderUpdate() {
-                    $(".range-value").html($("#contact-range").val());
-            }
-
-        });
-    </script -->
-
         <div id="slider-container">
         <i class="fa fa-fw fa-user range-icon"></i>
         <input id="contact-range" title="50" type="range" min="0" max="99" name="closeness" value="50" list="affinity_labels">
-        <datalist id="affinity_labels">
-                                                                        </datalist>
         <i class="fa fa-fw fa-users range-icon"></i>
         <span class="range-value">50</span>
         </div>
