@@ -191,9 +191,6 @@ class Faces extends Controller {
             } elseif ($api === 'settings') {
                 // API: /faces/nick/settings
                 $this->setConfig();
-            } elseif ($api === 'sharing') {
-                // API: /faces/nick/sharing
-                $this->setConfigShare();
             } elseif ($api === 'remove') {
                 // API: /faces/nick/remove
                 $this->remove();
@@ -857,16 +854,15 @@ class Faces extends Controller {
     }
 
     private function setConfigShare() {
+        $received = $_POST["closeness"];
+        if (!$received) {
+            return;
+        }
         $config = $this->setConfigPrepare();
         if (!$config) {
             return;
-        }
-
-        $received = $_POST["closeness"];
-        if ($received) {
-            $config["closeness"][0][1] = $received;
-        }
-
+        }        
+        $config["closeness"][0][1] = $received;
         $this->setConfigWrite($config);
     }
 
@@ -1033,8 +1029,10 @@ class Faces extends Controller {
     }
 
     private function sendContacts() {
+        $this->setConfigShare();
+
         $contacts = $this->getContacts();
-        
+
         logger("sending status=true, contacts", LOGGER_NORMAL);
         logger("contacts: " . json_encode($contacts), LOGGER_DATA);
         json_return_and_die(array(

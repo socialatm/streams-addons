@@ -38,10 +38,14 @@ function setPostURL() {
 }
 
 $("#contact-range").on('input', function () {
+    ((loglevel >= 2) ? console.log(t() + " slider input ") : null);
     csliderUpdate();
 });
 $("#contact-range").on('change', function () {
+    ((loglevel >= 2) ? console.log(t() + " slider change ") : null);
     csliderUpdate();
+    let closeness = document.getElementById("contact-range").value;
+    postGetContacts(closeness);
 });
 
 function csliderUpdate() {
@@ -53,11 +57,23 @@ function csliderUpdate() {
  * 
  * @returns {undefined}
  */
-function postGetContacts() {
+function postGetContacts(closeness) {
+    // clear
+    contacts = {};
+    files_shared = [];
+    document.getElementById("faces-contact-list-share").textContent = "";
+    document.getElementById("faces-you-share").textContent = "";
+    document.getElementById("faces-shared-with-you").textContent = "";
+    let postParams = {};
+    if(closeness) {
+        postParams = {closeness: closeness};
+    }
+    
+    // get contacts
     let postURL = url_addon + "/contacts";
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
 
-    $.post(postURL, {}, function (data) {
+    $.post(postURL, postParams, function (data) {
         if (!data['status']) {
             ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
             return;
@@ -125,7 +141,7 @@ function displayReceivedFaces(faces, url, isMe) {
         if (!distinct.includes(faces.name[i])) {
             distinct.push(faces.name[i]);
             let displayName = replaceNameForXchan_hash(faces.name[i]);
-            if(displayName) {
+            if (displayName) {
                 distinct_and_contact.push(displayName);
             }
         }
@@ -140,14 +156,14 @@ function displayReceivedFaces(faces, url, isMe) {
             detectors.push(faces.detector[i]);
         }
     }
-    
+
     let html = url;
     html += ", detectors: <strong>" + detectors.toString() + "</strong>";
     html += ", models: <strong>" + models.toString() + "</strong>";
     html += ", faces: <strong>" + distinct_and_contact.toString() + "</strong>";
     html += " (" + faces.name.length + " received > ";
     html += distinct.length + " distinct > ";
-    html +=  distinct_and_contact.length + " in your contact list)";
+    html += distinct_and_contact.length + " in your contact list)";
     html += "<br/>";
     if (isMe) {
         $("#faces-you-share").append(html);
@@ -157,10 +173,10 @@ function displayReceivedFaces(faces, url, isMe) {
 }
 
 function replaceNameForXchan_hash(hash) {
-    if(contacts[hash]) {
+    if (contacts[hash]) {
         let contact = contacts[hash];
-            let contact_name = contact[1] + " (" + contact[2] + ")";
-            return contact_name;
+        let contact_name = contact[1] + " (" + contact[2] + ")";
+        return contact_name;
     }
     return false;
 }

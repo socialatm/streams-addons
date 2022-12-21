@@ -27,10 +27,6 @@
     
     <h2>Faces shared with you</h2>
     <div id="faces-shared-with-you"></div>
-    
-    <div class="submit">
-        <input type="submit" name="page_faces" value="Submit" class="float-right">
-    </div>
 
 </form>
 
