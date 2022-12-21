@@ -65,10 +65,10 @@ function postGetContacts(closeness) {
     document.getElementById("faces-you-share").textContent = "";
     document.getElementById("faces-shared-with-you").textContent = "";
     let postParams = {};
-    if(closeness) {
+    if (closeness) {
         postParams = {closeness: closeness};
     }
-    
+
     // get contacts
     let postURL = url_addon + "/contacts";
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
@@ -157,17 +157,29 @@ function displayReceivedFaces(faces, url, isMe) {
         }
     }
 
-    let html = url;
+    let link = url.replace("/faces/", "/cloud/");
+    link = link.replace(/share$/g, "faces/share.json");
+
+    let html = "<p>";
+    html += "<a href='" + link + "'>" + link + "</a>";
+
     html += ", detectors: <strong>" + detectors.toString() + "</strong>";
     html += ", models: <strong>" + models.toString() + "</strong>";
-    html += ", faces: <strong>" + distinct_and_contact.toString() + "</strong>";
-    html += " (" + faces.name.length + " received > ";
-    html += distinct.length + " distinct > ";
-    html += distinct_and_contact.length + " in your contact list)";
-    html += "<br/>";
+        html += "<br/>";
     if (isMe) {
+        html += faces.name.length + " sending > ";
+        html += "<strong>" + distinct.length + "</strong> distinct";
+        html += "<br/>";
+        html += "faces: <strong>" + distinct_and_contact.toString() + "</strong>";
+        html += "</p>";
         $("#faces-you-share").append(html);
     } else {
+        html += faces.name.length + " received > ";
+        html += distinct.length + " distinct > ";
+        html += "<strong>" + distinct_and_contact.length + "</strong> in your contact list";
+        html += "<br/>";
+        html += "faces: <strong>" + distinct_and_contact.toString() + "</strong>";
+        html += "</p>";
         $("#faces-shared-with-you").append(html);
     }
 }

@@ -14,9 +14,8 @@
     </div>
     <div id="faces-contact-list-share" class="form-group">See friend zoom of individual contacts<br/></div>
     <div>These are the contacts you can tag and who are allowed to download your
-        faces (embeddings) in return. Only faces belonging to real
-        contacts are share with each other. Faces of arbitrary names like "Brigitte Bardot"
-        are not shared. Please be aware that only the same combination of detector-model will find a face.</div>
+        faces (embeddings) in return. Please be aware that only the same combination 
+        of detector-model will find a face.</div>
     
     <hr/>
     
