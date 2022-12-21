@@ -179,6 +179,9 @@ class Faces extends Controller {
             } elseif ($api === 'shared') {
                 // API: /faces/nick/shared
                 $this->storeShared();
+            } elseif ($api === 'cleanupshared') {
+                // API: /faces/nick/cleanupshared
+                $this->cleanupShared();
             } elseif ($api === 'contacts') {
                 // API: /faces/nick/contacts
                 $this->sendContacts();
@@ -861,7 +864,7 @@ class Faces extends Controller {
         $config = $this->setConfigPrepare();
         if (!$config) {
             return;
-        }        
+        }
         $config["closeness"][0][1] = $received;
         $this->setConfigWrite($config);
     }
@@ -1046,8 +1049,9 @@ class Faces extends Controller {
         $cs = App::$contacts;
         // xchan_url = "http://localhost/channel/a"
         // xchan_name = "a"
+        $conf = $this->getConfig();
         foreach ($cs as $c) {
-            if ($this->isCloseEnough($c['xchan_hash'])) {
+            if ($this->isCloseEnough($c['xchan_hash'], $conf)) {
                 $url = $c['xchan_url'];
                 $url_shared_faces = str_replace("/channel/", "/faces/", $url) . "/share";
                 $ret[$c['xchan_hash']] = [
@@ -1066,8 +1070,9 @@ class Faces extends Controller {
         // decide what faces to share depending on observer
         // - observer must be in contact list
         // - observer must have a close relationship (proximity slider)
+        $conf = $this->getConfig();
         $ob_xchan_hash = $this->observer['xchan_hash'];
-        if ($this->isContact() && $this->isCloseEnough($ob_xchan_hash)) {
+        if ($this->isContact() && $this->isCloseEnough($ob_xchan_hash, $conf)) {
             $this->sendSharedFaces();
         }
         $msg = "not connected or not close enough (affinity slider).";
@@ -1090,8 +1095,7 @@ class Faces extends Controller {
         return false;
     }
 
-    private function isCloseEnough($observer_xchan_hash) {
-        $conf = $this->getConfig();
+    private function isCloseEnough($observer_xchan_hash, $conf) {
         $closeness_min = $conf["closeness"][0][1];
         if (!$closeness_min) {
             // this might happen if addon is installed but never used, or
@@ -1111,7 +1115,7 @@ class Faces extends Controller {
                 return true;
             }
         }
-        logger("contact not close enough, found " . $closeness_found . " but need " . $closeness_min, LOGGER_DEBUG);
+        logger("contact " . $observer_xchan_hash . " not close enough, found " . $closeness_found . " but need " . $closeness_min, LOGGER_DEBUG);
         return false;
     }
 
@@ -1133,6 +1137,16 @@ class Faces extends Controller {
         json_return_and_die(array('status' => true, 'message' => "ok", 'faces' => $faces));
     }
 
+    /**
+     * Store faces from contacts.
+     * - parse post param that sends the faces
+     * - iterate through every faces and remove faces of contacts that are not
+     *   close enough (set by affinity slider).
+     *   Why?
+     *     Be fair to your contacts.
+     *     If you do not share your own faces with a contact then in turn
+     *     you should not be allowed to tag this contact in your images.
+     */
     private function storeShared() {
         if (!$this->can_write) {
             logger("sending status=false, no write permission", LOGGER_NORMAL);
@@ -1150,14 +1164,34 @@ class Faces extends Controller {
         if (!$sender) {
             $sender = "unknown-sender";
         }
-        $source_url = $_POST["url"];  // shortened xchan_hash
+        $source_url = $_POST["url"];
         if (!$source_url) {
             $source_url = "";
         }
 
+        $conf = $this->getConfig();
+
+        $indicesToRemove = [];
         $size = count($faces["name"]);
         for ($x = 0; $x < $size; $x++) {
             $faces["source"][$x] = $source_url;
+            // If you use one of your contacts (connected channels) to tag faces
+            // the xchan_hash of the contat is used as "name" to make the "name" unique.
+            $xchan_hash = $faces["name"][$x];
+            if (!$this->isCloseEnough($xchan_hash, $conf)) {
+                $indicesToRemove[] = $x;
+            }
+        }
+        if (sizeof($indicesToRemove) > 0) {
+            foreach ($faces as $key => $value) {
+                foreach ($indicesToRemove as $i) {
+                    $tmp = $key;
+                    $temp = $value;
+                    $a = $faces[$key];
+                    $b = $faces[$key][$i];
+                    unset($faces[$key][$i]);
+                }
+            }
         }
 
         logger("Received shared faces from sender name (shortened xchan_hash) = " . $sender . " from url=" . $source_url, LOGGER_DEBUG);
@@ -1177,6 +1211,48 @@ class Faces extends Controller {
         logger("wrote shared faces into file=" . $filename, LOGGER_NORMAL);
 
         json_return_and_die(array('status' => true, 'message' => "shared faces received and stored for name "));
+    }
+
+    /**
+     * Delete files of contacts that are not close enough.
+     * 
+     * Main purpose of this function:
+     * Be fair to your contacts.
+     * If you do not share your own faces with a contact then in turn
+     * you should not be allowed to tag this contact in your images.
+     * 
+     * Iterate over the files that contain faces shared by contacts. These files
+     * where downloaded before from contacts. In the meantime you might have changed the
+     * closness (affinity slider) for this contact. As result the contact is not
+     * close enough anymore. For your contact this would have the effect that he
+     * is not allowed to downloade your faces anymore.
+     */
+    function cleanupShared() {
+        $contacts = $this->getContacts();
+        $cs = [];
+        foreach ($contacts as $key => $value) {
+            $cs[] = substr($key, 0, 8);
+        }
+        $addonDir = $this->getAddonDir();
+        $children = $addonDir->getChildren();
+        foreach ($children as $child) {
+            if ($child instanceof File) {
+                if ($child->getContentType() === strtolower('application/json')) {
+                    $fname = $child->getName();
+                    if (!str_starts_with($fname, "shared_")) {
+                        continue;
+                    }
+                    $s = str_replace("shared_", "", $fname);
+                    if (!str_ends_with($s, ".json")) {
+                        continue;
+                    }
+                    $shortened_xchan_hash = str_replace(".json", "", $s);
+                    if(!in_array($shortened_xchan_hash, $cs)) {
+                        $child->delete();
+                    }
+                }
+            }
+        }
     }
 
 }

@@ -99,6 +99,20 @@ function postGetContacts(closeness) {
             'json');
 }
 
+function postCleanupSharedFaces() {
+    let postURL = url_addon + "/cleanupshared";
+    ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
+
+    $.post(postURL, {}, function (data) {
+        if (!data['status']) {
+            ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
+            return;
+        }
+        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server message: " + data['message']) : null);        
+    },
+            'json');
+}
+
 function postDownloadSharedFaces() {
     if (files_shared.length > 0) {
         let f = files_shared.shift();
@@ -128,6 +142,8 @@ function postDownloadSharedFaces() {
                 postDownloadSharedFaces();
             }
         });
+    } else {
+        postCleanupSharedFaces();
     }
 }
 
@@ -165,7 +181,7 @@ function displayReceivedFaces(faces, url, isMe) {
 
     html += ", detectors: <strong>" + detectors.toString() + "</strong>";
     html += ", models: <strong>" + models.toString() + "</strong>";
-        html += "<br/>";
+    html += "<br/>";
     if (isMe) {
         html += faces.name.length + " sending > ";
         html += "<strong>" + distinct.length + "</strong> distinct";
