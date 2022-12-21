@@ -916,6 +916,7 @@ class Worker:
             # Real contacts are represented by a hash value and should be 86 char long.
             # Despite this we take min 50 chars and no blank to check wether it is a hash value.
             df = df.loc[(df['name'].str.len() > 50) & (df['name'].str.find(" ") == -1)]
+            df.reset_index(drop=True, inplace=True)
             df.to_json(self.file_share)
 
     def get_face_names_set_by_browser(self):
