@@ -30,6 +30,9 @@ var counter_files_name_waiting = 0;
 var names_waiting = [];
 var countDownloadedImages = 0;
 
+let unsentNames = [];
+let unsentNamesMe = [];
+
 var server_procid = "";
 var server_time = "";
 
@@ -112,7 +115,6 @@ function postDetectAndRecognize() {
                 appendContact(contact);
                 files_shared.push(contact);
             }
-            downloadSharedFaces();
         }
         if (data['names']) {
             names_waiting = [];
@@ -169,6 +171,7 @@ function postDownloadResults() {
             names_waiting = [];
             filesToLoad = {faces: data['names'], names: data['names_waiting']};
             downloadFaceData(data['names'], []); // creates list of images
+            postDownloadSharedFaces();
         }
         setConfig(data, false);
     },
@@ -278,12 +281,15 @@ function downloadFaceData() {
     }
 }
 
-function downloadSharedFaces() {
+
+//------------------------------------------------------------------------------
+//--- share begin --------------------------------------------------------------
+
+function postDownloadSharedFaces() {
     if (files_shared.length > 0) {
         let f = files_shared.shift();
         if (f[4]) {
-            // do not download shared face of own channel
-            downloadSharedFaces();
+            postDownloadSharedFaces();  // this is the owner himself
         } else {
             let hash = f[0].substring(0, 8);
             let url = f[3];
@@ -299,14 +305,16 @@ function downloadSharedFaces() {
                     if (data["faces"]) {
                         postSharedFaces(data["faces"], hash, url);
                     }
-                    downloadSharedFaces();
+                    postDownloadSharedFaces();
                 },
                 error: function (data, status) {
                     ((loglevel >= 1) ? console.log(t() + " failed to downloaded shared faces from url=" + url + ", got status=" + status) : null);
-                    downloadSharedFaces();
+                    postDownloadSharedFaces();
                 }
             });
         }
+    } else {
+        postCleanupSharedFaces();
     }
 }
 
@@ -314,10 +322,10 @@ function postSharedFaces(sharedFaces, hash, url) {
     var postURL = url_addon + "/shared";
     ((loglevel >= 1) ? console.log(t() + " post shared faces downloaded from url = " + url) : null);
     ((loglevel >= 3) ? console.log(t() + " post shared faces = " + JSON.stringify(sharedFaces)) : null);
-    
+
     let s = JSON.stringify(sharedFaces);
 
-    $.post(postURL, {faces: s, sender: hash, url:url}, function (data) {
+    $.post(postURL, {faces: s, sender: hash, url: url}, function (data) {
         ((loglevel >= 1) ? console.log(t() + " post shared faces - received response - post url=" + postURL + " from server after posting shared faces downloaded from url=" + url) : null);
         if (data['status']) {
             ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok - post url=" + postURL + ", for faces downloaded from url=" + url) : null);
@@ -327,6 +335,20 @@ function postSharedFaces(sharedFaces, hash, url) {
     },
             'json');
 }
+
+function postCleanupSharedFaces() {
+    let postURL = url_addon + "/cleanupshared";
+    ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
+
+    $.post(postURL, {}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server " + data['status'] + ", message: " + data['message']) : null);
+    },
+            'json');
+}
+
+
+//--- share end --------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 /*
  * Read names that where set by the user (browser) and are not processed
@@ -396,11 +418,28 @@ function readFaces(imgs, csvFile) {
                 continue;
             }
         }
-        face.name = replaceNameForXchan_hash(face.name);
-        face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
+        if (hasContactToBeRemoved(face.name)) {
+            face.name = "";
+            removeContactNotCloseEnough(face);
+        } else if (hasContactToBeRemoved(face.name_recognized)) {
+            face.name_recognized = "";
+        } else {
+            face.name = replaceNameForXchan_hash(face.name);
+            face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
+        }
         appendName(face.name);
         appendFaceToImages(face);
     }
+}
+
+function removeContactNotCloseEnough(face) {
+    unsentNames.push({
+        "id": face.id,
+        "file": face.url,
+        "position": face.pos,
+        "name": ""
+    });
+    postNames();
 }
 
 function appendFaceToImages(face) {
@@ -508,6 +547,32 @@ function replaceNameForXchan_hash(name) {
         }
     }
     return name;
+}
+
+/*
+ * Why this function?
+ * The user has tagged a contact.
+ * This is permitted because the closeness of the contact is less or equal the
+ * closness required by the addon (see pages settings or sharing).
+ * 
+ * What could happen?
+ * The user now changes the closeness of the contact.
+ * Assume the value of the closeness became now greater
+ * then the required closness by the addon.
+ * The user is not longer allowed to tag this contact.
+ * The contact should now be removed from the images (name set back).
+ */
+function hasContactToBeRemoved(name) {
+    // Guess if name from contact list. If yes it is a hash.
+    if (name.length > 80 && !/\s/.test(name)) {
+        // Is most probably xchan_hash. The xchan_hash is 86 chars long at the time of writing.
+        let foundName = replaceNameForXchan_hash(name);
+        if (foundName === name) {
+            // no contact for xchan_hash
+            return true;
+        }
+    }
+    return false;
 }
 
 function appendContact(contact) {
@@ -646,9 +711,6 @@ function preparePostName(face_id_full, name, isMe) {
     postNames();
 }
 
-
-var unsentNames = [];
-var unsentNamesMe = [];
 
 function removeNameFromUnsentList(face) {
     if (!face) {

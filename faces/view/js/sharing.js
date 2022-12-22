@@ -52,11 +52,6 @@ function csliderUpdate() {
     $(".range-value").html($("#contact-range").val());
 }
 
-/*
- * This startst the face detection and recognition in the backend
- * 
- * @returns {undefined}
- */
 function postGetContacts(closeness) {
     // clear
     contacts = {};
@@ -99,16 +94,6 @@ function postGetContacts(closeness) {
             'json');
 }
 
-function postCleanupSharedFaces() {
-    let postURL = url_addon + "/cleanupshared";
-    ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
-
-    $.post(postURL, {}, function (data) {
-        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server " + data['status'] + ", message: " + data['message']) : null);
-    },
-            'json');
-}
-
 function postDownloadSharedFaces() {
     if (files_shared.length > 0) {
         let f = files_shared.shift();
@@ -141,6 +126,34 @@ function postDownloadSharedFaces() {
     } else {
         postCleanupSharedFaces();
     }
+}
+
+function postSharedFaces(sharedFaces, hash, url) {
+    var postURL = url_addon + "/shared";
+    ((loglevel >= 1) ? console.log(t() + " post shared faces downloaded from url = " + url) : null);
+    ((loglevel >= 3) ? console.log(t() + " post shared faces = " + JSON.stringify(sharedFaces)) : null);
+
+    let s = JSON.stringify(sharedFaces);
+
+    $.post(postURL, {faces: s, sender: hash, url: url}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post shared faces - received response - post url=" + postURL + " from server after posting shared faces downloaded from url=" + url) : null);
+        if (data['status']) {
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok - post url=" + postURL + ", for faces downloaded from url=" + url) : null);
+        } else {
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed - post url " + postURL + ", for faces downloaded from url=" + url) : null);
+        }
+    },
+            'json');
+}
+
+function postCleanupSharedFaces() {
+    let postURL = url_addon + "/cleanupshared";
+    ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
+
+    $.post(postURL, {}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server " + data['status'] + ", message: " + data['message']) : null);
+    },
+            'json');
 }
 
 function displayReceivedFaces(faces, url, isMe) {
@@ -205,32 +218,17 @@ function replaceNameForXchan_hash(hash) {
     return false;
 }
 
-function postSharedFaces(sharedFaces, hash, url) {
-    var postURL = url_addon + "/shared";
-    ((loglevel >= 1) ? console.log(t() + " post shared faces downloaded from url = " + url) : null);
-    ((loglevel >= 3) ? console.log(t() + " post shared faces = " + JSON.stringify(sharedFaces)) : null);
-
-    let s = JSON.stringify(sharedFaces);
-
-    $.post(postURL, {faces: s, sender: hash, url: url}, function (data) {
-        ((loglevel >= 1) ? console.log(t() + " post shared faces - received response - post url=" + postURL + " from server after posting shared faces downloaded from url=" + url) : null);
-        if (data['status']) {
-            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok - post url=" + postURL + ", for faces downloaded from url=" + url) : null);
-        } else {
-            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed - post url " + postURL + ", for faces downloaded from url=" + url) : null);
-        }
-    },
-            'json');
-}
-
 $(document).ready(function () {
     loglevel = parseInt($("#faces_log_level").text());
     ((loglevel >= 1) ? console.log(t() + " loglevel=" + loglevel) : null);
     setPostURL();
     requestConfig();
-    channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/"
+    channel_name = window.location.pathname.split("/")[2];  // "/faces/nick/sharing"
     channel_name = channel_name.split("?")[0];
     url_addon = window.location.origin + "/" + window.location.pathname.split("/")[1] + "/" + channel_name;
+    if(!window.location.pathname.endsWith("/sharing")) {
+        return;
+    }
     postGetContacts();
 }
 );

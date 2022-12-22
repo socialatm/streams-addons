@@ -1179,6 +1179,10 @@ class Faces extends Controller {
             // If you use one of your contacts (connected channels) to tag faces
             // the xchan_hash of the contat is used as "name" to make the "name" unique.
             $xchan_hash = $faces["name"][$x];
+            // TODO: The closeness all contacts could be requested from the database once
+            //       to avoid sql requests for each contact. Furthermore a contact is checked
+            //       several times if it has several entries iin the shared file what makes
+            //       it even more time consuming.
             if (!$this->isCloseEnough($xchan_hash, $conf)) {
                 $indicesToRemove[] = $x;
             }
@@ -1254,8 +1258,8 @@ class Faces extends Controller {
                     }
                     $shortened_xchan_hash = str_replace(".json", "", $s);
                     if (!in_array($shortened_xchan_hash, $cs)) {
+                        logger("deleting file " . $fname, LOGGER_DEBUG);
                         $child->delete();
-                        logger("deleted file " . $fname, LOGGER_DEBUG);
                     }
                 }
             }
