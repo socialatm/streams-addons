@@ -31,6 +31,8 @@ class Worker:
         self.file_name_faces_statistic = "face_statistics.csv"
         self.file_name_models_statistic = "model_statistics.csv"
         self.file_name_probe = "probe.csv"
+        self.file_name_most_similar = "faces_most_similar.gzip"
+        self.file_name_share = "share.json"
         self.dir_addon = "faces"
 
         # Watch this!
@@ -72,8 +74,11 @@ class Worker:
         self.file_face_statistics = None
         self.file_model_statistics = None
         self.file_probe = None
+        self.file_most_similar = None
+        self.file_share = None
         self.channel = None
-        self.util = faces_util.Util()
+        self.util = faces_util.Util()        
+        self.has_new_names = False
 
         self.ram_allowed = 80  # %
 
@@ -437,6 +442,16 @@ class Worker:
 
         df['min_size_train'] = df.apply(include_as_training_data, axis=1)
         df['min_size_result'] = df.apply(include_as_result_data, axis=1)
+        
+        #self.has_new_names = False   # DELETE this line
+        df_best_trained = None
+        found_training_data = self.check_file_by_channel(self.file_name_most_similar)
+        if not self.has_new_names:            
+            if found_training_data:
+                df_best_trained = self.get_training_data()
+                if df_best_trained is not None:
+                    # do not look for most similar faces again
+                    self.recognizer.most_similar_apply = False
 
         for key in self.finder.detectors:
             detector = key
@@ -457,31 +472,47 @@ class Worker:
             for model in models:
                 if model not in self.finder.model_names:
                     continue
-                # Set back previous results
-                # Why?
-                # - parameters might change (distance metrics, min face width)
-                # - show results for parameters of this run only
-                df.loc[(df['model'] == model) &
-                       (df['detector'] == detector) &
-                       (df['name'] == "") &  # keep history of recognized names for statitstics
-                       (df['name'] != self.IGNORE) &  # the user has set this face to "ignore"
-                       (df['duration_representation'] != 0.0) &
-                       (df['time_named'] == ""),  # the user has set the name to "unknown"
-                       ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
+                if not self.has_new_names and found_training_data and df_best_trained is not None:
+                    # Filter faces as training data
+                    logging.debug(model + " " + detector + " gathering faces as training data...")
+                    df_training_data = df_best_trained.loc[
+                        (df_best_trained['model'] == model) &
+                        (df_best_trained['detector'] == detector) &
+                        (df_best_trained['name'] != "") &            # kind of input validation
+                        (df_best_trained['name'] != self.IGNORE) &   # kind of input validation
+                        (df_best_trained['representation'] != ""), ['representation', 'name', 'model', 'detector']]
+                    
+                else:
+                    # Set back previous results
+                    # Why?
+                    # - parameters might change (distance metrics, min face width)
+                    # - show results for parameters of this run only
+                    df.loc[(df['model'] == model) &
+                        (df['detector'] == detector) &
+                        (df['name'] == "") &  # keep history of recognized names for statitstics
+                        (df['name'] != self.IGNORE) &  # the user has set this face to "ignore"
+                        (df['duration_representation'] != 0.0) &
+                        (df['time_named'] == ""),  # the user has set the name to "unknown"
+                        ['name_recognized', 'distance', 'distance_metric', 'duration_recognized']] = ["", -1.0, "", 0]
 
-                # Filter faces as training data
-                logging.debug(model + " " + detector + " gathering faces as training data...")
-                df_training_data = df.loc[
-                    (df['model'] == model) &
-                    (df['detector'] == detector) &
-                    (df['name'] != "") &
-                    (df['name'] != self.IGNORE) &
-                    (df['min_size_train'] == 1) &
-                    (df['representation'] != ""), ['id', 'representation', 'name', 'model', 'detector']]
+                    # Filter faces as training data
+                    logging.debug(model + " " + detector + " gathering faces as training data...")
+                    df_training_data = df.loc[
+                        (df['model'] == model) &
+                        (df['detector'] == detector) &
+                        (df['name'] != "") &
+                        (df['name'] != self.IGNORE) &
+                        (df['min_size_train'] == 1) &
+                        (df['representation'] != ""), ['id', 'representation', 'name', 'model', 'detector']]
                 if len(df_training_data) == 0:
                     logging.debug("No training data (names set) for model=" + model)
                     continue
-                self.recognizer.train(df_training_data, model)
+                df_best_trained_model = self.recognizer.train(df_training_data, model)
+                if self.has_new_names:
+                    if df_best_trained is not None:
+                        df_best_trained = df_best_trained.append(df_best_trained_model, ignore_index = True)
+                    else:
+                        df_best_trained = df_best_trained_model
                 df_model = df_no_name.loc[df_no_name['model'] == model]
                 if len(df_model) == 0:
                     logging.debug("No faces to search for model=" + model)
@@ -532,6 +563,7 @@ class Worker:
             self.store_face_names_if_changed(df_directory, d, most_effective_method)
 
         self.write_statistics(df, self.dirImages)
+        self.store_training_data(df_best_trained)
 
     def load_face_names(self, folders):
         # df
@@ -672,6 +704,9 @@ class Worker:
         logging.debug("copied " + str(name_count) + " names set from outside")
 
         df = self.util.copy_name_to_same_faces(df)
+        
+        # this will cause to create and write new training data
+        self.has_new_names = True
 
         return df
 
@@ -748,6 +783,10 @@ class Worker:
             self.file_config_thresholds = None
         elif file_name == self.file_name_probe:
             self.file_probe = None
+        elif file_name == self.file_name_most_similar:
+            self.file_most_similar = None
+        elif file_name == self.file_name_share:
+            self.file_share = None
 
         display_path = os.path.join(self.dir_addon, file_name)
         query = "SELECT os_path FROM `attach` WHERE `uid` = %s AND `display_path` = %s LIMIT 1"
@@ -773,6 +812,12 @@ class Worker:
                 return True
             elif file_name == self.file_name_probe:
                 self.file_probe = path
+                return True
+            elif file_name == self.file_name_most_similar:
+                self.file_most_similar = path
+                return True
+            elif file_name == self.file_name_share:
+                self.file_share = path
                 return True
         logging.debug("no file or write permission, file " + display_path)
         return False
@@ -828,6 +873,51 @@ class Worker:
         df.to_parquet(self.file_embeddings, engine="pyarrow", compression='gzip')
         logging.debug("stored face representations in file " + self.file_embeddings)
         return True
+
+    def get_training_data(self):
+        # Load stored training data
+        df = None  # pandas.DataFrame that holds all face representations
+        if os.path.exists(self.file_most_similar):
+            if os.stat(self.file_most_similar).st_size == 0:
+                logging.debug("file training data is empty yet " + str(self.file_most_similar))
+                return df
+            df = pd.read_parquet(self.file_most_similar, engine="pyarrow")
+            logging.debug("loaded training data from file " + str(self.file_most_similar))
+        if df is not None and len(df) == 0:
+            return None
+        return df
+
+    def store_training_data(self, df):
+        if df is None:
+            logging.debug("no training data to store (dataframe is None)")
+            return
+        if self.has_new_names:
+            
+            # training data
+            if self.file_most_similar is None:
+                logging.debug("not storing training results because failed to read file before " + str(self.file_most_similar))
+                return
+            if os.path.exists(self.file_most_similar) is False:
+                logging.debug("face training data does not exist " + str(self.file_most_similar))
+                return
+            df.reset_index(drop=True, inplace=True)
+            df.to_parquet(self.file_most_similar, engine="pyarrow", compression='gzip')
+            logging.debug("stored face training data in file " + str(self.file_most_similar))
+            
+            # faces to share
+            fns = self.check_file_by_channel(self.file_name_share)
+            if self.file_share is None:
+                logging.debug("not storing/sharing training results because failed to read file before " + str(self.file_share))
+                return
+            if os.path.exists(self.file_share) is False:
+                logging.debug("face training data (share) does not exist " + str(self.file_share))
+                return
+            # Remove faces that are not real contacts.
+            # Real contacts are represented by a hash value and should be 86 char long.
+            # Despite this we take min 50 chars and no blank to check wether it is a hash value.
+            df = df.loc[(df['name'].str.len() > 50) & (df['name'].str.find(" ") == -1)]
+            df.reset_index(drop=True, inplace=True)
+            df.to_json(self.file_share)
 
     def get_face_names_set_by_browser(self):
         # Load stored names

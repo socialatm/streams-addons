@@ -30,6 +30,9 @@ var counter_files_name_waiting = 0;
 var names_waiting = [];
 var countDownloadedImages = 0;
 
+let unsentNames = [];
+let unsentNamesMe = [];
+
 var server_procid = "";
 var server_time = "";
 
@@ -38,6 +41,9 @@ var sort_exif = false;
 var sortDirectionReverse = false;
 
 let python_is_blocked = false;
+
+// faces of other channels
+var files_shared = [];
 
 function t() {
     var now = new Date();
@@ -107,6 +113,7 @@ function postDetectAndRecognize() {
             for (i in contacts) {
                 let contact = contacts[i];
                 appendContact(contact);
+                files_shared.push(contact);
             }
         }
         if (data['names']) {
@@ -123,7 +130,7 @@ function postDetectAndRecognize() {
 }
 function postRecognize() {
     let postURL = url_addon + "/recognize";
-    if(me) {
+    if (me) {
         postURL += "/me";
     }
     ((loglevel >= 1) ? console.log(t() + " post recognize - requesting url = " + postURL) : null);
@@ -164,6 +171,7 @@ function postDownloadResults() {
             names_waiting = [];
             filesToLoad = {faces: data['names'], names: data['names_waiting']};
             downloadFaceData(data['names'], []); // creates list of images
+            postDownloadSharedFaces();
         }
         setConfig(data, false);
     },
@@ -273,6 +281,75 @@ function downloadFaceData() {
     }
 }
 
+
+//------------------------------------------------------------------------------
+//--- share begin --------------------------------------------------------------
+
+function postDownloadSharedFaces() {
+    if (files_shared.length > 0) {
+        let f = files_shared.shift();
+        if (f[4]) {
+            postDownloadSharedFaces();  // this is the owner himself
+        } else {
+            let hash = f[0].substring(0, 8);
+            let url = f[3];
+            ((loglevel >= 2) ? console.log(t() + " try to download shared faces, url=" + url) : null);
+            $.ajax({
+                type: "POST",
+                url: url,
+                data: {},
+                contentType: "application/json",
+                success: function (data) {
+                    ((loglevel >= 1) ? console.log(t() + " downloaded shared faces, url=" + url + ", status=" + data['status'] + ", message=" + data['message']) : null);
+                    ((loglevel >= 3) ? console.log(t() + " downloaded shared faces, received data=" + JSON.stringify(data)) : null);
+                    if (data["faces"]) {
+                        postSharedFaces(data["faces"], hash, url);
+                    }
+                    postDownloadSharedFaces();
+                },
+                error: function (data, status) {
+                    ((loglevel >= 1) ? console.log(t() + " failed to downloaded shared faces from url=" + url + ", got status=" + status) : null);
+                    postDownloadSharedFaces();
+                }
+            });
+        }
+    } else {
+        postCleanupSharedFaces();
+    }
+}
+
+function postSharedFaces(sharedFaces, hash, url) {
+    var postURL = url_addon + "/shared";
+    ((loglevel >= 1) ? console.log(t() + " post shared faces downloaded from url = " + url) : null);
+    ((loglevel >= 3) ? console.log(t() + " post shared faces = " + JSON.stringify(sharedFaces)) : null);
+
+    let s = JSON.stringify(sharedFaces);
+
+    $.post(postURL, {faces: s, sender: hash, url: url}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post shared faces - received response - post url=" + postURL + " from server after posting shared faces downloaded from url=" + url) : null);
+        if (data['status']) {
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - ok - post url=" + postURL + ", for faces downloaded from url=" + url) : null);
+        } else {
+            ((loglevel >= 1) ? console.log(t() + " post shared faces - receiced server response - failed - post url " + postURL + ", for faces downloaded from url=" + url) : null);
+        }
+    },
+            'json');
+}
+
+function postCleanupSharedFaces() {
+    let postURL = url_addon + "/cleanupshared";
+    ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
+
+    $.post(postURL, {}, function (data) {
+        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server " + data['status'] + ", message: " + data['message']) : null);
+    },
+            'json');
+}
+
+
+//--- share end --------------------------------------------------------------
+//------------------------------------------------------------------------------
+
 /*
  * Read names that where set by the user (browser) and are not processed
  * yet by the face recognition. The server will send old names and the browser will
@@ -341,11 +418,28 @@ function readFaces(imgs, csvFile) {
                 continue;
             }
         }
-        face.name = replaceNameForXchan_hash(face.name);
-        face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
+        if (hasContactToBeRemoved(face.name)) {
+            face.name = "";
+            removeContactNotCloseEnough(face);
+        } else if (hasContactToBeRemoved(face.name_recognized)) {
+            face.name_recognized = "";
+        } else {
+            face.name = replaceNameForXchan_hash(face.name);
+            face.name_recognized = replaceNameForXchan_hash(face.name_recognized);
+        }
         appendName(face.name);
         appendFaceToImages(face);
     }
+}
+
+function removeContactNotCloseEnough(face) {
+    unsentNames.push({
+        "id": face.id,
+        "file": face.url,
+        "position": face.pos,
+        "name": ""
+    });
+    postNames();
 }
 
 function appendFaceToImages(face) {
@@ -453,6 +547,32 @@ function replaceNameForXchan_hash(name) {
         }
     }
     return name;
+}
+
+/*
+ * Why this function?
+ * The user has tagged a contact.
+ * This is permitted because the closeness of the contact is less or equal the
+ * closness required by the addon (see pages settings or sharing).
+ * 
+ * What could happen?
+ * The user now changes the closeness of the contact.
+ * Assume the value of the closeness became now greater
+ * then the required closness by the addon.
+ * The user is not longer allowed to tag this contact.
+ * The contact should now be removed from the images (name set back).
+ */
+function hasContactToBeRemoved(name) {
+    // Guess if name from contact list. If yes it is a hash.
+    if (name.length > 80 && !/\s/.test(name)) {
+        // Is most probably xchan_hash. The xchan_hash is 86 chars long at the time of writing.
+        let foundName = replaceNameForXchan_hash(name);
+        if (foundName === name) {
+            // no contact for xchan_hash
+            return true;
+        }
+    }
+    return false;
 }
 
 function appendContact(contact) {
@@ -592,9 +712,6 @@ function preparePostName(face_id_full, name, isMe) {
 }
 
 
-var unsentNames = [];
-var unsentNamesMe = [];
-
 function removeNameFromUnsentList(face) {
     if (!face) {
         ((loglevel >= 1) ? console.log(t() + " remove face from unsent list - can not remove face id from unsent list because the id is null (received as server response)") : null);
@@ -626,7 +743,7 @@ function postNames() {
         clearCounterNamesSending();
         if (!isFaceRecognitionRunning && immediateSearch) {
             postRecognize();
-        } else if(me) {
+        } else if (me) {
             postRecognize();
         }
         return;
@@ -638,7 +755,7 @@ function postNames() {
     animate_on();
     setCounterNamesSending();
     let postURL = url_addon + "/name";
-    if(me) {
+    if (me) {
         postURL += "/me"
     }
     ((loglevel >= 1) ? console.log(t() + " url =  " + postURL) : null);

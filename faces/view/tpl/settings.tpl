@@ -1,4 +1,4 @@
-<form id="face_form_settings" method="post" action="http://localhost/admin/addons/faces/" class="">
+<form id="face_form_settings" method="post" action="" class="">
 
     <h1>Face Detection, Recognition and Matching</h1>
     <div id="face_detectors">
@@ -39,6 +39,15 @@
         <div><strong>training</strong>... [px] training data, faces having a name</div>
         <div><strong>result</strong>... [px] faces without a name</div>
         <div>Faces smaller than this will be ignored.</div>
+    </div>
+    <div id="face_most_similar_recognition">
+        <h3>Most similar Faces only</h3>
+        <div>For the machine some faces look more similar to a person than others
+            although it is the same person. Use only the most similar faces for searching.
+        </div>
+        <div>
+            This speeds up the search and should result in less false positives.
+        </div>
     </div>
     <h2>Statistics</h2>
     <div id="face_history">
@@ -91,8 +100,25 @@
     </div>
 
     <hr/>
+						
     <h1 id="face_attributes">Facial Attributes and Demography</h1>
+    
     <hr/>
+    
+    <h1>Share Faces</h1>
+    
+    <div id="contact-slider" class="slider form-group">
+        <div id="slider-container">
+        <i class="fa fa-fw fa-user range-icon"></i>
+        <input id="contact-range" title="50" type="range" min="0" max="99" name="closeness" value="50" list="affinity_labels">
+        <i class="fa fa-fw fa-users range-icon"></i>
+        <span class="range-value">50</span>
+        </div>
+    </div>
+    <div class="form-group">See friend zoom of individual contacts</div>
+    
+    <hr/>
+    
     <h1>Presets</h1>
     <div id="face_experimental">
         <h2>Experimental</h2>

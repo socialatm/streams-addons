@@ -29,8 +29,12 @@ class Faces extends Controller {
     private $fileNameConfig = "config.json";
     private $fileNameThresholds = "thresholds.json";
     private $fileNameProbe = "probe.csv";
+    private $fileNameMostSimilar = "faces_most_similar.gzip";
+    private $fileNameShare = "share.json";
+    private $filesData = [];
     private $files_faces = [];
     private $files_names = [];
+    private $observerAuth;
 
     function init() {
 
@@ -93,6 +97,10 @@ class Faces extends Controller {
                     // API: /faces/nick/settings
                     $o = $this->showSettingsPage($loglevel);
                     return $o;
+                case 'sharing':
+                    // API: /faces/nick/sharing
+                    $o = $this->showSharingPage($loglevel);
+                    return $o;
                 case 'thresholds':
                     // API: /faces/nick/thresholds
                     $o = $this->showThresholdsPage($loglevel);
@@ -133,7 +141,7 @@ class Faces extends Controller {
             '$submit' => t('Submit'),
         ));
 
-        logger('returning page for faces.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for faces.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -144,8 +152,8 @@ class Faces extends Controller {
 
         if (!$status['status']) {
             notice('permission check failed' . EOL);
-            logger('sending status=false, permission check failed', LOGGER_NORMAL);
-            json_return_and_die(array('status' => false, 'message' => 'permission check failed'));
+            logger('sending status=false' . $status['message'], LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => $status['message']));
         }
         if (!$this->observer) {
             logger('sending status=false, Unknown observer. Please login.', LOGGER_NORMAL);
@@ -163,8 +171,20 @@ class Faces extends Controller {
                 // API: /faces/nick/results
                 $this->startDetection('results', false);
             } elseif ($api === 'status') {
-                // API: /faces/nick/status
-                $this->getStatus();
+                // API: /faces/nick/results
+                $this->startDetection('results', false);
+            } elseif ($api === 'share') {
+                // API: /faces/nick/share
+                $this->share();
+            } elseif ($api === 'shared') {
+                // API: /faces/nick/shared
+                $this->storeShared();
+            } elseif ($api === 'cleanupshared') {
+                // API: /faces/nick/cleanupshared
+                $this->cleanupShared();
+            } elseif ($api === 'contacts') {
+                // API: /faces/nick/contacts
+                $this->sendContacts();
             } elseif ($api === 'name') {
                 // API: /faces/nick/name
                 $this->setName();
@@ -428,6 +448,12 @@ class Faces extends Controller {
     private function prepareFiles($is_touch = false) {
         $userDir = $this->getUserDir();
         $this->getAddonDir($is_touch);
+
+        $this->filesData = [
+            $this->fileNameEmbeddings,
+            $this->fileNameFaces,
+            $this->fileNameNames
+        ];
         $this->checkDataFiles($userDir, $userDir->getName(), $is_touch);
     }
 
@@ -439,39 +465,24 @@ class Faces extends Controller {
         foreach ($children as $child) {
             if ($child instanceof File && $check) {
                 if ($child->getContentType() === strtolower('image/jpeg') || $child->getContentType() === strtolower('image/png')) {
-                    if (!$dir->childExists($this->fileNameEmbeddings)) {
-                        if ($this->can_write) {
-                            $dir->createFile($this->fileNameEmbeddings);
-                        }
-                    } else {
-                        if ($is_touch) {
-                            $this->touch($dir->getChild($this->fileNameEmbeddings), $path);
-                        }
-                    }
-                    if (!$dir->childExists($this->fileNameFaces)) {
-                        if ($this->can_write) {
-                            $dir->createFile($this->fileNameFaces);
-                        }
-                    } else {
-                        if ($is_touch) {
-                            $this->touch($dir->getChild($this->fileNameFaces), $path);
-                        }
-                        $this->files_faces[] = $path . "/" . $this->fileNameFaces;
-                    }
-                    if ($dir->childExists($this->fileNameNames)) {
-//                        $f = $dir->getChild($this->fileNameNames);
-//                        $stream = $f->get();
-//                        $contents = stream_get_contents($stream);
-//                        if ($contents == "") {
-//                            //$f->delete();
-//                        } else {
-//                            $this->files_names[] = $path . "/" . $this->fileNameNames;
-//                        }
-                        $this->files_names[] = $path . "/" . $this->fileNameNames;
-                        if ($is_touch) {
-                            $this->touch($dir->getChild($this->fileNameNames), $path);
+
+                    foreach ($this->filesData as $f) {
+                        if (!$dir->childExists($f)) {
+                            if ($this->can_write) {
+                                $dir->createFile($f);
+                            }
+                        } else {
+                            if ($is_touch) {
+                                $this->touch($dir->getChild($f), $path);
+                            }
+                            if ($f === $this->fileNameNames) {
+                                $this->files_names[] = $path . "/" . $this->fileNameNames;
+                            } elseif ($f === $this->fileNameFaces) {
+                                $this->files_faces[] = $path . "/" . $this->fileNameFaces;
+                            }
                         }
                     }
+
                     $check = false;
                 }
             } else if ($child instanceof Directory) {
@@ -558,42 +569,26 @@ class Faces extends Controller {
 
         $path = $channelAddress . DIRECTORY_SEPARATOR . $this->addonDirName;
 
-        if (!$addonDir->childExists($this->fileNameFacesStatistic)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameFacesStatistic);
-            }
-        } else {
-            if ($is_touch) {
-                $this->touch($addonDir->getChild($this->fileNameFacesStatistic), $path);
-            }
-        }
+        $filesAddonDir = [
+            $this->fileNameFacesStatistic,
+            $this->fileNameModelsStatistic,
+            $this->fileNameThresholds,
+            $this->fileNameProbe,
+            $this->fileNameConfig,
+            $this->fileNameMostSimilar,
+            $this->fileNameShare
+        ];
 
-        if (!$addonDir->childExists($this->fileNameModelsStatistic)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameModelsStatistic);
-            }
-        } else {
-            if ($is_touch) {
-                $this->touch($addonDir->getChild($this->fileNameModelsStatistic), $path);
-            }
-        }
-        if (!$addonDir->childExists($this->fileNameProbe)) {
-            if ($this->can_write) {
-                !$addonDir->createFile($this->fileNameProbe);
-            }
-        } else {
-            $this->touch($addonDir->getChild($this->fileNameProbe), $path);
-        }
+        foreach ($filesAddonDir as $f) {
 
-        if (!$addonDir->childExists($this->fileNameConfig)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameConfig);
-            }
-        }
-
-        if (!$addonDir->childExists($this->fileNameThresholds)) {
-            if ($this->can_write) {
-                $addonDir->createFile($this->fileNameThresholds);
+            if (!$addonDir->childExists($f)) {
+                if ($this->can_write) {
+                    $addonDir->createFile($f);
+                }
+            } else {
+                if ($is_touch) {
+                    $this->touch($addonDir->getChild($f), $path);
+                }
             }
         }
 
@@ -612,24 +607,13 @@ class Faces extends Controller {
                 $addonDir->createDirectory($this->probeDirName);
             }
         }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("known")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("known");
-            }
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("unknown")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("unknown");
-            }
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("Jane")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("Jane");
-            }
-        }
-        if (!$addonDir->getChild($this->probeDirName)->childExists("Bob")) {
-            if ($this->can_write) {
-                !$addonDir->getChild($this->probeDirName)->createDirectory("Bob");
+
+        $dirs = ["known", "unknown", "Jane", "Bob"];
+        foreach ($dirs as $d) {
+            if (!$addonDir->getChild($this->probeDirName)->childExists($d)) {
+                if ($this->can_write) {
+                    !$addonDir->getChild($this->probeDirName)->createDirectory($d);
+                }
             }
         }
     }
@@ -654,9 +638,12 @@ class Faces extends Controller {
     }
 
     private function getAuth() {
-        $auth = new BasicAuth();
 
         $b = $this->isMe();
+        if ($this->observerAuth && !$b) {
+            return $this->observerAuth;
+        }
+        $auth = new BasicAuth();
         if ($b) {
             $ob_hash = $this->owner['xchan_hash'];
             $auth->setCurrentUser($this->owner['channel_address']);
@@ -668,9 +655,7 @@ class Faces extends Controller {
             }
             $auth->observer = $ob_hash;
         } else {
-
             $ob_hash = get_observer_hash();
-
             if ($ob_hash) {
                 if (local_channel()) {
                     $channel = \App::get_channel();
@@ -683,6 +668,7 @@ class Faces extends Controller {
                     }
                 }
                 $auth->observer = $ob_hash;
+                $this->observerAuth = $auth;
             }
         }
 
@@ -733,7 +719,6 @@ class Faces extends Controller {
             json_return_and_die(array('status' => false, 'message' => "Parameter face was not received"));
         }
 
-
         $file = $face['file'];
         if (!$face['position']) {
             $msg = "sending status=false, received no face position to write a name. Received: " . json_encode($face);
@@ -782,7 +767,21 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
-        logger('returning page for settings.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for settings.tpl', LOGGER_DEBUG);
+        return $o;
+    }
+
+    private function showSharingPage($loglevel) {
+        if (!$this->is_owner) {
+            notice('only the owner is allowed to set sharing settings' . EOL);
+        }
+
+        $o = replace_macros(Theme::get_template('sharing.tpl', 'addon/faces'), array(
+            '$version' => $this->getAppVersion(),
+            '$loglevel' => $loglevel,
+        ));
+
+        logger('returning page for sharing.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -795,7 +794,7 @@ class Faces extends Controller {
             '$version' => $this->getAppVersion(),
             '$loglevel' => $loglevel,
         ));
-        logger('returning page for thresholds.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for thresholds.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -813,7 +812,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
-        logger('returning page for probe.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for probe.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -825,15 +824,13 @@ class Faces extends Controller {
     }
 
     private function setConfig() {
-        if (!$this->is_owner) {
-            //notice('only the owner is allowed to change settings' . EOL);
+        $config = $this->setConfigPrepare();
+        if (!$config) {
             return;
         }
-        $this->prepareFiles();
-        $config = $this->getConfig();
 
         $exclude = ["reset", "experimental"];
-        $isText = ["percent", "pixel", "training", "result", "zoom"];
+        $isText = ["percent", "pixel", "training", "result", "zoom", "closeness", "most_similar_number", "most_similar_percent"];
         foreach ($config as $name => $values) {
             for ($i = 0;
                     $i < sizeof($values);
@@ -855,6 +852,34 @@ class Faces extends Controller {
                 }
             }
         }
+
+        $this->setConfigWrite($config);
+    }
+
+    private function setConfigShare() {
+        $received = $_POST["closeness"];
+        if (!$received) {
+            return;
+        }
+        $config = $this->setConfigPrepare();
+        if (!$config) {
+            return;
+        }
+        $config["closeness"][0][1] = $received;
+        $this->setConfigWrite($config);
+    }
+
+    private function setConfigPrepare() {
+        if (!$this->is_owner) {
+            //notice('only the owner is allowed to change settings' . EOL);
+            false;
+        }
+        $this->prepareFiles();
+        $config = $this->getConfig();
+        return $config;
+    }
+
+    private function setConfigWrite($config) {
         require_once('FaceRecognition.php');
         $fr = new FaceRecognition();
         $fr->stop();
@@ -960,7 +985,7 @@ class Faces extends Controller {
             '$loglevel' => $loglevel,
         ));
 
-        logger('returning page for remove.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for remove.tpl', LOGGER_DEBUG);
         return $o;
     }
 
@@ -1002,18 +1027,245 @@ class Faces extends Controller {
     private function showHelpPage() {
         Head::add_css('/addon/faces/view/css/faces.css');
         $o = replace_macros(Theme::get_template('help.tpl', 'addon/faces'), array());
-        logger('returning page for help.tpl' . $api, LOGGER_DEBUG);
+        logger('returning page for help.tpl', LOGGER_DEBUG);
         return $o;
+    }
+
+    private function sendContacts() {
+        $this->setConfigShare();
+
+        $contacts = $this->getContacts();
+
+        logger("sending status=true, contacts", LOGGER_NORMAL);
+        logger("contacts: " . json_encode($contacts), LOGGER_DATA);
+        json_return_and_die(array(
+            'status' => true,
+            'contacts' => $contacts));
     }
 
     private function getContacts() {
         $uid = $this->owner["channel_id"];
         load_contact_links($uid);
         $cs = App::$contacts;
+        // xchan_url = "http://localhost/channel/a"
+        // xchan_name = "a"
+        $conf = $this->getConfig();
         foreach ($cs as $c) {
-            $ret[$c['xchan_hash']] = [$c['xchan_hash'], $c['xchan_name'], $c['xchan_addr']];
+            if ($this->isCloseEnough($c['xchan_hash'], $conf)) {
+                $url = $c['xchan_url'];
+                $url_shared_faces = str_replace("/channel/", "/faces/", $url) . "/share";
+                $ret[$c['xchan_hash']] = [
+                    $c['xchan_hash'],
+                    $c['xchan_name'],
+                    $c['xchan_addr'],
+                    $url_shared_faces,
+                    ($c['xchan_hash'] === $this->owner['xchan_hash'])
+                ];
+            }
         }
         return $ret;
+    }
+
+    private function share() {
+        // decide what faces to share depending on observer
+        // - observer must be in contact list
+        // - observer must have a close relationship (proximity slider)
+        $conf = $this->getConfig();
+        $ob_xchan_hash = $this->observer['xchan_hash'];
+        if ($this->isContact() && $this->isCloseEnough($ob_xchan_hash, $conf)) {
+            $this->sendSharedFaces();
+        }
+        $msg = "not connected or not close enough (affinity slider).";
+        logger("sending status=false, " . $msg, LOGGER_NORMAL);
+        json_return_and_die(array('status' => false, 'message' => $msg));
+        return false;
+    }
+
+    private function isContact() {
+        $observer_hash = $this->observer['xchan_hash'];
+        $uid = $this->owner["channel_id"];
+        load_contact_links($uid);
+        $contacts = App::$contacts;
+        foreach ($contacts as $contact) {
+            if ($observer_hash === $contact['xchan_hash']) {
+                return true;
+            }
+        }
+        logger("not in contact list", LOGGER_DEBUG);
+        return false;
+    }
+
+    private function isCloseEnough($observer_xchan_hash, $conf) {
+        $closeness_min = $conf["closeness"][0][1];
+        if (!$closeness_min) {
+            // this might happen if addon is installed but never used, or
+            // the config file was deleted
+            logger("closeness not set for this observer" . $msg, LOGGER_DEBUG);
+            return false;
+        }
+
+        $r = q("SELECT abook_closeness from abook WHERE abook_channel = %d AND abook_xchan = '%s'",
+                intval($this->owner["channel_id"]),
+                dbesc($observer_xchan_hash)
+        );
+        if ($r) {
+            $closeness_found = $r[0]["abook_closeness"];
+            if ($closeness_found <= $closeness_min) {
+                // default is 80 if affinity addon is not installed or affinity is not set for contact
+                return true;
+            }
+        }
+        logger("contact " . $observer_xchan_hash . " not close enough, found " . $closeness_found . " but need " . $closeness_min, LOGGER_DEBUG);
+        return false;
+    }
+
+    private function sendSharedFaces() {
+        $filename = "share.json";
+        $addonDir = $this->getAddonDir();
+        $is_file = $addonDir->childExists($filename);
+        if (!$is_file) {
+            $msg = "no file " . $this->fileNameShare;
+            logger("sending status=false, message: " . $msg, LOGGER_NORMAL);
+            json_return_and_die(array('status' => true, 'message' => $msg));
+        }
+        $file = $addonDir->getChild($filename);
+        $stream = $file->get();
+        $contents = stream_get_contents($stream);
+        $faces = json_decode($contents, true);
+        logger("sending status=true, sending shared faces", LOGGER_NORMAL);
+        logger($contents, LOGGER_DATA);
+        json_return_and_die(array('status' => true, 'message' => "ok", 'faces' => $faces));
+    }
+
+    /**
+     * Store faces from contacts.
+     * - parse post param that sends the faces
+     * - iterate through every faces and remove faces of contacts that are not
+     *   close enough (set by affinity slider).
+     *   Why?
+     *     Be fair to your contacts.
+     *     If you do not share your own faces with a contact then in turn
+     *     you should not be allowed to tag this contact in your images.
+     */
+    private function storeShared() {
+        if (!$this->can_write) {
+            logger("sending status=false, no write permission", LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no write permission"));
+        }
+
+        if (!$_POST["faces"]) {
+            logger('sending status=false, no face received', LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no face received"));
+        }
+        $s = $_POST["faces"];
+        $faces = json_decode($_POST["faces"], true);
+
+        $sender = $_POST["sender"];  // shortened xchan_hash
+        if (!$sender) {
+            $sender = "unknown-sender";
+        }
+        $source_url = $_POST["url"];
+        if (!$source_url) {
+            $source_url = "";
+        }
+        logger("storing faces that where shared by a contact and downloaded at " . $source_url, LOGGER_DEBUG);
+
+        $conf = $this->getConfig();
+
+        $indicesToRemove = [];
+        $size = count($faces["name"]);
+        for ($x = 0; $x < $size; $x++) {
+            $faces["source"][$x] = $source_url;
+            // If you use one of your contacts (connected channels) to tag faces
+            // the xchan_hash of the contat is used as "name" to make the "name" unique.
+            $xchan_hash = $faces["name"][$x];
+            // TODO: The closeness all contacts could be requested from the database once
+            //       to avoid sql requests for each contact. Furthermore a contact is checked
+            //       several times if it has several entries iin the shared file what makes
+            //       it even more time consuming.
+            if (!$this->isCloseEnough($xchan_hash, $conf)) {
+                $indicesToRemove[] = $x;
+            }
+        }
+        if (sizeof($indicesToRemove) > 0) {
+            foreach ($faces as $key => $value) {
+                foreach ($indicesToRemove as $i) {
+                    $tmp = $key;
+                    $temp = $value;
+                    $a = $faces[$key];
+                    $b = $faces[$key][$i];
+                    unset($faces[$key][$i]);
+                }
+            }
+        }
+
+        logger("Received shared faces from sender name (shortened xchan_hash) = " . $sender . " from url=" . $source_url, LOGGER_DEBUG);
+        logger('faces: ' . json_encode($faces), LOGGER_DATA);
+
+        $filename = "shared_" . $sender . ".json";
+
+        $addonDir = $this->getAddonDir();
+        $is_file = $addonDir->childExists($filename);
+        if (!$is_file) {
+            $addonDir->createFile($filename);
+        }
+        $file = $addonDir->getChild($filename);
+
+        $json = json_encode($faces);
+        $file->put($json);
+        logger("wrote shared faces into file=" . $filename, LOGGER_NORMAL);
+
+        json_return_and_die(array('status' => true, 'message' => "shared faces received and stored for name "));
+    }
+
+    /**
+     * Delete files of contacts that are not close enough.
+     * 
+     * Main purpose of this function:
+     * Be fair to your contacts.
+     * If you do not share your own faces with a contact then in turn
+     * you should not be allowed to tag this contact in your images.
+     * 
+     * Iterate over the files that contain faces shared by contacts. These files
+     * where downloaded before from contacts. In the meantime you might have changed the
+     * closness (affinity slider) for this contact. As result the contact is not
+     * close enough anymore. For your contact this would have the effect that he
+     * is not allowed to downloade your faces anymore.
+     */
+    function cleanupShared() {
+        logger("check if files containing shared faces have to be cleaned up", LOGGER_DEBUG);
+        if (!$this->can_write) {
+            logger("sending status=false, no write permission", LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no write permission"));
+        }
+        $contacts = $this->getContacts();
+        $cs = [];
+        foreach ($contacts as $key => $value) {
+            $cs[] = substr($key, 0, 8);
+        }
+        $addonDir = $this->getAddonDir();
+        $children = $addonDir->getChildren();
+        foreach ($children as $child) {
+            if ($child instanceof File) {
+                if ($child->getContentType() === strtolower('application/json')) {
+                    $fname = $child->getName();
+                    if (!str_starts_with($fname, "shared_")) {
+                        continue;
+                    }
+                    $s = str_replace("shared_", "", $fname);
+                    if (!str_ends_with($s, ".json")) {
+                        continue;
+                    }
+                    $shortened_xchan_hash = str_replace(".json", "", $s);
+                    if (!in_array($shortened_xchan_hash, $cs)) {
+                        logger("deleting file " . $fname, LOGGER_DEBUG);
+                        $child->delete();
+                    }
+                }
+            }
+        }
+        logger("sending status=true, ok", LOGGER_NORMAL);
+        json_return_and_die(array('status' => true, 'message' => "ok"));
     }
 
 }
