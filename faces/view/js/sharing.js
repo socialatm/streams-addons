@@ -104,11 +104,7 @@ function postCleanupSharedFaces() {
     ((loglevel >= 1) ? console.log(t() + " post start - requesting url = " + postURL) : null);
 
     $.post(postURL, {}, function (data) {
-        if (!data['status']) {
-            ((loglevel >= 0) ? console.log(t() + " ERROR " + data['message']) : null);
-            return;
-        }
-        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server message: " + data['message']) : null);        
+        ((loglevel >= 1) ? console.log(t() + " post " + postURL + " - received server " + data['status'] + ", message: " + data['message']) : null);
     },
             'json');
 }

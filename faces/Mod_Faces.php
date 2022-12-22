@@ -1168,6 +1168,7 @@ class Faces extends Controller {
         if (!$source_url) {
             $source_url = "";
         }
+        logger("storing faces that where shared by a contact and downloaded at " . $source_url, LOGGER_DEBUG);
 
         $conf = $this->getConfig();
 
@@ -1228,6 +1229,11 @@ class Faces extends Controller {
      * is not allowed to downloade your faces anymore.
      */
     function cleanupShared() {
+        logger("check if files containing shared faces have to be cleaned up", LOGGER_DEBUG);
+        if (!$this->can_write) {
+            logger("sending status=false, no write permission", LOGGER_NORMAL);
+            json_return_and_die(array('status' => false, 'message' => "no write permission"));
+        }
         $contacts = $this->getContacts();
         $cs = [];
         foreach ($contacts as $key => $value) {
@@ -1247,12 +1253,15 @@ class Faces extends Controller {
                         continue;
                     }
                     $shortened_xchan_hash = str_replace(".json", "", $s);
-                    if(!in_array($shortened_xchan_hash, $cs)) {
+                    if (!in_array($shortened_xchan_hash, $cs)) {
                         $child->delete();
+                        logger("deleted file " . $fname, LOGGER_DEBUG);
                     }
                 }
             }
         }
+        logger("sending status=true, ok", LOGGER_NORMAL);
+        json_return_and_die(array('status' => true, 'message' => "ok"));
     }
 
 }
