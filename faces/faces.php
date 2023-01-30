@@ -52,13 +52,6 @@ function faces_plugin_admin(&$o) {
         } else {
             $mysqlconnectorcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
         }
-
-        $ret = testExiftool();
-        if (!$ret['status']) {
-            $exiftoolcheckmsg = "<p style=\"color:red;\">" . $ret['message'] . "</p>";
-        } else {
-            $exiftoolcheckmsg = "<p style=\"color:green;\">" . $ret['message'] . "</p>";
-        }
         unblockFaceRecognition();
     }
 
@@ -101,7 +94,6 @@ function faces_plugin_admin(&$o) {
         '$pythoncheckmsg' => $pythoncheckmsg,
         '$deepfacecheckmsg' => $deepfacecheckmsg,
         '$mysqlconnectorcheckmsg' => $mysqlconnectorcheckmsg,
-        '$exiftoolcheckmsg' => $exiftoolcheckmsg,
         '$ramcheckmsg' => get_config('faces', 'ramcheck'),
         '$block' => array('block', "block", $block, "Do not allow the python scripts to run on this server"),
         '$retinaface' => array('retinaface', "retinaface", str_contains($detectors, "retinaface"), "slow, most accurate"),
@@ -449,14 +441,4 @@ function testDeepfaceModules($pdetectors, $pmodels, $pdemography) {
         }
     }
     return array('d' => $detectors, 'm' => $models, 'dm' => $demography, 'r' => $ram);
-}
-
-function testExiftool() {
-    $cmd = 'exiftool -ver';
-    exec($cmd, $o);
-    if (!$o[0]) {
-        return array('status' => false, 'message' => 'Failed: Exiftool not found', LOGGER_NORMAL);
-    }
-    logger("Exiftool version: " . $o[0], LOGGER_NORMAL);
-    return array('status' => true, 'message' => 'Found  exiftool version = ' . $o[0], LOGGER_NORMAL);
 }
