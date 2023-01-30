@@ -9,7 +9,7 @@
             <span>{{$permissions}}</span>
         </span>
         <div id="attach-edit-perms" class="btn-group pull-right">
-            <button id="dbtn-acl" class="btn btn-outline-secondary btn-sm" data-toggle="modal" data-target="#aclModal" title="{{$permset}}" type="button">
+            <button id="dbtn-acl" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#aclModal" title="{{$permset}}" type="button">
                 <i id="jot-perms-icon" class="fa fa-{{$lockstate}} jot-icons"></i>
             </button>
             <button id="dbtn-submit" class="btn btn-primary btn-sm" type="submit" name="submit">

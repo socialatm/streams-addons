@@ -1,7 +1,7 @@
 <div id="panel_box_navigation" style="display: none;">
 	<ul class="nav nav-pills bg-light">
 		<li class="nav-item dropdown flashcards_nav">
-			<a class="nav-pill nav-link dropdown-toggle" data-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-2x fa-fw fa-graduation-cap"></i></a>
+			<a class="nav-pill nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="true" aria-expanded="false"><i class="fa fa-2x fa-fw fa-graduation-cap"></i></a>
 			<div class="dropdown-menu">
 				<a class="dropdown-item" id="flashcards_new_box">New Box</a>
 				<a class="dropdown-item" id="flashcards_edit_box">Edit Box</a>
@@ -79,10 +79,10 @@
 		</div>      
 		<div class="row">
 			<div class="col-sm-10">
-				<button class="btn" data-toggle="collapse" id="flashcards_perms" href="#panel_flashcards_permissions" role="button" aria-expanded="false" aria-controls="panel_flashcards__permissions"><i class="fa fa-community fa-lg"></i> Permissions</button>
+				<button class="btn" data-bs-toggle="collapse" id="flashcards_perms" href="#panel_flashcards_permissions" role="button" aria-expanded="false" aria-controls="panel_flashcards__permissions"><i class="fa fa-community fa-lg"></i> Permissions</button>
 			</div>      
 			<div class="col-sm-2">
-				<button class="btn" data-toggle="collapse" href="#panel_flashbox_settings" role="button" aria-expanded="false" aria-controls="panel_flashbox_settings"><i class="fa fa-cogs fa-lg"></i> Settings</button>
+				<button class="btn" data-bs-toggle="collapse" href="#panel_flashbox_settings" role="button" aria-expanded="false" aria-controls="panel_flashbox_settings"><i class="fa fa-cogs fa-lg"></i> Settings</button>
 			</div>
 		</div>
 		<div id="panel_flashbox_settings" class="panel-collapse collapse">
@@ -449,7 +449,7 @@ Modal to delete a box
 		<div class="modal-content">
 			<div class="modal-header">
 			    <h4 class="modal-title" id="exampleModalLabel">Delete Box</h4>
-			    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+			    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
 			      <span aria-hidden="true">&times;</span>
 			    </button>
 			</div>
@@ -457,7 +457,7 @@ Modal to delete a box
 			    Are you sure to delete this box.
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 			    <button type="button" class="btn btn-primary btn-danger" id="button_delete_box" boxid="notset">Delete</button>
 			</div>
 	    </div>
